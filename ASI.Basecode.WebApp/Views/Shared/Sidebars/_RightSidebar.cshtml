@@ -1,0 +1,45 @@
+﻿<!--_RightSidebar.cshtml-->
+<div class="right-sidebar-content">
+
+    <!-- Profile Section -->
+    <div class="profile-card mb-3 p-3 border rounded">
+        <h5>@User.Identity.Name</h5>
+        <p class="text-muted">@User.Claims.FirstOrDefault(c => c.Type == "Role")?.Value</p>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar-widget mb-3 p-3 border rounded">
+        <h6>📅 Calendar</h6>
+        @if (User.IsInRole("Student"))
+        {
+            <p>Study Load schedule here...</p>
+        }
+        else if (User.IsInRole("Teacher"))
+        {
+            <p>Class schedule here...</p>
+        }
+        else if (User.IsInRole("Admin"))
+        {
+            <p>Admin events here...</p>
+        }
+    </div>
+
+    <!-- Upcoming Activities -->
+    <div class="upcoming-widget mb-3 p-3 border rounded">
+        <h6>⏳ Upcoming Activities</h6>
+        <ul>
+            <li>Activity 1</li>
+            <li>Activity 2</li>
+        </ul>
+    </div>
+
+    <!-- Notifications -->
+    <div class="notif-widget mb-3 p-3 border rounded">
+        <h6>🔔 Notifications</h6>
+        <ul>
+            <li>Notif 1</li>
+            <li>Notif 2</li>
+        </ul>
+    </div>
+
+</div>

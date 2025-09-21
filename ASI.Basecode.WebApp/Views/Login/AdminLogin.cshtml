@@ -1,0 +1,45 @@
+﻿@{
+    Layout = "~/Views/Shared/Layouts/_LayoutLogin.cshtml";
+    ViewData["Title"] = "Admin Login";
+}
+@section styles {
+    <link rel="stylesheet" href="~/css/user-login.css" />
+}
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-form">
+            <h2 class="title">Admin Portal</h2>
+
+            <!-- Temporary frontend-only login -->
+            <form onsubmit="event.preventDefault(); window.location.href='@Url.Action("AdminDashboard", "Admin")';">
+                <div class="form-group">
+                    <label for="adminID">Admin ID</label>
+                    <input type="text" name="adminID" id="adminID" placeholder="Enter Admin ID" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="Enter Password" required />
+                </div>
+
+                <div class="form-options">
+                    <label>
+                        <input type="checkbox" name="rememberMe" /> Remember Me
+                    </label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn-login">Login</button>
+            </form>
+
+            @if (ViewBag.Error != null)
+            {
+                <p class="error-message">@ViewBag.Error</p>
+            }
+        </div>
+        <div class="login-illustration">
+            <img src="~/img/admin-illustration.svg" alt="Admin Illustration" />
+        </div>
+    </div>
+</div>

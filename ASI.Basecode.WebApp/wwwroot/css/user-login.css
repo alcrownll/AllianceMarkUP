@@ -1,0 +1,112 @@
+﻿body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f9f9ff;
+    color: #333;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-card {
+    display: flex;
+    width: 900px;
+    height: 550px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.login-form {
+    flex: 1;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+    .login-form .title {
+        margin-bottom: 20px;
+        font-size: 26px;
+        font-weight: 600;
+        color: #5a2d82; /* violet */
+    }
+
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+    .form-group label {
+        font-size: 14px;
+        margin-bottom: 6px;
+        color: #555;
+    }
+
+    .form-group input {
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: 0.3s;
+    }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #7d3c98; /* violet */
+            box-shadow: 0 0 5px rgba(125, 60, 152, 0.4);
+        }
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 13px;
+}
+
+    .form-options a {
+        color: #7d3c98;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+.btn-login {
+    background: linear-gradient(135deg, #7d3c98, #a569bd);
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+    .btn-login:hover {
+        background: linear-gradient(135deg, #6c3483, #8e44ad);
+    }
+
+.error-message {
+    color: red;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.login-illustration {
+    flex: 1;
+    background: #f5ebff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+    .login-illustration img {
+        width: 80%;
+    }

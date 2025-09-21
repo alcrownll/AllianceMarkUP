@@ -1,0 +1,29 @@
+﻿<nav class="d-flex flex-column h-100">
+    <ul class="nav flex-column flex-grow-1">
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Dashboard">🏠 Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Profile">👤 Profile</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="StudyLoad">📚 Study Load</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Grades">📊 Grades</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Calendar">📅 Calendar</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Notifications">🔔 Notifications</a>
+        </li>
+    </ul>
+
+    <!-- Logout button pinned at bottom -->
+    <div class="mt-auto p-2">
+        <form asp-controller="Login" asp-action="StudentLogout" method="post">
+            <button type="submit" class="btn btn-danger w-100">🚪 Logout</button>
+        </form>
+    </div>
+</nav>

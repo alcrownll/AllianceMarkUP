@@ -1,0 +1,69 @@
+﻿<!--_MainLayout.cshtml-->
+
+@using static ASI.Basecode.Resources.Views.Screen
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap + Site Styles -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/main-site.css" />
+
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+
+    <!-- Page layout container -->
+    <div class="layout-container d-flex">
+        <!-- LEFT SIDEBAR (Role-based Navigation) -->
+        <aside class="left-sidebar">
+            @if (User.IsInRole("Student"))
+            {
+                @await Html.PartialAsync("Sidebars/_LeftSidebarStudent")
+            }
+            else if (User.IsInRole("Teacher"))
+            {
+                @await Html.PartialAsync("Sidebars/_LeftSidebarTeacher")
+            }
+            else if (User.IsInRole("Admin"))
+            {
+                @await Html.PartialAsync("Sidebars/_LeftSidebarAdmin")
+            }
+        </aside>
+
+        <!-- CENTER CONTENT (Header + Scrollable Body) -->
+        <main class="main-content flex-grow-1 d-flex flex-column">
+            <!-- Constant Header (center only) -->
+            <header class="main-header">
+                <h2>@ViewData["PageHeader"]</h2>
+            </header>
+
+            <!-- Scrollable RenderBody -->
+            <section class="content flex-grow-1 overflow-auto">
+                @RenderBody()
+            </section>
+        </main>
+
+        <!-- RIGHT SIDEBAR (Profile + Calendar + Notifs, shared across roles) -->
+        <aside class="right-sidebar">
+            @await Html.PartialAsync("Sidebars/_RightSidebar")
+        </aside>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.js"></script>
+    <script src="https://kit.fontawesome.com/7a7c645416.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+
+ 
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

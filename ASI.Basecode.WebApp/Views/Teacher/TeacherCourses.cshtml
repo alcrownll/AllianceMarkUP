@@ -1,0 +1,101 @@
+﻿@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Assigned Courses";
+    ViewData["PageHeader"] = "Assigned Courses";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/main-site.css" />
+}
+
+<div class="container-fluid">
+    <h3 class="mb-4">Your Assigned Courses</h3>
+
+    <!-- Example hardcoded data (replace later with DB model) -->
+    <div class="accordion" id="assignedCoursesAccordion">
+
+        <!-- Course 1 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingCS101">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCS101" aria-expanded="true" aria-controls="collapseCS101">
+                    CS101 – Introduction to Programming
+                </button>
+            </h2>
+            <div id="collapseCS101" class="accordion-collapse collapse show" aria-labelledby="headingCS101" data-bs-parent="#assignedCoursesAccordion">
+                <div class="accordion-body">
+
+                    <!-- Tabs for Roster & Grades -->
+                    <ul class="nav nav-tabs" id="cs101Tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="roster-tab-101" data-bs-toggle="tab" data-bs-target="#roster101" type="button" role="tab">👥 Roster</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="grades-tab-101" data-bs-toggle="tab" data-bs-target="#grades101" type="button" role="tab">📝 Grades</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content p-3 border border-top-0" id="cs101TabsContent">
+                        <!-- Roster -->
+                        <div class="tab-pane fade show active" id="roster101" role="tabpanel">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>2023-001</td><td>Ana Reyes</td></tr>
+                                    <tr><td>2023-002</td><td>John Cruz</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Grades -->
+                        <div class="tab-pane fade" id="grades101" role="tabpanel">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Prelim</th>
+                                        <th>Midterm</th>
+                                        <th>Finals</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Ana Reyes</td>
+                                        <td><input type="number" class="form-control form-control-sm" value="85" /></td>
+                                        <td><input type="number" class="form-control form-control-sm" value="88" /></td>
+                                        <td><input type="number" class="form-control form-control-sm" value="90" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td>John Cruz</td>
+                                        <td><input type="number" class="form-control form-control-sm" value="80" /></td>
+                                        <td><input type="number" class="form-control form-control-sm" value="83" /></td>
+                                        <td><input type="number" class="form-control form-control-sm" value="85" /></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button class="btn btn-primary btn-sm">💾 Save Grades</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course 2 -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingIT204">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIT204" aria-expanded="false" aria-controls="collapseIT204">
+                    IT204 – Database Systems
+                </button>
+            </h2>
+            <div id="collapseIT204" class="accordion-collapse collapse" aria-labelledby="headingIT204" data-bs-parent="#assignedCoursesAccordion">
+                <div class="accordion-body">
+                    <p>Course details and student roster will go here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

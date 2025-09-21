@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Manage Accounts";
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+}
+
+<h2>👥 Manage Accounts</h2>
+<p>Here you can view, add, update, or suspend student/teacher/admin accounts.</p>
+
+<!-- Placeholder table -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1001</td>
+            <td>Juan Dela Cruz</td>
+            <td>Student</td>
+            <td>Active</td>
+            <td><button class="btn btn-sm btn-primary">Edit</button></td>
+        </tr>
+    </tbody>
+</table>

@@ -1,0 +1,17 @@
+﻿@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Profile";
+}
+
+<h2>My Profile</h2>
+<form>
+    <div class="form-group">
+        <label for="studentName">Name</label>
+        <input type="text" id="studentName" class="form-control" value="Test Student" />
+    </div>
+    <div class="form-group">
+        <label for="studentEmail">Email</label>
+        <input type="email" id="studentEmail" class="form-control" value="student@test.com" />
+    </div>
+    <button type="submit" class="btn btn-primary">Update</button>
+</form>

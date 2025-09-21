@@ -1,0 +1,31 @@
+﻿<!-- _LeftSidebarAdmin.cshtml -->
+<nav class="d-flex flex-column h-100">
+    <ul class="nav flex-column flex-grow-1">
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">🏠 Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Accounts">👥 Accounts</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Courses">📚 Courses</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Classes">🏫 Classes</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Calendar">📅 Calendar</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Reports">📊 Reports</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Notifications">🔔 Notifications</a>
+        </li>
+    </ul>
+
+    <!-- Logout button pinned at bottom -->
+    <form asp-controller="Login" asp-action="AdminLogout" method="post">
+        <button type="submit" class="btn btn-danger w-100">🚪 Logout</button>
+    </form>
+</nav>
