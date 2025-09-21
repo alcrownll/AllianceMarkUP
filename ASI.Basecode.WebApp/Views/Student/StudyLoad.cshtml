@@ -4,5 +4,58 @@
     ViewData["PageHeader"] = "Study Load";
 }
 
-<h2>📚 Your Study Load</h2>
-<p>List of enrolled subjects will appear here.</p>
+@section Styles {
+    <style>
+        .subject-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .subject-card {
+            border-left: 4px solid #007bff;
+            transition: box-shadow 0.2s;
+        }
+
+            .subject-card:hover {
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+
+        .subject-header {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        .subject-details {
+            line-height: 1.5;
+        }
+    </style>
+}
+
+<div class="container mt-4">
+    <h3>📚 Study Load @ViewBag.StudentName</h3>
+    <hr />
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">No enrolled subjects found.</div>
+    }
+    else
+    {
+        <div class="subject-list">
+            @foreach (var item in Model)
+            {
+                <div class="subject-card p-3 mb-3 bg-light border rounded">
+                    <div class="subject-header">
+                        <strong>@item.SubjectCode</strong> — @item.SubjectName
+                    </div>
+                    <div class="subject-details text-muted small">
+                        Type: @item.Type • Units: @item.Units •
+                        Midterm: @(item.MidtermGrade?.ToString("0.0") ?? "N/A") •
+                        Finals: @(item.FinalGrade?.ToString("0.0") ?? "N/A")
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
