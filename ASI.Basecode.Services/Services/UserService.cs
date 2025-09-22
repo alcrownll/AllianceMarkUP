@@ -24,12 +24,20 @@ namespace ASI.Basecode.Services.Services
 
         public LoginResult AuthenticateUser(string idNumber, string password, ref User user)
         {
-            user = new User();
-            var passwordKey = PasswordManager.EncryptPassword(password);
-            user = _repository.GetUsers().Where(x => x.IdNumber == idNumber &&
-                                                     x.Password == passwordKey).FirstOrDefault();
+            user = null;
 
-            return user != null ? LoginResult.Success : LoginResult.Failed;
+            try
+            {
+                var passwordKey = PasswordManager.EncryptPassword(password);
+                user = _repository.GetUsers().Where(x => x.IdNumber == idNumber &&
+                                                         x.Password == passwordKey).FirstOrDefault();
+                return user != null ? LoginResult.Success : LoginResult.Failed;
+            }
+            catch (Exception ex)
+            {
+                user = null;
+                return LoginResult.Failed;
+            }
         }
 
         /*public void AddUser(UserViewModel model)

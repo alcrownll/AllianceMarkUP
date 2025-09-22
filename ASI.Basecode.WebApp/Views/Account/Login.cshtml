@@ -1,4 +1,5 @@
-﻿@model LoginViewModel
+﻿@*
+@model LoginViewModel
 @using static ASI.Basecode.Resources.Views.Screen
 @section styles {
     <link rel="stylesheet" href="~/css/login.css" />
@@ -25,8 +26,8 @@
                                 <div class="form-outline mb-4">
                                     <label class="form-label" for="form2Example11">@UserId</label>
                                     <input type="text" id="form2Example11" class="form-control"
-                                           asp-for="UserId" placeholder="Enter userid" />
-                                    <span asp-validation-for="UserId" class="text-danger"></span>
+                                           asp-for="IdNumber" placeholder="Enter userid" />
+                                    <span asp-validation-for="IdNumber" class="text-danger"></span>
                                 </div>
                                 <div class="form-outline mb-4">
                                     <label class="form-label" for="form2Example22">@Password</label>
@@ -85,4 +86,4 @@
             toastr.error(errorMessage);
         }
     </script>
-}
+}*@

@@ -6,13 +6,13 @@ using ASI.Basecode.WebApp.Authentication;
 using ASI.Basecode.WebApp.Models;
 using ASI.Basecode.WebApp.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using static ASI.Basecode.Resources.Constants.Enums;
 
@@ -28,102 +28,169 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IUserService _userService;
 
         public AccountController(
-                            SignInManager signInManager,
-                            IHttpContextAccessor httpContextAccessor,
-                            ILoggerFactory loggerFactory,
-                            IConfiguration configuration,
-                            IMapper mapper,
-                            IUserService userService,
-                            TokenValidationParametersFactory tokenValidationParametersFactory,
-                            TokenProviderOptionsFactory tokenProviderOptionsFactory) : base(httpContextAccessor, loggerFactory, configuration, mapper)
+            SignInManager signInManager,
+            IHttpContextAccessor httpContextAccessor,
+            ILoggerFactory loggerFactory,
+            IConfiguration configuration,
+            IMapper mapper,
+            IUserService userService,
+            TokenValidationParametersFactory tokenValidationParametersFactory,
+            TokenProviderOptionsFactory tokenProviderOptionsFactory
+        ) : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
-            this._sessionManager = new SessionManager(this._session);
-            this._signInManager = signInManager;
-            this._tokenProviderOptionsFactory = tokenProviderOptionsFactory;
-            this._tokenValidationParametersFactory = tokenValidationParametersFactory;
-            this._appConfiguration = configuration;
-            this._userService = userService;
+            _sessionManager = new SessionManager(this._session);
+            _signInManager = signInManager;
+            _tokenProviderOptionsFactory = tokenProviderOptionsFactory;
+            _tokenValidationParametersFactory = tokenValidationParametersFactory;
+            _appConfiguration = configuration;
+            _userService = userService;
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public ActionResult Login()
-        {
-            TempData["returnUrl"] = System.Net.WebUtility.UrlDecode(HttpContext.Request.Query["ReturnUrl"]);
-            this._sessionManager.Clear();
-            this._session.SetString("SessionId", Guid.NewGuid().ToString());
-            return this.View();
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl)
-        {
-            this._session.SetString("HasSession", "Exist");
-
-            User user = null;
-            var loginResult = _userService.AuthenticateUser(model.UserId, model.Password, ref user);
-
-            if (loginResult == LoginResult.Success && user != null)
-            {
-                // ✅ User authenticated
-                await this._signInManager.SignInAsync(user);
-
-                // Save info in session
-                var fullName = $"{user.FirstName} {user.LastName}";
-                this._session.SetString("IdNumber", user.IdNumber);
-                this._session.SetString("FullName", fullName);
-                this._session.SetString("Role", user.Role);
-
-                return RedirectToAction("Index", "Home");
-            }
-            else
-            {
-                // ❌ Authentication failed
-                TempData["ErrorMessage"] = "Incorrect ID Number or Password";
-                return View();
-            }
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
+        // =======================
+        // STUDENT LOGIN
+        // =======================
         [HttpGet]
         [AllowAnonymous]
         public IActionResult StudentLogin()
         {
-            return View();
+            return View("StudentLogin", new LoginViewModel());
         }
 
         [HttpPost]
         [AllowAnonymous]
-        /*public IActionResult Register(UserViewModel model)
+        public async Task<IActionResult> StudentLogin(LoginViewModel model)
         {
-            try
+            if (!ModelState.IsValid)
+                return View("~/Views/Login/StudentLogin.cshtml", model);
+
+            User user = null;
+            var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
+
+            if (loginResult == LoginResult.Success && user != null && user.Role == "Student")
             {
-                _userService.AddUser(model);
-                return RedirectToAction("Login", "Account");
+                await _signInManager.SignInAsync(user, model.RememberMe);
+                _session.SetString("IdNumber", user.IdNumber);
+                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+                _session.SetString("Role", user.Role);
+
+                return RedirectToAction("StudentDashboard", "Student");
             }
-            catch (InvalidDataException ex)
+
+            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            return View("~/Views/Login/StudentLogin.cshtml", model);
+        }
+
+        // =======================
+        // TEACHER LOGIN
+        // =======================
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult TeacherLogin()
+        {
+            return View("TeacherLogin", new LoginViewModel());
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> TeacherLogin(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View("~/Views/Login/TeacherLogin.cshtml", model);
+
+            User user = null;
+            var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
+
+            if (loginResult == LoginResult.Success && user != null && user.Role == "Teacher")
             {
-                TempData["ErrorMessage"] = ex.Message;
+                await _signInManager.SignInAsync(user, model.RememberMe);
+                _session.SetString("IdNumber", user.IdNumber);
+                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+                _session.SetString("Role", user.Role);
+
+                return RedirectToAction("TeacherDashboard", "Teacher");
             }
-            catch (Exception)
+
+            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            return View("~/Views/Login/TeacherLogin.cshtml", model);
+        }
+
+        // =======================
+        // ADMIN LOGIN
+        // =======================
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AdminLogin()
+        {
+            return View("AdminLogin", new LoginViewModel());
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> AdminLogin(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View("~/Views/Login/AdminLogin.cshtml", model);
+
+            User user = null;
+            var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
+
+            if (loginResult == LoginResult.Success && user != null && user.Role == "Admin")
             {
-                TempData["ErrorMessage"] = Resources.Messages.Errors.ServerError;
+                await _signInManager.SignInAsync(user, model.RememberMe);
+                _session.SetString("IdNumber", user.IdNumber);
+                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+                _session.SetString("Role", user.Role);
+
+                return RedirectToAction("AdminDashboard", "Admin");
             }
+
+            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            return View("~/Views/Login/AdminLogin.cshtml", model);
+        }
+
+        // =======================
+        // DASHBOARDS
+        // =======================
+        [Authorize(Roles = "Student")]
+        public IActionResult StudentDashboard()
+        {
             return View();
         }
 
-        [AllowAnonymous]*/
-        public async Task<IActionResult> SignOutUser()
+        [Authorize(Roles = "Teacher")]
+        public IActionResult TeacherDashboard()
         {
-            await this._signInManager.SignOutAsync();
-            return RedirectToAction("Login", "Account");
+            return View();
+        }
+
+        [Authorize(Roles = "Admin")]
+        public IActionResult AdminDashboard()
+        {
+            return View();
+        }
+
+        // =======================
+        // LOGOUTS
+        // =======================
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> StudentLogout()
+        {
+            await HttpContext.SignOutAsync("ASI_Basecode");
+            return RedirectToAction("StudentLogin", "Login");
+        }
+
+        [Authorize(Roles = "Teacher")]
+        public async Task<IActionResult> TeacherLogout()
+        {
+            await HttpContext.SignOutAsync("ASI_Basecode");
+            return RedirectToAction("TeacherLogin", "Login");
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminLogout()
+        {
+            await HttpContext.SignOutAsync("ASI_Basecode");
+            return RedirectToAction("AdminLogin", "Login");
         }
     }
 }
