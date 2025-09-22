@@ -1,7 +1,10 @@
-﻿@{
+﻿@model ASI.Basecode.WebApp.Models.LoginViewModel
+
+@{
     Layout = "~/Views/Shared/Layouts/_LayoutLogin.cshtml";
     ViewData["Title"] = "Admin Login";
 }
+
 @section styles {
     <link rel="stylesheet" href="~/css/user-login.css" />
 }
@@ -11,21 +14,24 @@
         <div class="login-form">
             <h2 class="title">Admin Portal</h2>
 
-            <!-- Temporary frontend-only login -->
-            <form onsubmit="event.preventDefault(); window.location.href='@Url.Action("AdminDashboard", "Admin")';">
+            <form asp-controller="Account" asp-action="AdminLogin" method="post">
+                @Html.AntiForgeryToken()
+
                 <div class="form-group">
-                    <label for="adminID">Admin ID</label>
-                    <input type="text" name="adminID" id="adminID" placeholder="Enter Admin ID" required />
+                    <label asp-for="IdNumber">ID Number</label>
+                    <input asp-for="IdNumber" id="idNumber" class="form-control" placeholder="Enter ID Number" />
+                    <span asp-validation-for="IdNumber" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" id="password" placeholder="Enter Password" required />
+                    <label asp-for="Password">Password</label>
+                    <input asp-for="Password" class="form-control" placeholder="Enter Password" type="password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
 
                 <div class="form-options">
                     <label>
-                        <input type="checkbox" name="rememberMe" /> Remember Me
+                        <input asp-for="RememberMe" type="checkbox" /> Remember Me
                     </label>
                     <a href="#">Forgot Password?</a>
                 </div>
@@ -33,13 +39,18 @@
                 <button type="submit" class="btn-login">Login</button>
             </form>
 
-            @if (ViewBag.Error != null)
+            @if (TempData["ErrorMessage"] != null)
             {
-                <p class="error-message">@ViewBag.Error</p>
+                <p class="error-message">@TempData["ErrorMessage"]</p>
             }
         </div>
+
         <div class="login-illustration">
             <img src="~/img/admin-illustration.svg" alt="Admin Illustration" />
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
