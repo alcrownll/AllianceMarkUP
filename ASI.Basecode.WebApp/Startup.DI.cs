@@ -1,9 +1,9 @@
 ﻿using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Repositories;
-using ASI.Basecode.Services.Interfaces;
+//using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
-using ASI.Basecode.Services.Services;
+//using ASI.Basecode.Services.Services;
 using ASI.Basecode.WebApp.Authentication;
 using ASI.Basecode.WebApp.Models;
 using Microsoft.AspNetCore.Http;
@@ -34,14 +34,14 @@ namespace ASI.Basecode.WebApp
 
             // Services
             this._services.TryAddSingleton<TokenValidationParametersFactory>();
-            this._services.AddScoped<IUserService, UserService>();
+            //this._services.AddScoped<IUserService, UserService>();
           
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();
 
             // Manager Class
-            this._services.AddScoped<SignInManager>();
+            //this._services.AddScoped<SignInManager>();
 
             this._services.AddHttpClient();
         }

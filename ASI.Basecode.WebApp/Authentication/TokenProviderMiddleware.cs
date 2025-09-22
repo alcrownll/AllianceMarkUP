@@ -124,10 +124,10 @@ namespace ASI.Basecode.WebApp.Authentication
                 throw new ArgumentException("Must be a non-zero TimeSpan.", nameof(TokenProviderOptions.Expiration));
             }
 
-            if (options.IdentityResolver == null)
+            /*if (options.IdentityResolver == null)
             {
                 throw new ArgumentNullException(nameof(TokenProviderOptions.IdentityResolver));
-            }
+            }*/
 
             if (options.SigningCredentials == null)
             {

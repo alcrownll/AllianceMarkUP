@@ -27,18 +27,6 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AccountController"/> class.
-        /// </summary>
-        /// <param name="signInManager">The sign in manager.</param>
-        /// <param name="localizer">The localizer.</param>
-        /// <param name="userService">The user service.</param>
-        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
-        /// <param name="loggerFactory">The logger factory.</param>
-        /// <param name="configuration">The configuration.</param>
-        /// <param name="mapper">The mapper.</param>
-        /// <param name="tokenValidationParametersFactory">The token validation parameters factory.</param>
-        /// <param name="tokenProviderOptionsFactory">The token provider options factory.</param>
         public AccountController(
                             SignInManager signInManager,
                             IHttpContextAccessor httpContextAccessor,
@@ -57,56 +45,44 @@ namespace ASI.Basecode.WebApp.Controllers
             this._userService = userService;
         }
 
-        /// <summary>
-        /// Login Method
-        /// </summary>
-        /// <returns>Created response view</returns>
         [HttpGet]
         [AllowAnonymous]
         public ActionResult Login()
         {
             TempData["returnUrl"] = System.Net.WebUtility.UrlDecode(HttpContext.Request.Query["ReturnUrl"]);
             this._sessionManager.Clear();
-            this._session.SetString("SessionId", System.Guid.NewGuid().ToString());
+            this._session.SetString("SessionId", Guid.NewGuid().ToString());
             return this.View();
         }
 
-        /// <summary>
-        /// Authenticate user and signs the user in when successful.
-        /// </summary>
-        /// <param name="model">The model.</param>
-        /// <param name="returnUrl">The return URL.</param>
-        /// <returns> Created response view </returns>
         [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl)
         {
             this._session.SetString("HasSession", "Exist");
 
-            //User user = null;
+            User user = null;
+            var loginResult = _userService.AuthenticateUser(model.UserId, model.Password, ref user);
 
-            User user = new() { Id = 0, UserId = "0", Name = "Name", Password = "Password" };
-            
-            await this._signInManager.SignInAsync(user);
-            this._session.SetString("UserName", model.UserId);
-
-            return RedirectToAction("Index", "Home");
-
-            /*var loginResult = _userService.AuthenticateUser(model.UserId, model.Password, ref user);
-            if (loginResult == LoginResult.Success)
+            if (loginResult == LoginResult.Success && user != null)
             {
-                // 認証OK
+                // ✅ User authenticated
                 await this._signInManager.SignInAsync(user);
-                this._session.SetString("UserName", user.Name);
+
+                // Save info in session
+                var fullName = $"{user.FirstName} {user.LastName}";
+                this._session.SetString("IdNumber", user.IdNumber);
+                this._session.SetString("FullName", fullName);
+                this._session.SetString("Role", user.Role);
+
                 return RedirectToAction("Index", "Home");
             }
             else
             {
-                // 認証NG
-                TempData["ErrorMessage"] = "Incorrect UserId or Password";
+                // ❌ Authentication failed
+                TempData["ErrorMessage"] = "Incorrect ID Number or Password";
                 return View();
             }
-            return View();*/
         }
 
         [HttpGet]
@@ -123,37 +99,31 @@ namespace ASI.Basecode.WebApp.Controllers
             return View();
         }
 
-
         [HttpPost]
         [AllowAnonymous]
-        public IActionResult Register(UserViewModel model)
+        /*public IActionResult Register(UserViewModel model)
         {
             try
             {
                 _userService.AddUser(model);
                 return RedirectToAction("Login", "Account");
             }
-            catch(InvalidDataException ex)
+            catch (InvalidDataException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
             }
-            catch(Exception ex)
+            catch (Exception)
             {
                 TempData["ErrorMessage"] = Resources.Messages.Errors.ServerError;
             }
             return View();
         }
 
-        /// <summary>
-        /// Sign Out current account and return login view.
-        /// </summary>
-        /// <returns>Created response view</returns>
-        [AllowAnonymous]
+        [AllowAnonymous]*/
         public async Task<IActionResult> SignOutUser()
         {
             await this._signInManager.SignOutAsync();
             return RedirectToAction("Login", "Account");
         }
-
     }
 }

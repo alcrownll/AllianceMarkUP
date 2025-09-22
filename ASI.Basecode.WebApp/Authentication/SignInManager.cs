@@ -39,7 +39,6 @@ namespace ASI.Basecode.WebApp.Authentication
         /// Initializes a new instance of the SignInManager class.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
-        /// <param name="accountService">The account service.</param>
         /// <param name="httpContextAccessor">The HTTP context accessor.</param>
         public SignInManager(IConfiguration configuration,
                              IHttpContextAccessor httpContextAccessor)
@@ -52,15 +51,16 @@ namespace ASI.Basecode.WebApp.Authentication
         /// <summary>
         /// Gets the claims identity.
         /// </summary>
-        /// <param name="username">The username.</param>
+        /// <param name="idNumber">The idNumber.</param>
         /// <param name="password">The password.</param>
         /// <returns>The successfully completed task</returns>
-        public Task<ClaimsIdentity> GetClaimsIdentity(string username, string password)
+        public Task<ClaimsIdentity> GetClaimsIdentity(string idNumber, string password)
         {
             ClaimsIdentity claimsIdentity = null;
             User userData = new User();
 
-            user.loginResult = LoginResult.Success;//TODO this._accountService.AuthenticateUser(username, password, ref userData);
+            user.loginResult = LoginResult.Success;
+            // TODO: this._accountService.AuthenticateUser(idNumber, password, ref userData);
 
             if (user.loginResult == LoginResult.Failed)
             {
@@ -80,14 +80,15 @@ namespace ASI.Basecode.WebApp.Authentication
         public ClaimsIdentity CreateClaimsIdentity(User user)
         {
             var token = _configuration.GetTokenAuthentication();
-            //TODO
+            var fullName = $"{user.FirstName} {user.LastName}";
+
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId, ClaimValueTypes.String, Const.Issuer),
-                new Claim(ClaimTypes.Name, user.Name, ClaimValueTypes.String, Const.Issuer),
+                new Claim(ClaimTypes.NameIdentifier, user.IdNumber, ClaimValueTypes.String, Const.Issuer),
+                new Claim(ClaimTypes.Name, fullName, ClaimValueTypes.String, Const.Issuer),
 
-                new Claim("UserId", user.UserId, ClaimValueTypes.String, Const.Issuer),
-                new Claim("UserName", user.Name, ClaimValueTypes.String, Const.Issuer),
+                new Claim("IdNumber", user.IdNumber, ClaimValueTypes.String, Const.Issuer),
+                new Claim("FullName", fullName, ClaimValueTypes.String, Const.Issuer),
             };
             return new ClaimsIdentity(claims, Const.AuthenticationScheme);
         }

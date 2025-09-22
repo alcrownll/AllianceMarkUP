@@ -11,20 +11,15 @@ namespace ASI.Basecode.Data.Repositories
 {
     public class UserRepository : BaseRepository, IUserRepository
     {
-        public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork) 
-        {
+        public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
-        }
+        public IQueryable<User> GetUsers() => this.GetDbSet<User>();
 
-        public IQueryable<User> GetUsers()
-        {
-            return this.GetDbSet<User>();
-        }
+        public User GetUserById(int userId) =>
+            this.GetDbSet<User>().FirstOrDefault(x => x.UserId == userId);
 
-        public bool UserExists(string userId)
-        {
-            return this.GetDbSet<User>().Any(x => x.UserId == userId);
-        }
+        public bool UserExists(int userId) =>
+            this.GetDbSet<User>().Any(x => x.UserId == userId);
 
         public void AddUser(User user)
         {
@@ -32,5 +27,20 @@ namespace ASI.Basecode.Data.Repositories
             UnitOfWork.SaveChanges();
         }
 
+        public void UpdateUser(User user)
+        {
+            this.GetDbSet<User>().Update(user);
+            UnitOfWork.SaveChanges();
+        }
+
+        public void DeleteUser(int userId)
+        {
+            var user = GetUserById(userId);
+            if (user != null)
+            {
+                this.GetDbSet<User>().Remove(user);
+                UnitOfWork.SaveChanges();
+            }
+        }
     }
 }

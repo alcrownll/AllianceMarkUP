@@ -1,17 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ASI.Basecode.Data.Models
 {
     public partial class User
     {
-        public int Id { get; set; }
-        public string UserId { get; set; }
-        public string Name { get; set; }
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int UserId { get; set; }
+        public string FirstName { get; set; }   
+        public string LastName { get; set; }  
+        public string Email { get; set; }
+        public string IdNumber { get; set; }
         public string Password { get; set; }
-        public string CreatedBy { get; set; }
-        public DateTime CreatedTime { get; set; }
-        public string UpdatedBy { get; set; }
-        public DateTime UpdatedTime { get; set; }
+        public string Role { get; set; }
+        public string AccountStatus { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+        public Student Student { get; set; }
+        public Teacher Teacher { get; set; }
+        public UserProfile UserProfile { get; set; }
     }
 }
