@@ -20,10 +20,15 @@ namespace ASI.Basecode.Data
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Student> Students { get; set; }
         public virtual DbSet<Teacher> Teachers { get; set; }
-        public virtual DbSet<UserProfile> UserProfiles { get; set; }  
+        public virtual DbSet<UserProfile> UserProfiles { get; set; }
+        public virtual DbSet<Course> Courses { get; set; }
+        public virtual DbSet<AssignedCourse> AssignedCourses { get; set; }
+        public virtual DbSet<ClassSchedule> ClassSchedules { get; set; }
+        public virtual DbSet<Grade> Grades { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // ---------------- USER ----------------
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -48,6 +53,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // ---------------- STUDENT ----------------
             modelBuilder.Entity<Student>(entity =>
             {
                 entity.HasKey(e => e.StudentId);
@@ -64,6 +70,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // ---------------- TEACHER ----------------
             modelBuilder.Entity<Teacher>(entity =>
             {
                 entity.HasKey(e => e.TeacherId);
@@ -76,6 +83,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // ---------------- USER PROFILE ----------------
             modelBuilder.Entity<UserProfile>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -93,6 +101,68 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Gender).HasMaxLength(20);
                 entity.Property(e => e.Religion).HasMaxLength(50);
                 entity.Property(e => e.Citizenship).HasMaxLength(50);
+            });
+
+            // ---------------- COURSE ----------------
+            modelBuilder.Entity<Course>(entity =>
+            {
+                entity.HasKey(e => e.CourseId);
+
+                entity.Property(e => e.CourseCode).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Description).IsRequired().HasMaxLength(255);
+            });
+
+            // ---------------- ASSIGNED COURSE ----------------
+            modelBuilder.Entity<AssignedCourse>(entity =>
+            {
+                entity.HasKey(e => e.AssignedCourseId);
+
+                entity.HasIndex(e => e.EDPCode).IsUnique();
+
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.Program).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Semester).IsRequired().HasMaxLength(20);
+
+                entity.HasOne(d => d.Course)
+                      .WithMany(p => p.AssignedCourses)
+                      .HasForeignKey(d => d.CourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Teacher)
+                      .WithMany(p => p.AssignedCourses)
+                      .HasForeignKey(d => d.TeacherId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ---------------- CLASS SCHEDULE ----------------
+            modelBuilder.Entity<ClassSchedule>(entity =>
+            {
+                entity.HasKey(e => e.ClassScheduleId);
+
+                entity.Property(e => e.Room).IsRequired().HasMaxLength(50);
+
+                entity.HasOne(d => d.AssignedCourse)
+                      .WithMany(p => p.ClassSchedules)
+                      .HasForeignKey(d => d.AssignedCourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ---------------- ENROLLED COURSE ----------------
+            modelBuilder.Entity<Grade>(entity =>
+            {
+                entity.HasKey(e => e.GradeId);
+
+                entity.Property(e => e.Remarks).HasMaxLength(50);
+
+                entity.HasOne(d => d.Student)
+                      .WithMany(p => p.Grades)
+                      .HasForeignKey(d => d.StudentId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.AssignedCourse)
+                      .WithMany(p => p.Grades)
+                      .HasForeignKey(d => d.AssignedCourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             OnModelCreatingPartial(modelBuilder);

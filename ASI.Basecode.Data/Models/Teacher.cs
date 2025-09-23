@@ -13,5 +13,6 @@ namespace ASI.Basecode.Data.Models
         public string Position { get; set; } 
 
         public User User { get; set; }
+        public ICollection<AssignedCourse> AssignedCourses { get; set; } = new List<AssignedCourse>();
     }
 }

@@ -17,5 +17,6 @@ namespace ASI.Basecode.Data.Models
         public string StudentStatus { get; set; } 
 
         public User User { get; set; }
+        public ICollection<Grade> Grades { get; set; } = new List<Grade>();
     }
 }
