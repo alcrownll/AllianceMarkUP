@@ -28,7 +28,6 @@ namespace ASI.Basecode.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // ---------------- USER ----------------
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -53,7 +52,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ---------------- STUDENT ----------------
+            // STUDENT
             modelBuilder.Entity<Student>(entity =>
             {
                 entity.HasKey(e => e.StudentId);
@@ -70,7 +69,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ---------------- TEACHER ----------------
+            // TEACHER 
             modelBuilder.Entity<Teacher>(entity =>
             {
                 entity.HasKey(e => e.TeacherId);
@@ -83,7 +82,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ---------------- USER PROFILE ----------------
+            // USER PROFILE
             modelBuilder.Entity<UserProfile>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -103,7 +102,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Citizenship).HasMaxLength(50);
             });
 
-            // ---------------- COURSE ----------------
+            // COURSE 
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.HasKey(e => e.CourseId);
@@ -112,7 +111,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Description).IsRequired().HasMaxLength(255);
             });
 
-            // ---------------- ASSIGNED COURSE ----------------
+            // ASSIGNED COURSE 
             modelBuilder.Entity<AssignedCourse>(entity =>
             {
                 entity.HasKey(e => e.AssignedCourseId);
@@ -134,7 +133,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ---------------- CLASS SCHEDULE ----------------
+            // CLASS SCHEDULE
             modelBuilder.Entity<ClassSchedule>(entity =>
             {
                 entity.HasKey(e => e.ClassScheduleId);
@@ -147,7 +146,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ---------------- ENROLLED COURSE ----------------
+            // GRADE
             modelBuilder.Entity<Grade>(entity =>
             {
                 entity.HasKey(e => e.GradeId);

@@ -8,10 +8,9 @@ namespace ASI.Basecode.Data.Models
     public partial class Grade
     {
         [Key]
-        public int GradeId { get; set; }  // PK (renamed from EnrolledCourseId)
-
-        public int StudentId { get; set; }          // FK → Student
-        public int AssignedCourseId { get; set; }   // FK → AssignedCourse
+        public int GradeId { get; set; }
+        public int StudentId { get; set; }       
+        public int AssignedCourseId { get; set; }   
 
         public decimal? Prelims { get; set; }
         public decimal? Midterm { get; set; }
@@ -19,7 +18,6 @@ namespace ASI.Basecode.Data.Models
         public decimal? Final { get; set; }
         public string Remarks { get; set; }
 
-        // Navigation properties
         public Student Student { get; set; }
         public AssignedCourse AssignedCourse { get; set; }
     }
