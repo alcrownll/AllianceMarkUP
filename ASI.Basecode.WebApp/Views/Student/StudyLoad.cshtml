@@ -33,8 +33,6 @@
 }
 
 <div class="container mt-4">
-    <h3>📚 Study Load @ViewBag.StudentName</h3>
-    <hr />
 
     @if (Model == null || !Model.Any())
     {
@@ -51,7 +49,9 @@
                     </div>
                     <div class="subject-details text-muted small">
                         Type: @item.Type • Units: @item.Units •
+                        Prelim: @(item.PrelimGrade?.ToString("0.0") ?? "N/A")•
                         Midterm: @(item.MidtermGrade?.ToString("0.0") ?? "N/A") •
+                        PreFinals: @(item.PreFinalGrade?.ToString("0.0") ?? "N/A") •)
                         Finals: @(item.FinalGrade?.ToString("0.0") ?? "N/A")
                     </div>
                 </div>

@@ -14,6 +14,10 @@
         .subject-card {
             border-left: 4px solid #007bff;
             transition: box-shadow 0.2s;
+            margin-bottom: 10px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
             .subject-card:hover {
@@ -24,18 +28,55 @@
             font-weight: 600;
             font-size: 1.1em;
             margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
         }
 
         .subject-details {
             line-height: 1.5;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .print-btn {
+            margin-left: auto; /* Pushes button to the right */
+            padding: 6px 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+            .print-btn:hover {
+                background-color: #0056b3;
+            }
+
+        /* Print Styles */
+        @@media print {
+            .print-btn {
+                display: none;
+            }
+
+            .subject-card {
+                background: white !important;
+                box-shadow: none !important;
+            }
         }
     </style>
 }
 
-<div class="container mt-4">
-    <h3>📚 Grades for @ViewBag.StudentName</h3>
-    <hr />
+@section Scripts {
+    <script>
+        function printGrades() {
+            window.print();
+        }
+    </script>
+}
 
+<div class="container mt-4">
     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info">No enrolled subjects found.</div>
@@ -43,17 +84,27 @@
     else
     {
         <div class="subject-list">
-            @foreach (var item in Model)
+            @for (int i = 0; i < Model.Count; i++)
             {
-                <div class="subject-card p-3 mb-3 bg-light border rounded">
+                var item = Model[i];
+                <div class="subject-card">
                     <div class="subject-header">
-                        <strong>@item.SubjectCode</strong> — @item.SubjectName
+                        <span>
+                            <strong>@item.SubjectCode</strong> — @item.SubjectName
+                        </span>
+
+                        @if (i == 0) // Only show button on first subject
+                        {
+                            <button class="print-btn" onclick="printGrades()">
+                                🖨️ Print to PDF
+                            </button>
+                        }
                     </div>
-                    <div class="subject-details text-muted small">
+                    <div class="subject-details">
                         Type: @item.Type • Units: @item.Units •
-                        Prelim: @(item.PrelimGrade?.ToString("0.0") ?? "N/A" )•
+                        Prelim: @(item.PrelimGrade?.ToString("0.0") ?? "N/A") •
                         Midterm: @(item.MidtermGrade?.ToString("0.0") ?? "N/A") •
-                        PreFinals: @(item.PreFinalGrade?.ToString("0.0") ?? "N/A") •)
+                        PreFinals: @(item.PreFinalGrade?.ToString("0.0") ?? "N/A") •
                         Finals: @(item.FinalGrade?.ToString("0.0") ?? "N/A")
                     </div>
                 </div>
