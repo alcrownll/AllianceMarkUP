@@ -1,29 +1,120 @@
-﻿<nav class="d-flex flex-column h-100">
-    <ul class="nav flex-column flex-grow-1">
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="Dashboard">🏠 Dashboard</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="Profile">👤 Profile</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="StudyLoad">📚 Study Load</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="Grades">📊 Grades</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="Calendar">📅 Calendar</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" asp-controller="Student" asp-action="Notifications">🔔 Notifications</a>
-        </li>
-    </ul>
+﻿@{
+    Layout = null;
+}
 
-    <!-- Logout button pinned at bottom -->
-    <div class="mt-auto p-2">
-        <form asp-controller="Login" asp-action="StudentLogout" method="post">
-            <button type="submit" class="btn btn-danger w-100">🚪 Logout</button>
-        </form>
-    </div>
-</nav>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sidebar Navigation</title>
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #fff; /* full white background */
+        }
+
+        .sidebar {
+            width: 110px; /* same as .left-sidebar */
+            background: #fff;
+            border-right: 1px solid #e5e7eb;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+
+            .sidebar .nav-link {
+                color: #94a3b8;
+                font-size: 1.6rem;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 1rem 0;
+            }
+
+                .sidebar .nav-link.active,
+                .sidebar .nav-link:hover {
+                    color: #2563eb; /* highlight */
+                }
+
+            .sidebar .logout button {
+                font-size: 0.9rem;
+                color: #6b7280;
+                text-decoration: none;
+                background: none;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                cursor: pointer;
+            }
+
+                .sidebar .logout button:hover {
+                    color: #dc2626; /* red on hover */
+                }
+
+        .logout {
+            position: center;
+            bottom: 1.5rem;
+            width: 100%;
+            text-align: center;
+        }
+
+            .logout i {
+                font-size: 1.4rem;
+                margin-bottom: 0.25rem;
+            }
+    </style>
+</head>
+<body>
+    <nav class="sidebar d-flex flex-column align-items-center py-3">
+        <ul class="nav flex-column flex-grow-1 text-center">
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Dashboard">
+                    <i class="bi bi-grid"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" asp-controller="Student" asp-action="Profile">
+                    <i class="bi bi-person-fill"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="StudyLoad">
+                    <i class="bi bi-people-fill"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Grades">
+                    <i class="bi bi-journal-text"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Calendar">
+                    <i class="bi bi-calendar-event"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Notifications">
+                    <i class="bi bi-bell"></i>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Logout pinned at bottom -->
+        <div class="logout">
+            <form asp-controller="Login" asp-action="StudentLogout" method="post">
+                <button type="submit">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <div>Logout</div>
+                </button>
+            </form>
+        </div>
+    </nav>
+</body>
+</html>

@@ -3,15 +3,338 @@
     ViewData["Title"] = "Profile";
 }
 
-<h2>My Profile</h2>
-<form>
-    <div class="form-group">
-        <label for="studentName">Name</label>
-        <input type="text" id="studentName" class="form-control" value="Test Student" />
+<style>
+    body {
+        background: #eef3f9;
+    }
+
+    .profile-card {
+        background: #fff;
+        border-radius: .75rem;
+        box-shadow: 0 6px 18px rgba(16,24,40,.08);
+        padding: 2rem;
+        max-width: 950px;
+        margin: auto;
+    }
+
+    .meta-info {
+        color: #4b5563;
+        font-size: .95rem;
+        margin-bottom: .25rem;
+    }
+
+        .meta-info span {
+            font-weight: 600;
+        }
+
+    .section-title {
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin: 1.25rem 0 1rem;
+        color: #0f172a;
+        text-transform: uppercase;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: .25rem;
+    }
+
+    .form-select, .form-control {
+        display: block;
+        width: 100%;
+    }
+
+    /* Equal columns for rows with 4 fields */
+    .uniform-row .col-md-3 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+
+    @@media (max-width: 767.98px) {
+        .uniform-row .col-md-3 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+
+    /* Clickable Avatar */
+    .avatar {
+        width: 160px;
+        height: 150px;
+        border-radius: .75rem;
+        background: #4a86c5;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+    }
+
+        .avatar:focus {
+            outline: 3px solid #2563eb;
+            outline-offset: 3px;
+        }
+
+        .avatar svg {
+            width: 55%;
+            height: 55%;
+        }
+
+        .avatar.has-image svg {
+            display: none;
+        }
+
+        .avatar.has-image {
+            background-size: cover;
+            background-position: center;
+        }
+
+    .tiny-hint {
+        font-size: .82rem;
+        color: #6b7280;
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .caption {
+        font-size: .85rem;
+        color: #0d47a1;
+        margin-top: .35rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container my-4">
+    <div class="profile-card">
+        <p class="meta-info">Applicant ID: <span>20152015</span></p>
+        <p class="meta-info">Applicant Name: <span>Jing Yuan</span></p>
+
+        <div class="section-title">Personal Information</div>
+
+        <form enctype="multipart/form-data">
+            <div class="row g-4">
+                <!-- LEFT: Profile photo -->
+                <div class="col-md-3 d-flex flex-column align-items-start">
+                    <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button" aria-label="Upload profile photo">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4" fill="#ffffff" />
+                            <path d="M4 20c0-4 4-7 8-7s8 3 8 7" fill="#ffffff" />
+                        </svg>
+                    </label>
+                    <input class="sr-only" type="file" id="avatarInput" name="ProfilePhoto" accept="image/*">
+                    <small class="tiny-hint mt-1">Click the photo to upload</small>
+                </div>
+
+                <!-- RIGHT -->
+                <div class="col-md-9">
+                    <!-- Row: Admission -->
+                    <div class="row g-3 uniform-row">
+                        <div class="col-md-3">
+                            <label class="form-label">Admission Type</label>
+                            <select class="form-select">
+                                <option>New</option>
+                                <option selected>Old</option>
+                                <option>Transferee</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Department</label>
+                            <select class="form-select">
+                                <option>Arts & Sciences</option>
+                                <option selected>Computer Studies</option>
+                                <option>Engineering</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Program</label>
+                            <select class="form-select">
+                                <option selected>Computer Science</option>
+                                <option>Information Technology</option>
+                                <option>Information Systems</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Year Level</label>
+                            <select class="form-select">
+                                <option>First Year</option>
+                                <option>Second Year</option>
+                                <option>Third Year</option>
+                                <option selected>Fourth Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row: Name -->
+                    <div class="mt-3">
+                        <label class="form-label">Name</label>
+                        <div class="row g-3 uniform-row">
+                            <div class="col-md-3">
+                                <input class="form-control" value="YUAN" />
+                                <div class="caption">(Family Name)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <input class="form-control" value="JING" />
+                                <div class="caption">(First Name)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <input class="form-control" />
+                                <div class="caption">(Middle Name)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <input class="form-control" />
+                                <div class="caption">(Suffix)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Address -->
+            <div class="section-title mt-4">Home Address</div>
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Street / House No.</label>
+                    <input class="form-control" value="LORENZO MANGUBAT ROAD, PUROK SANTAN" />
+                </div>
+            </div>
+            <div class="row g-3 uniform-row">
+                <div class="col-md-3">
+                    <label class="form-label">Province</label>
+                    <select class="form-select">
+                        <option selected>CEBU</option>
+                        <option>BOHOL</option>
+                        <option>NEGROS ORIENTAL</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Municipality</label>
+                    <select class="form-select">
+                        <option selected>LAPU-LAPU CITY (OPON)</option>
+                        <option>CEBU CITY</option>
+                        <option>MANDAUE CITY</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Barangay</label>
+                    <select class="form-select">
+                        <option selected>SOONG</option>
+                        <option>MARIBAGO</option>
+                        <option>PAKNA-AN</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tel No. / Mobile</label>
+                    <input class="form-control" value="+639102030405" />
+                </div>
+            </div>
+
+            <!-- Other Details -->
+            <div class="section-title mt-4">Other Details</div>
+            <div class="row g-3 uniform-row">
+                <div class="col-md-3">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" value="2003-03-17" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Place of Birth</label>
+                    <input class="form-control" value="CEBU CITY" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Age</label>
+                    <input class="form-control" value="22" readonly />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Marital Status</label>
+                    <select class="form-select">
+                        <option selected>SINGLE</option>
+                        <option>MARRIED</option>
+                        <option>WIDOWED</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 uniform-row mt-0">
+                <div class="col-md-3">
+                    <label class="form-label">Gender</label>
+                    <select class="form-select">
+                        <option selected>MALE</option>
+                        <option>FEMALE</option>
+                        <option>OTHER</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" value="JINGYUAN@GMAIL.COM" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Religion</label>
+                    <select class="form-select">
+                        <option selected>ROMAN CATHOLIC</option>
+                        <option>PROTESTANT</option>
+                        <option>OTHER</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Citizenship</label>
+                    <select class="form-select">
+                        <option selected>FILIPINO</option>
+                        <option>DUAL</option>
+                        <option>OTHER</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-12">
+                    <label class="form-label d-block">Do you have any disabilities?</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Disabilities" id="disabilityYes" value="Yes">
+                        <label class="form-check-label" for="disabilityYes">Yes</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Disabilities" id="disabilityNo" value="No" checked>
+                        <label class="form-check-label" for="disabilityNo">No</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </form>
     </div>
-    <div class="form-group">
-        <label for="studentEmail">Email</label>
-        <input type="email" id="studentEmail" class="form-control" value="student@test.com" />
-    </div>
-    <button type="submit" class="btn btn-primary">Update</button>
-</form>
+</div>
+
+<script>
+    (function () {
+      const input = document.getElementById('avatarInput');
+      const preview = document.getElementById('avatarPreview');
+      if (!input || !preview) return;
+
+      preview.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+      });
+
+      input.addEventListener('change', function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          preview.style.backgroundImage = `url('${ev.target.result}')`;
+          preview.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+      });
+    })();
+</script>
