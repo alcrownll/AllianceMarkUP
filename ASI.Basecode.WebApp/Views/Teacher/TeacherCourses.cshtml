@@ -1,7 +1,7 @@
 ﻿@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
-    ViewData["Title"] = "Assigned Courses";
-    ViewData["PageHeader"] = "Assigned Courses";
+    ViewData["Title"] = "Your Courses";
+    ViewData["PageHeader"] = "Your Courses";
 }
 
 @section Styles {
@@ -9,93 +9,89 @@
 }
 
 <div class="container-fluid">
-    <h3 class="mb-4">Your Assigned Courses</h3>
-
-    <!-- Example hardcoded data (replace later with DB model) -->
-    <div class="accordion" id="assignedCoursesAccordion">
-
-        <!-- Course 1 -->
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingCS101">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCS101" aria-expanded="true" aria-controls="collapseCS101">
-                    CS101 – Introduction to Programming
+    <div class="container-fluid">
+        <ul class="nav nav-tabs mb-3" id="gradeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="grade-view-tab" data-bs-toggle="tab" data-bs-target="#grade-view" type="button" role="tab" aria-controls="grade-view" aria-selected="true">
+                    Grade View
                 </button>
-            </h2>
-            <div id="collapseCS101" class="accordion-collapse collapse show" aria-labelledby="headingCS101" data-bs-parent="#assignedCoursesAccordion">
-                <div class="accordion-body">
-
-                    <!-- Tabs for Roster & Grades -->
-                    <ul class="nav nav-tabs" id="cs101Tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="roster-tab-101" data-bs-toggle="tab" data-bs-target="#roster101" type="button" role="tab">👥 Roster</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="grades-tab-101" data-bs-toggle="tab" data-bs-target="#grades101" type="button" role="tab">📝 Grades</button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content p-3 border border-top-0" id="cs101TabsContent">
-                        <!-- Roster -->
-                        <div class="tab-pane fade show active" id="roster101" role="tabpanel">
-                            <table class="table table-sm table-striped">
-                                <thead>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="grade-entry-tab" data-bs-toggle="tab" data-bs-target="#grade-entry" type="button" role="tab" aria-controls="grade-entry" aria-selected="false">
+                    Grade Entry
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content" id="gradeTabsContent">
+            <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
+                <!-- Content for Grade View tab -->
+                <p>Display grades here.</p>
+            </div>
+            <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
+                <!-- Content for Grade Entry tab -->
+                
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h4 class="mb-3">Class Schedule</h4>
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Student ID</th>
-                                        <th>Name</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td>2023-001</td><td>Ana Reyes</td></tr>
-                                    <tr><td>2023-002</td><td>John Cruz</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Grades -->
-                        <div class="tab-pane fade" id="grades101" role="tabpanel">
-                            <table class="table table-sm table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Prelim</th>
-                                        <th>Midterm</th>
-                                        <th>Finals</th>
+                                        <th>EDP Code</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Units</th>
+                                        <th>Date & Time</th>
+                                        <th>Room</th>
+                                        <th>Section</th>
+                                        <th>Course</th>
+                                        <th>Status</th>
+                                        <th>Exam</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Ana Reyes</td>
-                                        <td><input type="number" class="form-control form-control-sm" value="85" /></td>
-                                        <td><input type="number" class="form-control form-control-sm" value="88" /></td>
-                                        <td><input type="number" class="form-control form-control-sm" value="90" /></td>
-                                    </tr>
-                                    <tr>
-                                        <td>John Cruz</td>
-                                        <td><input type="number" class="form-control form-control-sm" value="80" /></td>
-                                        <td><input type="number" class="form-control form-control-sm" value="83" /></td>
-                                        <td><input type="number" class="form-control form-control-sm" value="85" /></td>
+                                        <td>37256</td>
+                                        <td>CS-FREEEL</td>
+                                        <td>LEC</td>
+                                        <td>3</td>
+                                        <td>MWF ( 6:30 PM - 7:30 PM)</td>
+                                        <td>A2 404</td>
+                                        <td>4A</td>
+                                        <td>BSCS</td>
+                                        <td>9/28/25</td>
+                                        <td>
+                                            <select class="form-select form-select-sm">
+                                                <option selected>Prelim</option>
+                                                <option value="Midterm">Midterm</option>
+                                                <option value="Semi-final">Semi-final</option>
+                                                <option value="Final">Final</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary" title="Edit">
+                                                    Edit
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" title="Upload">
+                                                    Upload
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success" title="Save">
+                                                    To PDF
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <button class="btn btn-primary btn-sm">💾 Save Grades</button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Course 2 -->
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingIT204">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIT204" aria-expanded="false" aria-controls="collapseIT204">
-                    IT204 – Database Systems
-                </button>
-            </h2>
-            <div id="collapseIT204" class="accordion-collapse collapse" aria-labelledby="headingIT204" data-bs-parent="#assignedCoursesAccordion">
-                <div class="accordion-body">
-                    <p>Course details and student roster will go here.</p>
-                </div>
+                
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
