@@ -1,28 +1,53 @@
-﻿/*main-site.css */
+﻿/* =============== Fixed sidebars layout =============== */
+
+/* Base container (can stay flex for structure, but sidebars are fixed) */
 .layout-container {
-    display: flex;
-    height: 100vh; /* take the full viewport height */
+    display: block; /* block so fixed sidebars don't affect flow */
+    min-height: 100vh;
     background: #E5EFFB;
 }
 
+/* LEFT SIDEBAR — pinned */
 .left-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
     width: 110px;
-    background: #ffffff;
+    min-width: 110px;
+    max-width: 110px;
+    background: #fff;
     padding: 1rem;
+    overflow-y: auto; /* scroll its own content if tall */
+    z-index: 1000; /* stay above main if anything overlaps */
+    display: flex;
+    flex-direction: column;
 }
 
+/* RIGHT SIDEBAR — pinned */
 .right-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
     width: 280px;
+    min-width: 280px;
+    max-width: 280px;
     background: #fafafa;
     padding: 1rem;
     overflow-y: auto;
+    z-index: 1000;
 }
 
+/* MAIN COLUMN — give it room between the pinned sidebars */
 .main-content {
+    margin-left: 110px; /* must match .left-sidebar width */
+    margin-right: 280px; /* must match .right-sidebar width */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
     background: transparent;
+    min-width: 0; /* allow shrink */
 }
 
 .main-header {
@@ -32,32 +57,22 @@
 }
 
 .content {
+    flex: 1 1 auto;
     padding: 1rem;
     overflow-y: auto;
+    overflow-x: hidden; /* prevent horizontal spill */
+    min-width: 0; /* allow shrink */
 }
 
-/* sidebar design */
-.left-sidebar {
+/* Optional helpers for sidebar inner layout */
+.left-sidebar nav {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    flex-grow: 1;
 }
 
-    .left-sidebar nav {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    .left-sidebar .btn {
-        font-weight: bold;
-    }
-
-.right-sidebar {
-    width: 280px;
-    background: #fafafa;
-    padding: 1rem;
-    overflow-y: auto;
+.left-sidebar .btn {
+    font-weight: bold;
 }
 
 .right-sidebar-content {
@@ -65,3 +80,63 @@
     flex-direction: column;
     gap: 1rem;
 }
+
+/* =============== FullCalendar containment =============== */
+
+/* Keep the calendar inside the main column width */
+#calendar,
+.fc {
+    width: 100%;
+    max-width: 100%; 
+    box-sizing: border-box;
+}
+
+    /* Sometimes FullCalendar adds internal scrollers; keep them inside width */
+    .fc .fc-scroller,
+    .fc .fc-scrollgrid {
+        overflow: hidden;
+    }
+
+    /* Optional: wrap header if space is tight */
+    .fc .fc-toolbar.fc-header-toolbar {
+        flex-wrap: wrap;
+    }
+
+/* Optional: if you wrap calendar in a .panel */
+.panel {
+    min-width: 0;
+}
+
+.calendar-wrapper {
+    background: #fff;
+    border-radius: 1rem; /* rounded corners */
+    padding: 1.5rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+
+
+/* Make the inline calendar fill the card and hide the text box it creates */
+.calendar-widget .flatpickr-input {
+    display: none;
+}
+/* Mini calendar sizing tweaks */
+.calendar-widget .flatpickr-calendar {
+    max-width: 220px; /* shrink overall calendar */
+    margin: 0 auto; /* center it in the sidebar card */
+    font-size: 0.8rem; /* scale down text a bit */
+}
+
+/* Day cells smaller */
+.calendar-widget .flatpickr-day {
+    max-width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 0.75rem;
+}
+
+/* Shrink the header (month/year + arrows) */
+.calendar-widget .flatpickr-months {
+    font-size: 0.85rem;
+}
+

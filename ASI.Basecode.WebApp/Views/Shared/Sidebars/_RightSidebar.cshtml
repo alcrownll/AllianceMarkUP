@@ -9,20 +9,12 @@
 
     <!-- Calendar -->
     <div class="calendar-widget mb-3 p-3 border rounded">
-        <h6>📅 Calendar</h6>
-        @if (User.IsInRole("Student"))
-        {
-            <p>Study Load schedule here...</p>
-        }
-        else if (User.IsInRole("Teacher"))
-        {
-            <p>Class schedule here...</p>
-        }
-        else if (User.IsInRole("Admin"))
-        {
-            <p>Admin events here...</p>
-        }
+
+        <!-- Keep the input VISIBLE; Flatpickr will insert the inline calendar here -->
+        <input id="miniCalendar" type="text" aria-label="Mini calendar" />
     </div>
+
+
 
     <!-- Upcoming Activities -->
     <div class="upcoming-widget mb-3 p-3 border rounded">

@@ -1,14 +1,32 @@
 ﻿@{
+    ViewData["Title"] = "Calendar";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    var isAdmin = User.IsInRole("Admin");
 }
 
-<div class="calendar-container">
-    <h3>@ViewData["PageHeader"]</h3>
-    <p>This is the shared calendar view. The events shown here will depend on the user’s role.</p>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script type="module" src="~/js/calendar.js"></script>
 
-    <!-- Example placeholder calendar -->
-    <div class="calendar-box">
-        <p>📅 Event 1 - Role-specific data here</p>
-        <p>📅 Event 2 - Role-specific data here</p>
+
+<div class="calendar-wrapper shadow-sm rounded-4 bg-white p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold mb-0">📅 Calendar of Events</h3>
+        @if (isAdmin)
+        {
+            <button class="btn btn-primary" id="addEventBtn">+ Add Event</button>
+        }
+    </div>
+
+    <!-- Pass flags to JS via data-* -->
+    <div id="calendar"
+         data-is-admin="@(isAdmin ? "true" : "false")"
+         data-events-url="/api/events">
     </div>
 </div>
+
+@* Modal markup stays here (UI) *@
+@await Html.PartialAsync("_EventModal")  @* your modal partial *@
+
+<!-- Load your page script (as module) -->
+<script type="module" src="~/js/calendar.js"></script>

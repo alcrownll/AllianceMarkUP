@@ -1,0 +1,43 @@
+﻿@* /Views/Shared/_EventModal.cshtml *@
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="eventForm" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="eventId">
+                <div class="mb-2">
+                    <label class="form-label">Title</label>
+                    <input id="title" class="form-control" required />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Start</label>
+                    <input id="start" type="datetime-local" class="form-control" required />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">End</label>
+                    <input id="end" type="datetime-local" class="form-control" />
+                </div>
+                <div class="form-check mb-2">
+                    <input id="allDay" class="form-check-input" type="checkbox">
+                    <label class="form-check-label">All day</label>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Location</label>
+                    <input id="location" class="form-control" />
+                </div>
+                <div>
+                    <label class="form-label">Description</label>
+                    <textarea id="description" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="deleteBtn" type="button" class="btn btn-outline-danger me-auto d-none">Delete</button>
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </form>
+    </div>
+</div>
