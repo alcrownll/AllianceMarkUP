@@ -1,0 +1,140 @@
+.page-wrap {
+    padding: 1rem 1.25rem;
+    background: #E5EFFB;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+.brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #0f172a;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.tabs {
+    display: flex;
+    gap: .5rem;
+}
+
+.tab {
+    padding: .5rem .75rem;
+    border-radius: .5rem;
+    text-decoration: none;
+    color: #1f2937;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    font-size: .95rem;
+    cursor: pointer;
+    transition: background .2s;
+}
+
+    .tab:hover {
+        background: #f3f4f6;
+    }
+
+    .tab.active {
+        background: #1d4ed8;
+        color: #fff;
+        border-color: #1d4ed8;
+    }
+
+.actions {
+    display: flex;
+    gap: .5rem;
+}
+
+.table-wrap {
+    background: #fff;
+    border-radius: .75rem;
+    box-shadow: 0 6px 18px rgba(16,24,40,.08);
+    overflow: auto;
+}
+
+.accounts-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .accounts-table thead th {
+        text-align: left; 
+        padding: .75rem 1rem;
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 600;
+        font-size: .95rem;
+        color: #374151;
+    }
+
+    .accounts-table tbody td {
+        padding: .75rem 1rem;
+        text-align: center; 
+        font-size: .9rem;
+        color: #111827;
+    }
+
+    .accounts-table tbody tr:nth-child(even) {
+        background: #fbfdff;
+    }
+
+.empty-row {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #6b7280;
+    font-size: .9rem;
+}
+
+/*para color red pls baaaaa*/
+/*di mo gana basta mo red if kani na file ang latest na modify*/
+.btn.btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+    .btn.btn-danger:hover {
+        background-color: #bb2d3b !important;
+        border-color: #b02a37 !important;
+    }
+
+.filters-row th {
+    background: #fff;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.filters-row .form-select,
+.filters-row .form-control {
+    width: 100%;
+    padding: .375rem .5rem;
+    font-size: .85rem;
+    border: 1px solid #d1d5db;
+    border-radius: .375rem;
+}
+
+.chip {
+    display: inline-block;
+    padding: .125rem .5rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: .8rem;
+    font-weight: 500;
+}
+
+.row-actions {
+    display: flex;
+    gap: .25rem;
+    justify-content: center;
+}

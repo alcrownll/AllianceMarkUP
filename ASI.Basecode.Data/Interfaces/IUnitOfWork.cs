@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Interfaces
 {
@@ -18,5 +21,15 @@ namespace ASI.Basecode.Data.Interfaces
         /// Saves the changes to database
         /// </summary>
         void SaveChanges();
+
+        //dili na ni gikan sa alliance dzae
+        Task<int> SaveChangesAsync(CancellationToken ct = default);
+
+        Task BeginTransactionAsync(CancellationToken ct = default);
+        Task CommitAsync(CancellationToken ct = default);
+        Task RollbackAsync(CancellationToken ct = default);
+
+        bool HasActiveTransaction { get; }
+        IDbContextTransaction? CurrentTransaction { get; }
     }
 }
