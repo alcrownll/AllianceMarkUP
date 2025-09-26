@@ -10,6 +10,7 @@ namespace ASI.Basecode.Data.Interfaces
     public interface ITeacherRepository
     {
         IQueryable<Teacher> GetTeachers();
+        IQueryable<Teacher> GetTeachersWithUser();
         Teacher GetTeacherById(int teacherId);
         void AddTeacher(Teacher teacher);
         void UpdateTeacher(Teacher teacher);

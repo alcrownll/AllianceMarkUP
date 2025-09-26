@@ -1,7 +1,7 @@
-﻿@{
-    Layout = null;
-    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    Func<string, bool> isActive = a => string.Equals(currentAction, a, System.StringComparison.OrdinalIgnoreCase);
+﻿﻿@{
+Layout = null;
+string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+Func<string, bool> isActive = a => string.Equals(currentAction, a, System.StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -28,7 +28,7 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link @(isActive("Accounts") ? "active" : "")" asp-controller="Admin" asp-action="Accounts">
+                <a class="nav-link @(isActive("Accounts") ? "active" : "")" asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="students">
                     <span class="icon-wrap">
                         <i class="bi bi-people icon-outline"></i>
                         <i class="bi bi-people-fill icon-fill"></i>

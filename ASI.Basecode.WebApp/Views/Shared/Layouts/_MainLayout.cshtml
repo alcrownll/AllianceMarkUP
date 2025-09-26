@@ -1,4 +1,4 @@
-﻿<!--_MainLayout.cshtml-->
+﻿`<!--_MainLayout.cshtml-->
 
 @using static ASI.Basecode.Resources.Views.Screen
 <!DOCTYPE html>
@@ -29,15 +29,15 @@
     <div class="layout-container d-flex">
         <!-- LEFT SIDEBAR (Role-based Navigation) -->
         <aside class="left-sidebar">
-            @if (User.IsInRole("Student"))
+            @if (User != null && User.IsInRole("Student"))
             {
                 @await Html.PartialAsync("Sidebars/_LeftSidebarStudent")
             }
-            else if (User.IsInRole("Teacher"))
+            else if (User != null && User.IsInRole("Teacher"))
             {
                 @await Html.PartialAsync("Sidebars/_LeftSidebarTeacher")
             }
-            else if (User.IsInRole("Admin"))
+            else if (User != null && User.IsInRole("Admin"))
             {
                 @await Html.PartialAsync("Sidebars/_LeftSidebarAdmin")
             }

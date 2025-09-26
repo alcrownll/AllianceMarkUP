@@ -1,10 +1,8 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using Basecode.Data.Repositories;
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore; 
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
@@ -14,6 +12,11 @@ namespace ASI.Basecode.Data.Repositories
         public StudentRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
         public IQueryable<Student> GetStudents() => this.GetDbSet<Student>();
+
+        public IQueryable<Student> GetStudentsWithUser() =>
+            this.GetDbSet<Student>()
+                .Include(s => s.User)
+                .AsNoTracking();
 
         public Student GetStudentById(int studentId) =>
             this.GetDbSet<Student>().FirstOrDefault(x => x.StudentId == studentId);

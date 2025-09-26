@@ -63,10 +63,11 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.YearLevel).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.StudentStatus).IsRequired().HasMaxLength(20);
 
+                entity.HasIndex(e => e.UserId).IsUnique();        
                 entity.HasOne(d => d.User)
-                      .WithOne(p => p.Student)
-                      .HasForeignKey<Student>(d => d.StudentId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .WithOne(p => p.Student)                    
+                      .HasForeignKey<Student>(d => d.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);         
             });
 
             // TEACHER 
@@ -76,10 +77,11 @@ namespace ASI.Basecode.Data
 
                 entity.Property(e => e.Position).IsRequired().HasMaxLength(50);
 
+                entity.HasIndex(e => e.UserId).IsUnique();        
                 entity.HasOne(d => d.User)
-                      .WithOne(p => p.Teacher)
-                      .HasForeignKey<Teacher>(d => d.TeacherId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .WithOne(p => p.Teacher)                    
+                      .HasForeignKey<Teacher>(d => d.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);         
             });
 
             // USER PROFILE
