@@ -42,6 +42,10 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             this._services.AddScoped<IStudentRepository, StudentRepository>();
             this._services.AddScoped<ITeacherRepository, TeacherRepository>();
+            this._services.AddScoped<ICourseRepository, CourseRepository>();
+            this._services.AddScoped<IAssignedCourseRepository, AssignedCourseRepository>();
+            this._services.AddScoped<IClassScheduleRepository, ClassScheduleRepository>();
+            this._services.AddScoped<IGradeRepository, GradeRepository>();
 
             // Manager Class
             this._services.AddScoped<SignInManager>();
