@@ -1,13 +1,266 @@
 ﻿@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Teacher Dashboard";
-    ViewData["PageHeader"] = "Teacher Dashboard"; // Match layout
+    ViewData["PageHeader"] = "Teacher Dashboard";
 }
 
 @section Styles {
+    <!-- Use teacher-specific CSS -->
     <link rel="stylesheet" href="~/css/main-site.css" />
 }
 
-<h2>Welcome Teacher!</h2>
-<p>This is your teacher dashboard.</p>
+<div class="dash-wrap grid teacher-dashboard">
+    <!-- KPI row -->
+    <div class="grid kpis">
+        <!-- Classes Today -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Classes Today</h4>
+                <div class="value">4</div>
+                <div class="meta">First class at 8:00 AM</div>
+            </div>
+            <div class="icon">📚</div>
+        </div>
 
+        <!-- Sections Handled -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Sections Handled</h4>
+                <div class="value">6</div>
+                <div class="meta">3 courses this term</div>
+            </div>
+            <div class="icon">👥</div>
+        </div>
+
+        <!-- Pending Grading -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Pending Grading</h4>
+                <div class="value">28</div>
+                <div class="meta">Due within 3 days</div>
+            </div>
+            <div class="icon">📝</div>
+        </div>
+    </div>
+
+    <!-- Teaching Highlights -->
+    <div class="card p24 grid hi">
+        <div>
+            <div class="hi-title">Teaching Highlights</div>
+
+            <div class="hi-inner">
+                <!-- Donut (Grading Progress) -->
+                <div class="ring-wrap">
+                    <canvas id="gradingRing" class="ring-canvas"></canvas>
+                    <div class="ring-legend">
+                        <div>Graded: 72%</div>
+                        <div>Remaining: 28%</div>
+                    </div>
+                </div>
+
+                <!-- Line (Submissions over period) -->
+                <div class="chart-col">
+                    <div class="tabs">
+                        <div class="tab active" id="tabWeeks">Last 8 Weeks</div>
+                        <div class="tab" id="tabCourse">By Course</div>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="subsLine"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom panels -->
+    <div class="grid two-cols">
+        <div class="card p24">
+            <div class="panel-title">Announcements</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot">📣</div>
+                    <div>
+                        <div class="i-title">Midterm grade posting window</div>
+                        <div class="i-sub">Registrar</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">09/23/25</div>
+                </div>
+                <div class="item">
+                    <div class="dot">🏫</div>
+                    <div>
+                        <div class="i-title">Faculty meeting schedule</div>
+                        <div class="i-sub">Dean's Office</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">09/20/25</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p24">
+            <div class="panel-title">Tasks &amp; Reminders</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot is-accent">✅</div>
+                    <div>
+                        <div class="i-title">Finalize IT201 Midterm rubric</div>
+                        <div class="i-sub">Due: Tomorrow</div>
+                        <a class="link" href="#">Open &gt;</a>
+                    </div>
+                    <div class="i-meta">High</div>
+                </div>
+                <div class="item">
+                    <div class="dot">🗂️</div>
+                    <div>
+                        <div class="i-title">Upload CS301 quiz scores</div>
+                        <div class="i-sub">Portal &gt; Grades</div>
+                        <a class="link" href="#">Open &gt;</a>
+                    </div>
+                    <div class="i-meta">Medium</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ---------- Donut: Grading Progress ----------
+        const gradedPct = 0.72;
+
+        new Chart(document.getElementById('gradingRing'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [gradedPct, 1 - gradedPct],
+                    borderWidth: 0,
+                    backgroundColor: ['#22c55e', '#e8eef7'],
+                    cutout: '78%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            },
+            plugins: [{
+                id: 'centerTextTeacher',
+                afterDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    const cx = (chartArea.left + chartArea.right) / 2;
+                    const cy = (chartArea.top + chartArea.bottom) / 2;
+                    ctx.save();
+                    ctx.font = '700 44px Inter, system-ui';
+                    ctx.fillStyle = '#22c55e';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(Math.round(gradedPct * 100) + '%', cx, cy - 12);
+                    ctx.font = '12px Inter, system-ui';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('Grading Progress', cx, cy + 18);
+                    ctx.restore();
+                }
+            }]
+        });
+
+        // ---------- Line/Bar: Submissions ----------
+        const ctxLine = document.getElementById('subsLine');
+        let line;
+
+        const weeklyData = [18, 24, 21, 30, 26, 34, 29, 33];
+        const byCourseData = {
+            labels: ['IT201', 'CS301', 'CS302', 'MATH205'],
+            values: [56, 43, 37, 22]
+        };
+
+        function drawWeekly() {
+            if (line) line.destroy();
+            line = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['W-1', 'W-2', 'W-3', 'W-4', 'W-5', 'W-6', 'W-7', 'W-8'],
+                    datasets: [{
+                        data: weeklyData,
+                        tension: .35,
+                        pointRadius: 4,
+                        pointHoverRadius: 5,
+                        borderWidth: 2,
+                        fill: false,
+                        borderColor: '#2563eb',
+                        backgroundColor: '#2563eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 12 } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#eef2f7' },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function drawByCourse() {
+            if (line) line.destroy();
+            line = new Chart(ctxLine, {
+                type: 'bar',
+                data: {
+                    labels: byCourseData.labels,
+                    datasets: [{
+                        data: byCourseData.values,
+                        borderWidth: 0,
+                        backgroundColor: '#2563eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#eef2f7' },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Initial draw
+        drawWeekly();
+
+        // Tabs
+        const tabWeeks = document.getElementById('tabWeeks');
+        const tabCourse = document.getElementById('tabCourse');
+
+        tabWeeks.addEventListener('click', () => {
+            tabWeeks.classList.add('active');
+            tabCourse.classList.remove('active');
+            drawWeekly();
+        });
+
+        tabCourse.addEventListener('click', () => {
+            tabCourse.classList.add('active');
+            tabWeeks.classList.remove('active');
+            drawByCourse();
+        });
+    </script>
+}

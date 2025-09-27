@@ -328,7 +328,7 @@ body {
     margin: 2rem 0 1.5rem;
 }
 
-/* ---------- Page ---------- */
+/* ---------- STUDENT DASHBOARD ---------- */
 body {
     background: #E5EFFB;
 }
@@ -342,7 +342,6 @@ body {
     gap: 16px;
 }
 
-/* ---------- Card ---------- */
 .card {
     background: #fff;
     border-radius: 14px;
@@ -357,7 +356,7 @@ body {
         padding: 24px;
     }
 
-/* ---------- KPI row ---------- */
+/* KPI row */
 .kpis {
     grid-template-columns: repeat(12,1fr);
 }
@@ -416,7 +415,7 @@ body {
         color: #2563eb;
     }
 
-/* ---------- Academic Highlights ---------- */
+/* Academic Highlights */
 .hi {
     grid-template-columns: 1fr;
 }
@@ -496,7 +495,7 @@ body {
         height: 100% !important;
     }
 
-/* ---------- Bottom two panels ---------- */
+/* Bottom two panels  */
 .two-cols {
     grid-template-columns: 1fr 1fr;
 }
@@ -558,7 +557,6 @@ body {
     font-weight: 700;
 }
 
-/* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
     .hi-inner {
         grid-template-columns: 320px 1fr;
@@ -615,7 +613,7 @@ body {
     background: #E5EFFB;
 }
 
-/* ==== Layout: match dashboard width ==== */
+/*  Layout: match dashboard width */
 .studyload-container {
     max-width: 1200px; /* same width as dashboard */
     margin: 0 auto;
@@ -751,7 +749,6 @@ body {
     box-shadow: 0 6px 18px rgba(29,78,216,.25);
 }
 
-/* ==== Responsive ==== */
 @media (max-width: 992px) {
     .studyload-container {
         padding: 10px 24px 20px;
@@ -772,5 +769,194 @@ body {
 
     .sl-infogrid {
         grid-template-columns: 100px 1fr;
+    }
+}
+
+/* ================= TEACHER DASHBOARD (SCOPED) ================= */
+/* Add class "teacher-dashboard" to the page wrapper to apply these */
+.teacher-dashboard {
+    --ink: #0f172a;
+    --muted: #6b7280;
+    --muted-2: #64748b;
+    --line: #e5e7eb;
+    --panel: #ffffff;
+    --bg: #E5EFFB;
+    --brand: #2563eb; /* charts/links */
+    --accent: #22c55e; /* grading progress, dots */
+    --chip: #eef5ff; /* soft icon bg */
+}
+
+    /* Inherit your shared dashboard layout; only overrides/accents below */
+    .teacher-dashboard .kpi .badge {
+        color: var(--accent);
+    }
+
+    /* Donut + legend */
+    .teacher-dashboard .ring-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .teacher-dashboard .ring-legend {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .teacher-dashboard .ring-canvas {
+        width: 260px !important;
+        height: 260px !important;
+    }
+
+    /* Highlights layout (donut | chart) */
+    .teacher-dashboard .hi-inner {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 28px;
+        align-items: start;
+    }
+
+    /* Tabs */
+    .teacher-dashboard .tabs {
+        align-self: flex-start;
+        display: inline-flex;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 999px;
+        margin-bottom: 10px;
+    }
+
+    .teacher-dashboard .tab {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .teacher-dashboard .tab.active {
+            background: var(--brand);
+            color: #fff;
+        }
+
+    /* Chart area controls canvas height */
+    .teacher-dashboard .chart-area {
+        position: relative;
+        width: 100%;
+        height: 320px;
+    }
+
+        .teacher-dashboard .chart-area canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+    /* Bottom panels */
+    .teacher-dashboard .panel-title {
+        font-weight: 800;
+        color: var(--ink);
+        font-size: 16px;
+    }
+
+    .teacher-dashboard .list {
+        margin-top: 12px;
+    }
+
+    .teacher-dashboard .item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid #eef2f7;
+    }
+
+        .teacher-dashboard .item + .item {
+            margin-top: 10px;
+        }
+
+    .teacher-dashboard .dot {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--chip);
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        color: var(--brand);
+    }
+
+        .teacher-dashboard .dot.is-accent {
+            background: #eafaf0;
+            color: var(--accent);
+        }
+
+    .teacher-dashboard .i-title {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: 14px;
+    }
+
+    .teacher-dashboard .i-sub {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .teacher-dashboard .i-meta {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted-2);
+    }
+
+    .teacher-dashboard .link {
+        font-size: 12px;
+        color: var(--brand);
+        font-weight: 700;
+    }
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .teacher-dashboard .hi-inner {
+        grid-template-columns: 320px 1fr;
+    }
+
+    .teacher-dashboard .ring-canvas {
+        width: 240px !important;
+        height: 240px !important;
+    }
+}
+
+@media (max-width: 1100px) {
+    .teacher-dashboard .two-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 800px) {
+    .teacher-dashboard .hi-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .teacher-dashboard .chart-area {
+        height: 280px;
+    }
+
+    .teacher-dashboard .ring-canvas {
+        width: 220px !important;
+        height: 220px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .teacher-dashboard .chart-area {
+        height: 240px;
+    }
+
+    .teacher-dashboard .ring-canvas {
+        width: 200px !important;
+        height: 200px !important;
     }
 }
