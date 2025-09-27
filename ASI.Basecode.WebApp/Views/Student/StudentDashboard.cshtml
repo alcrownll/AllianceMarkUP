@@ -1,14 +1,228 @@
-﻿<!--StudentDashboard.cshtml-->
-
-@{
+﻿@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Student Dashboard";
-    ViewData["PageHeader"] = "Student Dashboard"; // Match layout
+    ViewData["PageHeader"] = "Student Dashboard";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/student-dashboard.css" />
 }
 
-<h2>Welcome Student!</h2>
-<p>This is your student dashboard.</p>
+<div class="dash-wrap grid">
+    <!-- KPI row -->
+    <div class="grid kpis">
+        <!-- Cumulative GWA -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Cumulative GWA</h4>
+                <div class="value">1.58</div>
+                <div class="meta">Eligible for <span class="badge">Dean’s List</span></div>
+            </div>
+            <div class="icon">👥</div>
+        </div>
+
+        <!-- Year and Program -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Year and Program</h4>
+                <div class="value">4TH - BSCS</div>
+                <div class="meta">Irregular</div>
+            </div>
+            <div class="icon">🧩</div>
+        </div>
+
+        <!-- Semester Units -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Semester Units</h4>
+                <div class="value">14</div>
+                <div class="meta">Light Course Load</div>
+            </div>
+            <div class="icon">📄</div>
+        </div>
+    </div>
+
+    <!-- Academic Highlights -->
+    <div class="card p24 grid hi">
+        <div>
+            <div class="hi-title">Academic Highlights</div>
+
+            <div class="hi-inner">
+                <!-- Donut (fixed square, no stretch) -->
+                <div class="ring-wrap">
+                    <canvas id="gpaRing" class="ring-canvas"></canvas>
+                    <div class="ring-legend">
+                        <div>Actual Total Units Earned:</div>
+                        <div>Academic Units:</div>
+                    </div>
+                </div>
+
+                <!-- Line (occupies all remaining space on the right) -->
+                <div class="chart-col">
+                    <div class="tabs">
+                        <div class="tab active" id="tabSem1">1st Semester</div>
+                        <div class="tab" id="tabSem2">2nd Semester</div>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="termLine"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom panels -->
+    <div class="grid two-cols">
+        <div class="card p24">
+            <div class="panel-title">Announcements</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot">🔔</div>
+                    <div>
+                        <div class="i-title">4th Year Skills Test</div>
+                        <div class="i-sub">College of Computer Studies</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/17/25</div>
+                </div>
+                <div class="item">
+                    <div class="dot">🗓️</div>
+                    <div>
+                        <div class="i-title">Enrollment opens next week</div>
+                        <div class="i-sub">Registrar</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/15/25</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p24">
+            <div class="panel-title">Student Life</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot">🎮</div>
+                    <div>
+                        <div class="i-title">CCS conducts first stud...</div>
+                        <div class="i-sub">Bits &amp; Bytes</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/17/25</div>
+                </div>
+                <div class="item">
+                    <div class="dot">📷</div>
+                    <div>
+                        <div class="i-title">Photography club orientation</div>
+                        <div class="i-sub">Campus Org</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/10/25</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ---------- Donut: Current GPA (placeholder) ----------
+        const gpa = 3.60;
+        const maxGpa = 4.00;
+        const pct = gpa / maxGpa;
+
+        new Chart(document.getElementById('gpaRing'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [pct, 1 - pct],
+                    borderWidth: 0,
+                    backgroundColor: ['#EF4444', '#e8eef7'],
+                    cutout: '78%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,   // keep perfect circle
+                aspectRatio: 1,              // square canvas
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            },
+            plugins: [{
+                id: 'centerText',
+                afterDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    const cx = (chartArea.left + chartArea.right) / 2;
+                    const cy = (chartArea.top + chartArea.bottom) / 2;
+                    ctx.save();
+                    ctx.font = '700 44px Inter, system-ui';
+                    ctx.fillStyle = '#ef4444';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(gpa.toFixed(2), cx, cy - 12);
+                    ctx.font = '12px Inter, system-ui';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('Current GPA', cx, cy + 18);
+                    ctx.restore();
+                }
+            }]
+        });
+
+        // ---------- Line: term scores (placeholders) ----------
+        const ctxLine = document.getElementById('termLine');
+        let line;
+        const datasets = {
+            sem1: [3.0, 2.4, 3.2, 3.2],
+            sem2: [3.5, 2.9, 3.1, 2.7]
+        };
+
+        function drawLine(data) {
+            if (line) line.destroy();
+            line = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['Prelims','Midterms','SemiFinals','Finals'],
+                    datasets: [{
+                        data,
+                        tension:.35,
+                        pointRadius:4,
+                        pointHoverRadius:5,
+                        borderWidth:2,
+                        fill:false,
+                        borderColor:'#2563eb',
+                        backgroundColor:'#2563eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,   // fill the .chart-area height
+                    layout: { padding: { right: 12 } },
+                    scales: {
+                        y: {
+                            min: 1, max: 5, reverse: true,
+                            grid: { color: '#eef2f7' },
+                            ticks: { stepSize: .5, color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        drawLine(datasets.sem1);
+
+        // Tabs
+        const t1 = document.getElementById('tabSem1');
+        const t2 = document.getElementById('tabSem2');
+        t1.addEventListener('click', () => {
+            t1.classList.add('active'); t2.classList.remove('active');
+            drawLine(datasets.sem1);
+        });
+        t2.addEventListener('click', () => {
+            t2.classList.add('active'); t1.classList.remove('active');
+            drawLine(datasets.sem2);
+        });
+    </script>
+}
