@@ -1,3 +1,10 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.WebApp.Models;
@@ -6,11 +13,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -19,17 +21,23 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IGradeRepository _gradeRepository;
         private readonly IStudentRepository _studentRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IClassScheduleRepository _classScheduleRepository;
 
         public StudentController(
             IGradeRepository gradeRepository,
             IStudentRepository studentRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IClassScheduleRepository classScheduleRepository)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
             _userRepository = userRepository;
+            _classScheduleRepository = classScheduleRepository;
         }
 
+        // --------------------------------------------------------------------
+        // Demo sign-in (kept)
+        // --------------------------------------------------------------------
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> StudentDashboard()
@@ -44,7 +52,6 @@ namespace ASI.Basecode.WebApp.Controllers
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync("ASI_Basecode", principal);
-
             return RedirectToAction("Dashboard");
         }
 
@@ -62,13 +69,99 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Profile.cshtml");
         }
 
+        // --------------------------------------------------------------------
+        // STUDY LOAD: Grades → AssignedCourses → Courses + ClassSchedules
+        // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
-        public IActionResult StudyLoad()
+        [HttpGet]
+        public async Task<IActionResult> StudyLoad()
         {
             ViewData["PageHeader"] = "Study Load";
-            return View();
+
+            // Identify the logged-in user via Session
+            var idNumber = HttpContext.Session.GetString("IdNumber");
+            if (string.IsNullOrEmpty(idNumber))
+                return RedirectToAction("StudentLogin", "Account");
+
+            var user = await _userRepository.GetUsers()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
+
+            if (user == null)
+                return View(new StudentStudyLoadViewModel());
+
+            // Student for this user
+            var student = await _studentRepository.GetStudents()
+                .Include(s => s.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.UserId == user.UserId);
+
+            if (student == null)
+                return View(new StudentStudyLoadViewModel());
+
+            // Enrollments via Grades
+            var grades = await _gradeRepository.GetGrades()
+                .Where(g => g.StudentId == student.StudentId)
+                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
+                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Teacher).ThenInclude(t => t.User)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var assignedCourseIds = grades.Select(g => g.AssignedCourseId).Distinct().ToList();
+
+            // Schedules for those courses
+            var schedules = await _classScheduleRepository.GetClassSchedules()
+                .Where(cs => assignedCourseIds.Contains(cs.AssignedCourseId))
+                .AsNoTracking()
+                .ToListAsync();
+
+            var schedLookup = schedules
+                .GroupBy(s => s.AssignedCourseId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Project to rows
+            var rows = grades.Select(g =>
+            {
+                var ac = g.AssignedCourse;
+                var course = ac?.Course;
+                var tchUser = ac?.Teacher?.User;
+
+                schedLookup.TryGetValue(ac?.AssignedCourseId ?? 0, out var schedsForCourse);
+
+                return new StudentStudyLoadRow
+                {
+                    EDPCode = ac?.EDPCode,
+                    Subject = course?.CourseCode,
+                    Description = course?.Description,
+                    Instructor = tchUser != null ? $"{tchUser.FirstName} {tchUser.LastName}" : "N/A",
+                    Units = ac?.Units > 0 ? ac.Units : ((course?.LecUnits ?? 0) + (course?.LabUnits ?? 0)),
+                    // Your AssignedCourses.Type values look like "Lecture"/"Laboratory".
+                    // Keep as-is or map to LEC/LAB if you prefer.
+                    Type = ac?.Type,
+                    Room = schedsForCourse?.FirstOrDefault()?.Room ?? "",
+                    DateTime = FormatSchedule_DayOfWeek_TimeSpan(schedsForCourse)
+                };
+            })
+            .OrderBy(r => r.Subject)
+            .ThenBy(r => r.Type)
+            .ToList();
+
+            var vm = new StudentStudyLoadViewModel
+            {
+                StudentName = $"{student.User.FirstName} {student.User.LastName}",
+                Program = student.Program,
+                YearLevel = FormatYearLevel(student.YearLevel),
+                SelectedTerm = null,
+                Terms = new List<TermItem>(),
+                Rows = rows
+            };
+
+            return View(vm);
         }
 
+        // --------------------------------------------------------------------
+        // GRADES (existing logic, unchanged)
+        // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> Grades(string schoolYear = null, string semester = null)
         {
@@ -76,9 +169,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
             var idNumber = HttpContext.Session.GetString("IdNumber");
             if (string.IsNullOrEmpty(idNumber))
-            {
                 return RedirectToAction("StudentLogin", "Account");
-            }
 
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
@@ -93,18 +184,14 @@ namespace ASI.Basecode.WebApp.Controllers
             };
 
             if (user == null)
-            {
                 return View(viewModel);
-            }
 
             var student = await _studentRepository.GetStudents()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.UserId == user.UserId);
 
             if (student == null)
-            {
                 return View(viewModel);
-            }
 
             viewModel.Program = student.Program;
             viewModel.Department = student.Department;
@@ -112,11 +199,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
             var grades = await _gradeRepository.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
-                .Include(g => g.AssignedCourse)
-                    .ThenInclude(ac => ac.Course)
-                .Include(g => g.AssignedCourse)
-                    .ThenInclude(ac => ac.Teacher)
-                        .ThenInclude(t => t.User)
+                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
+                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Teacher).ThenInclude(t => t.User)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -151,9 +235,7 @@ namespace ASI.Basecode.WebApp.Controllers
             }).ToList();
 
             if (!gradeRows.Any())
-            {
                 return View(viewModel);
-            }
 
             var availableSchoolYears = gradeRows
                 .Select(r => r.SchoolYear)
@@ -163,16 +245,14 @@ namespace ASI.Basecode.WebApp.Controllers
                 .ToList();
 
             if (!availableSchoolYears.Any())
-            {
                 availableSchoolYears.Add(defaultSchoolYear);
-            }
 
             var selectedSchoolYear = availableSchoolYears
-                .FirstOrDefault(sy => string.Equals(sy, schoolYear, System.StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(sy => string.Equals(sy, schoolYear, StringComparison.OrdinalIgnoreCase))
                 ?? availableSchoolYears.FirstOrDefault();
 
             var availableSemesters = gradeRows
-                .Where(r => string.Equals(r.SchoolYear, selectedSchoolYear, System.StringComparison.OrdinalIgnoreCase))
+                .Where(r => string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Semester)
                 .Where(se => !string.IsNullOrWhiteSpace(se))
                 .Distinct()
@@ -190,13 +270,13 @@ namespace ASI.Basecode.WebApp.Controllers
             }
 
             var selectedSemester = availableSemesters
-                .FirstOrDefault(se => string.Equals(se, semester, System.StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(se => string.Equals(se, semester, StringComparison.OrdinalIgnoreCase))
                 ?? availableSemesters.FirstOrDefault();
 
             var filteredGrades = gradeRows
                 .Where(r =>
-                    (string.IsNullOrWhiteSpace(selectedSchoolYear) || string.Equals(r.SchoolYear, selectedSchoolYear, System.StringComparison.OrdinalIgnoreCase)) &&
-                    (string.IsNullOrWhiteSpace(selectedSemester) || string.Equals(r.Semester, selectedSemester, System.StringComparison.OrdinalIgnoreCase)))
+                    (string.IsNullOrWhiteSpace(selectedSchoolYear) || string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrWhiteSpace(selectedSemester) || string.Equals(r.Semester, selectedSemester, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             var finals = filteredGrades
@@ -216,56 +296,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View(viewModel);
         }
 
-        private static string GetCurrentSchoolYear()
-        {
-            var now = System.DateTime.Now;
-            var startYear = now.Month >= 6 ? now.Year : now.Year - 1;
-            return $"{startYear}-{startYear + 1}";
-        }
-
-        private static string ExtractSchoolYear(string semester)
-        {
-            if (string.IsNullOrWhiteSpace(semester))
-            {
-                return null;
-            }
-
-            var match = Regex.Match(semester, @"(\d{4}).*?(\d{4})");
-            if (match.Success && match.Groups.Count >= 3)
-            {
-                return $"{match.Groups[1].Value}-{match.Groups[2].Value}";
-            }
-
-            return null;
-        }
-
-        private static string FormatYearLevel(string yearLevel)
-        {
-            if (string.IsNullOrWhiteSpace(yearLevel))
-            {
-                return "N/A";
-            }
-
-            if (!int.TryParse(yearLevel, out var level))
-            {
-                return yearLevel;
-            }
-
-            var suffix = "th";
-            if (level % 100 is < 11 or > 13)
-            {
-                suffix = (level % 10) switch
-                {
-                    1 => "st",
-                    2 => "nd",
-                    3 => "rd",
-                    _ => "th"
-                };
-            }
-
-            return $"{level}{suffix} Year";
-        }
-
         [Authorize(Roles = "Student")]
         public IActionResult Calendar()
         {
@@ -280,5 +310,83 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Notifications.cshtml");
         }
 
+        // --------------------------------------------------------------------
+        // Helpers
+        // --------------------------------------------------------------------
+
+        private static string GetCurrentSchoolYear()
+        {
+            var now = DateTime.Now;
+            var startYear = now.Month >= 6 ? now.Year : now.Year - 1;
+            return $"{startYear}-{startYear + 1}";
+        }
+
+        private static string ExtractSchoolYear(string semesterText)
+        {
+            if (string.IsNullOrWhiteSpace(semesterText)) return null;
+            var m = Regex.Match(semesterText, @"(20\d{2})\D+(20\d{2})");
+            return m.Success ? $"{m.Groups[1].Value}-{m.Groups[2].Value}" : null;
+        }
+
+        private static string FormatYearLevel(string yearLevel)
+        {
+            if (string.IsNullOrWhiteSpace(yearLevel)) return "N/A";
+            if (!int.TryParse(yearLevel, out var level)) return yearLevel;
+
+            var suffix = "th";
+            if (level % 100 is < 11 or > 13)
+            {
+                suffix = (level % 10) switch
+                {
+                    1 => "st",
+                    2 => "nd",
+                    3 => "rd",
+                    _ => "th"
+                };
+            }
+            return $"{level}{suffix} Year";
+        }
+
+        // ---- schedule formatting helpers (DayOfWeek + TimeSpan) ----
+
+        private static string AbbrevDay(DayOfWeek day)
+        {
+            return day switch
+            {
+                DayOfWeek.Monday => "M",
+                DayOfWeek.Tuesday => "T",
+                DayOfWeek.Wednesday => "W",
+                DayOfWeek.Thursday => "TH",
+                DayOfWeek.Friday => "F",
+                DayOfWeek.Saturday => "SAT",
+                DayOfWeek.Sunday => "SUN",
+                _ => ""
+            };
+        }
+
+        private static string To12h(TimeSpan t)
+        {
+            var dt = DateTime.Today.Add(t);
+            return dt.ToString("h:mm tt", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatSchedule_DayOfWeek_TimeSpan(ICollection<ClassSchedule> scheds)
+        {
+            if (scheds == null || scheds.Count == 0) return "";
+
+            var groups = scheds
+                .OrderBy(s => s.Day)
+                .ThenBy(s => s.StartTime)
+                .GroupBy(s => new { s.StartTime, s.EndTime });
+
+            var parts = new List<string>();
+            foreach (var g in groups)
+            {
+                var dayStr = string.Join("", g.Select(x => AbbrevDay(x.Day)).Distinct());
+                var timeStr = $"{To12h(g.Key.StartTime)} - {To12h(g.Key.EndTime)}";
+                parts.Add($"{dayStr} ({timeStr})");
+            }
+            return string.Join("; ", parts);
+        }
     }
 }

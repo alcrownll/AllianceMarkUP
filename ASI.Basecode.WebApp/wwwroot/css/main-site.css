@@ -13,33 +13,31 @@ html, body {
 }
 
 /* =============== LEFT SIDEBAR =============== */
-    .sidebar {
-        width: 110px;
-        background: #fff;
-        border-right: 1px solid #e5e7eb;
-        height: 100vh;
-        position: fixed;
-        top: 0;
-        left: 0;
+.sidebar {
+    width: 110px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+    /* Sidebar nav items spacing */
+    .sidebar .nav-item {
+        margin: 0.75rem 0; /* space between each icon */
     }
-        /* Sidebar nav items spacing */
-        .sidebar .nav-item {
-            margin: 0.75rem 0; /* space between each icon */
-        }
-
-        /* Push icons list down a bit */
-        .sidebar .nav {
-            margin-top: 2rem; /* adjust as needed */
-        }
-
-
-    /* Sidebar icon stack to prevent jitter */
-    .icon-wrap {
-        position: relative;
-        width: 1.6rem;
-        height: 1.6rem;
-        display: inline-block;
+    /* Push icons list down a bit */
+    .sidebar .nav {
+        margin-top: 2rem; /* adjust as needed */
     }
+
+/* Sidebar icon stack to prevent jitter */
+.icon-wrap {
+    position: relative;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: inline-block;
+}
 
     .icon-wrap .icon-outline,
     .icon-wrap .icon-fill {
@@ -51,66 +49,61 @@ html, body {
         line-height: 1;
         transition: opacity .15s ease, color .15s ease;
     }
-
     /* Default: outline visible, fill hidden */
     .icon-wrap .icon-outline {
         opacity: 1;
         color: #94a3b8;
     }
+
     .icon-wrap .icon-fill {
         opacity: 0;
         color: #2563eb;
     }
+/* Hover/active: show fill, hide outline */
+.sidebar .nav-link:hover .icon-outline,
+.sidebar .nav-link.active .icon-outline {
+    opacity: 0;
+}
 
-    /* Hover/active: show fill, hide outline */
-    .sidebar .nav-link:hover .icon-outline,
-    .sidebar .nav-link.active .icon-outline {
-        opacity: 0;
-    }
-    .sidebar .nav-link:hover .icon-fill,
-    .sidebar .nav-link.active .icon-fill {
-        opacity: 1;
-    }
+.sidebar .nav-link:hover .icon-fill,
+.sidebar .nav-link.active .icon-fill {
+    opacity: 1;
+}
+/* Remove transform from earlier version */
+.sidebar .nav-link i {
+    transition: opacity .15s ease, color .15s ease;
+}
 
-    /* Remove transform from earlier version */
-    .sidebar .nav-link i {
-        transition: opacity .15s ease, color .15s ease;
-    }
-
-
-    /* Logout button */
+/* Logout button */
 /* Logout container pinned bottom */
-    .sidebar .logout {
-        position: absolute;
-        bottom: 1.5rem;
-        left: 0;
-        width: 100%;
+.sidebar .logout {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* centers horizontally */
+}
+    /* Button styles */
+    .sidebar .logout button {
+        font-size: 0.9rem;
+        color: #6b7280;
+        background: none;
+        border: none;
         display: flex;
-        justify-content: center; /* centers horizontally */
+        flex-direction: column; /* stack icon above text */
+        align-items: center;
+        cursor: pointer;
     }
 
-        /* Button styles */
-        .sidebar .logout button {
-            font-size: 0.9rem;
-            color: #6b7280;
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column; /* stack icon above text */
-            align-items: center;
-            cursor: pointer;
+        .sidebar .logout button:hover {
+            color: #dc2626;
         }
 
-            .sidebar .logout button:hover {
-                color: #dc2626;
-            }
-
-        .sidebar .logout i {
-            font-size: 1.4rem;
-            margin-bottom: 0.25rem;
-        }
-
-
+    .sidebar .logout i {
+        font-size: 1.4rem;
+        margin-bottom: 0.25rem;
+    }
 
 /* =============== RIGHT SIDEBAR =============== */
 .right-sidebar {
@@ -220,7 +213,7 @@ body {
     padding: 2rem;
     max-width: 1010px;
     margin: auto;
-    box-shadow: none; 
+    box-shadow: none;
 }
 
 .meta-info {
@@ -240,7 +233,6 @@ body {
     color: #0f172a;
     text-transform: uppercase;
 }
-
 /* Blue form labels */
 .profile-card .form-label {
     color: #0252A9;
@@ -251,7 +243,6 @@ body {
     display: block;
     width: 100%;
 }
-
 /* Equal columns for rows with 4 fields */
 .uniform-row .col-md-3 {
     flex: 0 0 25%;
@@ -320,7 +311,6 @@ body {
     margin-top: .35rem;
     font-weight: 600;
 }
-
 /* Divider line between sections */
 .section-divider {
     border: 0;
@@ -398,7 +388,6 @@ body {
         color: #16a34a;
         font-weight: 700;
     }
-
     /* Icon pinned to the RIGHT */
     .kpi .icon {
         position: absolute;
@@ -426,7 +415,6 @@ body {
     font-size: 18px;
     margin-bottom: 8px;
 }
-
 /* Left donut fixed width; Right chart fills remaining space */
 .hi-inner {
     display: grid;
@@ -446,7 +434,6 @@ body {
     font-size: 12px;
     color: #6b7280;
 }
-
 /* Keep donut perfectly square (no stretch) */
 .ring-canvas {
     width: 260px !important;
@@ -482,7 +469,6 @@ body {
         background: #2563eb;
         color: #fff;
     }
-
 /* Chart area now controls the canvas size */
 .chart-area {
     position: relative;
@@ -608,7 +594,7 @@ body {
     }
 }
 
-/* ==== STUDYLOAD ==== */
+/* ==== STUDENT STUDYLOAD ==== */
 body {
     background: #E5EFFB;
 }
@@ -639,7 +625,7 @@ body {
     color: #6b7280;
 }
 
-/* Section: School term select */
+/* Section: School term select (UPDATED to inline like Grades) */
 .sl-section-title {
     font-weight: 700;
     font-size: 13px;
@@ -647,22 +633,35 @@ body {
     margin-bottom: 6px;
 }
 
-.sl-term-row {
+/* NEW — inline toolbar to mirror Grades toolbar */
+.sl-term-inline {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
+.sl-toolbar-label {
+    font-weight: 700;
+    color: #0f3d91;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+/* Keep consistent select look */
 .sl-select {
     display: inline-block;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(15,61,145,.15); /* harmonize with Grades */
     border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 13px;
-    min-width: 280px;
+    padding: 5px 8px; /* match Grades density */
+    font-size: .85rem;
+    font-weight: 600;
+    color: #10224f;
     background: #fff;
+    min-width: 200px; /* readable width */
 }
 
+/* Print icon button (already present; kept for clarity) */
 .sl-iconbtn {
     border: 1px solid #e5e7eb;
     background: #fff;
@@ -749,6 +748,13 @@ body {
     box-shadow: 0 6px 18px rgba(29,78,216,.25);
 }
 
+/* Old stacked version (keep for backward compat; not used) */
+.sl-term-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 @media (max-width: 992px) {
     .studyload-container {
         padding: 10px 24px 20px;
@@ -756,15 +762,16 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* If you still use the old class anywhere */
     .sl-term-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-
-    .sl-select {
-        width: 100%;
+    /* Optional: make inline selects full-width on small screens */
+    .sl-term-inline .sl-select {
         min-width: 0;
+        width: 100%;
     }
 
     .sl-infogrid {
@@ -785,12 +792,10 @@ body {
     --accent: #22c55e; /* grading progress, dots */
     --chip: #eef5ff; /* soft icon bg */
 }
-
     /* Inherit your shared dashboard layout; only overrides/accents below */
     .teacher-dashboard .kpi .badge {
         color: var(--accent);
     }
-
     /* Donut + legend */
     .teacher-dashboard .ring-wrap {
         display: flex;
@@ -808,7 +813,6 @@ body {
         width: 260px !important;
         height: 260px !important;
     }
-
     /* Highlights layout (donut | chart) */
     .teacher-dashboard .hi-inner {
         display: grid;
@@ -816,7 +820,6 @@ body {
         gap: 28px;
         align-items: start;
     }
-
     /* Tabs */
     .teacher-dashboard .tabs {
         align-self: flex-start;
@@ -841,7 +844,6 @@ body {
             background: var(--brand);
             color: #fff;
         }
-
     /* Chart area controls canvas height */
     .teacher-dashboard .chart-area {
         position: relative;
@@ -853,7 +855,6 @@ body {
             width: 100% !important;
             height: 100% !important;
         }
-
     /* Bottom panels */
     .teacher-dashboard .panel-title {
         font-weight: 800;
