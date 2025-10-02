@@ -33,7 +33,7 @@
     width: 280px;
     min-width: 280px;
     max-width: 280px;
-    background: #fafafa;
+    background: #fff;
     padding: 1rem;
     overflow-y: auto;
     z-index: 1000;
@@ -120,23 +120,43 @@
 .calendar-widget .flatpickr-input {
     display: none;
 }
-/* Mini calendar sizing tweaks */
-.calendar-widget .flatpickr-calendar {
-    max-width: 220px; /* shrink overall calendar */
-    margin: 0 auto; /* center it in the sidebar card */
-    font-size: 0.8rem; /* scale down text a bit */
+/* --- Mini calendar: center + flat, final overrides --- */
+
+/* Center using inline-block + text-align (keep transform centered) */
+.calendar-widget {
+    padding: 20px;
+    text-align: center; /* center inline-block children */
 }
 
-/* Day cells smaller */
-.calendar-widget .flatpickr-day {
-    max-width: 28px;
-    height: 28px;
-    line-height: 28px;
-    font-size: 0.75rem;
-}
+    /* The calendar itself */
+    .calendar-widget .flatpickr-calendar {
+        display: inline-block; /* allows text-align to center it */
+        width: auto !important; /* prevent full-width */
+        margin: 0 !important;
+        transform: scale(.75); /* adjust .70–.85 to taste */
+        transform-origin: top center;
+        /* Make it flat */
+        box-shadow: none !important;
+        border: none !important;
+    }
 
-/* Shrink the header (month/year + arrows) */
-.calendar-widget .flatpickr-months {
-    font-size: 0.85rem;
-}
+    /* Some themes also add shadows/borders on inner containers */
+    .calendar-widget .flatpickr-days,
+    .calendar-widget .dayContainer {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* Optional: tidy header & cells (keeps alignment) */
+    .calendar-widget .flatpickr-months {
+        font-size: .9rem;
+    }
+
+    .calendar-widget .flatpickr-day.today,
+    .calendar-widget .flatpickr-day.selected {
+        border-radius: 50%;
+    }
+
+.calendar-widget { display: flex; justify-content: center; }
+.calendar-widget .flatpickr-calendar { display: block; }
 
