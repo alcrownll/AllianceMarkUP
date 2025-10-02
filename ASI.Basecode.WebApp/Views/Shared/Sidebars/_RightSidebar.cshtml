@@ -2,13 +2,30 @@
 <div class="right-sidebar-content">
 
     <!-- Profile Section -->
-    <div class="profile-card mb-3 p-3 border rounded">
-        <h5>@User.Identity.Name</h5>
-        <p class="text-muted">@User.Claims.FirstOrDefault(c => c.Type == "Role")?.Value</p>
+    <div class="profile-card mb-3 p-3 border rounded d-flex align-items-center justify-content-between">
+        <!-- Left: avatar + name/role -->
+        <div class="d-flex align-items-center gap-2">
+            <!-- Avatar / placeholder -->
+            <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <!-- Name + role -->
+            <div>
+                <div class="fw-bold">@User.Identity.Name</div>
+                <div class="text-muted small">
+                    @User.Claims.FirstOrDefault(c => c.Type == "Role")?.Value
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: notification icon -->
+        <a href="@Url.Action("Index", "Notifications")" class="notif-icon text-decoration-none">
+            <i class="fa-solid fa-bell"></i>
+        </a>
     </div>
 
     <!-- Calendar -->
-    <div class="calendar-widget mb-3 p-3 border rounded">
+    <div class="calendar-widget">
 
         <!-- Keep the input VISIBLE; Flatpickr will insert the inline calendar here -->
         <input id="miniCalendar" type="text" aria-label="Mini calendar" />
