@@ -23,7 +23,6 @@ namespace ASI.Basecode.WebApp
         private void ConfigureOtherServices()
         {
             // Framework
-            
             this._services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             this._services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
 
@@ -37,6 +36,7 @@ namespace ASI.Basecode.WebApp
             this._services.TryAddSingleton<TokenValidationParametersFactory>();
             this._services.AddScoped<IUserService, UserService>();
             this._services.AddScoped<IManageAccountsService, ManageAccountsService>();
+            this._services.AddScoped<ICourseService, CourseService>();   // <-- added
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();
