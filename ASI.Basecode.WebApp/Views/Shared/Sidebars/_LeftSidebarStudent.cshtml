@@ -1,5 +1,7 @@
 ﻿@{
     Layout = null;
+    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    Func<string, bool> isActive = a => string.Equals(currentAction, a, System.StringComparison.OrdinalIgnoreCase);
 }
 
 <!DOCTYPE html>
@@ -7,110 +9,87 @@
 <head>
     <meta charset="utf-8" />
     <title>Sidebar Navigation</title>
-    <!-- Bootstrap Icons CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: #fff; /* full white background */
-        }
-
-        .sidebar {
-            width: 110px; /* same as .left-sidebar */
-            background: #fff;
-            border-right: 1px solid #e5e7eb;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-        }
-
-
-            .sidebar .nav-link {
-                color: #94a3b8;
-                font-size: 1.6rem;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                padding: 1rem 0;
-            }
-
-                .sidebar .nav-link.active,
-                .sidebar .nav-link:hover {
-                    color: #2563eb; /* highlight */
-                }
-
-            .sidebar .logout button {
-                font-size: 0.9rem;
-                color: #6b7280;
-                text-decoration: none;
-                background: none;
-                border: none;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                cursor: pointer;
-            }
-
-                .sidebar .logout button:hover {
-                    color: #dc2626; /* red on hover */
-                }
-
-        .logout {
-            position: center;
-            bottom: 1.5rem;
-            width: 100%;
-            text-align: center;
-        }
-
-            .logout i {
-                font-size: 1.4rem;
-                margin-bottom: 0.25rem;
-            }
-    </style>
+    <link rel="stylesheet" href="~/css/main-site.css" />
 </head>
 <body>
     <nav class="sidebar d-flex flex-column align-items-center py-3">
         <ul class="nav flex-column flex-grow-1 text-center">
+
             <li class="nav-item">
-                <a class="nav-link" asp-controller="Student" asp-action="Dashboard">
-                    <i class="bi bi-grid"></i>
+                <a class="nav-link @(isActive("Dashboard") ? "active" : "")"
+                   asp-controller="Student" asp-action="Dashboard"
+                   data-label="Dashboard">
+                    <span class="icon-wrap">
+                        <i class="bi bi-grid icon-outline"></i>
+                        <i class="bi bi-grid-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link active" asp-controller="Student" asp-action="Profile">
-                    <i class="bi bi-person-fill"></i>
+                <a class="nav-link @(isActive("Profile") ? "active" : "")"
+                   asp-controller="Student" asp-action="Profile"
+                   data-label="Profile">
+                    <span class="icon-wrap">
+                        <i class="bi bi-person icon-outline"></i>
+                        <i class="bi bi-person-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link" asp-controller="Student" asp-action="StudyLoad">
-                    <i class="bi bi-people-fill"></i>
+                <a class="nav-link @(isActive("StudyLoad") ? "active" : "")"
+                   asp-controller="Student" asp-action="StudyLoad"
+                   data-label="Study Load">
+                    <span class="icon-wrap">
+                        <i class="bi bi-people icon-outline"></i>
+                        <i class="bi bi-people-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link" asp-controller="Student" asp-action="Grades">
-                    <i class="bi bi-journal-text"></i>
+                <a class="nav-link @(isActive("Grades") ? "active" : "")"
+                   asp-controller="Student" asp-action="Grades"
+                   data-label="Grades">
+                    <span class="icon-wrap">
+                        <i class="bi bi-journal-text icon-outline"></i>
+                        <i class="bi bi-journal-text-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link" asp-controller="Student" asp-action="Calendar">
-                    <i class="bi bi-calendar-event"></i>
+                <a class="nav-link @(isActive("Calendar") ? "active" : "")"
+                   asp-controller="Student" asp-action="Calendar"
+                   data-label="Calendar">
+                    <span class="icon-wrap">
+                        <i class="bi bi-calendar-event icon-outline"></i>
+                        <i class="bi bi-calendar-event-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link" asp-controller="Student" asp-action="Notifications">
-                    <i class="bi bi-bell"></i>
+                <a class="nav-link @(isActive("Notifications") ? "active" : "")"
+                   asp-controller="Student" asp-action="Notifications"
+                   data-label="Notifications">
+                    <span class="icon-wrap">
+                        <i class="bi bi-bell icon-outline"></i>
+                        <i class="bi bi-bell-fill icon-fill"></i>
+                    </span>
                 </a>
             </li>
         </ul>
 
-        <!-- Logout pinned at bottom -->
         <div class="logout">
             <form asp-controller="Login" asp-action="StudentLogout" method="post">
                 <button type="submit">
-                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="icon-wrap">
+                        <i class="bi bi-box-arrow-right icon-outline"></i>
+                        <i class="bi bi-box-arrow-right icon-fill"></i>
+                    </span>
                     <div>Logout</div>
                 </button>
             </form>

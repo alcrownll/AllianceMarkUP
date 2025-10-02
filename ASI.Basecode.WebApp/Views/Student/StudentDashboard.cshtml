@@ -1,14 +1,250 @@
-﻿<!--StudentDashboard.cshtml-->
+﻿@model ASI.Basecode.WebApp.Models.StudentDashboardViewModel
 
 @{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Student Dashboard";
-    ViewData["PageHeader"] = "Student Dashboard"; // Match layout
+    ViewData["PageHeader"] = "Student Dashboard";
+
+    var gwa = Model.CumulativeGwa ?? 0m;      // 1.00–5.00 (1.00 best)
+    var gwaMax = Model.GwaScaleMax;           // 5.00
+    var gwaBest = Model.GwaBest;              // 1.00
+    // Fill percent for donut: 1.00 -> 100% fill, 5.00 -> 0% fill
+    var fill = (double)Math.Max(0m, Math.Min(1m, (gwaMax - gwa) / (gwaMax - gwaBest)));
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/student-dashboard.css" />
 }
 
-<h2>Welcome Student!</h2>
-<p>This is your student dashboard.</p>
+<div class="dash-wrap grid">
+    <!-- KPI row -->
+    <div class="grid kpis">
+        <!-- Cumulative GWA -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Cumulative GWA</h4>
+                <div class="value">@((Model.CumulativeGwa?.ToString("0.00")) ?? "—")</div>
+                <div class="meta">
+                    @if (Model.IsDeanListEligible)
+                    {
+                        <span>Eligible for <span class="badge">Dean’s List</span></span>
+                    }
+                    else
+                    {
+                        <span>Keep pushing! 💪</span>
+                    }
+                </div>
+            </div>
+            <div class="icon">🎓</div>
+        </div>
+
+        <!-- Year and Program -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Year and Program</h4>
+                <div class="value">@Model.YearLevel - @Model.Program</div>
+                <div class="meta">@Model.CurrentSemesterName @Model.CurrentSchoolYear</div>
+            </div>
+            <div class="icon">🧩</div>
+        </div>
+
+        <!-- Semester Units -->
+        <div class="card kpi">
+            <div class="kpi-body">
+                <h4>Semester Units</h4>
+                <div class="value">@Model.CurrentTermUnits</div>
+                <div class="meta">
+                    @(Model.CurrentTermUnits <= 15 ? "Light Course Load"
+                                        : Model.CurrentTermUnits <= 21 ? "Regular Load"
+                                        : "Overload")
+                </div>
+            </div>
+            <div class="icon">📄</div>
+        </div>
+    </div>
+
+    <!-- Academic Highlights -->
+    <div class="card p24 grid hi">
+        <div>
+            <div class="hi-title">Academic Highlights</div>
+
+            <div class="hi-inner">
+                <!-- Donut -->
+                <div class="ring-wrap">
+                    <canvas id="gpaRing" class="ring-canvas"
+                            data-gwa="@gwa"
+                            data-fill="@fill"></canvas>
+                    <div class="ring-legend">
+                        <div>Best GWA: 1.00</div>
+                        <div>Scale: 1.00–5.00</div>
+                    </div>
+                </div>
+
+                <!-- Line (demo) -->
+                <div class="chart-col">
+                    <div class="tabs">
+                        <div class="tab active" id="tabSem1">1st Semester</div>
+                        <div class="tab" id="tabSem2">2nd Semester</div>
+                    </div>
+                    <div class="chart-area">
+                        <canvas id="termLine"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom panels (sample content) -->
+    <div class="grid two-cols">
+        <div class="card p24">
+            <div class="panel-title">Announcements</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot">🔔</div>
+                    <div>
+                        <div class="i-title">4th Year Skills Test</div>
+                        <div class="i-sub">College of Computer Studies</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/17/25</div>
+                </div>
+                <div class="item">
+                    <div class="dot">🗓️</div>
+                    <div>
+                        <div class="i-title">Enrollment opens next week</div>
+                        <div class="i-sub">Registrar</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/15/25</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p24">
+            <div class="panel-title">Student Life</div>
+            <div class="list">
+                <div class="item">
+                    <div class="dot">🎮</div>
+                    <div>
+                        <div class="i-title">CCS conducts first stud...</div>
+                        <div class="i-sub">Bits &amp; Bytes</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/17/25</div>
+                </div>
+                <div class="item">
+                    <div class="dot">📷</div>
+                    <div>
+                        <div class="i-title">Photography club orientation</div>
+                        <div class="i-sub">Campus Org</div>
+                        <a class="link" href="#">Read &gt;</a>
+                    </div>
+                    <div class="i-meta">07/10/25</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ---------- Donut: Cumulative GWA (1 is best) ----------
+        const ring = document.getElementById('gpaRing');
+        const gwa = parseFloat(ring.dataset.gwa || '0');   // 1.00–5.00
+        const fill = parseFloat(ring.dataset.fill || '0'); // 0–1 (more fill = better)
+
+        new Chart(ring, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [fill, 1 - fill],
+                    borderWidth: 0,
+                    backgroundColor: ['#2563eb', '#e8eef7'],
+                    cutout: '78%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } }
+            },
+            plugins: [{
+                id: 'centerText',
+                afterDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    const cx = (chartArea.left + chartArea.right) / 2;
+                    const cy = (chartArea.top + chartArea.bottom) / 2;
+                    ctx.save();
+                    ctx.font = '700 44px Inter, system-ui';
+                    ctx.fillStyle = '#2563eb';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(isNaN(gwa) || gwa === 0 ? '—' : gwa.toFixed(2), cx, cy - 12);
+                    ctx.font = '12px Inter, system-ui';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('Cumulative GWA', cx, cy + 18);
+                    ctx.restore();
+                }
+            }]
+        });
+
+        // ---------- Line chart (demo) ----------
+        const ctxLine = document.getElementById('termLine');
+        let line;
+        const datasets = {
+            sem1: [3.0, 2.4, 3.2, 3.2],
+            sem2: [3.5, 2.9, 3.1, 2.7]
+        };
+
+        function drawLine(data) {
+            if (line) line.destroy();
+            line = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: ['Prelims','Midterms','SemiFinals','Finals'],
+                    datasets: [{
+                        data,
+                        tension:.35,
+                        pointRadius:4,
+                        pointHoverRadius:5,
+                        borderWidth:2,
+                        fill:false,
+                        borderColor:'#2563eb',
+                        backgroundColor:'#2563eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 12 } },
+                    scales: {
+                        y: {
+                            min: 1, max: 5, reverse: true,
+                            grid: { color: '#eef2f7' },
+                            ticks: { stepSize: .5, color: '#64748b', font: { size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        drawLine(datasets.sem1);
+
+        document.getElementById('tabSem1').addEventListener('click', () => {
+            document.getElementById('tabSem1').classList.add('active');
+            document.getElementById('tabSem2').classList.remove('active');
+            drawLine(datasets.sem1);
+        });
+        document.getElementById('tabSem2').addEventListener('click', () => {
+            document.getElementById('tabSem2').classList.add('active');
+            document.getElementById('tabSem1').classList.remove('active');
+            drawLine(datasets.sem2);
+        });
+    </script>
+}

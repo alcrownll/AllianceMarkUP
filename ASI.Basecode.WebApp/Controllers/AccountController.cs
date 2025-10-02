@@ -26,6 +26,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly TokenProviderOptionsFactory _tokenProviderOptionsFactory;
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
+        private readonly IManageAccountsService _manageAccountsService;
 
         public AccountController(
             SignInManager signInManager,

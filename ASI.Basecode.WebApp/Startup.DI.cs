@@ -1,4 +1,4 @@
-﻿using ASI.Basecode.Data;
+using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Repositories;
 using ASI.Basecode.Services.Interfaces;
@@ -23,6 +23,7 @@ namespace ASI.Basecode.WebApp
         private void ConfigureOtherServices()
         {
             // Framework
+            
             this._services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             this._services.TryAddSingleton<IActionContextAccessor, ActionContextAccessor>();
 
@@ -32,13 +33,20 @@ namespace ASI.Basecode.WebApp
             this._services.TryAddSingleton<TokenValidationParametersFactory>();
             this._services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // Services
+            // SERVICES
             this._services.TryAddSingleton<TokenValidationParametersFactory>();
             this._services.AddScoped<IUserService, UserService>();
-          
+            this._services.AddScoped<IManageAccountsService, ManageAccountsService>();
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();
+            this._services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+            this._services.AddScoped<IStudentRepository, StudentRepository>();
+            this._services.AddScoped<ITeacherRepository, TeacherRepository>();
+            this._services.AddScoped<ICourseRepository, CourseRepository>();
+            this._services.AddScoped<IAssignedCourseRepository, AssignedCourseRepository>();
+            this._services.AddScoped<IClassScheduleRepository, ClassScheduleRepository>();
+            this._services.AddScoped<IGradeRepository, GradeRepository>();
 
             // Manager Class
             this._services.AddScoped<SignInManager>();

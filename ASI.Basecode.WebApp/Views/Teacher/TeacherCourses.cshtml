@@ -1,7 +1,7 @@
 ﻿@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
-    ViewData["Title"] = "Your Courses";
-    ViewData["PageHeader"] = "Your Courses";
+    ViewData["Title"] = "Assigned Courses";
+    ViewData["PageHeader"] = "Assigned Courses";
 }
 
 @section Styles {
@@ -71,7 +71,39 @@
                                         </td>
                                         <td>
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="showEditPanel('37256', 'CS-FREEEL', 'MWF ( 6:30 PM - 7:30 PM)')">
+                                                    Edit
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" title="Upload">
+                                                    Upload
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success" title="Save">
+                                                    To PDF
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>37248</td>
+                                        <td>CS-OPSYS41</td>
+                                        <td>LAB</td>
+                                        <td>2</td>
+                                        <td>TTH ( 6:01 PM - 7:31 PM)</td>
+                                        <td>C3</td>
+                                        <td>4A</td>
+                                        <td>BSCS</td>
+                                        <td>9/28/25</td>
+                                        <td>
+                                            <select class="form-select form-select-sm">
+                                                <option selected>Prelim</option>
+                                                <option value="Midterm">Midterm</option>
+                                                <option value="Semi-final">Semi-final</option>
+                                                <option value="Final">Final</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="showEditPanel('37256', 'CS-FREEEL', 'MWF ( 6:30 PM - 7:30 PM)')">
                                                     Edit
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-warning" title="Upload">
@@ -88,10 +120,96 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Edit Grades of Students -->
+                <div id="editPanel" class="col-12 mt-3 d-none" style="height: 40vh; overflow-y: auto;">
+                    <div class="card border-primary shadow-sm">
+                        <div class="card-header bg-primary text-white fw-bold d-flex align-items-left">Edit Grades</div>
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>EDP Code:</strong> <span id="edpCodeText"></span> &nbsp; | 
+                                <strong>Subject:</strong> <span id="subjectText"></span> &nbsp; | 
+                                <strong>Schedule:</strong> <span id="scheduleText"></span>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" title="Save" onclick="showSaveSuccess()">Save</button>
+                                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="hideEditPanel()">Cancel</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>No.</th>
+                                            <th>ID Number</th>
+                                            <th>Last Name</th>
+                                            <th>First Name</th>
+                                            <th>Course/Year</th>
+                                            <th>Gender</th>
+                                            <th>Prelim</th>
+                                            <th>Midterm</th>
+                                            <th>Semi-final</th>
+                                            <th>Final</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Placeholder student list -->
+                                        <tr>
+                                            <td>1</td>
+                                            <td>20185484</td>
+                                            <td>ANINO</td>
+                                            <td>SHANA AYNN</td>
+                                            <td>BSCS 4</td>
+                                            <td>F</td>
+                                            <td><input type="text" value="1.2" readonly class="form-control form-control-sm" /></td>
+                                            <td><input type="text" class="form-control form-control-sm" /></td>
+                                            <td><input type="text" readonly class="form-control form-control-sm" /></td>
+                                            <td><input type="text" readonly class="form-control form-control-sm" /></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>20158484</td>
+                                            <td>VALDEHUESA</td>
+                                            <td>GODDESS PHOEBE</td>
+                                            <td>BSCS 4</td>
+                                            <td>F</td>
+                                            <td><input type="text" value="1.1" readonly class="form-control form-control-sm" /></td>
+                                            <td><input type="text" class="form-control form-control-sm" /></td>
+                                            <td><input type="text" readonly class="form-control form-control-sm" /></td>
+                                            <td><input type="text" readonly class="form-control form-control-sm" /></td>
+                                        </tr>
+                                        <!-- More rows here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showEditPanel(edpCode, subject, schedule) {
+            document.getElementById("edpCodeText").innerText = edpCode;
+            document.getElementById("subjectText").innerText = subject;
+            document.getElementById("scheduleText").innerText = schedule;
+            document.getElementById("editPanel").classList.remove("d-none");
+        }
+
+        function hideEditPanel() {
+            document.getElementById("editPanel").classList.add("d-none");
+        }
+
+        function showSaveSuccess() {
+            alert("Grades saved successfully!");
+            hideEditPanel();
+        }
+    </script>
+}
+

@@ -1,6 +1,9 @@
-﻿using System;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data
 {
@@ -39,5 +42,35 @@ namespace ASI.Basecode.Data
         {
             Database.Dispose();
         }
+
+        // added for transaction support
+        public IDbContextTransaction? CurrentTransaction { get; private set; }
+        public bool HasActiveTransaction => CurrentTransaction != null;
+
+        public Task<int> SaveChangesAsync(CancellationToken ct = default)
+        => Database.SaveChangesAsync(ct);
+
+        public async Task BeginTransactionAsync(CancellationToken ct = default)
+        {
+            if (CurrentTransaction != null) return;
+            CurrentTransaction = await Database.Database.BeginTransactionAsync(ct);
+        }
+
+        public async Task CommitAsync(CancellationToken ct = default)
+        {
+            if (CurrentTransaction == null) return;
+            await CurrentTransaction.CommitAsync(ct);
+            await CurrentTransaction.DisposeAsync();
+            CurrentTransaction = null;
+        }
+
+        public async Task RollbackAsync(CancellationToken ct = default)
+        {
+            if (CurrentTransaction == null) return;
+            await CurrentTransaction.RollbackAsync(ct);
+            await CurrentTransaction.DisposeAsync();
+            CurrentTransaction = null;
+        }
+
     }
 }

@@ -1,61 +1,96 @@
-﻿@{
+﻿@using ASI.Basecode.WebApp.Models
+@model StudentStudyLoadViewModel
+
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Study Load";
     ViewData["PageHeader"] = "Study Load";
 }
 
 @section Styles {
-    <style>
-        .subject-list {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .subject-card {
-            border-left: 4px solid #007bff;
-            transition: box-shadow 0.2s;
-        }
-
-            .subject-card:hover {
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }
-
-        .subject-header {
-            font-weight: 600;
-            font-size: 1.1em;
-            margin-bottom: 0.3rem;
-        }
-
-        .subject-details {
-            line-height: 1.5;
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/studyload.css" />
 }
 
-<div class="container mt-4">
+<div class="studyload-container">
+    <div class="sl-card">
 
-    @if (Model == null || !Model.Any())
-    {
-        <div class="alert alert-info">No enrolled subjects found.</div>
-    }
-    else
-    {
-        <div class="subject-list">
-            @foreach (var item in Model)
-            {
-                <div class="subject-card p-3 mb-3 bg-light border rounded">
-                    <div class="subject-header">
-                        <strong>@item.SubjectCode</strong> — @item.SubjectName
-                    </div>
-                    <div class="subject-details text-muted small">
-                        Type: @item.Type • Units: @item.Units •
-                        Prelim: @(item.PrelimGrade?.ToString("0.0") ?? "N/A")•
-                        Midterm: @(item.MidtermGrade?.ToString("0.0") ?? "N/A") •
-                        PreFinals: @(item.PreFinalGrade?.ToString("0.0") ?? "N/A") •)
-                        Finals: @(item.FinalGrade?.ToString("0.0") ?? "N/A")
-                    </div>
-                </div>
-            }
+        <!-- School Term (inline, same style as Grades) -->
+        <div class="mb-2">
+            <form method="get" asp-action="StudyLoad" asp-controller="Student" class="sl-term-inline">
+                <span class="sl-toolbar-label">Select School Term</span>
+
+                <label class="sr-only" for="slSchoolTerm">School Term</label>
+                <select id="slSchoolTerm" class="sl-select" name="term" onchange="this.form.submit()">
+                    @foreach (var t in Model.Terms)
+                    {
+                        <option value="@t.Value" selected="@(t.Selected ? "selected" : null)">@t.Text</option>
+                    }
+                </select>
+
+                <!-- Print button with SVG icon -->
+                <button type="button" class="sl-iconbtn" title="Print Study Load" onclick="window.print()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
+                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span class="sr-only">Print</span>
+                </button>
+            </form>
         </div>
-    }
+
+        <!-- Student Info -->
+        <div class="sl-infogrid">
+            <div class="sl-label">Name</div><div class="sl-value">@Model.StudentName</div>
+            <div class="sl-label">School Year</div><div class="sl-value">@Model.SchoolYear</div>
+            <div class="sl-label">Program</div><div class="sl-value">@Model.Program</div>
+            <div class="sl-label">Year Level</div><div class="sl-value">@Model.YearLevel</div>
+        </div>
+
+        <!-- Subjects Table -->
+        <table class="sl-table">
+            <thead>
+                <tr>
+                    <th style="width:80px;">EDP Code</th>
+                    <th>Subject</th>
+                    <th>Description</th>
+                    <th>Instructor</th>
+                    <th style="width:50px;">Units</th>
+                    <th style="width:60px;">Type</th>
+                    <th style="width:60px;">Room</th>
+                    <th style="width:180px;">Date &amp; Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows?.Count > 0)
+                {
+                    foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td>@r.EDPCode</td>
+                            <td>@r.Subject</td>
+                            <td>@r.Description</td>
+                            <td>@r.Instructor</td>
+                            <td>@r.Units</td>
+                            <td>@r.Type</td>
+                            <td>@r.Room</td>
+                            <td>@r.DateTime</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No subjects found for the selected term.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="sl-footer">
+            <div><strong>Total Units Enrolled:</strong> @Model.TotalUnits</div>
+            <a asp-controller="Student" asp-action="Calendar" class="sl-btn-primary">View Class Schedule</a>
+        </div>
+
+    </div>
 </div>

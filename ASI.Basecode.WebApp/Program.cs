@@ -1,40 +1,79 @@
-﻿using System.IO;
-using ASI.Basecode.Data;
-using ASI.Basecode.WebApp;
+﻿using ASI.Basecode.WebApp;
 using ASI.Basecode.WebApp.Extensions.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.IO;
 
-var appBuilder = WebApplication.CreateBuilder(new WebApplicationOptions
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     ContentRootPath = Directory.GetCurrentDirectory(),
 });
 
-appBuilder.Configuration.AddJsonFile("appsettings.json",
-    optional: true,
-    reloadOnChange: true);
+// Configuration
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
-appBuilder.WebHost.UseIISIntegration();
+// IIS / Logging
+builder.WebHost.UseIISIntegration();
 
-appBuilder.Logging
-    .AddConfiguration(appBuilder.Configuration.GetLoggingSection())
+builder.Logging
+    .AddConfiguration(builder.Configuration.GetLoggingSection())
     .AddConsole()
     .AddDebug();
 
-var configurer = new StartupConfigurer(appBuilder.Configuration);
-configurer.ConfigureServices(appBuilder.Services);
+// Services via your StartupConfigurer (keeps your existing pattern)
+var configurer = new StartupConfigurer(builder.Configuration);
+configurer.ConfigureServices(builder.Services);
 
-var app = appBuilder.Build();
+// If you are NOT adding MVC in StartupConfigurer, uncomment this:
+// builder.Services.AddControllersWithViews();
+// builder.Services.AddRazorPages();
 
+// Build
+var app = builder.Build();
+
+// Global exception handling
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+else
+{
+    app.UseDeveloperExceptionPage();
+}
+
+// Security / static assets
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+// Routing + Auth
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// If you register middleware in StartupConfigurer, call it here:
 configurer.ConfigureApp(app, app.Environment);
+
+// Endpoints
+// Attribute-routed controllers work with MapControllers()
+// Conventional MVC routes work with MapControllerRoute()
+app.MapControllers();
+
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-app.MapControllers();
+
 app.MapRazorPages();
 
-// Run application
+// Start
 app.Run();

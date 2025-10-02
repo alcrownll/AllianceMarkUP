@@ -1,4 +1,6 @@
-﻿@{
+﻿@model ASI.Basecode.WebApp.Models.StudentGradesViewModel
+
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Grades";
     ViewData["PageHeader"] = "Grades";
@@ -6,63 +8,238 @@
 
 @section Styles {
     <style>
-        .subject-list {
-            max-width: 800px;
+        body {
+            background: #eaf1ff;
+        }
+
+        .grades-page {
+            max-width: 1020px;
             margin: 0 auto;
+            padding: 16px 0 32px;
         }
 
-        .subject-card {
-            border-left: 4px solid #007bff;
-            transition: box-shadow 0.2s;
-            margin-bottom: 10px;
-            padding: 16px;
-            background: #f8f9fa;
-            border-radius: 8px;
+        .grades-card {
+            background: #fff;
+            border-radius: 14px;
+            overflow: hidden;
         }
 
-            .subject-card:hover {
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            }
-
-        .subject-header {
-            font-weight: 600;
-            font-size: 1.1em;
-            margin-bottom: 0.3rem;
+        /* Toolbar */
+        .grades-toolbar {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 18px 10px;
         }
 
-        .subject-details {
-            line-height: 1.5;
-            color: #555;
-            font-size: 0.95em;
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .print-btn {
-            margin-left: auto; /* Pushes button to the right */
-            padding: 6px 12px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
+        .toolbar-label {
+            font-weight: 700;
+            color: #0f3d91;
+            font-size: .85rem;
             white-space: nowrap;
         }
 
-            .print-btn:hover {
-                background-color: #0056b3;
+        .term-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+            .term-inline select {
+                border: 1px solid rgba(15,61,145,.15);
+                border-radius: 8px;
+                padding: 5px 8px;
+                font-size: .85rem;
+                font-weight: 600;
+                color: #10224f;
+                background: #fff;
+                min-width: 160px;
             }
 
-        /* Print Styles */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .btn-pill {
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #0f3d91;
+            color: #fff;
+            border: none;
+            font-weight: 700;
+            font-size: .82rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .btn-pill:hover {
+                filter: brightness(.95);
+            }
+
+        /* Student + Term info */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 12px 18px;
+        }
+
+        .info-left, .info-right {
+            display: grid;
+            gap: 6px;
+        }
+
+        .info-line {
+            font-size: .78rem;
+            color: #0f172a;
+            white-space: nowrap;
+        }
+
+            .info-line small {
+                color: #6b7aa6;
+                font-size: .78rem;
+                margin-right: 6px;
+            }
+
+            .info-line b {
+                color: #0f172a;
+                font-weight: 600;
+            }
+
+        .divider {
+            height: 1px;
+            background: rgba(15,61,145,.10);
+            margin: 0 18px 10px;
+        }
+
+        /* Table */
+        .grades-table-wrapper {
+            margin: 0 18px 12px;
+            border: 1px solid rgba(15,61,145,.10);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        table.grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .8rem;
+            table-layout: auto;
+        }
+
+            table.grades-table thead {
+                background: #f0f4ff;
+            }
+
+            table.grades-table th, table.grades-table td {
+                padding: 8px 10px;
+                text-align: left;
+                vertical-align: middle;
+                white-space: nowrap; 
+                overflow: hidden;
+                text-overflow: ellipsis; /* show ... if text is too long */
+            }
+
+            table.grades-table th {
+                font-weight: 700;
+                color: #0f3d91;
+                text-transform: uppercase;
+                font-size: .72rem;
+            }
+
+            table.grades-table tbody tr {
+                border-bottom: 1px solid rgba(15,61,145,.06);
+            }
+
+                table.grades-table tbody tr:hover {
+                    background: rgba(15,61,145,.03);
+                }
+
+        .remarks-pass {
+            color: #1f9d63;
+            font-weight: 700;
+            font-size: .78rem;
+            text-transform: uppercase;
+        }
+
+        .remarks-fail {
+            color: #d9534f;
+            font-weight: 700;
+            font-size: .78rem;
+            text-transform: uppercase;
+        }
+
+        .card-bottom {
+            padding: 0 18px 18px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* Empty state */
+        .empty-state {
+            background: #fff;
+            border-radius: 14px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(15,61,145,.08);
+        }
+
+            .empty-state h3 {
+                margin-bottom: 6px;
+                color: #10224f;
+            }
+
+            .empty-state p {
+                color: #6b7aa6;
+                font-size: .9rem;
+            }
+
+        .no-print {
+            display: inline-flex;
+        }
+
         @@media print {
-            .print-btn {
-                display: none;
+            body {
+                background: #fff;
             }
 
-            .subject-card {
-                background: white !important;
-                box-shadow: none !important;
+                body * {
+                    visibility: hidden;
+                }
+
+            #gradesPrintArea, #gradesPrintArea * {
+                visibility: visible;
+            }
+
+            #gradesPrintArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+            }
+
+            .no-print {
+                display: none !important;
             }
         }
     </style>
@@ -70,45 +247,112 @@
 
 @section Scripts {
     <script>
-        function printGrades() {
-            window.print();
+        function submitTermFilters() {
+            const form = document.getElementById('termFilterForm');
+            if (form) form.submit();
         }
+        function printGrades(){ window.print(); }
     </script>
 }
 
-<div class="container mt-4">
-    @if (Model == null || !Model.Any())
+<div class="grades-page">
+    @if (Model?.Grades == null || !Model.Grades.Any())
     {
-        <div class="alert alert-info">No enrolled subjects found.</div>
+        <div class="empty-state">
+            <h3>No grades available yet</h3>
+            <p>Once grades are uploaded to the system, they will appear here.</p>
+            <button class="btn-pill" onclick="printGrades()">Print Records</button>
+        </div>
     }
     else
     {
-        <div class="subject-list">
-            @for (int i = 0; i < Model.Count; i++)
-            {
-                var item = Model[i];
-                <div class="subject-card">
-                    <div class="subject-header">
-                        <span>
-                            <strong>@item.SubjectCode</strong> — @item.SubjectName
-                        </span>
+        <div class="grades-card" id="gradesPrintArea">
 
-                        @if (i == 0) // Only show button on first subject
-                        {
-                            <button class="print-btn" onclick="printGrades()">
-                                🖨️ Print to PDF
-                            </button>
-                        }
-                    </div>
-                    <div class="subject-details">
-                        Type: @item.Type • Units: @item.Units •
-                        Prelim: @(item.PrelimGrade?.ToString("0.0") ?? "N/A") •
-                        Midterm: @(item.MidtermGrade?.ToString("0.0") ?? "N/A") •
-                        PreFinals: @(item.PreFinalGrade?.ToString("0.0") ?? "N/A") •
-                        Finals: @(item.FinalGrade?.ToString("0.0") ?? "N/A")
-                    </div>
+            <!-- Toolbar -->
+            <div class="grades-toolbar">
+                <div class="toolbar-left">
+                    <span class="toolbar-label">Select School Term</span>
+                    <form id="termFilterForm" method="get" class="term-inline">
+                        <label class="sr-only" for="selectSchoolTerm">School Year</label>
+                        <select id="selectSchoolTerm" name="schoolYear" onchange="submitTermFilters()">
+                            @foreach (var sy in Model.AvailableSchoolYears)
+                            {
+                                var isSelected = string.Equals(Model.SelectedSchoolYear, sy, System.StringComparison.OrdinalIgnoreCase);
+                                <option value="@sy" selected="@(isSelected ? "selected" : null)">@sy</option>
+                            }
+                        </select>
+
+                        <label class="sr-only" for="selectSemester">Semester</label>
+                        <select id="selectSemester" name="semester" onchange="submitTermFilters()">
+                            @foreach (var sem in Model.AvailableSemesters)
+                            {
+                                var isSelected = string.Equals(Model.SelectedSemester, sem, System.StringComparison.OrdinalIgnoreCase);
+                                <option value="@sem" selected="@(isSelected ? "selected" : null)">@sem</option>
+                            }
+                        </select>
+                    </form>
                 </div>
-            }
+
+                <button class="btn-pill no-print" type="button" onclick="printGrades()">Print Records</button>
+            </div>
+
+            <!-- Info Grid -->
+            <div class="info-grid">
+                <div class="info-left">
+                    <div class="info-line"><small>Name :</small><b>@Model.StudentName</b></div>
+                    <div class="info-line"><small>Program :</small><b>@Model.Program</b></div>
+                    <div class="info-line"><small>Year Level :</small><b>@Model.YearLevel</b></div>
+                </div>
+                <div class="info-right">
+                    <div class="info-line"><small>School Year :</small><b>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</b></div>
+                    <div class="info-line"><small>Semester :</small><b>@(Model.SelectedSemester ?? Model.Semester)</b></div>
+                    <div class="info-line"><small>GPA :</small><b>@(Model.Gpa?.ToString("0.0") ?? "—")</b></div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Table -->
+            <div class="grades-table-wrapper">
+                <table class="grades-table">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Description</th>
+                            <th>Instructor</th>
+                            <th>Type</th>
+                            <th>Units</th>
+                            <th>Prelim</th>
+                            <th>Midterm</th>
+                            <th>Semi-Final</th>
+                            <th>Final</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Grades)
+                        {
+                            var isPassed = !string.IsNullOrWhiteSpace(item.Remarks) && item.Remarks.ToUpper().Contains("PASS");
+                            <tr>
+                                <td>@item.SubjectCode</td>
+                                <td>@item.Description</td>
+                                <td>@item.Instructor</td>
+                                <td>@item.Type</td>
+                                <td>@item.Units</td>
+                                <td>@(item.Prelims?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.Midterm?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.SemiFinal?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.Final?.ToString("0.0") ?? "—")</td>
+                                <td class="@(isPassed ? "remarks-pass" : "remarks-fail")">@((item.Remarks ?? "").ToUpper())</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-bottom">
+                <button class="btn-pill no-print" type="button" onclick="printGrades()">Print Grades</button>
+            </div>
         </div>
     }
 </div>
