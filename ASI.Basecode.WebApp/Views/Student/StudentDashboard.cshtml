@@ -1,7 +1,15 @@
-﻿@{
+﻿@model ASI.Basecode.WebApp.Models.StudentDashboardViewModel
+
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Student Dashboard";
     ViewData["PageHeader"] = "Student Dashboard";
+
+    var gwa = Model.CumulativeGwa ?? 0m;      // 1.00–5.00 (1.00 best)
+    var gwaMax = Model.GwaScaleMax;           // 5.00
+    var gwaBest = Model.GwaBest;              // 1.00
+    // Fill percent for donut: 1.00 -> 100% fill, 5.00 -> 0% fill
+    var fill = (double)Math.Max(0m, Math.Min(1m, (gwaMax - gwa) / (gwaMax - gwaBest)));
 }
 
 @section Styles {
@@ -15,18 +23,27 @@
         <div class="card kpi">
             <div class="kpi-body">
                 <h4>Cumulative GWA</h4>
-                <div class="value">1.58</div>
-                <div class="meta">Eligible for <span class="badge">Dean’s List</span></div>
+                <div class="value">@((Model.CumulativeGwa?.ToString("0.00")) ?? "—")</div>
+                <div class="meta">
+                    @if (Model.IsDeanListEligible)
+                    {
+                        <span>Eligible for <span class="badge">Dean’s List</span></span>
+                    }
+                    else
+                    {
+                        <span>Keep pushing! 💪</span>
+                    }
+                </div>
             </div>
-            <div class="icon">👥</div>
+            <div class="icon">🎓</div>
         </div>
 
         <!-- Year and Program -->
         <div class="card kpi">
             <div class="kpi-body">
                 <h4>Year and Program</h4>
-                <div class="value">4TH - BSCS</div>
-                <div class="meta">Irregular</div>
+                <div class="value">@Model.YearLevel - @Model.Program</div>
+                <div class="meta">@Model.CurrentSemesterName @Model.CurrentSchoolYear</div>
             </div>
             <div class="icon">🧩</div>
         </div>
@@ -35,8 +52,12 @@
         <div class="card kpi">
             <div class="kpi-body">
                 <h4>Semester Units</h4>
-                <div class="value">14</div>
-                <div class="meta">Light Course Load</div>
+                <div class="value">@Model.CurrentTermUnits</div>
+                <div class="meta">
+                    @(Model.CurrentTermUnits <= 15 ? "Light Course Load"
+                                        : Model.CurrentTermUnits <= 21 ? "Regular Load"
+                                        : "Overload")
+                </div>
             </div>
             <div class="icon">📄</div>
         </div>
@@ -48,16 +69,18 @@
             <div class="hi-title">Academic Highlights</div>
 
             <div class="hi-inner">
-                <!-- Donut (fixed square, no stretch) -->
+                <!-- Donut -->
                 <div class="ring-wrap">
-                    <canvas id="gpaRing" class="ring-canvas"></canvas>
+                    <canvas id="gpaRing" class="ring-canvas"
+                            data-gwa="@gwa"
+                            data-fill="@fill"></canvas>
                     <div class="ring-legend">
-                        <div>Actual Total Units Earned:</div>
-                        <div>Academic Units:</div>
+                        <div>Best GWA: 1.00</div>
+                        <div>Scale: 1.00–5.00</div>
                     </div>
                 </div>
 
-                <!-- Line (occupies all remaining space on the right) -->
+                <!-- Line (demo) -->
                 <div class="chart-col">
                     <div class="tabs">
                         <div class="tab active" id="tabSem1">1st Semester</div>
@@ -71,7 +94,7 @@
         </div>
     </div>
 
-    <!-- Bottom panels -->
+    <!-- Bottom panels (sample content) -->
     <div class="grid two-cols">
         <div class="card p24">
             <div class="panel-title">Announcements</div>
@@ -126,25 +149,25 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ---------- Donut: Current GPA (placeholder) ----------
-        const gpa = 3.60;
-        const maxGpa = 4.00;
-        const pct = gpa / maxGpa;
+        // ---------- Donut: Cumulative GWA (1 is best) ----------
+        const ring = document.getElementById('gpaRing');
+        const gwa = parseFloat(ring.dataset.gwa || '0');   // 1.00–5.00
+        const fill = parseFloat(ring.dataset.fill || '0'); // 0–1 (more fill = better)
 
-        new Chart(document.getElementById('gpaRing'), {
+        new Chart(ring, {
             type: 'doughnut',
             data: {
                 datasets: [{
-                    data: [pct, 1 - pct],
+                    data: [fill, 1 - fill],
                     borderWidth: 0,
-                    backgroundColor: ['#EF4444', '#e8eef7'],
+                    backgroundColor: ['#2563eb', '#e8eef7'],
                     cutout: '78%'
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,   // keep perfect circle
-                aspectRatio: 1,              // square canvas
+                maintainAspectRatio: true,
+                aspectRatio: 1,
                 plugins: { legend: { display: false }, tooltip: { enabled: false } }
             },
             plugins: [{
@@ -155,19 +178,19 @@
                     const cy = (chartArea.top + chartArea.bottom) / 2;
                     ctx.save();
                     ctx.font = '700 44px Inter, system-ui';
-                    ctx.fillStyle = '#ef4444';
+                    ctx.fillStyle = '#2563eb';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(gpa.toFixed(2), cx, cy - 12);
+                    ctx.fillText(isNaN(gwa) || gwa === 0 ? '—' : gwa.toFixed(2), cx, cy - 12);
                     ctx.font = '12px Inter, system-ui';
                     ctx.fillStyle = '#6b7280';
-                    ctx.fillText('Current GPA', cx, cy + 18);
+                    ctx.fillText('Cumulative GWA', cx, cy + 18);
                     ctx.restore();
                 }
             }]
         });
 
-        // ---------- Line: term scores (placeholders) ----------
+        // ---------- Line chart (demo) ----------
         const ctxLine = document.getElementById('termLine');
         let line;
         const datasets = {
@@ -194,7 +217,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,   // fill the .chart-area height
+                    maintainAspectRatio: false,
                     layout: { padding: { right: 12 } },
                     scales: {
                         y: {
@@ -213,15 +236,14 @@
         }
         drawLine(datasets.sem1);
 
-        // Tabs
-        const t1 = document.getElementById('tabSem1');
-        const t2 = document.getElementById('tabSem2');
-        t1.addEventListener('click', () => {
-            t1.classList.add('active'); t2.classList.remove('active');
+        document.getElementById('tabSem1').addEventListener('click', () => {
+            document.getElementById('tabSem1').classList.add('active');
+            document.getElementById('tabSem2').classList.remove('active');
             drawLine(datasets.sem1);
         });
-        t2.addEventListener('click', () => {
-            t2.classList.add('active'); t1.classList.remove('active');
+        document.getElementById('tabSem2').addEventListener('click', () => {
+            document.getElementById('tabSem2').classList.add('active');
+            document.getElementById('tabSem1').classList.remove('active');
             drawLine(datasets.sem2);
         });
     </script>

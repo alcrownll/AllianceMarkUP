@@ -55,13 +55,109 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction("Dashboard");
         }
 
+        // --------------------------------------------------------------------
+        // DASHBOARD: Cumulative GWA (1=best), Year/Program, Current Term Units
+        // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
             ViewData["PageHeader"] = "Dashboard";
-            return View("StudentDashboard");
+
+            // Identify logged-in student
+            var idNumber = HttpContext.Session.GetString("IdNumber");
+            if (string.IsNullOrEmpty(idNumber))
+                return RedirectToAction("StudentLogin", "Account");
+
+            var user = await _userRepository.GetUsers()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
+
+            if (user == null)
+                return View("StudentDashboard", new StudentDashboardViewModel());
+
+            var student = await _studentRepository.GetStudents()
+                .Include(s => s.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.UserId == user.UserId);
+
+            if (student == null)
+                return View("StudentDashboard", new StudentDashboardViewModel());
+
+            // Pull all grades (for cumulative GWA) and AC for units
+            var grades = await _gradeRepository.GetGrades()
+                .Where(g => g.StudentId == student.StudentId)
+                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
+                .AsNoTracking()
+                .ToListAsync();
+
+            // ---- Cumulative GWA (weighted by units when available) ----
+            decimal totalWeighted = 0m;
+            decimal totalUnitsForWeight = 0m;
+
+            foreach (var g in grades)
+            {
+                // Prefer AssignedCourse.Units; fallback to Course.TotalUnits
+                var units = (g.AssignedCourse?.Units)
+                            ?? (g.AssignedCourse?.Course?.TotalUnits)
+                            ?? 0;
+
+                if (units <= 0) units = 1; // minimal weight if units are missing
+
+                decimal gwaValue;
+
+                // If you have a GWA (1–5) column on Grade, prefer it:
+                // gwaValue = g.Gwa ?? MapPercentToGwa(g.Final ?? 0);
+
+                // Otherwise compute from Final percent:
+                if (g.Final.HasValue)
+                    gwaValue = MapPercentToGwa((decimal)g.Final.Value);
+                else
+                    continue; // skip courses without final for cumulative
+
+                totalWeighted += gwaValue * units;
+                totalUnitsForWeight += units;
+            }
+
+            decimal? cumulativeGwa = null;
+            if (totalUnitsForWeight > 0)
+                cumulativeGwa = Math.Round(totalWeighted / totalUnitsForWeight, 2);
+
+            // ---- Current term units (FIXED: nullable mixing) ----
+            var currentSy = GetCurrentSchoolYear();            // e.g., "2025-2026"
+            var currentSemNameShort = GetCurrentSemesterName(); // "1st"/"2nd"/"Mid"
+
+            var currentTermUnits = grades
+                .Where(g => g.AssignedCourse != null
+                            && MatchesCurrentTerm(g.AssignedCourse.Semester, currentSy, currentSemNameShort))
+                .Select(g =>
+                    // Ensure compatible nullables: Units is int (via ?. becomes int?), TotalUnits is int?
+                    (g.AssignedCourse?.Units as int?)
+                    ?? g.AssignedCourse?.Course?.TotalUnits
+                    ?? 0
+                )
+                .Sum();
+
+            // ---- Dean's List rule (example threshold) ----
+            bool isDeanList = cumulativeGwa.HasValue && cumulativeGwa.Value <= 1.75m;
+
+            var vm = new StudentDashboardViewModel
+            {
+                StudentName = $"{student.User.FirstName} {student.User.LastName}",
+                Program = student.Program,
+                YearLevel = FormatYearLevel(student.YearLevel),
+                CumulativeGwa = cumulativeGwa,
+                CurrentTermUnits = currentTermUnits,
+                IsDeanListEligible = isDeanList,
+                CurrentSchoolYear = currentSy,
+                CurrentSemesterName = currentSemNameShort + " Semester"
+            };
+
+            return View("StudentDashboard", vm);
         }
 
+        // --------------------------------------------------------------------
+        // PROFILE
+        // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         public IActionResult Profile()
         {
@@ -135,8 +231,6 @@ namespace ASI.Basecode.WebApp.Controllers
                     Description = course?.Description,
                     Instructor = tchUser != null ? $"{tchUser.FirstName} {tchUser.LastName}" : "N/A",
                     Units = ac?.Units > 0 ? ac.Units : ((course?.LecUnits ?? 0) + (course?.LabUnits ?? 0)),
-                    // Your AssignedCourses.Type values look like "Lecture"/"Laboratory".
-                    // Keep as-is or map to LEC/LAB if you prefer.
                     Type = ac?.Type,
                     Room = schedsForCourse?.FirstOrDefault()?.Room ?? "",
                     DateTime = FormatSchedule_DayOfWeek_TimeSpan(schedsForCourse)
@@ -160,7 +254,7 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
-        // GRADES (existing logic, unchanged)
+        // GRADES
         // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> Grades(string schoolYear = null, string semester = null)
@@ -296,6 +390,9 @@ namespace ASI.Basecode.WebApp.Controllers
             return View(viewModel);
         }
 
+        // --------------------------------------------------------------------
+        // CALENDAR & NOTIFICATIONS
+        // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         public IActionResult Calendar()
         {
@@ -313,7 +410,6 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------
-
         private static string GetCurrentSchoolYear()
         {
             var now = DateTime.Now;
@@ -348,21 +444,17 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // ---- schedule formatting helpers (DayOfWeek + TimeSpan) ----
-
-        private static string AbbrevDay(DayOfWeek day)
+        private static string AbbrevDay(DayOfWeek day) => day switch
         {
-            return day switch
-            {
-                DayOfWeek.Monday => "M",
-                DayOfWeek.Tuesday => "T",
-                DayOfWeek.Wednesday => "W",
-                DayOfWeek.Thursday => "TH",
-                DayOfWeek.Friday => "F",
-                DayOfWeek.Saturday => "SAT",
-                DayOfWeek.Sunday => "SUN",
-                _ => ""
-            };
-        }
+            DayOfWeek.Monday => "M",
+            DayOfWeek.Tuesday => "T",
+            DayOfWeek.Wednesday => "W",
+            DayOfWeek.Thursday => "TH",
+            DayOfWeek.Friday => "F",
+            DayOfWeek.Saturday => "SAT",
+            DayOfWeek.Sunday => "SUN",
+            _ => ""
+        };
 
         private static string To12h(TimeSpan t)
         {
@@ -387,6 +479,45 @@ namespace ASI.Basecode.WebApp.Controllers
                 parts.Add($"{dayStr} ({timeStr})");
             }
             return string.Join("; ", parts);
+        }
+
+        // ---- GWA mapping & current semester helpers ----
+
+        // Map a 0–100 final grade to GWA (1.00–5.00). Adjust to your official scale.
+        private static decimal MapPercentToGwa(decimal percent)
+        {
+            if (percent >= 96) return 1.00m;
+            if (percent >= 93) return 1.25m;
+            if (percent >= 90) return 1.50m;
+            if (percent >= 87) return 1.75m;
+            if (percent >= 84) return 2.00m;
+            if (percent >= 81) return 2.25m;
+            if (percent >= 78) return 2.50m;
+            if (percent >= 75) return 2.75m;
+            if (percent >= 70) return 3.00m;
+            if (percent >= 65) return 4.00m;
+            return 5.00m;
+        }
+
+        // Example calendar split: Jun–Oct => 1st, Nov–Mar => 2nd, else Mid
+        private static string GetCurrentSemesterName()
+        {
+            var now = DateTime.Now;
+            if (now.Month is >= 6 and <= 10) return "1st";
+            if (now.Month is >= 11 || now.Month <= 3) return "2nd";
+            return "Mid";
+        }
+
+        // Match current term based on text in AssignedCourse.Semester
+        private static bool MatchesCurrentTerm(string assignedCourseSemester, string currentSy, string currentSemName)
+        {
+            if (string.IsNullOrWhiteSpace(assignedCourseSemester)) return false;
+
+            var syMatch = Regex.IsMatch(assignedCourseSemester, Regex.Escape(currentSy));
+            var semMatch = assignedCourseSemester.Contains(currentSemName, StringComparison.OrdinalIgnoreCase);
+
+            // Be forgiving: if either matches, count it.
+            return syMatch || semMatch;
         }
     }
 }
