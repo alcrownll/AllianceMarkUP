@@ -47,5 +47,6 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\img\" />
+    <Folder Include="wwwroot\prospectus\" />
   </ItemGroup>
 </Project>

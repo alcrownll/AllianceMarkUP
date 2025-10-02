@@ -5,6 +5,17 @@
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Study Load";
     ViewData["PageHeader"] = "Study Load";
+
+    // Decide which prospectus file to open based on Program
+    var prog = (Model?.Program ?? string.Empty).Trim().ToUpperInvariant();
+    string prospectusFile = null;
+
+    // strict codes first
+    if (prog == "BSCS") prospectusFile = "BSCS.pdf";
+    else if (prog == "BSIT") prospectusFile = "BSIT.pdf";
+    // fallback for variants like "BS Computer Science" / "Information Technology"
+    else if (prog.Contains("IT")) prospectusFile = "BSIT.pdf";
+    else if (prog.Contains("CS")) prospectusFile = "BSCS.pdf";
 }
 
 @section Styles {
@@ -27,7 +38,7 @@
                     }
                 </select>
 
-                <!-- Print button with SVG icon -->
+                <!-- Print button -->
                 <button type="button" class="sl-iconbtn" title="Print Study Load" onclick="window.print()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
@@ -35,6 +46,32 @@
                     </svg>
                     <span class="sr-only">Print</span>
                 </button>
+
+                @* Prospectus button: opens the matching PDF in a new tab *@
+                @if (!string.IsNullOrEmpty(prospectusFile))
+                {
+                    <a class="sl-iconbtn"
+                       href="~/prospectus/@prospectusFile"
+                       target="_blank"
+                       rel="noopener"
+                       title="View Prospectus">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M12 5v10m0 0l-4-4m4 4l4-4M4 19h16" fill="none"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span class="sr-only">View Prospectus</span>
+                    </a>
+                }
+                else
+                {
+                    <button type="button" class="sl-iconbtn" title="Prospectus unavailable" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M12 5v10m0 0l-4-4m4 4l4-4M4 19h16" fill="none"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span class="sr-only">Prospectus unavailable</span>
+                    </button>
+                }
             </form>
         </div>
 

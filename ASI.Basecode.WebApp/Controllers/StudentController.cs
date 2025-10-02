@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -10,6 +11,7 @@ using ASI.Basecode.Data.Models;
 using ASI.Basecode.WebApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,17 +24,20 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IStudentRepository _studentRepository;
         private readonly IUserRepository _userRepository;
         private readonly IClassScheduleRepository _classScheduleRepository;
+        private readonly IWebHostEnvironment _env; // for serving prospectus pdfs
 
         public StudentController(
             IGradeRepository gradeRepository,
             IStudentRepository studentRepository,
             IUserRepository userRepository,
-            IClassScheduleRepository classScheduleRepository)
+            IClassScheduleRepository classScheduleRepository,
+            IWebHostEnvironment env)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
             _userRepository = userRepository;
             _classScheduleRepository = classScheduleRepository;
+            _env = env;
         }
 
         // --------------------------------------------------------------------
@@ -56,7 +61,7 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
-        // DASHBOARD: Cumulative GWA (1=best), Year/Program, Current Term Units
+        // DASHBOARD
         // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> Dashboard()
@@ -83,36 +88,25 @@ namespace ASI.Basecode.WebApp.Controllers
             if (student == null)
                 return View("StudentDashboard", new StudentDashboardViewModel());
 
-            // Pull all grades (for cumulative GWA) and AC for units
             var grades = await _gradeRepository.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
                 .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
                 .AsNoTracking()
                 .ToListAsync();
 
-            // ---- Cumulative GWA (weighted by units when available) ----
+            // ---- Cumulative GWA (weighted by units) ----
             decimal totalWeighted = 0m;
             decimal totalUnitsForWeight = 0m;
 
             foreach (var g in grades)
             {
-                // Prefer AssignedCourse.Units; fallback to Course.TotalUnits
                 var units = (g.AssignedCourse?.Units)
                             ?? (g.AssignedCourse?.Course?.TotalUnits)
                             ?? 0;
+                if (units <= 0) units = 1;
 
-                if (units <= 0) units = 1; // minimal weight if units are missing
-
-                decimal gwaValue;
-
-                // If you have a GWA (1–5) column on Grade, prefer it:
-                // gwaValue = g.Gwa ?? MapPercentToGwa(g.Final ?? 0);
-
-                // Otherwise compute from Final percent:
-                if (g.Final.HasValue)
-                    gwaValue = MapPercentToGwa((decimal)g.Final.Value);
-                else
-                    continue; // skip courses without final for cumulative
+                if (!g.Final.HasValue) continue;
+                var gwaValue = MapPercentToGwa((decimal)g.Final.Value);
 
                 totalWeighted += gwaValue * units;
                 totalUnitsForWeight += units;
@@ -122,7 +116,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (totalUnitsForWeight > 0)
                 cumulativeGwa = Math.Round(totalWeighted / totalUnitsForWeight, 2);
 
-            // ---- Current term units (FIXED: nullable mixing) ----
             var currentSy = GetCurrentSchoolYear();            // e.g., "2025-2026"
             var currentSemNameShort = GetCurrentSemesterName(); // "1st"/"2nd"/"Mid"
 
@@ -130,14 +123,12 @@ namespace ASI.Basecode.WebApp.Controllers
                 .Where(g => g.AssignedCourse != null
                             && MatchesCurrentTerm(g.AssignedCourse.Semester, currentSy, currentSemNameShort))
                 .Select(g =>
-                    // Ensure compatible nullables: Units is int (via ?. becomes int?), TotalUnits is int?
                     (g.AssignedCourse?.Units as int?)
                     ?? g.AssignedCourse?.Course?.TotalUnits
                     ?? 0
                 )
                 .Sum();
 
-            // ---- Dean's List rule (example threshold) ----
             bool isDeanList = cumulativeGwa.HasValue && cumulativeGwa.Value <= 1.75m;
 
             var vm = new StudentDashboardViewModel
@@ -166,7 +157,7 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
-        // STUDY LOAD: Grades → AssignedCourses → Courses + ClassSchedules
+        // STUDY LOAD
         // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
         [HttpGet]
@@ -174,7 +165,6 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             ViewData["PageHeader"] = "Study Load";
 
-            // Identify the logged-in user via Session
             var idNumber = HttpContext.Session.GetString("IdNumber");
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
@@ -186,7 +176,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (user == null)
                 return View(new StudentStudyLoadViewModel());
 
-            // Student for this user
             var student = await _studentRepository.GetStudents()
                 .Include(s => s.User)
                 .AsNoTracking()
@@ -195,7 +184,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (student == null)
                 return View(new StudentStudyLoadViewModel());
 
-            // Enrollments via Grades
             var grades = await _gradeRepository.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
                 .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
@@ -205,7 +193,6 @@ namespace ASI.Basecode.WebApp.Controllers
 
             var assignedCourseIds = grades.Select(g => g.AssignedCourseId).Distinct().ToList();
 
-            // Schedules for those courses
             var schedules = await _classScheduleRepository.GetClassSchedules()
                 .Where(cs => assignedCourseIds.Contains(cs.AssignedCourseId))
                 .AsNoTracking()
@@ -215,7 +202,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 .GroupBy(s => s.AssignedCourseId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // Project to rows
             var rows = grades.Select(g =>
             {
                 var ac = g.AssignedCourse;
@@ -408,6 +394,58 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
+        // PROSPECTUS DOWNLOAD (BSCS / BSIT)
+        // Explicit route to avoid 404s from conventional routing quirks.
+        // --------------------------------------------------------------------
+        [Authorize(Roles = "Student")]
+        [HttpGet("/Student/DownloadProspectus")]
+        public async Task<IActionResult> DownloadProspectus([FromQuery] string program = null)
+        {
+            // If a program is not provided (normal case), resolve from logged-in student
+            if (string.IsNullOrWhiteSpace(program))
+            {
+                var idNumber = HttpContext.Session.GetString("IdNumber");
+                if (string.IsNullOrEmpty(idNumber))
+                    return RedirectToAction("StudentLogin", "Account");
+
+                var user = await _userRepository.GetUsers()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
+                if (user == null) return NotFound("User not found.");
+
+                var student = await _studentRepository.GetStudents()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.UserId == user.UserId);
+                if (student == null) return NotFound("Student profile not found.");
+
+                program = student.Program;
+            }
+
+            var prog = (program ?? string.Empty).Trim().ToUpperInvariant();
+
+            // Accept strict codes or common variants
+            string fileName = prog switch
+            {
+                "BSCS" => "BSCS.pdf",
+                "BSIT" => "BSIT.pdf",
+                _ when prog.Contains("IT") => "BSIT.pdf",
+                _ when prog.Contains("CS") => "BSCS.pdf",
+                _ => null
+            };
+
+            if (fileName is null)
+                return NotFound("Program not mapped to a prospectus (expected BSCS or BSIT).");
+
+            // Files expected at: wwwroot/prospectus/BSCS.pdf and BSIT.pdf
+            var path = Path.Combine(_env.WebRootPath, "prospectus", fileName);
+            if (!System.IO.File.Exists(path))
+                return NotFound($"Prospectus file not found: {fileName}");
+
+            // Force a download (use inline by omitting the downloadName)
+            return PhysicalFile(path, "application/pdf", fileName);
+        }
+
+        // --------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------
         private static string GetCurrentSchoolYear()
@@ -443,7 +481,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return $"{level}{suffix} Year";
         }
 
-        // ---- schedule formatting helpers (DayOfWeek + TimeSpan) ----
         private static string AbbrevDay(DayOfWeek day) => day switch
         {
             DayOfWeek.Monday => "M",
@@ -480,8 +517,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
             return string.Join("; ", parts);
         }
-
-        // ---- GWA mapping & current semester helpers ----
 
         // Map a 0–100 final grade to GWA (1.00–5.00). Adjust to your official scale.
         private static decimal MapPercentToGwa(decimal percent)
