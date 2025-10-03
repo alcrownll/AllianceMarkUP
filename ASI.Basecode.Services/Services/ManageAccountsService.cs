@@ -246,7 +246,7 @@ namespace ASI.Basecode.Services.Services
                         Province = Get(ws, r, map, "Province"),
                         Municipality = Get(ws, r, map, "Municipality"),
                         Barangay = Get(ws, r, map, "Barangay"),
-                        DateOfBirth = GetDate(ws, r, map, "DateOfBirth"),
+                        DateOfBirth = GetDateOnly(ws, r, map, "DateOfBirth"),
                         PlaceOfBirth = Get(ws, r, map, "PlaceOfBirth"),
                         Age = GetInt(ws, r, map, "Age") ?? 0,   
                         MaritalStatus = Get(ws, r, map, "MaritalStatus"),
@@ -349,7 +349,7 @@ namespace ASI.Basecode.Services.Services
                         Province = Get(ws, r, map, "Province"),
                         Municipality = Get(ws, r, map, "Municipality"),
                         Barangay = Get(ws, r, map, "Barangay"),
-                        DateOfBirth = GetDate(ws, r, map, "DateOfBirth"),
+                        DateOfBirth = GetDateOnly(ws, r, map, "DateOfBirth"),
                         PlaceOfBirth = Get(ws, r, map, "PlaceOfBirth"),
                         Age = GetInt(ws, r, map, "Age") ?? 0,  
                         MaritalStatus = Get(ws, r, map, "MaritalStatus"),
@@ -453,6 +453,38 @@ namespace ASI.Basecode.Services.Services
                       : (idNumber.Length >= 4 ? idNumber[^4..] : idNumber);
             var plain = $"{ln}{last4}";
             return PasswordManager.EncryptPassword(plain);
+        }
+
+        private static DateOnly? GetDateOnly(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        {
+            if (!map.TryGetValue(name, out var c))
+                return null;
+
+            var cell = ws.Cell(r, c);
+
+            // If Excel stored it as a date/time
+            if (cell.DataType == XLDataType.DateTime)
+            {
+                var dt = cell.GetDateTime();
+                if (dt.Year > 1900 && dt.TimeOfDay == TimeSpan.Zero)
+                    return DateOnly.FromDateTime(dt);
+
+                return null;
+            }
+
+            // If Excel stored it as text, check if it's a pure date
+            var s = cell.GetString().Trim();
+            if (string.IsNullOrEmpty(s))
+                return null;
+
+            if (DateTime.TryParse(s, out var parsed))
+            {
+                // Only accept if it has no time part (00:00:00)
+                if (parsed.Year > 1900 && parsed.TimeOfDay == TimeSpan.Zero)
+                    return DateOnly.FromDateTime(parsed);
+            }
+
+            return null;
         }
     }
 }

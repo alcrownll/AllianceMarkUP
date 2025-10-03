@@ -97,6 +97,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Province).HasMaxLength(100);
                 entity.Property(e => e.Municipality).HasMaxLength(100);
                 entity.Property(e => e.Barangay).HasMaxLength(100);
+                entity.Property(e => e.DateOfBirth).HasColumnType("date");
                 entity.Property(e => e.PlaceOfBirth).HasMaxLength(255);
                 entity.Property(e => e.MaritalStatus).HasMaxLength(20);
                 entity.Property(e => e.Gender).HasMaxLength(20);

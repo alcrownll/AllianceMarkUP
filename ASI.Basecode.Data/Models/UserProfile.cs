@@ -18,7 +18,7 @@ namespace ASI.Basecode.Data.Models
         public string Province { get; set; }
         public string Municipality { get; set; }
         public string Barangay { get; set; }
-        public DateTime DateOfBirth { get; set; }  
+        public DateOnly? DateOfBirth { get; set; }  
         public string PlaceOfBirth { get; set; }
         public int Age { get; set; }                
         public string MaritalStatus { get; set; }
