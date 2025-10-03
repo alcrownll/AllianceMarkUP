@@ -1,20 +1,29 @@
-﻿@using ASI.Basecode.WebApp.Models
-@model StudentStudyLoadViewModel
+﻿@using ASI.Basecode.Services.ServiceModels
+@model StudyLoadViewModel
 
 @{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Study Load";
     ViewData["PageHeader"] = "Study Load";
+
+    // Decide which prospectus file to open based on Program
+    var prog = (Model?.Program ?? string.Empty).Trim().ToUpperInvariant();
+    string prospectusFile = null;
+    if (prog == "BSCS") prospectusFile = "BSCS.pdf";
+    else if (prog == "BSIT") prospectusFile = "BSIT.pdf";
+    else if (prog.Contains("IT")) prospectusFile = "BSIT.pdf";
+    else if (prog.Contains("CS")) prospectusFile = "BSCS.pdf";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/studyload.css" />
+    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/studyload-print.css" />
 }
 
-<div class="studyload-container">
+<div class="studyload-container no-print">
     <div class="sl-card">
 
-        <!-- School Term (inline, same style as Grades) -->
+        <!-- School Term (inline) -->
         <div class="mb-2">
             <form method="get" asp-action="StudyLoad" asp-controller="Student" class="sl-term-inline">
                 <span class="sl-toolbar-label">Select School Term</span>
@@ -27,7 +36,7 @@
                     }
                 </select>
 
-                <!-- Print button with SVG icon -->
+                <!-- Print -->
                 <button type="button" class="sl-iconbtn" title="Print Study Load" onclick="window.print()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
@@ -35,10 +44,22 @@
                     </svg>
                     <span class="sr-only">Print</span>
                 </button>
+
+                @* Prospectus *@
+                @if (!string.IsNullOrEmpty(prospectusFile))
+                {
+                    <a class="sl-iconbtn" href="~/prospectus/@prospectusFile" target="_blank" rel="noopener" title="View Prospectus">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M12 5v10m0 0l-4-4m4 4l4-4M4 19h16" fill="none"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span class="sr-only">View Prospectus</span>
+                    </a>
+                }
             </form>
         </div>
 
-        <!-- Student Info -->
+        <!-- On-screen student info & table (unchanged) -->
         <div class="sl-infogrid">
             <div class="sl-label">Name</div><div class="sl-value">@Model.StudentName</div>
             <div class="sl-label">School Year</div><div class="sl-value">@Model.SchoolYear</div>
@@ -46,7 +67,6 @@
             <div class="sl-label">Year Level</div><div class="sl-value">@Model.YearLevel</div>
         </div>
 
-        <!-- Subjects Table -->
         <table class="sl-table">
             <thead>
                 <tr>
@@ -79,18 +99,87 @@
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">No subjects found for the selected term.</td>
-                    </tr>
+                    <tr><td colspan="8" class="text-center text-muted">No subjects found for the selected term.</td></tr>
                 }
             </tbody>
         </table>
 
-        <!-- Footer -->
         <div class="sl-footer">
             <div><strong>Total Units Enrolled:</strong> @Model.TotalUnits</div>
             <a asp-controller="Student" asp-action="Calendar" class="sl-btn-primary">View Class Schedule</a>
         </div>
 
     </div>
+</div>
+
+<!-- ===================== PRINT-ONLY SHEET ===================== -->
+<div class="print-sheet only-print">
+
+    <div class="sheet-header">
+        <img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-left" />
+        <div class="header-text">
+            <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
+            <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
+            <div>Website: ccs-lm.uc.ude.ph</div>
+            <div>Email: ccs.lm@uc.edu.ph</div>
+        </div>
+        <img src="~/img/ccs-crest.png" alt="CCS" class="logo-right" />
+    </div>
+
+    <div class="title">STUDY LOAD</div>
+    <div class="sub-title">First Semester, S.Y. @Model.SchoolYear</div>
+    <div class="dept">College of Computer Studies</div>
+    <div class="prog">Bachelor of Science in Computer Science</div>
+
+    <div class="info-grid">
+        <div class="lbl">Name</div><div class="val">: @Model.StudentName</div>
+        <div class="lbl">School Year</div><div class="val">: @Model.SchoolYear</div>
+        <div class="lbl">Program</div><div class="val">: @Model.Program</div>
+        <div class="lbl">Year Level</div><div class="val">: @Model.YearLevel</div>
+    </div>
+
+    <hr class="sep" />
+
+    <table class="grid">
+        <thead>
+            <tr>
+                <th style="width:72px;">EDP Code</th>
+                <th>Subject</th>
+                <th>Description</th>
+                <th>Instructor</th>
+                <th style="width:48px;">Units</th>
+                <th style="width:56px;">Type</th>
+                <th style="width:56px;">Room</th>
+                <th style="width:184px;">Date &amp; Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Rows?.Count > 0)
+            {
+                foreach (var r in Model.Rows)
+                {
+                    <tr>
+                        <td>@r.EDPCode</td>
+                        <td>@r.Subject</td>
+                        <td>@r.Description</td>
+                        <td>@r.Instructor</td>
+                        <td>@r.Units</td>
+                        <td>@r.Type</td>
+                        <td>@r.Room</td>
+                        <td>@r.DateTime</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="8" class="no-rows">No subjects found.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="footer-row">
+        <span><strong>Total Units Enrolled:</strong> @Model.TotalUnits</span>
+    </div>
+
+    <div class="watermark">ENROLLED</div>
 </div>

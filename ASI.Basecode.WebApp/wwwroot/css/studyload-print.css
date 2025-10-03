@@ -1,0 +1,216 @@
+﻿/* ---------- Screen vs Print visibility ---------- */
+.only-print {
+    display: none;
+}
+
+.no-print {
+    display: block;
+}
+
+@media print {
+    /* Use full page and neutralize site chrome */
+    @page {
+        size: A4;
+        margin: 14mm 14mm;
+    }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: auto !important;
+        height: auto !important;
+        background: #fff !important;
+        font: 12px/1.35 "Inter","Segoe UI",Arial,sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        overflow: visible !important;
+    }
+
+    /* Kill all layout constraints from the app shell */
+    nav, header, footer, .left-sidebar, .right-sidebar, .no-print {
+        display: none !important;
+    }
+
+    /* common wrappers that often set max-width / padding */
+    .container, .container-fluid, .content, .content-wrapper, .main-content,
+    .page, .page-wrapper, .app, .app-container, .layout, .dash-wrap,
+    .studyload-container, .sl-card {
+        max-width: none !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    .only-print {
+        display: block !important;
+    }
+
+    /* ---------- Print sheet occupies the whole printable area ---------- */
+    .print-sheet {
+        position: static !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+        .print-sheet * {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+    /* ---------- Header ---------- */
+    .sheet-header {
+        display: grid;
+        grid-template-columns: 84px 1fr 96px;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 8px;
+    }
+
+        .sheet-header .logo-left {
+            width: 170px;
+            height: 170px;
+            object-fit: contain;
+        }
+
+        .sheet-header .logo-right {
+            width: 170px;
+            height: 170px;
+            object-fit: contain;
+            justify-self: end;
+        }
+
+        .sheet-header .header-text {
+            text-align: center;
+            font-size: 11.5px;
+        }
+
+        .sheet-header .u-name {
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: .3px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+    /* ---------- Titles ---------- */
+    .title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 16px;
+        margin-top: 6px;
+    }
+
+    .sub-title, .dept, .prog {
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .sub-title {
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
+    .dept {
+        margin-top: 8px;
+    }
+
+    .prog {
+        margin-top: 2px;
+        margin-bottom: 12px;
+    }
+
+    /* ---------- Student info block ---------- */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        row-gap: 4px;
+        column-gap: 6px;
+        margin-top: 6px;
+        margin-bottom: 8px;
+        color: #111;
+    }
+
+        .info-grid .lbl {
+        }
+
+        .info-grid .val {
+        }
+
+    .sep {
+        border: none;
+        border-top: 1px solid #bbb;
+        margin: 10px 0 8px;
+    }
+
+    /* ---------- Table ---------- */
+    .grid {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 11.3px;
+    }
+
+        .grid thead th {
+            border-bottom: 1px solid #bbb;
+            padding: 6px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .grid tbody td {
+            border-bottom: 1px solid #e3e3e3;
+            padding: 6px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .grid .no-rows {
+            text-align: center;
+            color: #555;
+        }
+
+    /* ---------- Footer row ---------- */
+    .footer-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    /* ---------- Watermark ---------- */
+    .watermark {
+        position: fixed;
+        top: 55%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-35deg);
+        font-size: 130px;
+        font-weight: 700;
+        letter-spacing: 8px;
+        color: #1f2937;
+        opacity: .08;
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    /* ---------- Force white background when printing ---------- */
+    * {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    html, body,
+    .studyload-container,
+    .sl-card,
+    .print-sheet,
+    table,
+    td,
+    th {
+        background: #fff !important;
+    }
+}

@@ -1,237 +1,106 @@
-﻿@{
-    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
-    ViewData["Title"] = "Profile";
-}
+﻿@model ASI.Basecode.Services.ServiceModels.ProfileViewModel
 
-<!-- Link to external stylesheet -->
-<link rel="stylesheet" href="~/css/main-site.css" />
+<div class="section-title mt-3">Personal Information</div>
 
-<div class="container my-4">
-    <div class="profile-card">
-        <p class="meta-info">Applicant ID: <span>20152015</span></p>
-        <p class="meta-info">Applicant Name: <span>Jing Yuan</span></p>
+<div class="row g-4">
+    <!-- LEFT: Profile photo -->
+    <div class="col-md-3 d-flex flex-column align-items-start">
+        <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button" aria-label="Upload profile photo"></label>
+        <input class="sr-only" type="file" id="avatarInput" name="ProfilePhotoFile" accept="image/*">
+        <small class="tiny-hint mt-1">Click the photo to upload</small>
+    </div>
 
-        <div class="section-title">Personal Information</div>
-
-        <form enctype="multipart/form-data">
-            <div class="row g-4">
-                <!-- LEFT: Profile photo -->
-                <div class="col-md-3 d-flex flex-column align-items-start">
-                    <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button" aria-label="Upload profile photo">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="8" r="4" fill="#ffffff" />
-                            <path d="M4 20c0-4 4-7 8-7s8 3 8 7" fill="#ffffff" />
-                        </svg>
-                    </label>
-                    <input class="sr-only" type="file" id="avatarInput" name="ProfilePhoto" accept="image/*">
-                    <small class="tiny-hint mt-1">Click the photo to upload</small>
-                </div>
-
-                <!-- RIGHT -->
-                <div class="col-md-9">
-                    <!-- Row: Admission -->
-                    <div class="row g-3 uniform-row">
-                        <div class="col-md-3">
-                            <label class="form-label">Admission Type</label>
-                            <select class="form-select">
-                                <option>New</option>
-                                <option selected>Old</option>
-                                <option>Transferee</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Department</label>
-                            <select class="form-select">
-                                <option>Arts & Sciences</option>
-                                <option selected>Computer Studies</option>
-                                <option>Engineering</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Program</label>
-                            <select class="form-select">
-                                <option selected>Computer Science</option>
-                                <option>Information Technology</option>
-                                <option>Information Systems</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Year Level</label>
-                            <select class="form-select">
-                                <option>First Year</option>
-                                <option>Second Year</option>
-                                <option>Third Year</option>
-                                <option selected>Fourth Year</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Row: Name -->
-                    <div class="mt-3">
-                        <label class="form-label">Name</label>
-                        <div class="row g-3 uniform-row">
-                            <div class="col-md-3">
-                                <input class="form-control" value="YUAN" />
-                                <div class="caption">(Family Name)</div>
-                            </div>
-                            <div class="col-md-3">
-                                <input class="form-control" value="JING" />
-                                <div class="caption">(First Name)</div>
-                            </div>
-                            <div class="col-md-3">
-                                <input class="form-control" />
-                                <div class="caption">(Middle Name)</div>
-                            </div>
-                            <div class="col-md-3">
-                                <input class="form-control" />
-                                <div class="caption">(Suffix)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- RIGHT: Name -->
+    <div class="col-md-9">
+        <label class="form-label">Name</label>
+        <div class="row g-3 uniform-row">
+            <div class="col-md-3">
+                <input class="form-control" asp-for="LastName" />
+                <div class="caption">(Family Name)</div>
             </div>
-
-            <!-- Divider -->
-            <hr class="section-divider" />
-
-            <!-- Home Address -->
-            <div class="section-title">Home Address</div>
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Street / House No.</label>
-                    <input class="form-control" value="LORENZO MANGUBAT ROAD, PUROK SANTAN" />
-                </div>
+            <div class="col-md-3">
+                <input class="form-control" asp-for="FirstName" />
+                <div class="caption">(First Name)</div>
             </div>
-            <div class="mt-1 row g-3 uniform-row">
-                <div class="col-md-3">
-                    <label class="form-label">Province</label>
-                    <select class="form-select">
-                        <option selected>CEBU</option>
-                        <option>BOHOL</option>
-                        <option>NEGROS ORIENTAL</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Municipality</label>
-                    <select class="form-select">
-                        <option selected>LAPU-LAPU CITY (OPON)</option>
-                        <option>CEBU CITY</option>
-                        <option>MANDAUE CITY</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Barangay</label>
-                    <select class="form-select">
-                        <option selected>SOONG</option>
-                        <option>MARIBAGO</option>
-                        <option>PAKNA-AN</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tel No. / Mobile</label>
-                    <input class="form-control" value="+639102030405" />
-                </div>
+            <div class="col-md-3">
+                <input class="form-control" asp-for="MiddleName" />
+                <div class="caption">(Middle Name)</div>
             </div>
-
-            <!-- Divider -->
-            <hr class="section-divider" />
-
-            <!-- Other Details -->
-            <div class="section-title">Other Details</div>
-            <div class="row g-3 uniform-row">
-                <div class="col-md-3">
-                    <label class="form-label">Date of Birth</label>
-                    <input type="date" class="form-control" value="2003-03-17" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Place of Birth</label>
-                    <input class="form-control" value="CEBU CITY" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Age</label>
-                    <input class="form-control" value="22" readonly />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Marital Status</label>
-                    <select class="form-select">
-                        <option selected>SINGLE</option>
-                        <option>MARRIED</option>
-                        <option>WIDOWED</option>
-                    </select>
-                </div>
+            <div class="col-md-3">
+                <input class="form-control" asp-for="Suffix" />
+                <div class="caption">(Suffix)</div>
             </div>
-
-            <div class="row g-3 uniform-row mt-0">
-                <div class="col-md-3">
-                    <label class="form-label">Gender</label>
-                    <select class="form-select">
-                        <option selected>MALE</option>
-                        <option>FEMALE</option>
-                        <option>OTHER</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" value="JINGYUAN@GMAIL.COM" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Religion</label>
-                    <select class="form-select">
-                        <option selected>ROMAN CATHOLIC</option>
-                        <option>PROTESTANT</option>
-                        <option>OTHER</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Citizenship</label>
-                    <select class="form-select">
-                        <option selected>FILIPINO</option>
-                        <option>DUAL</option>
-                        <option>OTHER</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="row g-3 mt-2">
-                <div class="col-12">
-                    <label class="form-label d-block">Do you have any disabilities?</label>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="Disabilities" id="disabilityYes" value="Yes">
-                        <label class="form-check-label" for="disabilityYes">Yes</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="Disabilities" id="disabilityNo" value="No" checked>
-                        <label class="form-check-label" for="disabilityNo">No</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">Update</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<script>
-    (function () {
-      const input = document.getElementById('avatarInput');
-      const preview = document.getElementById('avatarPreview');
-      if (!input || !preview) return;
+<hr class="section-divider" />
 
-      preview.addEventListener('keydown', function(e){
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
-      });
+<!-- Home Address -->
+<div class="section-title">Home Address</div>
+<div class="row g-3">
+    <div class="col-12">
+        <label class="form-label">Street / House No.</label>
+        <input class="form-control" asp-for="HomeAddress" />
+    </div>
+</div>
+<div class="mt-1 row g-3 uniform-row">
+    <div class="col-md-3">
+        <label class="form-label">Province</label>
+        <input class="form-control" asp-for="Province" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Municipality</label>
+        <input class="form-control" asp-for="Municipality" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Barangay</label>
+        <input class="form-control" asp-for="Barangay" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tel No. / Mobile</label>
+        <input class="form-control" asp-for="MobileNo" />
+    </div>
+</div>
 
-      input.addEventListener('change', function (e) {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (ev) {
-          preview.style.backgroundImage = `url('${ev.target.result}')`;
-          preview.classList.add('has-image');
-        };
-        reader.readAsDataURL(file);
-      });
-    })();
-</script>
+<hr class="section-divider" />
+
+<!-- Other Details -->
+<div class="section-title">Other Details</div>
+<div class="row g-3 uniform-row">
+    <div class="col-md-3">
+        <label class="form-label">Date of Birth</label>
+        <input type="date" class="form-control" asp-for="DateOfBirth" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Place of Birth</label>
+        <input class="form-control" asp-for="PlaceOfBirth" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Age</label>
+        <input class="form-control" asp-for="Age" readonly />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Marital Status</label>
+        <input class="form-control" asp-for="MaritalStatus" />
+    </div>
+</div>
+
+<div class="row g-3 uniform-row mt-0">
+    <div class="col-md-3">
+        <label class="form-label">Gender</label>
+        <input class="form-control" asp-for="Gender" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" asp-for="Email" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Religion</label>
+        <input class="form-control" asp-for="Religion" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Citizenship</label>
+        <input class="form-control" asp-for="Citizenship" />
+    </div>
+</div>

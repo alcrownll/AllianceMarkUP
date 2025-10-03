@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace ASI.Basecode.Services.Services
 {
-    public class ManageAccountsService : IManageAccountsService
+    public class AdminCreateAccountService : IAdminCreateAccountService
     {
         private readonly IStudentRepository _students;
         private readonly ITeacherRepository _teachers;
@@ -24,7 +24,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IUserProfileRepository _profiles;
         private readonly IUnitOfWork _uow;
 
-        public ManageAccountsService(
+        public AdminCreateAccountService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
@@ -38,97 +38,7 @@ namespace ASI.Basecode.Services.Services
             _uow = uow;
         }
 
-        // fetch data and filters
-
-        public async Task<ManageAccountsResult> GetStudentsAsync(ManageAccountsFilters filters, CancellationToken ct)
-        {
-            var query = _students.GetStudentsWithUser();
-
-            if (!string.IsNullOrWhiteSpace(filters.Program))
-                query = query.Where(s => s.Program == filters.Program);
-
-            if (!string.IsNullOrWhiteSpace(filters.YearLevel))
-                query = query.Where(s => s.YearLevel == filters.YearLevel);
-
-            if (!string.IsNullOrWhiteSpace(filters.Name))
-            {
-                var name = filters.Name.Trim().ToLower();
-                query = query.Where(s => (s.User.FirstName + " " + s.User.LastName).ToLower().Contains(name));
-            }
-
-            if (!string.IsNullOrWhiteSpace(filters.IdNumber))
-            {
-                var id = filters.IdNumber.Trim();
-                query = query.Where(s => s.User.IdNumber.Contains(id));
-            }
-
-            var rows = await query
-                .OrderBy(s => s.Program)
-                .ThenBy(s => s.YearLevel)
-                .ThenBy(s => s.User.LastName)
-                .Select(s => new StudentListItem
-                {
-                    StudentId = s.StudentId,
-                    Program = s.Program,
-                    YearLevel = s.YearLevel,
-                    FullName = s.User.FirstName + " " + s.User.LastName,
-                    IdNumber = s.User.IdNumber,
-                    AccountStatus = s.User.AccountStatus
-                })
-                .ToListAsync(ct);
-
-            var programs = await _students.GetStudents()
-                .Select(s => s.Program)
-                .Where(p => !string.IsNullOrEmpty(p))
-                .Distinct()
-                .OrderBy(p => p)
-                .ToListAsync(ct);
-
-            var yearLevels = await _students.GetStudents()
-                .Select(s => s.YearLevel)
-                .Where(y => !string.IsNullOrEmpty(y))
-                .Distinct()
-                .OrderBy(y => y)
-                .ToListAsync(ct);
-
-            return new ManageAccountsResult
-            {
-                Students = rows,
-                Programs = programs,
-                YearLevels = yearLevels,
-                Filters = filters
-            };
-        }
-
-        public async Task<ManageAccountsResult> GetTeachersAsync(ManageAccountsFilters filters, CancellationToken ct)
-        {
-            var query = _teachers.GetTeachersWithUser();
-
-            if (!string.IsNullOrWhiteSpace(filters.Name))
-            {
-                var name = filters.Name.Trim().ToLower();
-                query = query.Where(t => (t.User.FirstName + " " + t.User.LastName).ToLower().Contains(name));
-            }
-
-            var rows = await query
-                .OrderBy(t => t.User.LastName)
-                .ThenBy(t => t.User.FirstName)
-                .Select(t => new TeacherListItem
-                {
-                    TeacherId = t.TeacherId,
-                    FullName = t.User.FirstName + " " + t.User.LastName,
-                    Position = t.Position
-                })
-                .ToListAsync(ct);
-
-            return new ManageAccountsResult
-            {
-                Teachers = rows,
-                Filters = filters
-            };
-        }
-
-        // generate templates
+        // generating templates:
 
         public (byte[] Content, string ContentType, string FileName) GenerateStudentsTemplate()
         {
@@ -142,10 +52,7 @@ namespace ASI.Basecode.Services.Services
 
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("StudentsTemplate");
-
-            for (int c = 0; c < headers.Length; c++)
-                ws.Cell(1, c + 1).Value = headers[c];
-
+            for (int c = 0; c < headers.Length; c++) ws.Cell(1, c + 1).Value = headers[c];
             ws.SheetView.FreezeRows(1);
             ws.Columns().AdjustToContents();
 
@@ -168,10 +75,7 @@ namespace ASI.Basecode.Services.Services
 
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("TeachersTemplate");
-
-            for (int c = 0; c < headers.Length; c++)
-                ws.Cell(1, c + 1).Value = headers[c];
-
+            for (int c = 0; c < headers.Length; c++) ws.Cell(1, c + 1).Value = headers[c];
             ws.SheetView.FreezeRows(1);
             ws.Columns().AdjustToContents();
 
@@ -182,7 +86,8 @@ namespace ASI.Basecode.Services.Services
                     "Teachers_Bulk_Template.xlsx");
         }
 
-        // import
+        // imports:
+
         public async Task<ImportResult> ImportStudentsAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
         {
             var result = new ImportResult();
@@ -204,8 +109,7 @@ namespace ASI.Basecode.Services.Services
                 try
                 {
                     var email = Get(ws, r, map, "Email");
-                    if (string.IsNullOrWhiteSpace(email))
-                        continue; 
+                    if (string.IsNullOrWhiteSpace(email)) continue;
 
                     await _uow.BeginTransactionAsync(ct);
 
@@ -222,7 +126,7 @@ namespace ASI.Basecode.Services.Services
                         IdNumber = idNumber,
                         Password = password,
                         Role = "Student",
-                        AccountStatus = "Active",
+                        AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
                         CreatedAt = now,
                         UpdatedAt = now
                     };
@@ -234,7 +138,7 @@ namespace ASI.Basecode.Services.Services
                     if (dup) throw new Exception($"Row {r}: Duplicate Email/ID Number.");
 
                     _users.AddUser(user);
-                    await _uow.SaveChangesAsync(ct); 
+                    await _uow.SaveChangesAsync(ct);
 
                     var profile = new UserProfile
                     {
@@ -246,9 +150,9 @@ namespace ASI.Basecode.Services.Services
                         Province = Get(ws, r, map, "Province"),
                         Municipality = Get(ws, r, map, "Municipality"),
                         Barangay = Get(ws, r, map, "Barangay"),
-                        DateOfBirth = GetDate(ws, r, map, "DateOfBirth"),
+                        DateOfBirth = GetDateOnly(ws, r, map, "DateOfBirth"),
                         PlaceOfBirth = Get(ws, r, map, "PlaceOfBirth"),
-                        Age = GetInt(ws, r, map, "Age") ?? 0,   
+                        Age = GetInt(ws, r, map, "Age") ?? 0,
                         MaritalStatus = Get(ws, r, map, "MaritalStatus"),
                         Gender = Get(ws, r, map, "Gender"),
                         Religion = Get(ws, r, map, "Religion"),
@@ -262,7 +166,7 @@ namespace ASI.Basecode.Services.Services
                         Program = Get(ws, r, map, "Program"),
                         Department = Get(ws, r, map, "Department"),
                         YearLevel = Get(ws, r, map, "YearLevel"),
-                        StudentStatus = "Enrolled",
+                        StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled",
                         UserId = user.UserId
                     };
 
@@ -307,8 +211,7 @@ namespace ASI.Basecode.Services.Services
                 try
                 {
                     var email = Get(ws, r, map, "Email");
-                    if (string.IsNullOrWhiteSpace(email))
-                        continue;
+                    if (string.IsNullOrWhiteSpace(email)) continue;
 
                     await _uow.BeginTransactionAsync(ct);
 
@@ -325,7 +228,7 @@ namespace ASI.Basecode.Services.Services
                         IdNumber = idNumber,
                         Password = password,
                         Role = "Teacher",
-                        AccountStatus = "Active",
+                        AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
                         CreatedAt = now,
                         UpdatedAt = now
                     };
@@ -349,9 +252,9 @@ namespace ASI.Basecode.Services.Services
                         Province = Get(ws, r, map, "Province"),
                         Municipality = Get(ws, r, map, "Municipality"),
                         Barangay = Get(ws, r, map, "Barangay"),
-                        DateOfBirth = GetDate(ws, r, map, "DateOfBirth"),
+                        DateOfBirth = GetDateOnly(ws, r, map, "DateOfBirth"),
                         PlaceOfBirth = Get(ws, r, map, "PlaceOfBirth"),
-                        Age = GetInt(ws, r, map, "Age") ?? 0,  
+                        Age = GetInt(ws, r, map, "Age") ?? 0,
                         MaritalStatus = Get(ws, r, map, "MaritalStatus"),
                         Gender = Get(ws, r, map, "Gender"),
                         Religion = Get(ws, r, map, "Religion"),
@@ -381,7 +284,6 @@ namespace ASI.Basecode.Services.Services
             static ImportResult Fail(string msg) => new() { FailedCount = 1, FirstError = msg };
         }
 
-        // helpers
         private static (IXLWorksheet ws, Dictionary<string, int> map) ReadWorksheetAndHeaderMap(IFormFile file)
         {
             var stream = file.OpenReadStream();
@@ -400,17 +302,6 @@ namespace ASI.Basecode.Services.Services
 
         private static string Get(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
             => map.TryGetValue(name, out var c) ? ws.Cell(r, c).GetString().Trim() : string.Empty;
-
-        private static string Fallback(string value, string fallback)
-            => string.IsNullOrWhiteSpace(value) ? fallback : value;
-
-        private static DateTime GetDate(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
-        {
-            if (!map.TryGetValue(name, out var c)) return default;
-            var cell = ws.Cell(r, c);
-            if (cell.DataType == XLDataType.DateTime && cell.GetDateTime().Year > 1900) return cell.GetDateTime();
-            return DateTime.TryParse(cell.GetString(), out var dt) ? dt : default;
-        }
 
         private static int? GetInt(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
         {
@@ -442,7 +333,7 @@ namespace ASI.Basecode.Services.Services
         private static string GenerateIdNumber(char prefix)
         {
             var rng = new Random();
-            int n = rng.Next(0, 10_000_000); 
+            int n = rng.Next(0, 10_000_000);
             return prefix + n.ToString("D7");
         }
 
@@ -453,6 +344,33 @@ namespace ASI.Basecode.Services.Services
                       : (idNumber.Length >= 4 ? idNumber[^4..] : idNumber);
             var plain = $"{ln}{last4}";
             return PasswordManager.EncryptPassword(plain);
+        }
+
+        private static DateOnly? GetDateOnly(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        {
+            if (!map.TryGetValue(name, out var c)) return null;
+
+            var cell = ws.Cell(r, c);
+
+            if (cell.DataType == XLDataType.DateTime)
+            {
+                var dt = cell.GetDateTime();
+                if (dt.Year > 1900 && dt.TimeOfDay == TimeSpan.Zero)
+                    return DateOnly.FromDateTime(dt);
+
+                return null;
+            }
+
+            var s = cell.GetString().Trim();
+            if (string.IsNullOrEmpty(s)) return null;
+
+            if (DateTime.TryParse(s, out var parsed))
+            {
+                if (parsed.Year > 1900 && parsed.TimeOfDay == TimeSpan.Zero)
+                    return DateOnly.FromDateTime(parsed);
+            }
+
+            return null;
         }
     }
 }

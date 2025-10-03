@@ -7,22 +7,26 @@ using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
-    public class ManageAccountsController : Controller
+    public class AdminAccountsController : Controller
     {
-        private readonly IManageAccountsService _svc;
+        private readonly IAdminAccountsService _adminacc;
+        private readonly IAdminCreateAccountService _create;
 
-        public ManageAccountsController(IManageAccountsService svc)
+        public AdminAccountsController(
+            IAdminAccountsService adminacc,
+            IAdminCreateAccountService create)
         {
-            _svc = svc;
+            _adminacc = adminacc;
+            _create = create;
         }
 
-        // TABS
+        // TABS 
         [HttpGet]
         public async Task<IActionResult> Index(
             string? tab, string? program, string? yearLevel, string? name, string? idNumber, CancellationToken ct)
         {
             var isTeachers = (tab?.ToLower() == "teachers");
-            var filters = new ManageAccountsFilters
+            var filters = new AccountsFilters
             {
                 Program = program,
                 YearLevel = yearLevel,
@@ -30,12 +34,12 @@ namespace ASI.Basecode.WebApp.Controllers
                 IdNumber = idNumber
             };
 
-            ManageAccountsViewModel vm;
+            AdminAccountsViewModel vm;
 
             if (isTeachers)
             {
-                var result = await _svc.GetTeachersAsync(filters, ct);
-                vm = new ManageAccountsViewModel
+                var result = await _adminacc.GetTeachersAsync(filters, ct);
+                vm = new AdminAccountsViewModel
                 {
                     ActiveTab = ManageTab.Teachers,
                     Filters = result.Filters,
@@ -44,8 +48,8 @@ namespace ASI.Basecode.WebApp.Controllers
             }
             else
             {
-                var result = await _svc.GetStudentsAsync(filters, ct);
-                vm = new ManageAccountsViewModel
+                var result = await _adminacc.GetStudentsAsync(filters, ct);
+                vm = new AdminAccountsViewModel
                 {
                     ActiveTab = ManageTab.Students,
                     Filters = result.Filters,
@@ -58,12 +62,12 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Admin/AdminAccounts.cshtml", vm);
         }
 
-        // STUDENTS: TEMPLATE + IMPORT 
+        // excel:
 
         [HttpGet]
         public IActionResult DownloadStudentTemplate()
         {
-            var (bytes, contentType, fileName) = _svc.GenerateStudentsTemplate();
+            var (bytes, contentType, fileName) = _create.GenerateStudentsTemplate();
             return File(bytes, contentType, fileName);
         }
 
@@ -72,7 +76,7 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> BulkUploadStudents(
             IFormFile file, string? defaultAccountStatus, string? defaultStudentStatus, CancellationToken ct)
         {
-            var result = await _svc.ImportStudentsAsync(
+            var result = await _create.ImportStudentsAsync(
                 file,
                 new ImportUserDefaults
                 {
@@ -89,12 +93,12 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction("Index", new { tab = "students" });
         }
 
-        // TEACHERS: TEMPLATE + IMPORT 
+        // excel (teachers):
 
         [HttpGet]
         public IActionResult DownloadTeacherTemplate()
         {
-            var (bytes, contentType, fileName) = _svc.GenerateTeachersTemplate();
+            var (bytes, contentType, fileName) = _create.GenerateTeachersTemplate();
             return File(bytes, contentType, fileName);
         }
 
@@ -103,7 +107,7 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> BulkUploadTeachers(
             IFormFile file, string? defaultAccountStatus, string? defaultPosition, CancellationToken ct)
         {
-            var result = await _svc.ImportTeachersAsync(
+            var result = await _create.ImportTeachersAsync(
                 file,
                 new ImportUserDefaults
                 {

@@ -8,11 +8,8 @@ using static ASI.Basecode.Resources.Constants.Enums;
 
 namespace ASI.Basecode.Services.Interfaces
 {
-    public interface IManageAccountsService
+    public interface IAdminCreateAccountService
     {
-        Task<ManageAccountsResult> GetStudentsAsync(ManageAccountsFilters filters, CancellationToken ct);
-        Task<ManageAccountsResult> GetTeachersAsync(ManageAccountsFilters filters, CancellationToken ct);
-
         (byte[] Content, string ContentType, string FileName) GenerateStudentsTemplate();
         Task<ImportResult> ImportStudentsAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct);
 

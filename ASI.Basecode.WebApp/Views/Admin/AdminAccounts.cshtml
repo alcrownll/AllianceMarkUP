@@ -1,9 +1,9 @@
 ﻿@using ASI.Basecode.Services.ServiceModels
-@model ManageAccountsViewModel
+@model AdminAccountsViewModel
 
 @{
-    var vm = Model ?? new ManageAccountsViewModel();
-    ViewData["Title"] = "Manage Accounts";
+    var vm = Model ?? new AdminAccountsViewModel();
+    ViewData["Title"] = "Admin Accounts";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
 }
 
@@ -21,46 +21,60 @@
         <div class="alert alert-danger">@TempData["ImportErr"]</div>
     }
 
-    <div class="toolbar">
-        <div class="tabs">
+    <div class="toolbar d-flex align-items-center justify-content-between">
+        <div class="tabs d-flex align-items-center">
             <a class="tab @(vm.ActiveTab == ManageTab.Students ? "active" : "")"
-               asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="students">Student’s List</a>
+               asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Student’s List</a>
 
             <a class="tab @(vm.ActiveTab == ManageTab.Teachers ? "active" : "")"
-               asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="teachers">Teacher List</a>
+               asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Teacher List</a>
         </div>
 
-        <div class="actions">
+        <div class="actions d-flex align-items-center gap-2">
             @if (vm.ActiveTab == ManageTab.Students)
             {
-                <div class="btn-group">
-                    <a class="btn btn-primary" asp-controller="Students" asp-action="Create">+ Add Student</a>
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false">
-                        <span class="sr-only">Toggle Dropdown</span>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button"
+                            id="studentsDropdown"
+                            data-toggle="dropdown" data-bs-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        + Add Student
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="studentsDropdown">
                         <a class="dropdown-item" asp-controller="Students" asp-action="Create">Single Record</a>
                         <div class="dropdown-divider"></div>
-                        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#bulkUploadStudentsModal">Student List</button>
+                        <button type="button" class="dropdown-item"
+                                data-toggle="modal" data-bs-toggle="modal"
+                                data-target="#bulkUploadStudentsModal" data-bs-target="#bulkUploadStudentsModal">
+                            Student List (Bulk Upload)
+                        </button>
                     </div>
                 </div>
             }
             else
             {
-                <div class="btn-group">
-                    <a class="btn btn-primary" asp-controller="Teachers" asp-action="Create">+ Add Teacher</a>
-                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-expanded="false">
-                        <span class="sr-only">Toggle Dropdown</span>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button"
+                            id="teachersDropdown"
+                            data-toggle="dropdown" data-bs-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                        + Add Teacher
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="teachersDropdown">
                         <a class="dropdown-item" asp-controller="Teachers" asp-action="Create">Single Record</a>
                         <div class="dropdown-divider"></div>
-                        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#bulkUploadTeachersModal">Teacher List</button>
+                        <button type="button" class="dropdown-item"
+                                data-toggle="modal" data-bs-toggle="modal"
+                                data-target="#bulkUploadTeachersModal" data-bs-target="#bulkUploadTeachersModal">
+                            Teacher List (Bulk Upload)
+                        </button>
                     </div>
                 </div>
             }
 
-            <button class="btn btn-outline" type="button">Export List</button>
+            <button type="button" class="btn btn-primary" id="printUsersBtn">
+                Generate User Report
+            </button>
         </div>
     </div>
 
@@ -69,7 +83,7 @@
 
             @if (vm.ActiveTab == ManageTab.Students)
             {
-                <form id="studentFilterForm" method="get" asp-controller="ManageAccounts" asp-action="Index">
+                <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                     <input type="hidden" name="tab" value="students" />
 
                     <table class="accounts-table">
@@ -128,7 +142,7 @@
                                 <th>
                                     <button type="submit" class="btn btn-outline btn-xs">Apply</button>
                                     <a class="btn btn-link btn-xs"
-                                       asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="students">Reset</a>
+                                       asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Reset</a>
                                 </th>
                             </tr>
                         </thead>
@@ -164,7 +178,7 @@
             }
             else
             {
-                <form id="teacherFilterForm" method="get" asp-controller="ManageAccounts" asp-action="Index">
+                <form id="teacherFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                     <input type="hidden" name="tab" value="teachers" />
 
                     <table class="accounts-table">
@@ -185,7 +199,7 @@
                                 <th>
                                     <button type="submit" class="btn btn-outline btn-xs">Apply</button>
                                     <a class="btn btn-link btn-xs"
-                                       asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="teachers">Reset</a>
+                                       asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Reset</a>
                                 </th>
                             </tr>
                         </thead>
@@ -234,14 +248,14 @@
                 <p>Download the template, fill the rows, then upload the completed Excel file.</p>
 
                 <a class="btn btn-outline-primary mb-3"
-                   asp-controller="ManageAccounts"
+                   asp-controller="AdminAccounts"
                    asp-action="DownloadStudentTemplate">
                     Download students template
                 </a>
 
                 <form method="post"
                       enctype="multipart/form-data"
-                      asp-controller="ManageAccounts"
+                      asp-controller="AdminAccounts"
                       asp-action="BulkUploadStudents">
                     @Html.AntiForgeryToken()
 
@@ -272,14 +286,14 @@
                 <p>Download the template, fill the rows, then upload the file.</p>
 
                 <a class="btn btn-outline-primary mb-3"
-                   asp-controller="ManageAccounts"
+                   asp-controller="AdminAccounts"
                    asp-action="DownloadTeacherTemplate">
                     Download teachers template
                 </a>
 
                 <form method="post"
                       enctype="multipart/form-data"
-                      asp-controller="ManageAccounts"
+                      asp-controller="AdminAccounts"
                       asp-action="BulkUploadTeachers">
                     @Html.AntiForgeryToken()
 
