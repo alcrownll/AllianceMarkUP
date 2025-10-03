@@ -136,7 +136,7 @@ namespace ASI.Basecode.WebApp.Controllers
             if (loginResult == LoginResult.Success && user != null && user.Role == "Teacher")
             {
                 await SignInUserAsync(user, model.RememberMe);
-                return RedirectToAction("TeacherDashboard", "Teacher");
+                return RedirectToAction("Dashboard", "Teacher");
             }
 
             TempData["ErrorMessage"] = "Invalid ID Number or Password.";
@@ -167,7 +167,7 @@ namespace ASI.Basecode.WebApp.Controllers
             if (loginResult == LoginResult.Success && user != null && user.Role == "Admin")
             {
                 await SignInUserAsync(user, model.RememberMe);
-                return RedirectToAction("AdminDashboard", "Admin");
+                return RedirectToAction("Dashboard", "Admin");
             }
 
             TempData["ErrorMessage"] = "Invalid ID Number or Password.";

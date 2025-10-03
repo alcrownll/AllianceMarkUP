@@ -62,10 +62,17 @@ namespace ASI.Basecode.Services.Services
                                    .Select(u => new { u.LastName, u.Role })
                                    .FirstOrDefault();
 
-                vm.LastName = dbUser?.LastName ?? "User";
-                vm.Role = dbUser?.Role ?? "Unknown";
+                // Fallback to claims if DB lookup failed
+                vm.LastName = dbUser?.LastName
+                            ?? user.FindFirst(ClaimTypes.Surname)?.Value
+                            ?? user.FindFirst("LastName")?.Value
+                            ?? "User";
 
-                // ----- notifications (no .ToLocalTime(); just format) -----
+                vm.Role = dbUser?.Role
+                        ?? user.FindFirst(ClaimTypes.Role)?.Value
+                        ?? "Unknown";
+
+                // Notifications
                 vm.Notifications = _notifs.GetByUser(userId)
                     .OrderByDescending(n => n.CreatedAt)
                     .Take(takeNotifications)
@@ -74,33 +81,33 @@ namespace ASI.Basecode.Services.Services
                         Id = n.NotificationId,
                         Title = n.Title,
                         Snippet = n.Message,
-                        // CreatedAt is stored as "timestamp without time zone" (local semantics)
                         When = n.CreatedAt.ToString("MM/dd/yy"),
                         IsRead = n.IsRead
                     })
                     .ToList();
 
-                // ----- upcoming events (LOCAL time, Unspecified kind) -----
+                // Upcoming events
                 var nowLocal = DateTime.Now;
                 var fromLocal = DateTime.SpecifyKind(nowLocal, DateTimeKind.Unspecified);
                 var toLocal = DateTime.SpecifyKind(nowLocal.AddDays(30), DateTimeKind.Unspecified);
 
                 vm.UpcomingEvents = _calendar
                     .GetByUserInRange(userId, fromLocal, toLocal, includeGlobal: true)
-                    .OrderBy(e => e.StartUtc)                 // treat StartUtc as local
+                    .OrderBy(e => e.StartUtc)
                     .Take(takeEvents)
                     .Select(e => new UpcomingEventItemVm
                     {
                         Id = e.CalendarEventId,
                         Title = e.Title,
                         When = e.StartUtc.ToString("MM/dd/yy"),
-                        WhenLocal = e.StartUtc,               // already local semantics
+                        WhenLocal = e.StartUtc,
                         Location = e.Location
                     })
                     .ToList();
             }
             else
             {
+                // No userId at all: claims only
                 vm.LastName = user.FindFirst(ClaimTypes.Surname)?.Value
                            ?? user.FindFirst("LastName")?.Value
                            ?? "User";
@@ -109,6 +116,7 @@ namespace ASI.Basecode.Services.Services
                 vm.Notifications = new List<NotificationItemVm>();
                 vm.UpcomingEvents = new List<UpcomingEventItemVm>();
             }
+
 
             return Task.FromResult(vm);
         }

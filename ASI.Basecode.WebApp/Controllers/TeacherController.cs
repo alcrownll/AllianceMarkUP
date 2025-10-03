@@ -23,24 +23,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _httpContext = httpContext;
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> TeacherDashboard()
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "Test Teacher"),
-                new Claim(ClaimTypes.Role, "Teacher")
-            };
-
-            var identity = new ClaimsIdentity(claims, "ASI_Basecode");
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync("ASI_Basecode", principal);
-
-            return RedirectToAction("Dashboard");
-        }
-
         [Authorize(Roles = "Teacher")]
         public IActionResult Dashboard()
         {
