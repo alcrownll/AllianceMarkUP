@@ -14,7 +14,6 @@
     <div class="card admin-courses-card">
         <div class="card-header bg-white border-0 pt-3 pb-0">
             <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
-
                 <!-- Tabs -->
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
@@ -25,32 +24,37 @@
                     </li>
                 </ul>
 
-                <!-- Actions -->
-                <div class="d-flex align-items-center gap-2 ms-auto">
-                    <button class="btn btn-sm btn-outline-secondary" type="button">Filter</button>
-                    <input class="form-control form-control-sm" type="search" placeholder="Search..." aria-label="Search" style="min-width:240px" />
+                <!-- Actions (updated with input-group) -->
+                <div class="d-flex ms-auto" style="gap:.5rem;">
+                    <div class="input-group input-group-sm" style="width:260px;">
+                        <button class="btn btn-outline-secondary" type="button">Filter</button>
+                        <input class="form-control" type="search" name="q" placeholder="Search..." value="@(Context?.Request?.Query["q"])" />
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="card-body">
             <div class="tab-content" id="catalogTabsContent">
-                <div class="tab-pane fade" id="programs" role="tabpanel">
-                    <!-- Programs table ... -->
-                </div>
+                <div class="tab-pane fade" id="programs" role="tabpanel"></div>
 
                 <div class="tab-pane fade show active" id="courses" role="tabpanel">
                     <div class="table-responsive">
                         <div class="mt-3 d-flex justify-content-end">
-                            <!-- Trigger button -->
                             <button class="btn btn-primary rounded-pill px-4"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#addCourseModal">
+                                    data-bs-toggle="modal" data-bs-target="#addCourseModal">
                                 <span class="me-2">+</span> Add Course
                             </button>
                         </div>
 
-                        <!-- Courses table ... -->
+                        @if (Model == null || !Model.Any())
+                        {
+                            <div class="text-center text-muted py-5">No courses found.</div>
+                        }
+                        else
+                        {
+                            @await Html.PartialAsync("~/Views/Admin/Partials/_CoursesTable.cshtml", Model)
+                        }
                     </div>
                 </div>
             </div>
@@ -58,5 +62,74 @@
     </div>
 </div>
 
-@* Include the modal partial (absolute path) *@
+
+
+@* Modal partial *@
 @await Html.PartialAsync("~/Views/Admin/Partials/_CourseFormModal.cshtml")
+
+@section Scripts {
+    <script>
+        (function () {
+          const modalEl = document.getElementById('addCourseModal');
+          if (!modalEl) return;
+
+          // utility
+          function updateTotal() {
+            const lec = parseInt(document.getElementById('LecUnits').value || 0, 10);
+            const lab = parseInt(document.getElementById('LabUnits').value || 0, 10);
+            document.getElementById('TotalUnits').value = (lec + lab);
+          }
+
+          modalEl.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;                     // clicked button
+            const isEdit  = trigger && trigger.dataset.edit === 'true';
+
+            const form     = document.getElementById('courseForm');
+            const titleEl  = document.getElementById('courseModalTitle');
+            const submitEl = document.getElementById('courseSubmitBtn');
+
+            const idEl   = document.getElementById('CourseId');
+            const codeEl = document.getElementById('CourseCode');
+            const descEl = document.getElementById('Description');
+            const lecEl  = document.getElementById('LecUnits');
+            const labEl  = document.getElementById('LabUnits');
+
+            const createUrl = form.getAttribute('data-create-action');
+            const editUrl   = form.getAttribute('data-edit-action');
+
+            if (isEdit) {
+              idEl.value   = trigger.dataset.id   || "";
+              codeEl.value = trigger.dataset.code || "";
+              descEl.value = trigger.dataset.desc || "";
+              lecEl.value  = trigger.dataset.lec  || 0;
+              labEl.value  = trigger.dataset.lab  || 0;
+
+              titleEl.textContent  = 'Edit Course';
+              submitEl.textContent = 'Update';
+              form.setAttribute('action', editUrl);
+            } else {
+              idEl.value   = "";
+              codeEl.value = "";
+              descEl.value = "";
+              lecEl.value  = 0;
+              labEl.value  = 0;
+
+              titleEl.textContent  = 'Add Course';
+              submitEl.textContent = 'Save';
+              form.setAttribute('action', createUrl);
+            }
+            updateTotal();
+          });
+
+          // keep total in sync while typing
+          ['LecUnits','LabUnits'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updateTotal);
+          });
+
+          // optional: avoid layout nudge when modal opens
+          document.addEventListener('shown.bs.modal', () => document.body.style.paddingRight = '0');
+          document.addEventListener('hidden.bs.modal', () => document.body.style.paddingRight = '');
+        })();
+    </script>
+}

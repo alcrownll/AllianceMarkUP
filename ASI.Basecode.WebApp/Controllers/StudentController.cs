@@ -1,20 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.WebApp.Models;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -25,19 +30,26 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IClassScheduleRepository _classScheduleRepository;
         private readonly IWebHostEnvironment _env; // for serving prospectus pdfs
+        private readonly IProfileService _profileService;
+        private readonly IHttpContextAccessor _httpContext;
 
         public StudentController(
             IGradeRepository gradeRepository,
             IStudentRepository studentRepository,
             IUserRepository userRepository,
             IClassScheduleRepository classScheduleRepository,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IProfileService profileService,
+            IHttpContextAccessor httpContext)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
             _userRepository = userRepository;
             _classScheduleRepository = classScheduleRepository;
             _env = env;
+            _profileService = profileService;
+            _httpContext = httpContext;
+
         }
 
         // --------------------------------------------------------------------
@@ -130,10 +142,32 @@ namespace ASI.Basecode.WebApp.Controllers
         // PROFILE
         // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
-            return View("~/Views/Shared/Partials/Profile.cshtml");
+
+            int userId = _profileService.GetCurrentUserId();
+            var vm = await _profileService.GetStudentProfileAsync(userId);
+            if (vm == null) return NotFound();
+
+            return View("StudentProfile", vm);
+        
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> SaveProfile(StudentProfileViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("StudentProfile", vm);
+            }
+
+            int userId = _profileService.GetCurrentUserId();
+            await _profileService.UpdateStudentProfileAsync(userId, vm);
+            TempData["ProfileSaved"] = "Your profile has been updated.";
+            return RedirectToAction(nameof(Profile));
         }
 
         // --------------------------------------------------------------------
@@ -154,7 +188,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
 
             if (user == null)
-                return View(new StudentStudyLoadViewModel());
+                return View(new StudyLoadViewModel());
 
             var student = await _studentRepository.GetStudents()
                 .Include(s => s.User)
@@ -162,7 +196,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 .FirstOrDefaultAsync(s => s.UserId == user.UserId);
 
             if (student == null)
-                return View(new StudentStudyLoadViewModel());
+                return View(new StudyLoadViewModel());
 
             var grades = await _gradeRepository.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
@@ -190,7 +224,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
                 schedLookup.TryGetValue(ac?.AssignedCourseId ?? 0, out var schedsForCourse);
 
-                return new StudentStudyLoadRow
+                return new StudyLoadRow
                 {
                     EDPCode = ac?.EDPCode,
                     Subject = course?.CourseCode,
@@ -206,7 +240,7 @@ namespace ASI.Basecode.WebApp.Controllers
             .ThenBy(r => r.Type)
             .ToList();
 
-            var vm = new StudentStudyLoadViewModel
+            var vm = new StudyLoadViewModel
             {
                 StudentName = $"{student.User.FirstName} {student.User.LastName}",
                 Program = student.Program,
@@ -498,7 +532,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return string.Join("; ", parts);
         }
 
-        // Map a 0–100 final grade to GWA (1.00–5.00). Adjust to your official scale.
+        // Map a 0�100 final grade to GWA (1.00�5.00). Adjust to your official scale.
         private static decimal MapPercentToGwa(decimal percent)
         {
             if (percent >= 96) return 1.00m;
@@ -514,7 +548,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return 5.00m;
         }
 
-        // Example calendar split: Jun–Oct => 1st, Nov–Mar => 2nd, else Mid
+        // Example calendar split: Jun�Oct => 1st, Nov�Mar => 2nd, else Mid
         private static string GetCurrentSemesterName()
         {
             var now = DateTime.Now;

@@ -1,5 +1,9 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.ServiceModels;
+using ASI.Basecode.Services.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -9,6 +13,16 @@ namespace ASI.Basecode.WebApp.Controllers
 {
     public class TeacherController : Controller
     {
+        private readonly IProfileService _profileService;
+        private readonly IHttpContextAccessor _httpContext;
+
+        public TeacherController(IProfileService profileService,
+            IHttpContextAccessor httpContext)
+        {
+            _profileService = profileService;
+            _httpContext = httpContext;
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> TeacherDashboard()
@@ -35,10 +49,30 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Teacher")]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
-            ViewData["PageHeader"] = "Teacher Profile";
-            return View("~/Views/Shared/Partials/Profile.cshtml"); // Shared UI
+            ViewData["PageHeader"] = "Profile";
+
+            int userId = _profileService.GetCurrentUserId();
+            var vm = await _profileService.GetTeacherProfileAsync(userId);
+            if (vm == null) return NotFound();
+            return View("TeacherProfile", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Teacher")]
+        public async Task<IActionResult> SaveProfile(TeacherProfileViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("TeacherProfile", vm);
+            }
+
+            int userId = _profileService.GetCurrentUserId();
+            await _profileService.UpdateTeacherProfileAsync(userId, vm);
+            TempData["ProfileSaved"] = "Your profile has been updated.";
+            return RedirectToAction(nameof(Profile));
         }
 
         [Authorize(Roles = "Teacher")]

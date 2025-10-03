@@ -38,6 +38,7 @@ namespace ASI.Basecode.Data.Migrations
                 columns: table => new
                 {
                     StudentId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
                     AdmissionType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Program = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Department = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -48,8 +49,8 @@ namespace ASI.Basecode.Data.Migrations
                 {
                     table.PrimaryKey("PK_Students", x => x.StudentId);
                     table.ForeignKey(
-                        name: "FK_Students_Users_StudentId",
-                        column: x => x.StudentId,
+                        name: "FK_Students_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
@@ -60,14 +61,15 @@ namespace ASI.Basecode.Data.Migrations
                 columns: table => new
                 {
                     TeacherId = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
                     Position = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Teachers", x => x.TeacherId);
                     table.ForeignKey(
-                        name: "FK_Teachers_Users_TeacherId",
-                        column: x => x.TeacherId,
+                        name: "FK_Students_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);

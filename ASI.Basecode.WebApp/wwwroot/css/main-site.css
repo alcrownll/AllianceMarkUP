@@ -1177,3 +1177,11 @@ body {
     .right-sidebar .event-card .small.text-muted {
         font-size: .75rem;
     }
+}
+
+
+html {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
