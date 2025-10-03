@@ -6,6 +6,7 @@ using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.Services.Services;
 using ASI.Basecode.WebApp.Authentication;
 using ASI.Basecode.WebApp.Models;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +38,8 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IUserService, UserService>();
             this._services.AddScoped<IManageAccountsService, ManageAccountsService>();
             this._services.AddScoped<ICourseService, CourseService>();   // <-- added
+            this._services.AddScoped<IRightSidebarService, RightSidebarService>();
+            this._services.AddScoped<ICalendarService, CalendarService>();
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();
@@ -47,6 +50,8 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IAssignedCourseRepository, AssignedCourseRepository>();
             this._services.AddScoped<IClassScheduleRepository, ClassScheduleRepository>();
             this._services.AddScoped<IGradeRepository, GradeRepository>();
+            this._services.AddScoped<INotificationRepository, NotificationRepository>();
+            this._services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
 
             // Manager Class
             this._services.AddScoped<SignInManager>();

@@ -41,26 +41,6 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
-        // Demo sign-in (kept)
-        // --------------------------------------------------------------------
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> StudentDashboard()
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "Test Student"),
-                new Claim(ClaimTypes.Role, "Student")
-            };
-
-            var identity = new ClaimsIdentity(claims, "ASI_Basecode");
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync("ASI_Basecode", principal);
-            return RedirectToAction("Dashboard");
-        }
-
-        // --------------------------------------------------------------------
         // DASHBOARD
         // --------------------------------------------------------------------
         [Authorize(Roles = "Student")]

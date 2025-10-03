@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using static ASI.Basecode.Resources.Constants.Enums;
+using System.Security.Claims;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -27,6 +28,42 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
         private readonly IManageAccountsService _manageAccountsService;
+
+        private const string AuthScheme = "ASI_Basecode";
+
+        private static ClaimsPrincipal BuildPrincipal(User user)
+        {
+            var claims = new[]
+            {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+        new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
+        new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+        new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
+        new Claim("IdNumber", user.IdNumber ?? string.Empty),
+        new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+    };
+
+            var identity = new ClaimsIdentity(claims, AuthScheme);
+            return new ClaimsPrincipal(identity);
+        }
+        
+        private async Task SignInUserAsync(User user, bool rememberMe)
+        {
+            var principal = BuildPrincipal(user);
+
+            await HttpContext.SignInAsync(AuthScheme, principal, new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                AllowRefresh = true
+            });
+
+            // Keep your existing session values if other parts of the app still read them
+            _session.SetString("IdNumber", user.IdNumber);
+            _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+            _session.SetString("Role", user.Role);
+        }
+
 
         public AccountController(
             SignInManager signInManager,
@@ -69,12 +106,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
             if (loginResult == LoginResult.Success && user != null && user.Role == "Student")
             {
-                await _signInManager.SignInAsync(user, model.RememberMe);
-                _session.SetString("IdNumber", user.IdNumber);
-                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
-                _session.SetString("Role", user.Role);
-
-                return RedirectToAction("StudentDashboard", "Student");
+                await SignInUserAsync(user, model.RememberMe);
+                return RedirectToAction("Dashboard", "Student");
             }
 
             TempData["ErrorMessage"] = "Invalid ID Number or Password.";
@@ -103,17 +136,14 @@ namespace ASI.Basecode.WebApp.Controllers
 
             if (loginResult == LoginResult.Success && user != null && user.Role == "Teacher")
             {
-                await _signInManager.SignInAsync(user, model.RememberMe);
-                _session.SetString("IdNumber", user.IdNumber);
-                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
-                _session.SetString("Role", user.Role);
-
+                await SignInUserAsync(user, model.RememberMe);
                 return RedirectToAction("TeacherDashboard", "Teacher");
             }
 
             TempData["ErrorMessage"] = "Invalid ID Number or Password.";
             return View("~/Views/Login/TeacherLogin.cshtml", model);
         }
+
 
         // =======================
         // ADMIN LOGIN
@@ -137,17 +167,14 @@ namespace ASI.Basecode.WebApp.Controllers
 
             if (loginResult == LoginResult.Success && user != null && user.Role == "Admin")
             {
-                await _signInManager.SignInAsync(user, model.RememberMe);
-                _session.SetString("IdNumber", user.IdNumber);
-                _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
-                _session.SetString("Role", user.Role);
-
+                await SignInUserAsync(user, model.RememberMe);
                 return RedirectToAction("AdminDashboard", "Admin");
             }
 
             TempData["ErrorMessage"] = "Invalid ID Number or Password.";
             return View("~/Views/Login/AdminLogin.cshtml", model);
         }
+
 
         // =======================
         // DASHBOARDS
