@@ -10,15 +10,11 @@ namespace ASI.Basecode.Services.Interfaces
 {
     public interface IProfileService
     {
-        int GetCurrentUserId();
-        int GetCurrentStudentId();
+        public int GetCurrentUserId();
 
-        // Student
-        Task<StudentProfileViewModel> GetStudentProfileAsync();
-        Task UpdateStudentProfileAsync(StudentProfileViewModel input);
-
-        // Teacher (kept for parity; still resolves current user internally)
-        Task<TeacherProfileViewModel> GetTeacherProfileAsync();
-        Task UpdateTeacherProfileAsync(TeacherProfileViewModel input);
+        Task<StudentProfileViewModel> GetStudentProfileAsync(int userId);
+        Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input);
+        Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId);
+        Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input);
     }
 }

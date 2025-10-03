@@ -3,6 +3,7 @@ using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.Services.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -13,10 +14,13 @@ namespace ASI.Basecode.WebApp.Controllers
     public class TeacherController : Controller
     {
         private readonly IProfileService _profileService;
+        private readonly IHttpContextAccessor _httpContext;
 
-        public TeacherController(IProfileService profileService)
+        public TeacherController(IProfileService profileService,
+            IHttpContextAccessor httpContext)
         {
             _profileService = profileService;
+            _httpContext = httpContext;
         }
 
         [HttpGet]
@@ -48,7 +52,9 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
-            var vm = await _profileService.GetTeacherProfileAsync();
+
+            int userId = _profileService.GetCurrentUserId();
+            var vm = await _profileService.GetTeacherProfileAsync(userId);
             if (vm == null) return NotFound();
             return View("TeacherProfile", vm);
         }
@@ -63,7 +69,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 return View("TeacherProfile", vm);
             }
 
-            await _profileService.UpdateTeacherProfileAsync(vm);
+            int userId = _profileService.GetCurrentUserId();
+            await _profileService.UpdateTeacherProfileAsync(userId, vm);
             TempData["ProfileSaved"] = "Your profile has been updated.";
             return RedirectToAction(nameof(Profile));
         }

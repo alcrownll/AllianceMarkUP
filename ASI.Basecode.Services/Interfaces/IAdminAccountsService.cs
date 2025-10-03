@@ -12,5 +12,8 @@ namespace ASI.Basecode.Services.Interfaces
     {
         Task<AccountsFilterResult> GetStudentsAsync(AccountsFilters filters, CancellationToken ct);
         Task<AccountsFilterResult> GetTeachersAsync(AccountsFilters filters, CancellationToken ct);
+
+        Task<bool> SuspendAccount(int userId, string status, CancellationToken ct);
+
     }
 }

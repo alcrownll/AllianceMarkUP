@@ -36,16 +36,14 @@
                 <div class="dropdown">
                     <button class="btn btn-primary dropdown-toggle" type="button"
                             id="studentsDropdown"
-                            data-toggle="dropdown" data-bs-toggle="dropdown"
-                            aria-haspopup="true" aria-expanded="false">
+                            data-bs-toggle="dropdown" aria-expanded="false">
                         + Add Student
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="studentsDropdown">
+                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="studentsDropdown">
                         <a class="dropdown-item" asp-controller="Students" asp-action="Create">Single Record</a>
                         <div class="dropdown-divider"></div>
                         <button type="button" class="dropdown-item"
-                                data-toggle="modal" data-bs-toggle="modal"
-                                data-target="#bulkUploadStudentsModal" data-bs-target="#bulkUploadStudentsModal">
+                                data-bs-toggle="modal" data-bs-target="#bulkUploadStudentsModal">
                             Student List (Bulk Upload)
                         </button>
                     </div>
@@ -56,16 +54,14 @@
                 <div class="dropdown">
                     <button class="btn btn-primary dropdown-toggle" type="button"
                             id="teachersDropdown"
-                            data-toggle="dropdown" data-bs-toggle="dropdown"
-                            aria-haspopup="true" aria-expanded="false">
+                            data-bs-toggle="dropdown" aria-expanded="false">
                         + Add Teacher
                     </button>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="teachersDropdown">
+                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="teachersDropdown">
                         <a class="dropdown-item" asp-controller="Teachers" asp-action="Create">Single Record</a>
                         <div class="dropdown-divider"></div>
                         <button type="button" class="dropdown-item"
-                                data-toggle="modal" data-bs-toggle="modal"
-                                data-target="#bulkUploadTeachersModal" data-bs-target="#bulkUploadTeachersModal">
+                                data-bs-toggle="modal" data-bs-target="#bulkUploadTeachersModal">
                             Teacher List (Bulk Upload)
                         </button>
                     </div>
@@ -73,14 +69,13 @@
             }
 
             <button type="button" class="btn btn-primary" id="printUsersBtn">
-                Generate User Report
+                View Suspend Account
             </button>
         </div>
     </div>
 
     <div class="panel">
         <div class="table-wrap">
-
             @if (vm.ActiveTab == ManageTab.Students)
             {
                 <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
@@ -102,14 +97,7 @@
                                         <option value="">All Programs</option>
                                         @foreach (var p in vm.Programs)
                                         {
-                                            if (vm.Filters?.Program == p)
-                                            {
-                                                <option value="@p" selected>@p</option>
-                                            }
-                                            else
-                                            {
-                                                <option value="@p">@p</option>
-                                            }
+                                            <option value="@p" selected="@(vm.Filters?.Program == p ? "selected" : null)">@p</option>
                                         }
                                     </select>
                                 </th>
@@ -118,14 +106,7 @@
                                         <option value="">All Year Levels</option>
                                         @foreach (var y in vm.YearLevels)
                                         {
-                                            if (vm.Filters?.YearLevel == y)
-                                            {
-                                                <option value="@y" selected>@y</option>
-                                            }
-                                            else
-                                            {
-                                                <option value="@y">@y</option>
-                                            }
+                                            <option value="@y" selected="@(vm.Filters?.YearLevel == y ? "selected" : null)">@y</option>
                                         }
                                     </select>
                                 </th>
@@ -159,8 +140,20 @@
                                         <td>@s.IdNumber</td>
                                         <td>
                                             <div class="row-actions">
-                                                <button type="button" class="btn btn-primary btn-sm rounded-pill">View</button>
-                                                <button type="button" class="btn btn-danger btn-sm rounded-pill">Suspend</button>
+                                                <a class="btn btn-primary btn-sm rounded-pill"
+                                                   asp-controller="AdminAccounts" asp-action="Student"
+                                                   asp-route-userId="@s.UserId">
+                                                    View
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-danger btn-sm rounded-pill"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmSuspendModal"
+                                                        data-user-id="@s.UserId"
+                                                        data-tab="students"
+                                                        data-name="@s.FullName">
+                                                    Suspend
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -195,7 +188,7 @@
                                            value="@(vm.Filters?.Name ?? "")"
                                            placeholder="Search by Name" />
                                 </th>
-                                <th><!-- No filter for Position for now --></th>
+                                <th><!-- Position filter optional --></th>
                                 <th>
                                     <button type="submit" class="btn btn-outline btn-xs">Apply</button>
                                     <a class="btn btn-link btn-xs"
@@ -214,8 +207,20 @@
                                         <td>@t.Position</td>
                                         <td>
                                             <div class="row-actions">
-                                                <button type="button" class="btn btn-primary btn-sm rounded-pill">View</button>
-                                                <button type="button" class="btn btn-danger btn-sm rounded-pill">Suspend</button>
+                                                <a class="btn btn-primary btn-sm rounded-pill"
+                                                   asp-controller="AdminAccounts" asp-action="Teacher"
+                                                   asp-route-userId="@t.UserId">
+                                                    View
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-danger btn-sm rounded-pill"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmSuspendModal"
+                                                        data-user-id="@t.UserId"
+                                                        data-tab="teachers"
+                                                        data-name="@t.FullName">
+                                                    Suspend
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -235,14 +240,62 @@
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        (function () {
+          document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-bs-target="#confirmSuspendModal"]');
+            if (!btn) return;
 
-<!-- MODALS -->
+            var userId = btn.getAttribute('data-user-id');
+            var tab    = btn.getAttribute('data-tab') || 'students';
+            var name   = btn.getAttribute('data-name') || 'this account';
+
+            document.getElementById('suspendUserId').value = userId;
+            document.getElementById('suspendTab').value    = tab;
+            document.getElementById('suspendUserName').textContent = name;
+          });
+        })();
+    </script>
+}
+
+<!-- MODALS (Bootstrap 5) -->
+<div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="userId" id="suspendUserId" />
+                <input type="hidden" name="tab" id="suspendTab" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmSuspendLabel">Confirm suspension</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-0">
+                        Are you sure you want to suspend
+                        <strong id="suspendUserName">this account</strong>?
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Suspend Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="bulkUploadStudentsModal" tabindex="-1" aria-labelledby="bulkUploadStudentsLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="bulkUploadStudentsLabel">Bulk upload students (.xlsx)</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Download the template, fill the rows, then upload the completed Excel file.</p>
@@ -259,17 +312,16 @@
                       asp-action="BulkUploadStudents">
                     @Html.AntiForgeryToken()
 
-                    <div class="form-group">
-                        <label for="studentFile">Excel file (.xlsx)</label>
+                    <div class="mb-3">
+                        <label for="studentFile" class="form-label">Excel file (.xlsx)</label>
                         <input id="studentFile" type="file" name="file" class="form-control" accept=".xlsx" required />
                     </div>
 
                     <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Upload & Import</button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
@@ -280,7 +332,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="bulkUploadTeachersLabel">Bulk upload teachers (.xlsx)</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Download the template, fill the rows, then upload the file.</p>
@@ -297,17 +349,16 @@
                       asp-action="BulkUploadTeachers">
                     @Html.AntiForgeryToken()
 
-                    <div class="form-group">
-                        <label for="teacherFile">Excel file (.xlsx)</label>
+                    <div class="mb-3">
+                        <label for="teacherFile" class="form-label">Excel file (.xlsx)</label>
                         <input id="teacherFile" type="file" name="file" class="form-control" accept=".xlsx" required />
                     </div>
 
                     <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Upload & Import</button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>

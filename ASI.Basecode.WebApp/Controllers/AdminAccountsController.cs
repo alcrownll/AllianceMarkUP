@@ -1,5 +1,6 @@
 ﻿using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
@@ -7,17 +8,21 @@ using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class AdminAccountsController : Controller
     {
         private readonly IAdminAccountsService _adminacc;
         private readonly IAdminCreateAccountService _create;
+        private readonly IProfileService _profile;
 
         public AdminAccountsController(
             IAdminAccountsService adminacc,
-            IAdminCreateAccountService create)
+            IAdminCreateAccountService create,
+            IProfileService profileService)
         {
             _adminacc = adminacc;
             _create = create;
+            _profile = profileService;
         }
 
         // TABS 
@@ -62,8 +67,74 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Admin/AdminAccounts.cshtml", vm);
         }
 
-        // excel:
+        // View and Edit Profiles:
+        [HttpGet]
+        public async Task<IActionResult> Student(int userId)
+        {
+            var vm = await _profile.GetStudentProfileAsync(userId);
+            if (vm == null) return NotFound();
+            ViewData["PageHeader"] = "Student Profile";
 
+            // FIXED: correct view path under /Views/Admin/
+            return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveStudent(int userId, StudentProfileViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewData["PageHeader"] = "Student Profile";
+                return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
+            }
+
+            await _profile.UpdateStudentProfileAsync(userId, vm);
+            TempData["ProfileSaved"] = "Profile has been updated.";
+            return RedirectToAction(nameof(Student), new { userId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Teacher(int userId)
+        {
+            var vm = await _profile.GetTeacherProfileAsync(userId);
+            if (vm == null) return NotFound();
+            ViewData["PageHeader"] = "Teacher Profile";
+
+            // FIXED: correct view path AND filename
+            return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveTeacher(int userId, TeacherProfileViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewData["PageHeader"] = "Teacher Profile";
+                return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
+            }
+
+            await _profile.UpdateTeacherProfileAsync(userId, vm);
+            TempData["ProfileSaved"] = "Profile has been updated.";
+            return RedirectToAction(nameof(Teacher), new { userId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SuspendUser(int userId, string? tab, CancellationToken ct)
+        {
+            var ok = await _adminacc.SuspendAccount(userId, "Inactive", ct);
+
+            TempData[ok ? "ImportOk" : "ImportErr"] = ok
+                ? "Account has been suspended."
+                : "User not found or already inactive.";
+
+            // Go back to whichever tab the button came from
+            return RedirectToAction(nameof(Index), new { tab = string.IsNullOrWhiteSpace(tab) ? "students" : tab });
+        }
+
+        // excel:
         [HttpGet]
         public IActionResult DownloadStudentTemplate()
         {
@@ -94,7 +165,6 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // excel (teachers):
-
         [HttpGet]
         public IActionResult DownloadTeacherTemplate()
         {
