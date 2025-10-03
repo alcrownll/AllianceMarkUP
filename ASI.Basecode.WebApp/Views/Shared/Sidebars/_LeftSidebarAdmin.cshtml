@@ -28,7 +28,7 @@ Func<string, bool> isActive = a => string.Equals(currentAction, a, System.String
             </li>
 
             <li class="nav-item">
-                <a class="nav-link @(isActive("Accounts") ? "active" : "")" asp-controller="ManageAccounts" asp-action="Index" asp-route-tab="students">
+                <a class="nav-link @(isActive("Accounts") ? "active" : "")" asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">
                     <span class="icon-wrap">
                         <i class="bi bi-people icon-outline"></i>
                         <i class="bi bi-people-fill icon-fill"></i>
