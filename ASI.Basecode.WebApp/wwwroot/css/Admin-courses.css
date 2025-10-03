@@ -32,11 +32,13 @@
     .admin-courses-card th {
         text-align: center;
         font-weight: 600;
+        padding: .75rem 1rem;
     }
 
     .admin-courses-card td {
         vertical-align: middle;
         text-align: center;
+        padding: .75rem 1rem;
     }
 
 /* Tiny labels */
@@ -44,3 +46,55 @@
     font-size: .85rem;
     margin-bottom: .25rem;
 }
+
+/* Per-cell alignment overrides */
+.admin-courses-card td.text-start {
+    text-align: left;
+}
+
+.admin-courses-card td.text-center {
+    text-align: center;
+}
+
+.admin-courses-card td.text-end {
+    text-align: right;
+}
+
+/* Compact buttons */
+.admin-courses-card .btn-sm {
+    padding: .25rem .6rem;
+    font-size: .8rem;
+}
+
+/* Soften table head */
+.admin-courses-card .table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Zebra striping for better readability */
+.admin-courses-card .table tbody tr:nth-child(odd) {
+    background-color: #fcfcfc;
+}
+
+/* ===== Admin-only: prevent layout shift on modal ===== */
+html {
+    overflow-y: scroll;
+}
+/* harmless here and fixes width jump */
+
+.admin-courses-container:has(.modal.show) ~ * { /* no-op safety for old browsers */
+}
+
+body.modal-open {
+    padding-right: 0 !important;
+}
+
+    body.modal-open .sidebar,
+    body.modal-open .sidebar-right,
+    body.modal-open .fixed-top,
+    body.modal-open .fixed-bottom,
+    body.modal-open .sticky-top {
+        padding-right: 0 !important;
+        margin-right: 0 !important;
+    }

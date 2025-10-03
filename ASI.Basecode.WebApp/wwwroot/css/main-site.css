@@ -1041,3 +1041,10 @@ body {
         height: 200px !important;
     }
 }
+
+
+html {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
