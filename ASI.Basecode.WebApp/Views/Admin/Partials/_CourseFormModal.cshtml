@@ -1,4 +1,4 @@
-﻿<div class="modal fade" id="addCourseModal" tabindex="-1" aria-labelledby="addCourseLabel" aria-hidden="true">
+﻿<div class="modal fade" id="addCourseModal" tabindex="-1" data-bs-scroll="true" aria-labelledby="addCourseLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
@@ -50,20 +50,22 @@
 </div>
 
 @section Scripts {
-    <script>// auto-calc total units
-  document.addEventListener("DOMContentLoaded", function () {
-    const lecInput = document.getElementById("lecUnits");
-    const labInput = document.getElementById("labUnits");
-    const totalInput = document.getElementById("totalUnits");
+    <script>
+        // auto-calc total units
+        document.addEventListener("DOMContentLoaded", function () {
+          const lecInput = document.getElementById("lecUnits");
+          const labInput = document.getElementById("labUnits");
+          const totalInput = document.getElementById("totalUnits");
 
-    function updateTotal() {
-      const lec = parseInt(lecInput.value) || 0;
-      const lab = parseInt(labInput.value) || 0;
-      totalInput.value = lec + lab;
-    }
+          function updateTotal() {
+            const lec = parseInt(lecInput.value) || 0;
+            const lab = parseInt(labInput.value) || 0;
+            totalInput.value = lec + lab;
+          }
 
-    lecInput.addEventListener("input", updateTotal);
-    labInput.addEventListener("input", updateTotal);
-    updateTotal(); // initialize
-  });</script>
+          lecInput.addEventListener("input", updateTotal);
+          labInput.addEventListener("input", updateTotal);
+          updateTotal(); // initialize
+        });
+    </script>
 }
