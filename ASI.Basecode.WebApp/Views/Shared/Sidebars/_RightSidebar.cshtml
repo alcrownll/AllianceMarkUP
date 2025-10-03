@@ -1,8 +1,7 @@
-﻿<!--_RightSidebar.cshtml-->
+﻿<!-- _RightSidebar.cshtml -->
 <div class="right-sidebar-content">
 
     <!-- Profile Section -->
-    <!-- _RightSidebar.cshtml -->
     <div class="profile-card mb-3 p-3 border rounded d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
             <div class="avatar d-grid place-items-center"
@@ -10,10 +9,9 @@
                 <i class="fa-solid fa-user text-primary"></i>
             </div>
             <div>
-                
-
                 <div class="text-muted small">
-                    @User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value
+                    <!-- Static role or placeholder -->
+                    User
                 </div>
             </div>
         </div>
@@ -23,15 +21,11 @@
         </a>
     </div>
 
-
     <!-- Calendar -->
     <div class="calendar-widget">
-
         <!-- Keep the input VISIBLE; Flatpickr will insert the inline calendar here -->
         <input id="miniCalendar" type="text" aria-label="Mini calendar" />
     </div>
-
-
 
     <!-- Upcoming Activities -->
     <div class="upcoming-widget mb-3 p-3 border rounded">
