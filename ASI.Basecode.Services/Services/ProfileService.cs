@@ -1,12 +1,11 @@
-﻿using ASI.Basecode.Data.Interfaces;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace ASI.Basecode.Services.Services
 {
@@ -37,45 +36,28 @@ namespace ASI.Basecode.Services.Services
         // ------------------------------------------------------------
         public int GetCurrentUserId()
         {
-            var http = _httpContext.HttpContext
-                ?? throw new InvalidOperationException("No HttpContext available.");
-            var session = http.Session;
-
-            // 1) Fast path: session
-            var cachedUserId = session.GetInt32("UserId");
+            // Prefer cached UserId in session if you set it at login
+            var cachedUserId = _httpContext.HttpContext?.Session?.GetInt32("UserId");
             if (cachedUserId.HasValue && cachedUserId.Value > 0)
                 return cachedUserId.Value;
 
-            // 2) Fallback: claims (if you add NameIdentifier at sign-in)
-            var claimUserId = http.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(claimUserId, out var parsed) && parsed > 0)
-            {
-                session.SetInt32("UserId", parsed); // rehydrate for next calls
-                return parsed;
-            }
-
-            // 3) Final fallback: look up the Users table by IdNumber saved at login
-            var idNumber = session.GetString("IdNumber")
-                ?? http.User?.FindFirst("IdNumber")?.Value; // if you added such a claim
-
+            var idNumber = _httpContext.HttpContext?.Session?.GetString("IdNumber");
             if (string.IsNullOrWhiteSpace(idNumber))
-                throw new InvalidOperationException("No IdNumber found in session/claims. Set it at login.");
+                throw new InvalidOperationException("No IdNumber found in session. Make sure to set it at login.");
 
-            var userId = _users.GetUsers()
-                .Where(u => u.IdNumber == idNumber)
-                .Select(u => u.UserId)
+            // Use existing repository functions only (no new repo methods)
+            var userId = _students.GetStudentsWithUser() // includes User via .Include(s => s.User)
+                .Where(s => s.User.IdNumber == idNumber)
+                .Select(s => s.UserId)
                 .FirstOrDefault();
 
             if (userId == 0)
-                throw new InvalidOperationException($"No User found with IdNumber '{idNumber}'.");
+                throw new InvalidOperationException($"No Student linked to IdNumber '{idNumber}'.");
 
-            // cache for future requests
-            session.SetInt32("UserId", userId);
-            if (session.GetString("IdNumber") == null) session.SetString("IdNumber", idNumber);
-
+            // Optionally cache for future requests
+            _httpContext.HttpContext?.Session?.SetInt32("UserId", userId);
             return userId;
         }
-
 
         // ------------------------------------------------------------
         // STUDENT
