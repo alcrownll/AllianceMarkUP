@@ -25,7 +25,55 @@
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
                 <!-- Content for Grade View tab -->
-                <p>Display grades here.</p>
+                <div class="container-fluid bg-white rounded-4 p-4 shadow-sm">
+                    <div class="row g-3 align-items-center">
+                        <!-- Filter by Course -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Filter by Course</label>
+                            <select class="form-select">
+                                <option selected>Select Course</option>
+                                <option value="BSCS">BSCS</option>
+                                <option value="BSIT">BSIT</option>
+                                <option value="BSECE">BSECE</option>
+                                <!-- add more as needed -->
+                            </select>
+                        </div>
+
+                        <!-- Filter by Year Level -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Filter by Year Level</label>
+                            <select class="form-select">
+                                <option selected>Select Year Level</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                            </select>
+                        </div>
+
+                        <!-- Search by Name -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Search by Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="Search Name">
+                            </div>
+                        </div>
+
+                        <!-- Search by ID Number -->
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Search by ID Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="Search ID No.">
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
                 <!-- Content for Grade Entry tab -->
