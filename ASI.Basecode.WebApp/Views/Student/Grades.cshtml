@@ -95,7 +95,7 @@
                 filter: brightness(.95);
             }
 
-        /* Student + Term info */
+        /* Info (screen) */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -131,7 +131,7 @@
             margin: 0 18px 10px;
         }
 
-        /* Table */
+        /* Table (screen) */
         .grades-table-wrapper {
             margin: 0 18px 12px;
             border: 1px solid rgba(15,61,145,.10);
@@ -154,9 +154,9 @@
                 padding: 8px 10px;
                 text-align: left;
                 vertical-align: middle;
-                white-space: nowrap; 
+                white-space: nowrap;
                 overflow: hidden;
-                text-overflow: ellipsis; /* show ... if text is too long */
+                text-overflow: ellipsis;
             }
 
             table.grades-table th {
@@ -217,6 +217,7 @@
             display: inline-flex;
         }
 
+        /* keep base print-visibility; design is in grade-print.css */
         @@media print {
             body {
                 background: #fff;
@@ -243,14 +244,13 @@
             }
         }
     </style>
+
+    <link rel="stylesheet" href="~/css/grade-print.css" media="print" />
 }
 
 @section Scripts {
     <script>
-        function submitTermFilters() {
-            const form = document.getElementById('termFilterForm');
-            if (form) form.submit();
-        }
+        function submitTermFilters(){ const f=document.getElementById('termFilterForm'); if(f) f.submit(); }
         function printGrades(){ window.print(); }
     </script>
 }
@@ -268,7 +268,41 @@
     {
         <div class="grades-card" id="gradesPrintArea">
 
-            <!-- Toolbar -->
+            <!-- PRINT-ONLY HEADER: hidden by default; shown via grade-print.css -->
+            <div class="only-print" hidden>
+                <div class="print-header">
+                    <img class="print-logo" src="~/images/uc-logo.png" alt="University of Cebu logo" />
+                    <div class="print-school">
+                        <h2>UNIVERSITY OF CEBU LAPU-<br />LAPU AND MANDAUE</h2>
+                        <div class="addr">
+                            A.C. Cortes Avenue, Mandaue City, Philippines<br />
+                            Website: ccs-lm.uc.ude.ph &nbsp;&nbsp; Email: ccs.lm@uc.edu.ph
+                        </div>
+                    </div>
+                    <img class="print-logo" src="~/images/ccs-logo.png" alt="CCS logo" />
+                </div>
+
+                <div class="print-title"><h3>GRADES</h3></div>
+                <div class="print-subtitle">
+                    <div><strong>@(Model.SelectedSemester ?? Model.Semester)</strong>, S.Y. <strong>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</strong></div>
+                    <div>College of Computer Studies</div>
+                    <div>@Model.Program</div>
+                </div>
+
+                <div class="print-info-lines">
+                    <div class="left">
+                        <div><span>Name :</span><b>@Model.StudentName</b></div>
+                        <div><span>Program :</span><b>@Model.Program</b></div>
+                    </div>
+                    <div class="right">
+                        <div><span>School Year :</span><b>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</b></div>
+                        <div><span>Semester :</span><b>@(Model.SelectedSemester ?? Model.Semester)</b></div>
+                        <div><span>GPA :</span><b>@(Model.Gpa?.ToString("0.0") ?? "—")</b></div>
+                    </div>
+                </div>
+            </div>
+            <!-- /PRINT-ONLY HEADER -->
+            <!-- Screen toolbar -->
             <div class="grades-toolbar">
                 <div class="toolbar-left">
                     <span class="toolbar-label">Select School Term</span>
@@ -296,7 +330,7 @@
                 <button class="btn-pill no-print" type="button" onclick="printGrades()">Print Records</button>
             </div>
 
-            <!-- Info Grid -->
+            <!-- Info (screen) -->
             <div class="info-grid">
                 <div class="info-left">
                     <div class="info-line"><small>Name :</small><b>@Model.StudentName</b></div>
@@ -348,6 +382,11 @@
                         }
                     </tbody>
                 </table>
+            </div>
+
+            <!-- GPA (print-only) -->
+            <div class="gpa-line only-print" hidden>
+                GPA:&nbsp;<b>@(Model.Gpa?.ToString("0.0") ?? "—")</b>
             </div>
 
             <div class="card-bottom">
