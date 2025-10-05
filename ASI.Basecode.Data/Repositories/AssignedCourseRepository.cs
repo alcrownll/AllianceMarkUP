@@ -14,6 +14,13 @@ namespace ASI.Basecode.Data.Repositories
         public AssignedCourseRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
         public IQueryable<AssignedCourse> GetAssignedCourses() => this.GetDbSet<AssignedCourse>();
+        
+        public IQueryable<AssignedCourse> GetAssignedCoursesByTeacher(int teacherId) => 
+            this.GetDbSet<AssignedCourse>().Where(ac => ac.TeacherId == teacherId);
+            
+        public IQueryable<AssignedCourse> GetAssignedCoursesByTeacherAndSemester(int teacherId, string semester) => 
+            this.GetDbSet<AssignedCourse>().Where(ac => ac.TeacherId == teacherId && ac.Semester == semester);
+            
         public AssignedCourse GetAssignedCourseById(int assignedCourseId) => this.GetDbSet<AssignedCourse>().FirstOrDefault(a => a.AssignedCourseId == assignedCourseId);
 
         public void AddAssignedCourse(AssignedCourse assignedCourse)

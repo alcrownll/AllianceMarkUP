@@ -10,6 +10,8 @@ namespace ASI.Basecode.Data.Interfaces
     public interface IGradeRepository
     {
         IQueryable<Grade> GetGrades();
+        IQueryable<Grade> GetGradesByAssignedCourse(int assignedCourseId);
+        Task<bool> BulkUpdateGradesAsync(List<Grade> grades);
         Grade GetGradeById(int GradeId);
         void AddGrade(Grade Grade);
         void UpdateGrade(Grade Grade);
