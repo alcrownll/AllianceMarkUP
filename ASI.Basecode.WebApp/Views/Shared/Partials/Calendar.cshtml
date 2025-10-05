@@ -6,8 +6,6 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script type="module" src="~/js/calendar.js"></script>
-
 
 <div class="calendar-wrapper shadow-sm rounded-4 bg-white p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -18,15 +16,14 @@
         }
     </div>
 
-    <!-- Pass flags to JS via data-* -->
     <div id="calendar"
          data-is-admin="@(isAdmin ? "true" : "false")"
          data-events-url="/api/events">
     </div>
 </div>
 
-@* Modal markup stays here (UI) *@
-@await Html.PartialAsync("_EventModal")  @* your modal partial *@
+@* Your modal partial for create/edit *@
+@await Html.PartialAsync("_EventModal")
 
-<!-- Load your page script (as module) -->
+<!-- Load your page script (once) -->
 <script type="module" src="~/js/calendar.js"></script>

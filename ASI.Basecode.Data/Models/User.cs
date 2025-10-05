@@ -23,5 +23,8 @@ namespace ASI.Basecode.Data.Models
         public Student Student { get; set; }
         public Teacher Teacher { get; set; }
         public UserProfile UserProfile { get; set; }
+
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<CalendarEvent> CalendarEvents { get; set; } = new List<CalendarEvent>();
     }
 }

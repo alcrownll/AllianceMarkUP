@@ -1,22 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.WebApp.Models;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -28,6 +31,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IClassScheduleRepository _classScheduleRepository;
         private readonly IWebHostEnvironment _env; // for serving prospectus pdfs
         private readonly IProfileService _profileService;
+        private readonly IHttpContextAccessor _httpContext;
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -35,7 +39,8 @@ namespace ASI.Basecode.WebApp.Controllers
             IUserRepository userRepository,
             IClassScheduleRepository classScheduleRepository,
             IWebHostEnvironment env,
-            IProfileService profileService)
+            IProfileService profileService,
+            IHttpContextAccessor httpContext)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -43,26 +48,8 @@ namespace ASI.Basecode.WebApp.Controllers
             _classScheduleRepository = classScheduleRepository;
             _env = env;
             _profileService = profileService;
-        }
+            _httpContext = httpContext;
 
-        // --------------------------------------------------------------------
-        // Demo sign-in (kept)
-        // --------------------------------------------------------------------
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> StudentDashboard()
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "Test Student"),
-                new Claim(ClaimTypes.Role, "Student")
-            };
-
-            var identity = new ClaimsIdentity(claims, "ASI_Basecode");
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync("ASI_Basecode", principal);
-            return RedirectToAction("Dashboard");
         }
 
         // --------------------------------------------------------------------
@@ -158,9 +145,13 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
-            var vm = await _profileService.GetStudentProfileAsync();
+
+            int userId = _profileService.GetCurrentUserId();
+            var vm = await _profileService.GetStudentProfileAsync(userId);
             if (vm == null) return NotFound();
+
             return View("StudentProfile", vm);
+        
         }
 
         [HttpPost]
@@ -173,7 +164,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 return View("StudentProfile", vm);
             }
 
-            await _profileService.UpdateStudentProfileAsync(vm);
+            int userId = _profileService.GetCurrentUserId();
+            await _profileService.UpdateStudentProfileAsync(userId, vm);
             TempData["ProfileSaved"] = "Your profile has been updated.";
             return RedirectToAction(nameof(Profile));
         }

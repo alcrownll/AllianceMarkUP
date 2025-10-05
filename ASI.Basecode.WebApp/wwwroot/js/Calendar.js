@@ -115,9 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     allDay: e.allDay
                 }, isAdmin);
             },
-            events: {
-                url: eventsUrl,
-                failure: () => alert('Failed to load events.')
+            events: function (fetchInfo, success, failure) {
+                const url = `${eventsUrl}?start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
+                fetch(url, { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(data => success(data))
+                    .catch(err => failure(err));
             },
             eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: true }
         });

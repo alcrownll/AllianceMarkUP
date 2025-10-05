@@ -7,46 +7,48 @@ using System.Threading.Tasks;
 
 namespace ASI.Basecode.Services.ServiceModels
 {
-    public class ManageAccountsFilters
+    public class AccountsFilters
     {
         public string? Program { get; set; }
         public string? YearLevel { get; set; }
         public string? Name { get; set; }
         public string? IdNumber { get; set; }
+        public string? AccountStatus { get; set; }
     }
 
     public class StudentListItem
     {
         public int StudentId { get; set; }
+        public int UserId { get; set; }
         public string Program { get; set; } = "";
         public string YearLevel { get; set; } = "";
         public string FullName { get; set; } = "";
         public string IdNumber { get; set; } = "";
-        public string AccountStatus { get; set; } = "";
     }
 
     public class TeacherListItem
     {
         public int TeacherId { get; set; }
+        public int UserId { get; set; }
         public string FullName { get; set; } = "";
         public string Position { get; set; } = "";
     }
 
-    public class ManageAccountsResult
+    public class AccountsFilterResult
     {
         public List<StudentListItem> Students { get; set; } = new();
         public List<TeacherListItem> Teachers { get; set; } = new();
         public List<string> Programs { get; set; } = new();
         public List<string> YearLevels { get; set; } = new();
-        public ManageAccountsFilters Filters { get; set; } = new();
+        public AccountsFilters Filters { get; set; } = new();
     }
 
     public enum ManageTab { Students, Teachers }
 
-    public class ManageAccountsViewModel
+    public class AdminAccountsViewModel
     {
         public ManageTab ActiveTab { get; set; } = ManageTab.Students;
-        public ManageAccountsFilters Filters { get; set; } = new();
+        public AccountsFilters Filters { get; set; } = new();
         public List<StudentListItem> Students { get; set; } = new();
         public List<TeacherListItem> Teachers { get; set; } = new();
         public List<string> Programs { get; set; } = new();

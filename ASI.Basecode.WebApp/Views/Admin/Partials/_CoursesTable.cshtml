@@ -1,0 +1,56 @@
+﻿@model IEnumerable<ASI.Basecode.Data.Models.Course>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="text-center text-muted py-5">No courses found.</div>
+}
+else
+{
+    <table class="table table-hover align-middle mt-3">
+        <thead class="table-light">
+            <tr>
+                <th style="width:140px">Code</th>
+                <th class="text-start">Description</th>
+                <th style="width:100px" class="text-center">Lec</th>
+                <th style="width:100px" class="text-center">Lab</th>
+                <th style="width:100px" class="text-center">Total</th>
+                <th style="width:180px" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                var lec = c.LecUnits;   
+                var lab = c.LabUnits;   
+                var total = lec + lab;
+
+                <tr>
+                    <td class="fw-semibold">@c.CourseCode</td>
+                    <td class="text-start">@c.Description</td>
+                    <td class="text-center">@lec</td>
+                    <td class="text-center">@lab</td>
+                    <td class="text-center">@total</td>
+                    <td class="text-end">
+                        <form asp-controller="AdminCourses" asp-action="Delete" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@c.CourseId" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                        <button class="btn btn-sm btn-outline-primary ms-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addCourseModal"
+                                data-edit="true"
+                                data-id="@c.CourseId"
+                                data-code="@c.CourseCode"
+                                data-desc="@c.Description"
+                                data-lec="@c.LecUnits"
+                                data-lab="@c.LabUnits">
+                            Edit
+                        </button>
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

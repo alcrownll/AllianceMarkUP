@@ -9,23 +9,6 @@ namespace ASI.Basecode.WebApp.Controllers
 {
     public class AdminController : Controller
     {
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> AdminDashboard()
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "Test Admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-
-            var identity = new ClaimsIdentity(claims, "ASI_Basecode");
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync("ASI_Basecode", principal);
-
-            return RedirectToAction("Dashboard");
-        }
 
         [Authorize(Roles = "Admin")]
         public IActionResult Dashboard()

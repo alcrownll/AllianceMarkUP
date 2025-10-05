@@ -17,6 +17,29 @@
     <!-- For Mini Calendar -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+   
+
+    <script>
+        (function () {
+          function loadInto(el) {
+            if (!el) return;
+            var url = el.getAttribute('data-url');
+            if (!url) return;
+
+            fetch(url, { credentials: 'same-origin' }) // 👈 must include cookies
+              .then(r => r.text())
+              .then(html => {
+                el.innerHTML = html;
+                var input = el.querySelector('#miniCalendar');
+                if (input && window.flatpickr) flatpickr(input, { inline: true });
+              })
+              .catch(() => { el.innerHTML = '<div class="p-3 text-danger small">Failed to load.</div>'; });
+          }
+          document.addEventListener('DOMContentLoaded', function () {
+            loadInto(document.getElementById('rightSidebar'));
+          });
+        })();
+    </script>
 
 
 
@@ -58,7 +81,9 @@
 
         <!-- RIGHT SIDEBAR (Profile + Calendar + Notifs, shared across roles) -->
         <aside class="right-sidebar">
-            @await Html.PartialAsync("Sidebars/_RightSidebar")
+            <div id="rightSidebar" data-url="@Url.Action("RightSidebar", "Partials")">
+                <div class="p-3 text-muted small">Loading…</div>
+            </div>
         </aside>
     </div>
 

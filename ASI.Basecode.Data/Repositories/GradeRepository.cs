@@ -14,6 +14,27 @@ namespace ASI.Basecode.Data.Repositories
         public GradeRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
         public IQueryable<Grade> GetGrades() => this.GetDbSet<Grade>();
+        
+        public IQueryable<Grade> GetGradesByAssignedCourse(int assignedCourseId) => 
+            this.GetDbSet<Grade>().Where(g => g.AssignedCourseId == assignedCourseId);
+        
+        public async Task<bool> BulkUpdateGradesAsync(List<Grade> grades)
+        {
+            try
+            {
+                foreach (var grade in grades)
+                {
+                    this.GetDbSet<Grade>().Update(grade);
+                }
+                await UnitOfWork.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
         public Grade GetGradeById(int GradeId) => this.GetDbSet<Grade>().FirstOrDefault(e => e.GradeId == GradeId);
 
         public void AddGrade(Grade Grade)

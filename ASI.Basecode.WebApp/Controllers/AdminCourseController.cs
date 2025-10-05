@@ -3,6 +3,7 @@ using ASI.Basecode.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.Collections.Generic; // added for List<Course>
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -19,7 +20,7 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var courses = await _service.GetAllAsync();
+            var courses = await _service.GetAllAsync() ?? new List<Course>();
             return View("~/Views/Admin/AdminCourses.cshtml", courses);
         }
 
@@ -29,7 +30,8 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Create([Bind("CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync());
+                return View("~/Views/Admin/AdminCourses.cshtml",
+                    await _service.GetAllAsync() ?? new List<Course>());
 
             await _service.CreateAsync(course);
             return RedirectToAction(nameof(Index));
@@ -41,7 +43,8 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Edit([Bind("CourseId,CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync());
+                return View("~/Views/Admin/AdminCourses.cshtml",
+                    await _service.GetAllAsync() ?? new List<Course>());
 
             await _service.UpdateAsync(course);
             return RedirectToAction(nameof(Index));

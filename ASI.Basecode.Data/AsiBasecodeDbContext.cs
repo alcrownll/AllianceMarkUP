@@ -26,6 +26,9 @@ namespace ASI.Basecode.Data
         public virtual DbSet<ClassSchedule> ClassSchedules { get; set; }
         public virtual DbSet<Grade> Grades { get; set; }
 
+        public virtual DbSet<Notification> Notifications { get; set; }
+        public virtual DbSet<CalendarEvent> CalendarEvents { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(entity =>
@@ -67,7 +70,8 @@ namespace ASI.Basecode.Data
                 entity.HasOne(d => d.User)
                       .WithOne(p => p.Student)                    
                       .HasForeignKey<Student>(d => d.UserId)
-                      .OnDelete(DeleteBehavior.Restrict);         
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .HasConstraintName("FK_Students_Users_UserId");
             });
 
             // TEACHER 
@@ -81,7 +85,8 @@ namespace ASI.Basecode.Data
                 entity.HasOne(d => d.User)
                       .WithOne(p => p.Teacher)                    
                       .HasForeignKey<Teacher>(d => d.UserId)
-                      .OnDelete(DeleteBehavior.Restrict);         
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .HasConstraintName("FK_Teachers_Users_UserId");
             });
 
             // USER PROFILE
@@ -165,6 +170,39 @@ namespace ASI.Basecode.Data
                       .WithMany(p => p.Grades)
                       .HasForeignKey(d => d.AssignedCourseId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // 🔹 NOTIFICATION
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId);
+
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Message).HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
+
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.Notifications) // you'll need a `ICollection<Notification>` in User
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+            // 🔹 CALENDAR EVENT
+            modelBuilder.Entity<CalendarEvent>(entity =>
+            {
+                entity.HasKey(e => e.CalendarEventId);
+
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Location).HasMaxLength(200);
+
+                entity.Property(e => e.StartUtc).HasColumnType("timestamp");
+                entity.Property(e => e.EndUtc).HasColumnType("timestamp");
+
+                entity.HasOne(e => e.User)
+                      .WithMany(u => u.CalendarEvents) // you'll need a `ICollection<CalendarEvent>` in User
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);  // or Restrict if you don’t want cascade
             });
 
             OnModelCreatingPartial(modelBuilder);
