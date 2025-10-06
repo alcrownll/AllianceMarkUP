@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.WebApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -12,10 +13,12 @@ namespace ASI.Basecode.WebApp.Controllers
     public class AdminController : Controller
     {
         private readonly IAdminDashboardService _dashboardService;
+        private readonly IAdminReportsService _reportsService;
 
-        public AdminController(IAdminDashboardService dashboardService)
+        public AdminController(IAdminDashboardService dashboardService, IAdminReportsService reportsService)
         {
             _dashboardService = dashboardService;
+            _reportsService = reportsService;
         }
 
         [HttpGet]
@@ -78,9 +81,45 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        public IActionResult Reports()
+        public async Task<IActionResult> Reports(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null)
         {
-            return View("AdminReports");
+            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId);
+
+            var vm = new AdminReportsViewModel
+            {
+                Dashboard = dashboard,
+                SchoolYears = dashboard?.AvailableSchoolYears ?? new List<string>(),
+                SelectedSchoolYear = dashboard?.SchoolYear,
+                SelectedTermKey = dashboard?.TermKey,
+                SelectedTeacherId = teacherId,
+                SelectedStudentId = studentId
+            };
+
+            return View("AdminReports", vm);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ReportsDashboard(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null)
+        {
+            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId);
+            return Json(dashboard);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ReportsTeacherDetail(int teacherId, string schoolYear = null, string termKey = null)
+        {
+            var detail = await _reportsService.GetTeacherDetailAsync(teacherId, schoolYear, termKey);
+            return Json(detail);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ReportsStudentAnalytics(int studentId, string schoolYear = null, string termKey = null)
+        {
+            var analytics = await _reportsService.GetStudentAnalyticsAsync(studentId, schoolYear, termKey);
+            return Json(analytics);
         }
 
 

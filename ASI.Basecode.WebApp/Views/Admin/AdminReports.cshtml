@@ -1,6 +1,15 @@
+@model ASI.Basecode.WebApp.Models.AdminReportsViewModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Reports";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+
+    var dashboard = Model?.Dashboard ?? new ASI.Basecode.Services.ServiceModels.ReportsDashboardModel();
+    var selectedTermKey = Model?.SelectedTermKey ?? dashboard.TermKey ?? string.Empty;
+    var schoolYears = Model?.SchoolYears ?? dashboard.AvailableSchoolYears ?? new List<string>();
+    var termOptions = dashboard.TermOptions ?? new List<ASI.Basecode.Services.ServiceModels.ReportTermOptionModel>();
+    var selectedSchoolYear = Model?.SelectedSchoolYear ?? dashboard.SchoolYear ?? schoolYears.LastOrDefault() ?? string.Empty;
+    var serializedDashboard = JsonSerializer.Serialize(dashboard);
 }
 
 <div class="reports-page" id="reports-page">
@@ -11,19 +20,37 @@
         </div>
         <div class="header-actions">
             <label for="reportSchoolYear" class="form-label">School Year</label>
-            <select id="reportSchoolYear" class="form-select form-select-sm" aria-label="Select school year">
-                <option>2024-2025</option>
-                <option selected>2025-2026</option>
-                <option>2026-2027</option>
+            <select id="reportSchoolYear" class="form-select form-select-sm" aria-label="Select school year" data-selector="school-year">
+                @if (!schoolYears.Any())
+                {
+                    <option value="">--</option>
+                }
+                else
+                {
+                    foreach (var year in schoolYears)
+                    {
+                        var selected = string.Equals(year, selectedSchoolYear, StringComparison.OrdinalIgnoreCase);
+                        <option value="@year" selected="@(selected)">@year</option>
+                    }
+                }
             </select>
             <label for="reportTerm" class="form-label">Term</label>
-            <select id="reportTerm" class="form-select form-select-sm" aria-label="Select term">
-                <option value="whole" selected>Whole Year</option>
-                <option value="1">1st Semester</option>
-                <option value="2">2nd Semester</option>
-                <option value="mid">Mid Term</option>
+            <select id="reportTerm" class="form-select form-select-sm" aria-label="Select term" data-selector="term">
+                @if (!termOptions.Any())
+                {
+                    <option value="">Whole Year</option>
+                }
+                else
+                {
+                    foreach (var option in termOptions)
+                    {
+                        var optionValue = option.TermKey ?? string.Empty;
+                        var selected = string.Equals(optionValue, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                        <option value="@optionValue" selected="@(selected)">@option.Label</option>
+                    }
+                }
             </select>
-            <button class="btn btn-outline-primary" type="button">Schedule Export</button>
+            <button class="btn btn-outline-primary" type="button" data-action="schedule-export">Schedule Export</button>
         </div>
     </header>
 
@@ -39,42 +66,37 @@
                 <div class="snapshot-row">
                     <div>
                         <span class="snapshot-label">EDP Code</span>
-                        <strong class="snapshot-value">37256</strong>
+                        <strong class="snapshot-value" data-field="snapshot-edp">--</strong>
                     </div>
                     <div>
                         <span class="snapshot-label">Subject</span>
-                        <strong class="snapshot-value">CS-FREEEL</strong>
+                        <strong class="snapshot-value" data-field="snapshot-subject">--</strong>
                     </div>
                     <div>
                         <span class="snapshot-label">Schedule</span>
-                        <strong class="snapshot-value">MWF (6:30 PM - 7:30 PM)</strong>
+                        <strong class="snapshot-value" data-field="snapshot-schedule">--</strong>
                     </div>
                 </div>
                 <div class="snapshot-row">
                     <div>
                         <label class="form-label" for="snapshotProgram">Program</label>
                         <select id="snapshotProgram" class="form-select form-select-sm">
-                            <option selected>All Programs</option>
-                            <option>BSCS</option>
-                            <option>BSIT</option>
-                            <option>BSIS</option>
+                            <option value="" selected>All Programs</option>
                         </select>
                     </div>
                     <div>
                         <label class="form-label" for="snapshotSection">Section</label>
                         <select id="snapshotSection" class="form-select form-select-sm">
-                            <option selected>CS31A</option>
-                            <option>CS31B</option>
-                            <option>CS31C</option>
+                            <option value="" selected>All Sections</option>
                         </select>
                     </div>
                     <div class="snapshot-actions">
-                        <button class="btn btn-outline-primary btn-sm" type="button">Download</button>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-action="download-student-report">Download</button>
                     </div>
                 </div>
             </div>
             <div class="snapshot-table">
-                <table class="table table-sm align-middle">
+                <table class="table table-sm align-middle" data-table="student-snapshot">
                     <thead>
                         <tr>
                             <th>EDP Code</th>
@@ -89,49 +111,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>37256</td>
-                            <td>2018-0001</td>
-                            <td>Manalo</td>
-                            <td>Christian</td>
-                            <td>BSCS</td>
-                            <td>M</td>
-                            <td>3</td>
-                            <td>1.75</td>
-                            <td>Passed</td>
-                        </tr>
-                        <tr>
-                            <td>37256</td>
-                            <td>2018-0002</td>
-                            <td>Garcia</td>
-                            <td>Ana</td>
-                            <td>BSIT</td>
-                            <td>F</td>
-                            <td>3</td>
-                            <td>2.00</td>
-                            <td>Passed</td>
-                        </tr>
-                        <tr>
-                            <td>37256</td>
-                            <td>2018-0003</td>
-                            <td>Padayon</td>
-                            <td>Joshua</td>
-                            <td>BSCS</td>
-                            <td>M</td>
-                            <td>3</td>
-                            <td>2.25</td>
-                            <td>Ongoing</td>
-                        </tr>
-                        <tr>
-                            <td>37256</td>
-                            <td>2018-0004</td>
-                            <td>Lopez</td>
-                            <td>Maria</td>
-                            <td>BSIT</td>
-                            <td>F</td>
-                            <td>3</td>
-                            <td>2.75</td>
-                            <td>Failed</td>
+                        <tr data-empty="true">
+                            <td colspan="9" class="text-center">No records yet.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -139,15 +120,15 @@
             <div class="snapshot-summary">
                 <article class="summary-card">
                     <span class="summary-label">Number of IT students passed</span>
-                    <strong class="summary-value">2</strong>
+                    <strong class="summary-value" data-field="summary-it-pass">0</strong>
                 </article>
                 <article class="summary-card">
                     <span class="summary-label">Number of CS students passed</span>
-                    <strong class="summary-value">1</strong>
+                    <strong class="summary-value" data-field="summary-cs-pass">0</strong>
                 </article>
                 <article class="summary-card">
                     <span class="summary-label">Number of ungraded</span>
-                    <strong class="summary-value">2</strong>
+                    <strong class="summary-value" data-field="summary-ungraded">0</strong>
                 </article>
             </div>
         </header>
@@ -155,18 +136,32 @@
         <header class="student-controls glass">
             <div class="control-group">
                 <label for="studentSelector" class="form-label">Student</label>
-                <select id="studentSelector" class="form-select">
-                    <option selected>Juan Dela Cruz</option>
-                    <option>Ana Villanueva</option>
-                    <option>Michael Reyes</option>
+                <select id="studentSelector" class="form-select" data-selector="student">
+                    @if (dashboard?.Student?.Students?.Any() == true)
+                    {
+                        foreach (var option in dashboard.Student.Students)
+                        {
+                            var selected = Model?.SelectedStudentId == option.StudentId || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
+                            <option value="@option.StudentId" selected="@(selected)">@option.Name (@option.Program)</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="">No students</option>
+                    }
                 </select>
             </div>
             <div class="control-group">
                 <label for="studentTerm" class="form-label">Term</label>
-                <select id="studentTerm" class="form-select">
-                    <option value="all" selected>All Terms</option>
-                    <option value="2025-2026-1">2025-2026 · 1st Sem</option>
-                    <option value="2025-2026-2">2025-2026 · 2nd Sem</option>
+                <select id="studentTerm" class="form-select" data-selector="student-term">
+                    <option value="">All Terms</option>
+                    @if (termOptions.Any())
+                    {
+                        foreach (var option in termOptions.Where(t => !string.IsNullOrEmpty(t.TermKey)))
+                        {
+                            <option value="@option.TermKey">@option.Label</option>
+                        }
+                    }
                 </select>
             </div>
             <div class="control-group">
@@ -221,9 +216,9 @@
                 </header>
                 <div class="panel-body units-progress">
                     <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: 62%;" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100">62%</div>
+                        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" data-field="student-units-progress">0%</div>
                     </div>
-                    <p>93 of 150 required units completed.</p>
+                    <p data-field="student-units-label">0 of 0 required units completed.</p>
                 </div>
             </article>
 
@@ -267,15 +262,15 @@
                 <div class="panel-body mini-cards">
                     <div class="mini-card">
                         <span class="mini-label">Attendance</span>
-                        <strong class="mini-value">88%</strong>
+                        <strong class="mini-value" data-field="student-attendance">0%</strong>
                     </div>
                     <div class="mini-card">
                         <span class="mini-label">On-time submissions</span>
-                        <strong class="mini-value">92%</strong>
+                        <strong class="mini-value" data-field="student-submissions">0%</strong>
                     </div>
                     <div class="mini-card">
                         <span class="mini-label">Missing work</span>
-                        <strong class="mini-value">1</strong>
+                        <strong class="mini-value" data-field="student-missing">0</strong>
                     </div>
                 </div>
             </article>
@@ -286,27 +281,27 @@
         <div class="kpi-row">
             <article class="kpi-card glass">
                 <span class="kpi-label">Total Enrolled</span>
-                <h2 class="kpi-value">12,486</h2>
+                <h2 class="kpi-value" data-field="overall-total">0</h2>
                 <span class="kpi-meta">Current selection</span>
             </article>
             <article class="kpi-card glass">
                 <span class="kpi-label">Growth</span>
-                <h2 class="kpi-value up">+4.2%</h2>
+                <h2 class="kpi-value" data-field="overall-growth">0%</h2>
                 <span class="kpi-meta">vs last term</span>
             </article>
             <article class="kpi-card glass">
                 <span class="kpi-label">Average GWA</span>
-                <h2 class="kpi-value">2.18</h2>
+                <h2 class="kpi-value" data-field="overall-gwa">0.00</h2>
                 <span class="kpi-meta">Institution-wide</span>
             </article>
             <article class="kpi-card glass">
                 <span class="kpi-label">Pass Rate</span>
-                <h2 class="kpi-value">82%</h2>
+                <h2 class="kpi-value" data-field="overall-pass">0%</h2>
                 <span class="kpi-meta">Current term</span>
             </article>
             <article class="kpi-card glass">
                 <span class="kpi-label">Retention</span>
-                <h2 class="kpi-value">76%</h2>
+                <h2 class="kpi-value" data-field="overall-retention">0%</h2>
                 <span class="kpi-meta">Returning vs new</span>
             </article>
         </div>
@@ -319,18 +314,7 @@
                         <span>Track enrollment movement by period and facet.</span>
                     </div>
                     <div class="panel-controls">
-                        <label for="trendView">View</label>
-                        <select id="trendView" class="form-select form-select-sm">
-                            <option>Term</option>
-                            <option selected>Year</option>
-                            <option>Month</option>
-                        </select>
-                        <label for="trendFacet" class="ms-2">Facet</label>
-                        <select id="trendFacet" class="form-select form-select-sm">
-                            <option selected>Program</option>
-                            <option>Campus</option>
-                        </select>
-                        <button class="btn btn-link btn-sm" type="button">Export CSV</button>
+                        <button class="btn btn-link btn-sm" type="button" data-action="export-trend">Export CSV</button>
                     </div>
                 </header>
                 <div class="panel-body">
@@ -344,15 +328,11 @@
                         <h2>Program Leaderboard</h2>
                         <span>Enrollment volume and growth rates.</span>
                     </div>
-                    <button class="btn btn-link btn-sm" type="button">Export Excel</button>
+                    <button class="btn btn-link btn-sm" type="button" data-action="export-programs">Export Excel</button>
                 </header>
-                <div class="panel-body leaderboard">
+                <div class="panel-body leaderboard" data-list="program-leaderboard">
                     <ul>
-                        <li><span>BSCS</span><strong>2,450</strong><small class="up">▲ 6%</small></li>
-                        <li><span>BSIT</span><strong>2,180</strong><small class="up">▲ 4%</small></li>
-                        <li><span>BSIS</span><strong>1,520</strong><small class="down">▼ 2%</small></li>
-                        <li><span>BSECE</span><strong>1,115</strong><small class="up">▲ 3%</small></li>
-                        <li><span>BSCE</span><strong>980</strong><small class="down">▼ 1%</small></li>
+                        <li data-empty="true"><span>--</span><strong>0</strong><small>0%</small></li>
                     </ul>
                 </div>
             </article>
@@ -363,7 +343,7 @@
                         <h2>Demographic Breakdown</h2>
                         <span>Understand diversity and status mix.</span>
                     </div>
-                    <button class="btn btn-link btn-sm" type="button">Export CSV</button>
+                    <button class="btn btn-link btn-sm" type="button" data-action="export-demographics">Export CSV</button>
                 </header>
                 <div class="panel-body demo-grid">
                     <div class="demo-card">
@@ -391,22 +371,14 @@
                 <div class="panel-body outcomes-grid">
                     <div class="outcome-list">
                         <h3>High Failure Rate</h3>
-                        <ol>
-                            <li>CS-FREEEL <span>28% fail</span></li>
-                            <li>IT-LOGIC <span>25% fail</span></li>
-                            <li>MATH-ANAL <span>22% fail</span></li>
-                            <li>PHY-LAB2 <span>19% fail</span></li>
-                            <li>ENG-COMM <span>17% fail</span></li>
+                        <ol data-list="course-failure">
+                            <li data-empty="true">No data</li>
                         </ol>
                     </div>
                     <div class="outcome-list">
                         <h3>Top Performing</h3>
-                        <ol>
-                            <li>CS-MOBDEV <span>94% pass</span></li>
-                            <li>IT-CLOUD <span>92% pass</span></li>
-                            <li>IS-ANLYT <span>90% pass</span></li>
-                            <li>CS-ALGO <span>89% pass</span></li>
-                            <li>MATH-DISC <span>88% pass</span></li>
+                        <ol data-list="course-success">
+                            <li data-empty="true">No data</li>
                         </ol>
                     </div>
                 </div>
@@ -437,15 +409,15 @@
                 <div class="panel-body capacity-grid">
                     <div class="capacity-card">
                         <span class="capacity-label">Sections ≥ 90% capacity</span>
-                        <strong class="capacity-value">34</strong>
+                        <strong class="capacity-value" data-field="capacity-sections">0</strong>
                     </div>
                     <div class="capacity-card">
                         <span class="capacity-label">Faculty load ≥ 24 units</span>
-                        <strong class="capacity-value">18</strong>
+                        <strong class="capacity-value" data-field="capacity-faculty">0</strong>
                     </div>
                     <div class="capacity-card">
                         <span class="capacity-label">Average class size</span>
-                        <strong class="capacity-value">34.6</strong>
+                        <strong class="capacity-value" data-field="capacity-average">0</strong>
                     </div>
                 </div>
             </article>
@@ -462,17 +434,14 @@
                 <header>
                     <h2>Teacher Directory</h2>
                     <div class="directory-controls">
-                        <input type="search" class="form-control" placeholder="Search faculty" aria-label="Search teacher" />
-                        <select class="form-select form-select-sm" aria-label="Filter by department">
-                            <option selected>All Departments</option>
-                            <option>Computer Studies</option>
-                            <option>Engineering</option>
-                            <option>Business</option>
+                        <input type="search" class="form-control" placeholder="Search faculty" aria-label="Search teacher" data-filter="teacher-search" />
+                        <select class="form-select form-select-sm" aria-label="Filter by department" data-filter="teacher-department">
+                            <option value="" selected>All Programs</option>
                         </select>
-                        <button class="btn btn-outline-primary btn-sm" type="button">Export CSV</button>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-action="export-teachers">Export CSV</button>
                     </div>
                 </header>
-                <table class="table table-hover">
+                <table class="table table-hover" data-table="teacher-directory">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -759,5 +728,8 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
+    <script>
+        window.AdminReportsInitial = @Html.Raw(serializedDashboard);
+    </script>
     <script src="~/js/admin-reports.js" asp-append-version="true"></script>
 }
