@@ -1,13 +1,763 @@
-﻿@{
+@{
     ViewData["Title"] = "Reports";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
 }
 
-<h2>📊 Reports</h2>
-<p>Generate grade summaries, enrollment trends, and demographic reports.</p>
+<div class="reports-page" id="reports-page">
+    <header class="reports-header glass">
+        <div class="header-left">
+            <h1>Reports Dashboard</h1>
+            <p>Analyze institutional performance, faculty loads, and student progress across the university.</p>
+        </div>
+        <div class="header-actions">
+            <label for="reportSchoolYear" class="form-label">School Year</label>
+            <select id="reportSchoolYear" class="form-select form-select-sm" aria-label="Select school year">
+                <option>2024-2025</option>
+                <option selected>2025-2026</option>
+                <option>2026-2027</option>
+            </select>
+            <label for="reportTerm" class="form-label">Term</label>
+            <select id="reportTerm" class="form-select form-select-sm" aria-label="Select term">
+                <option value="whole" selected>Whole Year</option>
+                <option value="1">1st Semester</option>
+                <option value="2">2nd Semester</option>
+                <option value="mid">Mid Term</option>
+            </select>
+            <button class="btn btn-outline-primary" type="button">Schedule Export</button>
+        </div>
+    </header>
 
-<ul>
-    <li><a href="#">Generate Grade Report (PDF)</a></li>
-    <li><a href="#">Enrollment Trend Analysis</a></li>
-    <li><a href="#">Demographic Breakdown</a></li>
-</ul>
+    <nav class="reports-tabs" role="tablist">
+        <button class="reports-tab active" data-tab="student" type="button">Student</button>
+        <button class="reports-tab" data-tab="overall" type="button">Overall</button>
+        <button class="reports-tab" data-tab="teacher" type="button">Teacher</button>
+    </nav>
+
+    <section class="tab-panel active" data-panel="student" role="tabpanel">
+        <header class="student-snapshot glass">
+            <div class="snapshot-meta">
+                <div class="snapshot-row">
+                    <div>
+                        <span class="snapshot-label">EDP Code</span>
+                        <strong class="snapshot-value">37256</strong>
+                    </div>
+                    <div>
+                        <span class="snapshot-label">Subject</span>
+                        <strong class="snapshot-value">CS-FREEEL</strong>
+                    </div>
+                    <div>
+                        <span class="snapshot-label">Schedule</span>
+                        <strong class="snapshot-value">MWF (6:30 PM - 7:30 PM)</strong>
+                    </div>
+                </div>
+                <div class="snapshot-row">
+                    <div>
+                        <label class="form-label" for="snapshotProgram">Program</label>
+                        <select id="snapshotProgram" class="form-select form-select-sm">
+                            <option selected>All Programs</option>
+                            <option>BSCS</option>
+                            <option>BSIT</option>
+                            <option>BSIS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="snapshotSection">Section</label>
+                        <select id="snapshotSection" class="form-select form-select-sm">
+                            <option selected>CS31A</option>
+                            <option>CS31B</option>
+                            <option>CS31C</option>
+                        </select>
+                    </div>
+                    <div class="snapshot-actions">
+                        <button class="btn btn-outline-primary btn-sm" type="button">Download</button>
+                    </div>
+                </div>
+            </div>
+            <div class="snapshot-table">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>EDP Code</th>
+                            <th>ID Number</th>
+                            <th>Last Name</th>
+                            <th>First Name</th>
+                            <th>Program</th>
+                            <th>Gender</th>
+                            <th>Year</th>
+                            <th>GWA</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>37256</td>
+                            <td>2018-0001</td>
+                            <td>Manalo</td>
+                            <td>Christian</td>
+                            <td>BSCS</td>
+                            <td>M</td>
+                            <td>3</td>
+                            <td>1.75</td>
+                            <td>Passed</td>
+                        </tr>
+                        <tr>
+                            <td>37256</td>
+                            <td>2018-0002</td>
+                            <td>Garcia</td>
+                            <td>Ana</td>
+                            <td>BSIT</td>
+                            <td>F</td>
+                            <td>3</td>
+                            <td>2.00</td>
+                            <td>Passed</td>
+                        </tr>
+                        <tr>
+                            <td>37256</td>
+                            <td>2018-0003</td>
+                            <td>Padayon</td>
+                            <td>Joshua</td>
+                            <td>BSCS</td>
+                            <td>M</td>
+                            <td>3</td>
+                            <td>2.25</td>
+                            <td>Ongoing</td>
+                        </tr>
+                        <tr>
+                            <td>37256</td>
+                            <td>2018-0004</td>
+                            <td>Lopez</td>
+                            <td>Maria</td>
+                            <td>BSIT</td>
+                            <td>F</td>
+                            <td>3</td>
+                            <td>2.75</td>
+                            <td>Failed</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="snapshot-summary">
+                <article class="summary-card">
+                    <span class="summary-label">Number of IT students passed</span>
+                    <strong class="summary-value">2</strong>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-label">Number of CS students passed</span>
+                    <strong class="summary-value">1</strong>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-label">Number of ungraded</span>
+                    <strong class="summary-value">2</strong>
+                </article>
+            </div>
+        </header>
+
+        <header class="student-controls glass">
+            <div class="control-group">
+                <label for="studentSelector" class="form-label">Student</label>
+                <select id="studentSelector" class="form-select">
+                    <option selected>Juan Dela Cruz</option>
+                    <option>Ana Villanueva</option>
+                    <option>Michael Reyes</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="studentTerm" class="form-label">Term</label>
+                <select id="studentTerm" class="form-select">
+                    <option value="all" selected>All Terms</option>
+                    <option value="2025-2026-1">2025-2026 · 1st Sem</option>
+                    <option value="2025-2026-2">2025-2026 · 2nd Sem</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="form-label">Admin Controls</label>
+                <div class="toggle-row">
+                    <label><input type="checkbox" checked /> Show GWA Trend</label>
+                    <label><input type="checkbox" checked /> Show Pass/Fail Mix</label>
+                    <label><input type="checkbox" /> Lock until finalized</label>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="riskThreshold" class="form-label">At-Risk Threshold (GWA)</label>
+                <input id="riskThreshold" type="number" step="0.1" value="2.5" class="form-control" />
+            </div>
+            <div class="control-group actions">
+                <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
+                <button class="btn btn-primary" type="button">Save Settings</button>
+            </div>
+        </header>
+
+        <div class="student-grid">
+            <article class="panel glass span-2">
+                <header class="panel-header">
+                    <div>
+                        <h2>GWA Trend</h2>
+                        <span>Term-over-term academic performance.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentGwaChart" height="260"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Grades by Course</h2>
+                        <span>Compare course outcomes for the selected range.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentCourseChart" height="260"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Units Progress</h2>
+                        <span>Earned vs required for program completion.</span>
+                    </div>
+                </header>
+                <div class="panel-body units-progress">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 62%;" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100">62%</div>
+                    </div>
+                    <p>93 of 150 required units completed.</p>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Pass/Fail/Incomplete</h2>
+                        <span>Distribution for current filter.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentStatusChart" height="220"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Top Strengths &amp; Risks</h2>
+                        <span>Identify courses needing support.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <div class="chip-list strength">
+                        <span class="chip">A in CS-MOBDEV</span>
+                        <span class="chip">A- in IT-CLOUD</span>
+                    </div>
+                    <div class="chip-list risk">
+                        <span class="chip">Incomplete in CS-CAPSTONE</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Attendance &amp; Submissions</h2>
+                        <span>Optional engagement indicators.</span>
+                    </div>
+                </header>
+                <div class="panel-body mini-cards">
+                    <div class="mini-card">
+                        <span class="mini-label">Attendance</span>
+                        <strong class="mini-value">88%</strong>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">On-time submissions</span>
+                        <strong class="mini-value">92%</strong>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">Missing work</span>
+                        <strong class="mini-value">1</strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="tab-panel" data-panel="overall" role="tabpanel">
+        <div class="kpi-row">
+            <article class="kpi-card glass">
+                <span class="kpi-label">Total Enrolled</span>
+                <h2 class="kpi-value">12,486</h2>
+                <span class="kpi-meta">Current selection</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Growth</span>
+                <h2 class="kpi-value up">+4.2%</h2>
+                <span class="kpi-meta">vs last term</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Average GWA</span>
+                <h2 class="kpi-value">2.18</h2>
+                <span class="kpi-meta">Institution-wide</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Pass Rate</span>
+                <h2 class="kpi-value">82%</h2>
+                <span class="kpi-meta">Current term</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Retention</span>
+                <h2 class="kpi-value">76%</h2>
+                <span class="kpi-meta">Returning vs new</span>
+            </article>
+        </div>
+
+        <div class="reports-grid">
+            <article class="panel glass span-2">
+                <header class="panel-header">
+                    <div>
+                        <h2>Enrollment Trend</h2>
+                        <span>Track enrollment movement by period and facet.</span>
+                    </div>
+                    <div class="panel-controls">
+                        <label for="trendView">View</label>
+                        <select id="trendView" class="form-select form-select-sm">
+                            <option>Term</option>
+                            <option selected>Year</option>
+                            <option>Month</option>
+                        </select>
+                        <label for="trendFacet" class="ms-2">Facet</label>
+                        <select id="trendFacet" class="form-select form-select-sm">
+                            <option selected>Program</option>
+                            <option>Campus</option>
+                        </select>
+                        <button class="btn btn-link btn-sm" type="button">Export CSV</button>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="overallTrendChart" height="320"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Program Leaderboard</h2>
+                        <span>Enrollment volume and growth rates.</span>
+                    </div>
+                    <button class="btn btn-link btn-sm" type="button">Export Excel</button>
+                </header>
+                <div class="panel-body leaderboard">
+                    <ul>
+                        <li><span>BSCS</span><strong>2,450</strong><small class="up">▲ 6%</small></li>
+                        <li><span>BSIT</span><strong>2,180</strong><small class="up">▲ 4%</small></li>
+                        <li><span>BSIS</span><strong>1,520</strong><small class="down">▼ 2%</small></li>
+                        <li><span>BSECE</span><strong>1,115</strong><small class="up">▲ 3%</small></li>
+                        <li><span>BSCE</span><strong>980</strong><small class="down">▼ 1%</small></li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Demographic Breakdown</h2>
+                        <span>Understand diversity and status mix.</span>
+                    </div>
+                    <button class="btn btn-link btn-sm" type="button">Export CSV</button>
+                </header>
+                <div class="panel-body demo-grid">
+                    <div class="demo-card">
+                        <h3>Gender Split</h3>
+                        <canvas id="demoGenderChart" height="160"></canvas>
+                    </div>
+                    <div class="demo-card">
+                        <h3>Age Bands</h3>
+                        <canvas id="demoAgeChart" height="160"></canvas>
+                    </div>
+                    <div class="demo-card">
+                        <h3>Status</h3>
+                        <canvas id="demoStatusChart" height="160"></canvas>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Course Outcomes</h2>
+                        <span>Identify courses needing attention.</span>
+                    </div>
+                </header>
+                <div class="panel-body outcomes-grid">
+                    <div class="outcome-list">
+                        <h3>High Failure Rate</h3>
+                        <ol>
+                            <li>CS-FREEEL <span>28% fail</span></li>
+                            <li>IT-LOGIC <span>25% fail</span></li>
+                            <li>MATH-ANAL <span>22% fail</span></li>
+                            <li>PHY-LAB2 <span>19% fail</span></li>
+                            <li>ENG-COMM <span>17% fail</span></li>
+                        </ol>
+                    </div>
+                    <div class="outcome-list">
+                        <h3>Top Performing</h3>
+                        <ol>
+                            <li>CS-MOBDEV <span>94% pass</span></li>
+                            <li>IT-CLOUD <span>92% pass</span></li>
+                            <li>IS-ANLYT <span>90% pass</span></li>
+                            <li>CS-ALGO <span>89% pass</span></li>
+                            <li>MATH-DISC <span>88% pass</span></li>
+                        </ol>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>At-Risk Indicators</h2>
+                        <span>Monitor early-warning signals.</span>
+                    </div>
+                </header>
+                <div class="panel-body risk-grid">
+                    <div class="risk-chip">145 students below GWA 2.5</div>
+                    <div class="risk-chip">12 sections pass rate &lt; 70%</div>
+                    <div class="risk-chip">7 courses with pending grades</div>
+                    <div class="risk-chip">4 programs below retention target</div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Capacity &amp; Load</h2>
+                        <span>Ensure resources align with demand.</span>
+                    </div>
+                </header>
+                <div class="panel-body capacity-grid">
+                    <div class="capacity-card">
+                        <span class="capacity-label">Sections ≥ 90% capacity</span>
+                        <strong class="capacity-value">34</strong>
+                    </div>
+                    <div class="capacity-card">
+                        <span class="capacity-label">Faculty load ≥ 24 units</span>
+                        <strong class="capacity-value">18</strong>
+                    </div>
+                    <div class="capacity-card">
+                        <span class="capacity-label">Average class size</span>
+                        <strong class="capacity-value">34.6</strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <footer class="reports-footer">
+            <p>Select any program or course to drill deeper into trends and outcomes. Export results or schedule recurring deliveries for executive reviews.</p>
+        </footer>
+    </section>
+
+    <section class="tab-panel" data-panel="teacher" role="tabpanel">
+        <div class="split-layout">
+            <aside class="teacher-directory glass">
+                <header>
+                    <h2>Teacher Directory</h2>
+                    <div class="directory-controls">
+                        <input type="search" class="form-control" placeholder="Search faculty" aria-label="Search teacher" />
+                        <select class="form-select form-select-sm" aria-label="Filter by department">
+                            <option selected>All Departments</option>
+                            <option>Computer Studies</option>
+                            <option>Engineering</option>
+                            <option>Business</option>
+                        </select>
+                        <button class="btn btn-outline-primary btn-sm" type="button">Export CSV</button>
+                    </div>
+                </header>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Email</th>
+                            <th>Rank</th>
+                            <th>Load</th>
+                            <th>Sections</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="active">
+                            <td>Prof. Maria Santos</td>
+                            <td>Computer Studies</td>
+                            <td>msantos@ucc.edu.ph</td>
+                            <td>Associate</td>
+                            <td>18 units</td>
+                            <td>4</td>
+                        </tr>
+                        <tr>
+                            <td>Prof. Carlo Reyes</td>
+                            <td>Engineering</td>
+                            <td>creyes@ucc.edu.ph</td>
+                            <td>Assistant</td>
+                            <td>15 units</td>
+                            <td>3</td>
+                        </tr>
+                        <tr>
+                            <td>Prof. Aira Gomez</td>
+                            <td>Computer Studies</td>
+                            <td>agomez@ucc.edu.ph</td>
+                            <td>Professor</td>
+                            <td>21 units</td>
+                            <td>5</td>
+                        </tr>
+                        <tr>
+                            <td>Prof. John Lee</td>
+                            <td>Business</td>
+                            <td>jlee@ucc.edu.ph</td>
+                            <td>Lecturer</td>
+                            <td>12 units</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="directory-footer">
+                    <button class="btn btn-secondary btn-sm" type="button">Print teacher summary</button>
+                </div>
+            </aside>
+
+            <section class="teacher-detail glass">
+                <header class="detail-header">
+                    <div>
+                        <h2>Prof. Maria Santos</h2>
+                        <span>Associate Professor · College of Computer Studies</span>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn btn-outline-primary btn-sm" type="button">Export Classes</button>
+                        <button class="btn btn-primary btn-sm" type="button">Print summary</button>
+                    </div>
+                </header>
+
+                <div class="detail-kpis">
+                    <article class="mini-card">
+                        <span class="mini-label">Teaching Load</span>
+                        <strong class="mini-value">18 units</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Sections</span>
+                        <strong class="mini-value">4</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Pass Rate</span>
+                        <strong class="mini-value">84%</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Submissions Finalized</span>
+                        <strong class="mini-value">92%</strong>
+                    </article>
+                </div>
+
+                <div class="detail-body">
+                    <article class="panel">
+                        <header><h3>Teaching Assignments</h3></header>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Section</th>
+                                    <th>Schedule</th>
+                                    <th>Units</th>
+                                    <th>Enrolled</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>CS-FREEEL</td>
+                                    <td>CS31A</td>
+                                    <td>MWF 7:30-9:00 AM</td>
+                                    <td>3</td>
+                                    <td>32</td>
+                                </tr>
+                                <tr>
+                                    <td>CS-DATABASE</td>
+                                    <td>CS32A</td>
+                                    <td>TTh 1:00-2:30 PM</td>
+                                    <td>3</td>
+                                    <td>28</td>
+                                </tr>
+                                <tr>
+                                    <td>CS-ALGO2</td>
+                                    <td>CS41B</td>
+                                    <td>MWF 10:00-11:00 AM</td>
+                                    <td>3</td>
+                                    <td>35</td>
+                                </tr>
+                                <tr>
+                                    <td>CS-CAPSTONE</td>
+                                    <td>CS51C</td>
+                                    <td>Sat 8:00-11:00 AM</td>
+                                    <td>3</td>
+                                    <td>24</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Course Pass Rates</h3></header>
+                        <div class="panel-body">
+                            <canvas id="teacherPassChart" height="200"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Submission Status</h3></header>
+                        <ul class="status-list">
+                            <li class="complete">Free Elective · Final grades submitted</li>
+                            <li class="complete">Database Systems · Final grades submitted</li>
+                            <li class="pending">Algorithms 2 · Awaiting chair approval</li>
+                            <li class="pending">Capstone · Midterm grades missing</li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </section>
+
+    <section class="tab-panel" data-panel="student" role="tabpanel">
+        <header class="student-controls glass">
+            <div class="control-group">
+                <label for="studentSelector" class="form-label">Student</label>
+                <select id="studentSelector" class="form-select">
+                    <option selected>Juan Dela Cruz</option>
+                    <option>Ana Villanueva</option>
+                    <option>Michael Reyes</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="studentTerm" class="form-label">Term</label>
+                <select id="studentTerm" class="form-select">
+                    <option value="all" selected>All Terms</option>
+                    <option value="2025-2026-1">2025-2026 · 1st Sem</option>
+                    <option value="2025-2026-2">2025-2026 · 2nd Sem</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="form-label">Admin Controls</label>
+                <div class="toggle-row">
+                    <label><input type="checkbox" checked /> Show GWA Trend</label>
+                    <label><input type="checkbox" checked /> Show Pass/Fail Mix</label>
+                    <label><input type="checkbox" /> Lock until finalized</label>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="riskThreshold" class="form-label">At-Risk Threshold (GWA)</label>
+                <input id="riskThreshold" type="number" step="0.1" value="2.5" class="form-control" />
+            </div>
+            <div class="control-group actions">
+                <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
+                <button class="btn btn-primary" type="button">Save Settings</button>
+            </div>
+        </header>
+
+        <div class="student-grid">
+            <article class="panel glass span-2">
+                <header class="panel-header">
+                    <div>
+                        <h2>GWA Trend</h2>
+                        <span>Term-over-term academic performance.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentGwaChart" height="260"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Grades by Course</h2>
+                        <span>Compare course outcomes for the selected range.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentCourseChart" height="260"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Units Progress</h2>
+                        <span>Earned vs required for program completion.</span>
+                    </div>
+                </header>
+                <div class="panel-body units-progress">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 62%;" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100">62%</div>
+                    </div>
+                    <p>93 of 150 required units completed.</p>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Pass/Fail/Incomplete</h2>
+                        <span>Distribution for current filter.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <canvas id="studentStatusChart" height="220"></canvas>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Top Strengths &amp; Risks</h2>
+                        <span>Identify courses needing support.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <div class="chip-list strength">
+                        <span class="chip">A in CS-MOBDEV</span>
+                        <span class="chip">A- in IT-CLOUD</span>
+                    </div>
+                    <div class="chip-list risk">
+                        <span class="chip">Incomplete in CS-CAPSTONE</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Attendance &amp; Submissions</h2>
+                        <span>Optional engagement indicators.</span>
+                    </div>
+                </header>
+                <div class="panel-body mini-cards">
+                    <div class="mini-card">
+                        <span class="mini-label">Attendance</span>
+                        <strong class="mini-value">88%</strong>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">On-time submissions</span>
+                        <strong class="mini-value">92%</strong>
+                    </div>
+                    <div class="mini-card">
+                        <span class="mini-label">Missing work</span>
+                        <strong class="mini-value">1</strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-reports.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
+    <script src="~/js/admin-reports.js" asp-append-version="true"></script>
+}

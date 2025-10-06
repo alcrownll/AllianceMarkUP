@@ -37,6 +37,7 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IUserService, UserService>();
             this._services.AddScoped<IAdminAccountsService, AdminAccountsService>();
             this._services.AddScoped<IAdminCreateAccountService, AdminCreateAccountService>();
+            this._services.AddScoped<IAdminDashboardService, AdminDashboardService>();
             this._services.AddScoped<IProfileService, ProfileService>();
             this._services.AddScoped<ICourseService, CourseService>();   
 

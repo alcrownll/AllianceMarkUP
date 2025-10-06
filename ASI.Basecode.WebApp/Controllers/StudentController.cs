@@ -270,20 +270,21 @@ namespace ASI.Basecode.WebApp.Controllers
             ViewData["PageHeader"] = "Grades";
 
             var idNumber = HttpContext.Session.GetString("IdNumber");
-            if (string.IsNullOrEmpty(idNumber))
+            if (string.IsNullOrEmpty(idNumber))     
                 return RedirectToAction("StudentLogin", "Account");
 
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
 
-            var defaultSchoolYear = GetCurrentSchoolYear();
 
+            var defaultSchoolYear = GetCurrentSchoolYear();
             var viewModel = new StudentGradesViewModel
             {
                 StudentName = user != null ? $"{user.FirstName} {user.LastName}" : "Student",
                 SchoolYear = defaultSchoolYear
             };
+
 
             if (user == null)
                 return View(viewModel);
@@ -318,7 +319,6 @@ namespace ASI.Basecode.WebApp.Controllers
                     : g.Final.HasValue
                         ? (g.Final.Value >= 75 ? "PASSED" : "FAILED")
                         : "N/A";
-
                 return new StudentGradeRowViewModel
                 {
                     SubjectCode = assignedCourse?.EDPCode,

@@ -1,14 +1,23 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.WebApp.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
     public class AdminController : Controller
     {
+        private readonly IAdminDashboardService _dashboardService;
+
+        public AdminController(IAdminDashboardService dashboardService)
+        {
+            _dashboardService = dashboardService;
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> AdminDashboard()
@@ -28,9 +37,23 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard(string schoolYear = null, string termKey = null)
         {
-            return View("AdminDashboard");
+            var summary = await _dashboardService.GetSummaryAsync();
+            var trend = await _dashboardService.GetEnrollmentTrendAsync();
+            var schoolYears = await _dashboardService.GetAvailableSchoolYearsAsync();
+            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey);
+
+            var vm = new AdminDashboardViewModel
+            {
+                Summary = summary,
+                EnrollmentTrend = trend,
+                SchoolYears = schoolYears,
+                SelectedSchoolYear = detail?.SchoolYear,
+                YearDetail = detail
+            };
+
+            return View("AdminDashboard", vm);
         }
 
         // ✅ Manage Accounts (Students, Teachers)
@@ -75,6 +98,19 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             ViewData["PageHeader"] = "Student Notifications";
             return View("~/Views/Shared/Partials/Notifications.cshtml");
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> DashboardYearDetail(string schoolYear, string termKey = null)
+        {
+            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey);
+            if (detail == null)
+            {
+                return NotFound();
+            }
+
+            return Json(detail);
         }
     }
 }
