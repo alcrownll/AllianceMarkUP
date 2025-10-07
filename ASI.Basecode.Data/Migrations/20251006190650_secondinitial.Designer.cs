@@ -3,6 +3,7 @@ using System;
 using ASI.Basecode.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    partial class AsiBasecodeDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251006190650_secondinitial")]
+    partial class secondinitial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,48 +70,6 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("AssignedCourses");
-                });
-
-            modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
-                {
-                    b.Property<int>("CalendarEventId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CalendarEventId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("EndUtc")
-                        .HasColumnType("timestamp");
-
-                    b.Property<bool>("IsAllDay")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("StartUtc")
-                        .HasColumnType("timestamp");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("CalendarEventId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("CalendarEvents");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
@@ -212,39 +173,6 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("StudentId");
 
                     b.ToTable("Grades");
-                });
-
-            modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
@@ -462,16 +390,6 @@ namespace ASI.Basecode.Data.Migrations
                     b.Navigation("Teacher");
                 });
 
-            modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
-                {
-                    b.HasOne("ASI.Basecode.Data.Models.User", "User")
-                        .WithMany("CalendarEvents")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
                 {
                     b.HasOne("ASI.Basecode.Data.Models.AssignedCourse", "AssignedCourse")
@@ -502,25 +420,13 @@ namespace ASI.Basecode.Data.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
-                {
-                    b.HasOne("ASI.Basecode.Data.Models.User", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
                 {
                     b.HasOne("ASI.Basecode.Data.Models.User", "User")
                         .WithOne("Student")
                         .HasForeignKey("ASI.Basecode.Data.Models.Student", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_Students_Users_UserId");
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -531,8 +437,7 @@ namespace ASI.Basecode.Data.Migrations
                         .WithOne("Teacher")
                         .HasForeignKey("ASI.Basecode.Data.Models.Teacher", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_Teachers_Users_UserId");
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -572,10 +477,6 @@ namespace ASI.Basecode.Data.Migrations
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.User", b =>
                 {
-                    b.Navigation("CalendarEvents");
-
-                    b.Navigation("Notifications");
-
                     b.Navigation("Student");
 
                     b.Navigation("Teacher");

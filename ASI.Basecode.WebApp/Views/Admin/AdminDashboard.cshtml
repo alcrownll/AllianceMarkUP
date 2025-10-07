@@ -1,13 +1,175 @@
-﻿@{
-    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";  // Apply the universal layout
+@model ASI.Basecode.WebApp.Models.AdminDashboardViewModel
+@using System.Text.Json
+@using System.Collections.Generic
+@using System.Linq
+@using ASI.Basecode.Services.ServiceModels
+@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Admin Dashboard";
-    ViewData["PageHeader"] = "Admin Dashboard"; // Match layout
+    ViewData["PageHeader"] = "Admin Dashboard";
+
+    var selectedTermKey = Model?.YearDetail?.SelectedTermKey ?? string.Empty;
+    var termOptions = Model?.YearDetail?.TermOptions ?? new List<TermOptionModel>();
+    var selectedTermLabel = termOptions
+        .FirstOrDefault(t => string.Equals(t.TermKey ?? string.Empty, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+        ?.Label
+        ?? (!string.IsNullOrWhiteSpace(Model?.YearDetail?.SchoolYear)
+            ? $"{Model.YearDetail.SchoolYear} - Whole Year"
+            : "Whole Year");
+
+    var initialPayload = new
+    {
+        summary = Model?.Summary,
+        trend = Model?.EnrollmentTrend ?? new List<EnrollmentTrendPointModel>(),
+        schoolYears = Model?.SchoolYears ?? new List<string>(),
+        selectedSchoolYear = Model?.SelectedSchoolYear,
+        selectedTermKey = selectedTermKey,
+        detail = Model?.YearDetail
+    };
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/main-site.css" />
-}
+<div class="admin-dashboard" id="admin-dashboard">
+    <section class="dashboard-hero glass">
+        <div class="hero-primary">
+            <span class="hero-eyebrow">College of Computer Studies</span>
+            <h1 class="hero-title">University of Cebu Lapu-Lapu Mandaue</h1>
+        </div>
+        <div class="hero-tools"></div>
+    </section>
 
-<h2>Welcome Admin!</h2>
-<p>This is your admin dashboard.</p>
+    <section class="kpi-grid">
+        <article class="kpi-card glass">
+            <div class="kpi-icon students">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Total Students</span>
+                <span class="kpi-value">@((Model?.Summary?.TotalStudents ?? 0).ToString("N0"))</span>
+            </div>
+        </article>
+        <article class="kpi-card glass">
+            <div class="kpi-icon teachers">
+                <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Teachers</span>
+                <span class="kpi-value">@((Model?.Summary?.TotalTeachers ?? 0).ToString("N0"))</span>
+            </div>
+        </article>
+        <article class="kpi-card glass">
+            <div class="kpi-icon courses">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Active Courses</span>
+                <span class="kpi-value">@((Model?.Summary?.ActiveCourses ?? 0).ToString("N0"))</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="panel glass panel-xl">
+        <div class="panel-header">
+            <div>
+                <h2>Students Enrolled</h2>
+                <span>Number of students per term</span>
+            </div>
+            <span class="panel-hint">Hover to reveal totals</span>
+        </div>
+        <div class="panel-body">
+            <canvas id="enrollmentTrendChart" height="260"></canvas>
+        </div>
+    </section>
+
+    <section class="panel glass breakdown-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Students Breakdown</h2>
+                <span>Distribution by program and year level</span>
+            </div>
+            <div class="panel-actions">
+                <label for="yearSelector" class="form-label">School Year</label>
+                <select id="yearSelector" class="form-select form-select-sm" aria-label="Select school year">
+                    @if ((Model?.SchoolYears?.Count ?? 0) == 0)
+                    {
+                        <option>--</option>
+                    }
+                    else
+                    {
+                        foreach (var year in Model!.SchoolYears)
+                        {
+                            var isSelected = string.Equals(year, Model?.SelectedSchoolYear, System.StringComparison.OrdinalIgnoreCase);
+                            <option value="@year" selected="@(isSelected)">@year</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="panel-body breakdown-grid">
+            <div class="donut-card">
+                <div class="donut-wrapper">
+                    <canvas id="programDistributionChart" height="260"></canvas>
+                    <div class="donut-center" id="programShareHighlight">
+                        <span class="donut-value">--</span>
+                        <span class="donut-label">Top Share</span>
+                    </div>
+                </div>
+                <ul class="donut-legend" id="programLegendList"></ul>
+            </div>
+            <div class="horizontal-card">
+                <canvas id="yearLevelHorizontalChart" height="260"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel-grid">
+        <article class="panel glass">
+            <div class="panel-header">
+                <div>
+                    <h2>Average GPA</h2>
+                    <span>Weighted per available term</span>
+                </div>
+                <div class="panel-actions">
+                    <label for="termSelector" class="form-label">Term</label>
+                    <select id="termSelector" class="form-select form-select-sm" aria-label="Filter by term" data-selector="term">
+                        @if (!termOptions.Any())
+                        {
+                            <option value="">Whole Year</option>
+                        }
+                        else
+                        {
+                            foreach (var option in termOptions)
+                            {
+                                var optionValue = option.TermKey ?? string.Empty;
+                                var isSelected = string.Equals(optionValue, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                                <option value="@optionValue" selected="@(isSelected)">@option.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="panel-body">
+                <canvas id="averageGpaChart" height="220"></canvas>
+            </div>
+        </article>
+        <article class="panel glass">
+            <div class="panel-header">
+                <div>
+                    <h2>Pass vs Fail Rate</h2>
+                    <span>Aggregate for selected school year</span>
+                </div>
+            </div>
+            <div class="panel-body">
+                <canvas id="passFailChart" height="220"></canvas>
+            </div>
+        </article>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        window.AdminDashboardInitial = @Html.Raw(JsonSerializer.Serialize(initialPayload));
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
+    <script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
+}
 
