@@ -299,30 +299,41 @@ namespace ASI.Basecode.Services.Services
             {
                 var student = group.First().Student;
                 
-                // Find the most complete grade record for this student
-                var bestGrade = group
-                    .OrderByDescending(g => (g.Prelims.HasValue ? 1 : 0) + 
-                                           (g.Midterm.HasValue ? 1 : 0) + 
-                                           (g.SemiFinal.HasValue ? 1 : 0) + 
-                                           (g.Final.HasValue ? 1 : 0))
-                    .ThenByDescending(g => g.GradeId)
-                    .First();
+                // Calculate average grades across all records for this student
+                var studentGradeRecords = group.ToList();
+                var firstGrade = studentGradeRecords.First(); // Use first record for non-grade fields
+                
+                // Calculate averages for each grade component
+                var prelimsValues = studentGradeRecords.Where(g => g.Prelims.HasValue).Select(g => g.Prelims.Value).ToList();
+                var midtermValues = studentGradeRecords.Where(g => g.Midterm.HasValue).Select(g => g.Midterm.Value).ToList();
+                var semiFinalValues = studentGradeRecords.Where(g => g.SemiFinal.HasValue).Select(g => g.SemiFinal.Value).ToList();
+                var finalValues = studentGradeRecords.Where(g => g.Final.HasValue).Select(g => g.Final.Value).ToList();
+                
+                var avgPrelims = prelimsValues.Any() ? (decimal?)Math.Round(prelimsValues.Average(), 2) : null;
+                var avgMidterm = midtermValues.Any() ? (decimal?)Math.Round(midtermValues.Average(), 2) : null;
+                var avgSemiFinal = semiFinalValues.Any() ? (decimal?)Math.Round(semiFinalValues.Average(), 2) : null;
+                var avgFinal = finalValues.Any() ? (decimal?)Math.Round(finalValues.Average(), 2) : null;
+                
+                // Use the most recent or relevant remarks
+                var remarks = studentGradeRecords.Where(g => !string.IsNullOrEmpty(g.Remarks))
+                                                .OrderByDescending(g => g.GradeId)
+                                                .FirstOrDefault()?.Remarks ?? "";
 
                 result.Add(new StudentGradeViewModel
                 {
                     StudentId = student.StudentId,
-                    GradeId = bestGrade.GradeId,
-                    AssignedCourseId = bestGrade.AssignedCourseId,
+                    GradeId = firstGrade.GradeId,
+                    AssignedCourseId = firstGrade.AssignedCourseId,
                     IdNumber = student?.User?.IdNumber ?? "",
                     LastName = student?.User?.LastName ?? "",
                     FirstName = student?.User?.FirstName ?? "",
                     CourseYear = $"{student?.Program} {student?.YearLevel}",
                     Gender = student?.User?.UserProfile?.Gender ?? "",
-                    Prelims = bestGrade.Prelims,
-                    Midterm = bestGrade.Midterm,
-                    SemiFinal = bestGrade.SemiFinal,
-                    Final = bestGrade.Final,
-                    Remarks = bestGrade.Remarks ?? ""
+                    Prelims = avgPrelims,
+                    Midterm = avgMidterm,
+                    SemiFinal = avgSemiFinal,
+                    Final = avgFinal,
+                    Remarks = remarks
                 });
             }
 
