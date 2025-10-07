@@ -165,20 +165,11 @@
                 </select>
             </div>
             <div class="control-group">
-                <label class="form-label">Admin Controls</label>
-                <div class="toggle-row">
-                    <label><input type="checkbox" checked /> Show GWA Trend</label>
-                    <label><input type="checkbox" checked /> Show Pass/Fail Mix</label>
-                    <label><input type="checkbox" /> Lock until finalized</label>
-                </div>
-            </div>
-            <div class="control-group">
                 <label for="riskThreshold" class="form-label">At-Risk Threshold (GWA)</label>
                 <input id="riskThreshold" type="number" step="0.1" value="2.5" class="form-control" />
             </div>
             <div class="control-group actions">
                 <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
-                <button class="btn btn-primary" type="button">Save Settings</button>
             </div>
         </header>
 
@@ -242,38 +233,15 @@
                     </div>
                 </header>
                 <div class="panel-body">
-                    <div class="chip-list strength">
-                        <span class="chip">A in CS-MOBDEV</span>
-                        <span class="chip">A- in IT-CLOUD</span>
+                    <div class="chip-list strength" data-empty-text="No strengths yet.">
+                        <span class="chip chip-empty" data-empty="true">No strengths yet.</span>
                     </div>
-                    <div class="chip-list risk">
-                        <span class="chip">Incomplete in CS-CAPSTONE</span>
+                    <div class="chip-list risk" data-empty-text="No risks identified.">
+                        <span class="chip chip-empty" data-empty="true">No risks identified.</span>
                     </div>
                 </div>
             </article>
 
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Attendance &amp; Submissions</h2>
-                        <span>Optional engagement indicators.</span>
-                    </div>
-                </header>
-                <div class="panel-body mini-cards">
-                    <div class="mini-card">
-                        <span class="mini-label">Attendance</span>
-                        <strong class="mini-value" data-field="student-attendance">0%</strong>
-                    </div>
-                    <div class="mini-card">
-                        <span class="mini-label">On-time submissions</span>
-                        <strong class="mini-value" data-field="student-submissions">0%</strong>
-                    </div>
-                    <div class="mini-card">
-                        <span class="mini-label">Missing work</span>
-                        <strong class="mini-value" data-field="student-missing">0</strong>
-                    </div>
-                </div>
-            </article>
         </div>
     </section>
 
@@ -391,11 +359,8 @@
                         <span>Monitor early-warning signals.</span>
                     </div>
                 </header>
-                <div class="panel-body risk-grid">
-                    <div class="risk-chip">145 students below GWA 2.5</div>
-                    <div class="risk-chip">12 sections pass rate &lt; 70%</div>
-                    <div class="risk-chip">7 courses with pending grades</div>
-                    <div class="risk-chip">4 programs below retention target</div>
+                <div class="panel-body risk-grid" data-list="risk-indicators">
+                    <div class="risk-chip" data-empty="true">No risk indicators.</div>
                 </div>
             </article>
 
@@ -590,136 +555,7 @@
         </div>
     </section>
 
-    <section class="tab-panel" data-panel="student" role="tabpanel">
-        <header class="student-controls glass">
-            <div class="control-group">
-                <label for="studentSelector" class="form-label">Student</label>
-                <select id="studentSelector" class="form-select">
-                    <option selected>Juan Dela Cruz</option>
-                    <option>Ana Villanueva</option>
-                    <option>Michael Reyes</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="studentTerm" class="form-label">Term</label>
-                <select id="studentTerm" class="form-select">
-                    <option value="all" selected>All Terms</option>
-                    <option value="2025-2026-1">2025-2026 · 1st Sem</option>
-                    <option value="2025-2026-2">2025-2026 · 2nd Sem</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label class="form-label">Admin Controls</label>
-                <div class="toggle-row">
-                    <label><input type="checkbox" checked /> Show GWA Trend</label>
-                    <label><input type="checkbox" checked /> Show Pass/Fail Mix</label>
-                    <label><input type="checkbox" /> Lock until finalized</label>
-                </div>
-            </div>
-            <div class="control-group">
-                <label for="riskThreshold" class="form-label">At-Risk Threshold (GWA)</label>
-                <input id="riskThreshold" type="number" step="0.1" value="2.5" class="form-control" />
-            </div>
-            <div class="control-group actions">
-                <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
-                <button class="btn btn-primary" type="button">Save Settings</button>
-            </div>
-        </header>
 
-        <div class="student-grid">
-            <article class="panel glass span-2">
-                <header class="panel-header">
-                    <div>
-                        <h2>GWA Trend</h2>
-                        <span>Term-over-term academic performance.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="studentGwaChart" height="260"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Grades by Course</h2>
-                        <span>Compare course outcomes for the selected range.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="studentCourseChart" height="260"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Units Progress</h2>
-                        <span>Earned vs required for program completion.</span>
-                    </div>
-                </header>
-                <div class="panel-body units-progress">
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: 62%;" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100">62%</div>
-                    </div>
-                    <p>93 of 150 required units completed.</p>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Pass/Fail/Incomplete</h2>
-                        <span>Distribution for current filter.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="studentStatusChart" height="220"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Top Strengths &amp; Risks</h2>
-                        <span>Identify courses needing support.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <div class="chip-list strength">
-                        <span class="chip">A in CS-MOBDEV</span>
-                        <span class="chip">A- in IT-CLOUD</span>
-                    </div>
-                    <div class="chip-list risk">
-                        <span class="chip">Incomplete in CS-CAPSTONE</span>
-                    </div>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Attendance &amp; Submissions</h2>
-                        <span>Optional engagement indicators.</span>
-                    </div>
-                </header>
-                <div class="panel-body mini-cards">
-                    <div class="mini-card">
-                        <span class="mini-label">Attendance</span>
-                        <strong class="mini-value">88%</strong>
-                    </div>
-                    <div class="mini-card">
-                        <span class="mini-label">On-time submissions</span>
-                        <strong class="mini-value">92%</strong>
-                    </div>
-                    <div class="mini-card">
-                        <span class="mini-label">Missing work</span>
-                        <strong class="mini-value">1</strong>
-                    </div>
-                </div>
-            </article>
-        </div>
-    </section>
 </div>
 
 @section Styles {

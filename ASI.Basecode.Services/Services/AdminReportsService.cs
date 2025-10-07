@@ -57,7 +57,10 @@ namespace ASI.Basecode.Services.Services
                 ? await GetTeacherDetailAsync(teacherId.Value, normalizedSchoolYear, normalizedTermKey)
                 : new TeacherDetailModel();
 
-            var studentOptions = await BuildStudentOptionsAsync();
+            var studentData = await BuildStudentOptionsAsync();
+            var studentOptions = studentData.Options;
+            var programs = studentData.Programs;
+            var sections = studentData.Sections;
             var studentId = highlightedStudentId ?? studentOptions.FirstOrDefault()?.StudentId;
             var studentAnalytics = studentId.HasValue
                 ? await GetStudentAnalyticsAsync(studentId.Value, normalizedSchoolYear, normalizedTermKey)
@@ -88,7 +91,9 @@ namespace ASI.Basecode.Services.Services
                 {
                     Students = studentOptions,
                     SelectedStudentId = studentId,
-                    Analytics = studentAnalytics
+                    Analytics = studentAnalytics,
+                    Programs = programs,
+                    Sections = sections
                 }
             };
         }
@@ -175,7 +180,26 @@ namespace ASI.Basecode.Services.Services
 
         public async Task<StudentAnalyticsModel> GetStudentAnalyticsAsync(int studentId, string schoolYear = null, string termKey = null)
         {
-            var gradeEntries = await _grades.GetGrades()
+            var baseGrades = _grades.GetGrades()
+                .Include(g => g.AssignedCourse)
+                .ThenInclude(ac => ac.Course)
+                .Include(g => g.Student)
+                .ThenInclude(s => s.User)
+                .ThenInclude(u => u.UserProfile)
+                .AsNoTracking()
+                .Where(g => g.AssignedCourse != null);
+
+            if (!string.IsNullOrWhiteSpace(termKey))
+            {
+                baseGrades = baseGrades.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(termKey));
+            }
+            else if (!string.IsNullOrWhiteSpace(schoolYear))
+            {
+                baseGrades = baseGrades.Where(g => g.AssignedCourse.Semester != null &&
+                    (g.AssignedCourse.Semester.StartsWith(schoolYear) || !g.AssignedCourse.Semester.Contains("-")));
+            }
+
+            var gradeEntries = await baseGrades
                 .Include(g => g.AssignedCourse)
                 .ThenInclude(ac => ac.Course)
                 .Include(g => g.Student)
@@ -188,9 +212,48 @@ namespace ASI.Basecode.Services.Services
                 .Where(g => MatchesTerm(g.AssignedCourse.Semester, schoolYear, termKey))
                 .ToList();
 
+            var ungradedRowsQuery = baseGrades
+                .Where(g => g.Final == null)
+                .GroupBy(g => new
+                {
+                    g.StudentId,
+                    g.Student.User.IdNumber,
+                    g.Student.User.LastName,
+                    g.Student.User.FirstName,
+                    g.Student.Program,
+                    Gender = g.Student.User.UserProfile.Gender,
+                    g.Student.YearLevel,
+                    g.AssignedCourse.EDPCode
+                });
+
+            if (studentId > 0)
+            {
+                ungradedRowsQuery = ungradedRowsQuery.Where(group => group.Key.StudentId == studentId);
+            }
+
+            var ungradedRows = await ungradedRowsQuery
+                .Select(group => new StudentSnapshotRowModel
+                {
+                    EdpCode = group.Key.EDPCode,
+                    IdNumber = group.Key.IdNumber,
+                    LastName = group.Key.LastName,
+                    FirstName = group.Key.FirstName,
+                    Program = group.Key.Program,
+                    Gender = string.IsNullOrWhiteSpace(group.Key.Gender) ? "Unknown" : group.Key.Gender,
+                    YearLevel = group.Key.YearLevel,
+                    Gwa = null,
+                    Status = "Ungraded"
+                })
+                .OrderBy(row => row.LastName)
+                .ThenBy(row => row.FirstName)
+                .ToListAsync();
+
             if (!gradeEntries.Any())
             {
-                return new StudentAnalyticsModel();
+                return new StudentAnalyticsModel
+                {
+                    Snapshot = ungradedRows
+                };
             }
 
             var gwaTrend = gradeEntries
@@ -261,19 +324,26 @@ namespace ASI.Basecode.Services.Services
 
         private async Task<IList<string>> GetAvailableSchoolYearsAsync()
         {
-            var semesters = await _assignedCourses.GetAssignedCourses()
-                .Where(ac => ac.Semester != null)
-                .Select(ac => ac.Semester)
+            var semesters = await _grades.GetGrades()
+                .Where(g => g.AssignedCourse != null && g.AssignedCourse.Semester != null)
+                .Select(g => g.AssignedCourse.Semester)
                 .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 
-            return semesters
+            var normalized = semesters
                 .Select(GetSchoolYearFromSemester)
                 .Where(sy => !string.IsNullOrWhiteSpace(sy))
-                .Distinct()
-                .OrderBy(sy => sy)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            if (!normalized.Any() || normalized.All(sy => sy.Length != 9 || !sy.Contains('-', StringComparison.Ordinal)))
+            {
+                normalized = BuildDefaultSchoolYears(3);
+            }
+
+            normalized.Sort((a, b) => string.CompareOrdinal(b, a));
+            return normalized;
         }
 
         private async Task<IList<ReportTermOptionModel>> BuildTermOptionsAsync(string schoolYear)
@@ -283,19 +353,34 @@ namespace ASI.Basecode.Services.Services
                 return new List<ReportTermOptionModel>();
             }
 
-            var semesters = await _assignedCourses.GetAssignedCourses()
-                .Where(ac => ac.Semester != null && ac.Semester.StartsWith(schoolYear))
-                .Select(ac => ac.Semester)
+            var rawSemesters = await _grades.GetGrades()
+                .Where(g => g.AssignedCourse != null && g.AssignedCourse.Semester != null)
+                .Select(g => g.AssignedCourse.Semester)
                 .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 
-            var options = semesters
-                .OrderBy(sem => sem)
-                .Select(sem => new ReportTermOptionModel
+            var tokens = rawSemesters
+                .Select(ExtractTermToken)
+                .Where(token => !string.IsNullOrWhiteSpace(token))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var fallbackToken in DefaultTermTokens)
+            {
+                if (!tokens.Contains(fallbackToken, StringComparer.OrdinalIgnoreCase))
                 {
-                    TermKey = sem,
-                    Label = sem,
+                    tokens.Add(fallbackToken);
+                }
+            }
+
+            tokens.Sort((a, b) => string.CompareOrdinal(a, b));
+
+            var options = tokens
+                .Select(token => new ReportTermOptionModel
+                {
+                    TermKey = token,
+                    Label = TermTokenToLabel(token),
                     SchoolYear = schoolYear
                 })
                 .ToList();
@@ -303,7 +388,7 @@ namespace ASI.Basecode.Services.Services
             options.Insert(0, new ReportTermOptionModel
             {
                 TermKey = string.Empty,
-                Label = $"{schoolYear} - Whole Year",
+                Label = "Whole Term",
                 SchoolYear = schoolYear
             });
 
@@ -326,11 +411,12 @@ namespace ASI.Basecode.Services.Services
 
             if (!string.IsNullOrWhiteSpace(termKey))
             {
-                query = query.Where(g => g.AssignedCourse.Semester == termKey);
+                query = query.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(termKey));
             }
             else if (!string.IsNullOrWhiteSpace(schoolYear))
             {
-                query = query.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(schoolYear));
+                query = query.Where(g => g.AssignedCourse.Semester != null &&
+                    (g.AssignedCourse.Semester.StartsWith(schoolYear) || !g.AssignedCourse.Semester.Contains("-")));
             }
 
             return await query.ToListAsync();
@@ -413,7 +499,7 @@ namespace ASI.Basecode.Services.Services
 
             if (!string.IsNullOrWhiteSpace(schoolYear))
             {
-                data = data.Where(x => x.Semester.StartsWith(schoolYear)).ToList();
+                data = data.Where(x => MatchesTerm(x.Semester, schoolYear, null)).ToList();
             }
 
             return data
@@ -498,7 +584,7 @@ namespace ASI.Basecode.Services.Services
                 Statuses = statuses
             };
         }
-
+        // VALIDATIONS
         private CourseOutcomeModel BuildCourseOutcomes(List<Grade> gradesScoped)
         {
             var courseGroups = gradesScoped
@@ -574,7 +660,7 @@ namespace ASI.Basecode.Services.Services
                 new RiskIndicatorModel { Label = "Courses with pending grades", Count = pendingGrades }
             };
         }
-
+        
         private async Task<CapacityLoadModel> BuildCapacityAsync(string schoolYear, string termKey)
         {
             var sectionsQuery = _assignedCourses.GetAssignedCourses()
@@ -619,8 +705,7 @@ namespace ASI.Basecode.Services.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            return teachers.Select(t =>
-            {
+            return teachers.Select(t => {
                 var scopedCourses = t.AssignedCourses.Where(ac => MatchesTerm(ac.Semester, schoolYear, termKey)).ToList();
                 return new TeacherDirectoryItemModel
                 {
@@ -638,22 +723,47 @@ namespace ASI.Basecode.Services.Services
             .ToList();
         }
 
-        private async Task<IList<StudentOptionModel>> BuildStudentOptionsAsync()
+        private async Task<(IList<StudentOptionModel> Options, IList<string> Programs, IList<string> Sections)> BuildStudentOptionsAsync()
         {
             var students = await _students.GetStudents()
                 .Include(s => s.User)
+                .Include(s => s.Grades)
+                .ThenInclude(g => g.AssignedCourse)
                 .AsNoTracking()
                 .OrderBy(s => s.User.LastName)
+                .ThenBy(s => s.User.FirstName)
                 .ToListAsync();
 
-            return students
+            var options = students
                 .Select(s => new StudentOptionModel
                 {
                     StudentId = s.StudentId,
                     Name = BuildName(s.User),
-                    Program = s.Program
+                    Program = s.Program,
+                    Sections = s.Grades?
+                        .Select(g => g.AssignedCourse?.EDPCode)
+                        .Where(code => !string.IsNullOrWhiteSpace(code))
+                        .Distinct()
+                        .OrderBy(code => code)
+                        .ToList() ?? new List<string>()
                 })
                 .ToList();
+
+            var programs = options
+                .Select(o => o.Program)
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(p => p)
+                .ToList();
+
+            var sections = options
+                .SelectMany(o => o.Sections)
+                .Where(section => !string.IsNullOrWhiteSpace(section))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(section => section)
+                .ToList();
+
+            return (options, programs, sections);
         }
 
         private static string NormalizeSchoolYear(IList<string> availableSchoolYears, string requested)
@@ -683,15 +793,121 @@ namespace ASI.Basecode.Services.Services
                 return null;
             }
 
-            var parts = semester.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length > 0 ? parts[0] : semester;
+            var normalized = semester.Trim();
+            var hyphenParts = normalized.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (hyphenParts.Length >= 2 && hyphenParts[0].Length == 4)
+            {
+                return $"{hyphenParts[0]}-{hyphenParts[1]}";
+            }
+
+            var spaceParts = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (spaceParts.Length >= 2 && spaceParts[0].Length == 4)
+            {
+                return spaceParts[0];
+            }
+
+            var ordinal = ExtractTermToken(semester);
+            if (!string.IsNullOrWhiteSpace(ordinal))
+            {
+                return InferSchoolYearForTermToken(ordinal);
+            }
+
+            return null;
         }
+
+        private static string GetFriendlyTermLabel(string semester)
+        {
+            if (string.IsNullOrWhiteSpace(semester))
+            {
+                return semester;
+            }
+
+            var token = ExtractTermToken(semester);
+            return TermTokenToLabel(token ?? semester);
+        }
+
+        private static string InferSchoolYearForTermToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return null;
+            }
+
+            var today = DateTime.UtcNow;
+            var start = today.Month >= 6 ? today.Year : today.Year - 1;
+            return $"{start}-{start + 1}";
+        }
+
+        private static string TermTokenToLabel(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return token;
+            }
+
+            return token.EndsWith("st", StringComparison.OrdinalIgnoreCase) ? "1st Term"
+                : token.EndsWith("nd", StringComparison.OrdinalIgnoreCase) ? "2nd Term"
+                : token.EndsWith("rd", StringComparison.OrdinalIgnoreCase) ? "3rd Term"
+                : token.EndsWith("th", StringComparison.OrdinalIgnoreCase) ? token
+                : token;
+        }
+
+        private static string ExtractTermToken(string semester)
+        {
+            if (string.IsNullOrWhiteSpace(semester))
+            {
+                return null;
+            }
+
+            var normalized = semester.Trim();
+            var hyphenParts = normalized.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var ordinalFromHyphen = hyphenParts.FirstOrDefault(IsOrdinalToken);
+            if (!string.IsNullOrWhiteSpace(ordinalFromHyphen))
+            {
+                return ordinalFromHyphen;
+            }
+
+            var parts = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var ordinal = parts.FirstOrDefault(IsOrdinalToken);
+            return ordinal ?? (IsOrdinalToken(normalized) ? normalized : normalized);
+        }
+
+        private static List<string> BuildDefaultSchoolYears(int count)
+        {
+            var today = DateTime.UtcNow;
+            var startYear = today.Month >= 6 ? today.Year : today.Year - 1;
+
+            return Enumerable.Range(0, Math.Max(count, 1))
+                .Select(offset => startYear - offset)
+                .Select(year => $"{year}-{year + 1}")
+                .ToList();
+        }
+
+        private static bool IsOrdinalToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            return token.EndsWith("st", StringComparison.OrdinalIgnoreCase)
+                || token.EndsWith("nd", StringComparison.OrdinalIgnoreCase)
+                || token.EndsWith("rd", StringComparison.OrdinalIgnoreCase)
+                || token.EndsWith("th", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IReadOnlyList<string> GetDefaultTermTokens()
+        {
+            return DefaultTermTokens;
+        }
+
+        private static readonly string[] DefaultTermTokens = { "1st", "2nd", "3rd" };
 
         private static bool MatchesTerm(string semester, string schoolYear, string termKey)
         {
             if (string.IsNullOrWhiteSpace(semester))
             {
-                return false;
+                return string.IsNullOrWhiteSpace(termKey) && string.IsNullOrWhiteSpace(schoolYear);
             }
 
             if (!string.IsNullOrWhiteSpace(termKey))
@@ -701,7 +917,13 @@ namespace ASI.Basecode.Services.Services
 
             if (!string.IsNullOrWhiteSpace(schoolYear))
             {
-                return semester.StartsWith(schoolYear, StringComparison.OrdinalIgnoreCase);
+                if (semester.Contains('-', StringComparison.OrdinalIgnoreCase) || semester.Contains('/', StringComparison.OrdinalIgnoreCase))
+                {
+                    return semester.StartsWith(schoolYear, StringComparison.OrdinalIgnoreCase);
+                }
+
+                // legacy semesters like "1st" do not embed the school year; include them when filtering by year
+                return true;
             }
 
             return true;
@@ -788,6 +1010,11 @@ namespace ASI.Basecode.Services.Services
 
         private static decimal MapPercentToGwa(decimal percent)
         {
+            if (percent <= 5m && percent > 0m)
+            {
+                return Math.Round(percent, 2);
+            }
+
             if (percent >= 96) return 1.00m;
             if (percent >= 93) return 1.25m;
             if (percent >= 90) return 1.50m;

@@ -146,6 +146,8 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<StudentOptionModel> Students { get; set; } = new List<StudentOptionModel>();
         public int? SelectedStudentId { get; set; }
         public StudentAnalyticsModel Analytics { get; set; } = new StudentAnalyticsModel();
+        public IList<string> Programs { get; set; } = new List<string>();
+        public IList<string> Sections { get; set; } = new List<string>();
     }
 
     public class StudentOptionModel
@@ -153,6 +155,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public int StudentId { get; set; }
         public string Name { get; set; }
         public string Program { get; set; }
+        public IList<string> Sections { get; set; } = new List<string>();
     }
 
     public class StudentAnalyticsModel
@@ -164,6 +167,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<string> Strengths { get; set; } = new List<string>();
         public IList<string> Risks { get; set; } = new List<string>();
         public StudentEngagementModel Engagement { get; set; } = new StudentEngagementModel();
+        public IList<StudentSnapshotRowModel> Snapshot { get; set; } = new List<StudentSnapshotRowModel>();
     }
 
     public class StudentTrendPointModel
@@ -177,6 +181,19 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public string CourseCode { get; set; }
         public decimal Grade { get; set; }
+    }
+
+    public class StudentSnapshotRowModel
+    {
+        public string EdpCode { get; set; }
+        public string IdNumber { get; set; }
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        public string Program { get; set; }
+        public string Gender { get; set; }
+        public string YearLevel { get; set; }
+        public decimal? Gwa { get; set; }
+        public string Status { get; set; }
     }
 
     public class StudentUnitsProgressModel

@@ -12,9 +12,12 @@
         selectedTeacherId: null,
         selectedStudentId: null,
         studentTermKey: '',
+        selectedProgram: '',
+        selectedSection: '',
         teacherSearch: '',
         teacherProgram: '',
-        teacherDirectory: []
+        teacherDirectory: [],
+        studentBaseOptions: []
     };
 
     const chartRegistry = new Map();
@@ -26,6 +29,8 @@
         term: root.querySelector('[data-selector="term"]'),
         studentSelector: root.querySelector('[data-selector="student"]'),
         studentTerm: root.querySelector('[data-selector="student-term"]'),
+        studentProgram: root.querySelector('[data-selector="student-program"]'),
+        studentSection: root.querySelector('[data-selector="student-section"]'),
         teacherSearch: root.querySelector('[data-filter="teacher-search"]'),
         teacherProgram: root.querySelector('[data-filter="teacher-department"]'),
         teacherTableBody: root.querySelector('[data-table="teacher-directory"] tbody'),
@@ -142,6 +147,12 @@
         }
         container.innerHTML = '';
         if (!values || !values.length) {
+            const emptyText = container.dataset.emptyText || 'No data available.';
+            const chip = document.createElement('span');
+            chip.className = 'chip chip-empty';
+            chip.dataset.empty = 'true';
+            chip.textContent = emptyText;
+            container.appendChild(chip);
             return;
         }
 
@@ -153,25 +164,59 @@
         });
     }
 
+    function setInvalid(select, isInvalid) {
+        if (!select) {
+            return;
+        }
+        select.classList.toggle('field-invalid', Boolean(isInvalid));
+    }
+
     function ensureChart(id, type, labels, datasets, options) {
         const canvas = document.getElementById(id);
         if (!canvas || typeof Chart === 'undefined') {
             return;
         }
 
+        const normalizedLabels = Array.isArray(labels) && labels.length ? labels : ['No data'];
+        const normalizedDatasets = Array.isArray(datasets) && datasets.length
+            ? datasets.map(ds => ({
+                ...ds,
+                data: Array.isArray(ds.data) && ds.data.length ? ds.data : [0]
+            }))
+            : [{
+                label: 'No data',
+                data: [0],
+                backgroundColor: 'rgba(148, 163, 184, 0.45)',
+                borderColor: 'rgba(148, 163, 184, 0.9)',
+                borderDash: [4, 4]
+            }];
+
         let chart = chartRegistry.get(id);
         if (!chart) {
             chart = new Chart(canvas, {
                 type,
-                data: { labels, datasets },
-                options
+                data: { labels: normalizedLabels, datasets: normalizedDatasets },
+                options: Object.assign({
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label(context) {
+                                    if (context.dataset.label === 'No data') {
+                                        return 'No recorded values yet';
+                                    }
+                                    return context.formattedValue;
+                                }
+                            }
+                        }
+                    }
+                }, options)
             });
             chartRegistry.set(id, chart);
             return;
         }
 
-        chart.data.labels = labels;
-        chart.data.datasets = datasets;
+        chart.data.labels = normalizedLabels;
+        chart.data.datasets = normalizedDatasets;
         chart.options = Object.assign({}, chart.options, options);
         chart.update();
     }
@@ -399,11 +444,36 @@
             return;
         }
 
+        if (els.studentSnapshotBody) {
+            const rows = Array.isArray(analytics.Snapshot) ? analytics.Snapshot : [];
+            els.studentSnapshotBody.innerHTML = '';
+            if (!rows.length) {
+                els.studentSnapshotBody.innerHTML = '<tr data-empty="true"><td colspan="9" class="text-center">No records yet.</td></tr>';
+            } else {
+                rows.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.EdpCode || '--'}</td>
+                        <td>${item.IdNumber || '--'}</td>
+                        <td>${item.LastName || '--'}</td>
+                        <td>${item.FirstName || '--'}</td>
+                        <td>${item.Program || '--'}</td>
+                        <td>${item.Gender || '--'}</td>
+                        <td>${item.YearLevel || '--'}</td>
+                        <td>${item.Gwa != null ? item.Gwa.toFixed(2) : ''}</td>
+                        <td>${item.Status || 'Ungraded'}</td>`;
+                    els.studentSnapshotBody.appendChild(tr);
+                });
+            }
+        }
+
         const gwaTrend = Array.isArray(analytics.GwaTrend) ? analytics.GwaTrend : [];
-        ensureChart('studentGwaChart', 'line', gwaTrend.map(item => item.Label || item.TermKey), [
+        const gwaLabels = gwaTrend.length ? gwaTrend.map(item => item.Label || item.TermKey || 'Term') : ['No data'];
+        const gwaValues = gwaTrend.length ? gwaTrend.map(item => item.Gwa || 0).map(value => (value > 0 ? value : 2.5)) : [2.5];
+        ensureChart('studentGwaChart', 'line', gwaLabels, [
             {
                 label: 'GWA',
-                data: gwaTrend.map(item => item.Gwa || 0),
+                data: gwaValues,
                 borderColor: '#1d4ed8',
                 backgroundColor: 'rgba(29, 78, 216, 0.2)',
                 tension: 0.35,
@@ -414,15 +484,17 @@
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { reverse: true, min: 1, max: 3 }
+                y: { reverse: true, min: 1, max: 3.5 }
             }
         });
 
         const courseGrades = Array.isArray(analytics.CourseGrades) ? analytics.CourseGrades : [];
-        ensureChart('studentCourseChart', 'bar', courseGrades.map(item => item.CourseCode || '--'), [
+        const courseLabels = courseGrades.length ? courseGrades.map(item => item.CourseCode || '--') : ['No data'];
+        const courseValues = courseGrades.length ? courseGrades.map(item => item.Grade || 0) : [0];
+        ensureChart('studentCourseChart', 'bar', courseLabels, [
             {
                 label: 'Grade',
-                data: courseGrades.map(item => item.Grade || 0),
+                data: courseValues,
                 backgroundColor: '#0ea5e9',
                 borderRadius: 6
             }
@@ -436,9 +508,11 @@
         });
 
         const statusMix = Array.isArray(analytics.StatusMix) ? analytics.StatusMix : [];
-        ensureChart('studentStatusChart', 'doughnut', statusMix.map(item => item.Name || '--'), [
+        const statusLabels = statusMix.length ? statusMix.map(item => item.Name || '--') : ['No data'];
+        const statusValues = statusMix.length ? statusMix.map(item => item.Value || 0) : [1];
+        ensureChart('studentStatusChart', 'doughnut', statusLabels, [
             {
-                data: statusMix.map(item => item.Value || 0),
+                data: statusValues,
                 backgroundColor: ['#22c55e', '#ef4444', '#facc15'],
                 borderWidth: 0
             }
@@ -466,17 +540,68 @@
 
         renderChipList(els.strengthContainer, analytics.Strengths || []);
         renderChipList(els.riskContainer, analytics.Risks || []);
+    }
 
-        if (els.studentSnapshotBody) {
-            els.studentSnapshotBody.innerHTML = '<tr data-empty="true"><td colspan="9" class="text-center">No records yet.</td></tr>';
+    function filterStudents() {
+        const base = Array.isArray(state.studentBaseOptions) ? state.studentBaseOptions : [];
+        return base.filter(option => {
+            const matchesProgram = !state.selectedProgram || option.Program === state.selectedProgram;
+            const matchesSection = !state.selectedSection || (Array.isArray(option.Sections) && option.Sections.includes(state.selectedSection));
+            return matchesProgram && matchesSection;
+        });
+    }
+
+    function applyStudentFilters(opts = {}) {
+        const filtered = filterStudents();
+        const placeholder = filtered.length ? 'Select student' : 'No students';
+
+        renderOptions(els.studentSelector, filtered.map(option => ({
+            value: option.StudentId,
+            label: `${option.Name || 'Unknown'}${option.Program ? ` (${option.Program})` : ''}`
+        })), state.selectedStudentId ?? '', placeholder);
+
+        if (els.studentSelector) {
+            els.studentSelector.disabled = !filtered.length;
+        }
+
+        let hasSelection = filtered.some(option => option.StudentId === state.selectedStudentId);
+
+        if (!hasSelection && filtered.length) {
+            state.selectedStudentId = filtered[0].StudentId;
+            hasSelection = true;
+            if (els.studentSelector) {
+                els.studentSelector.value = String(state.selectedStudentId);
+            }
+        }
+
+        if (!hasSelection) {
+            state.selectedStudentId = null;
+            if (els.studentSelector) {
+                els.studentSelector.value = '';
+            }
+        }
+
+        setInvalid(els.studentSelector, !hasSelection && filtered.length > 0);
+
+        if (opts.reloadAnalytics && hasSelection && state.selectedStudentId) {
+            loadStudentAnalytics();
         }
     }
 
     function renderDashboard(dashboard) {
         state.dashboard = dashboard || {};
         const schoolYears = Array.isArray(dashboard?.AvailableSchoolYears) ? dashboard.AvailableSchoolYears : [];
-        state.selectedSchoolYear = dashboard?.SchoolYear || state.selectedSchoolYear || schoolYears[schoolYears.length - 1] || '';
-        state.selectedTermKey = dashboard?.TermKey ?? state.selectedTermKey ?? '';
+        const incomingSchoolYear = dashboard?.SchoolYear || '';
+        if (incomingSchoolYear) {
+            state.selectedSchoolYear = incomingSchoolYear;
+        } else if (!state.selectedSchoolYear && schoolYears.length) {
+            state.selectedSchoolYear = schoolYears[schoolYears.length - 1];
+        }
+
+        const incomingTermKey = dashboard?.TermKey ?? '';
+        if (incomingTermKey || state.selectedTermKey == null) {
+            state.selectedTermKey = incomingTermKey;
+        }
         state.selectedTeacherId = dashboard?.Teacher?.SelectedTeacher?.TeacherId ?? state.selectedTeacherId ?? null;
         state.selectedStudentId = dashboard?.Student?.SelectedStudentId ?? state.selectedStudentId ?? null;
 
@@ -488,17 +613,18 @@
             label: option.Label ?? option.TermKey ?? ''
         })), state.selectedTermKey ?? '', termOptions.length ? null : 'Whole Year');
 
-        const studentOptions = Array.isArray(dashboard?.Student?.Students) ? dashboard.Student.Students : [];
-        if (state.selectedStudentId == null && studentOptions.length) {
-            state.selectedStudentId = studentOptions[0].StudentId;
+        const programOptions = Array.isArray(dashboard?.Student?.Programs) ? dashboard.Student.Programs : [];
+        renderOptions(els.studentProgram, programOptions.map(program => ({ value: program, label: program })), state.selectedProgram ?? '', 'All Programs');
+
+        const sectionOptions = Array.isArray(dashboard?.Student?.Sections) ? dashboard.Student.Sections : [];
+        renderOptions(els.studentSection, sectionOptions.map(section => ({ value: section, label: section })), state.selectedSection ?? '', 'All Sections');
+
+        state.studentBaseOptions = Array.isArray(dashboard?.Student?.Students) ? dashboard.Student.Students : [];
+        if (state.selectedStudentId == null && state.studentBaseOptions.length) {
+            state.selectedStudentId = state.studentBaseOptions[0].StudentId;
         }
-        renderOptions(els.studentSelector, studentOptions.map(option => ({
-            value: option.StudentId,
-            label: `${option.Name || 'Unknown'}${option.Program ? ` (${option.Program})` : ''}`
-        })), state.selectedStudentId ?? '', studentOptions.length ? null : 'No students');
-        if (els.studentSelector) {
-            els.studentSelector.disabled = !studentOptions.length;
-        }
+
+        applyStudentFilters();
 
         renderOptions(els.studentTerm, termOptions.filter(option => option.TermKey).map(option => ({
             value: option.TermKey,
@@ -594,6 +720,7 @@
                 termKey: state.studentTermKey || state.selectedTermKey
             });
             renderStudent(data);
+            setInvalid(els.studentSelector, false);
         } catch (error) {
             console.error('Failed to load student analytics', error);
         } finally {
@@ -634,10 +761,25 @@
             });
         }
 
+        if (els.studentProgram) {
+            els.studentProgram.addEventListener('change', () => {
+                state.selectedProgram = els.studentProgram.value || '';
+                applyStudentFilters({ reloadAnalytics: true });
+            });
+        }
+
+        if (els.studentSection) {
+            els.studentSection.addEventListener('change', () => {
+                state.selectedSection = els.studentSection.value || '';
+                applyStudentFilters({ reloadAnalytics: true });
+            });
+        }
+
         if (els.studentSelector) {
             els.studentSelector.addEventListener('change', () => {
                 const value = els.studentSelector.value;
                 state.selectedStudentId = value ? Number(value) : null;
+                setInvalid(els.studentSelector, !state.selectedStudentId);
                 loadStudentAnalytics();
             });
         }
