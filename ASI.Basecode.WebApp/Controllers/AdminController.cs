@@ -27,18 +27,13 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, "Test Admin"),
                 new Claim(ClaimTypes.Role, "Admin")
             };
-
             var identity = new ClaimsIdentity(claims, "ASI_Basecode");
             var principal = new ClaimsPrincipal(identity);
-
             await HttpContext.SignInAsync("ASI_Basecode", principal);
-
             return RedirectToAction("Dashboard");
         }
-
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Dashboard(string schoolYear = null, string termKey = null)
         {
@@ -65,7 +60,6 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             return View("AdminAccounts");
         }
-
         // ✅ Manage Courses (catalog of subjects)
         [Authorize(Roles = "Admin")]
         public IActionResult Courses()

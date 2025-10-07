@@ -16,15 +16,19 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly IStudentRepository _students;
         private readonly ITeacherRepository _teachers;
+        private readonly IUserRepository _users;
+        private readonly IUnitOfWork _uow;
 
         public AdminAccountsService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
-            IUserProfileRepository profiles)
+            IUnitOfWork uow)
         {
             _students = students;
             _teachers = teachers;
+            _users = users;
+            _uow = uow;
         }
 
         // fetch data and filters
@@ -57,11 +61,11 @@ namespace ASI.Basecode.Services.Services
                 .Select(s => new StudentListItem
                 {
                     StudentId = s.StudentId,
+                    UserId = s.UserId,
                     Program = s.Program,
                     YearLevel = s.YearLevel,
                     FullName = s.User.FirstName + " " + s.User.LastName,
                     IdNumber = s.User.IdNumber,
-                    AccountStatus = s.User.AccountStatus
                 })
                 .ToListAsync(ct);
 
@@ -104,6 +108,7 @@ namespace ASI.Basecode.Services.Services
                 .Select(t => new TeacherListItem
                 {
                     TeacherId = t.TeacherId,
+                    UserId = t.UserId,
                     FullName = t.User.FirstName + " " + t.User.LastName,
                     Position = t.Position
                 })
@@ -114,6 +119,20 @@ namespace ASI.Basecode.Services.Services
                 Teachers = rows,
                 Filters = filters
             };
+        }
+
+        public async Task<bool> SuspendAccount(int userId, string status, CancellationToken ct)
+        {
+            var user = await _users.GetUsers()
+                .FirstOrDefaultAsync(u => u.UserId == userId, ct);
+
+            if (user == null) return false;
+
+            user.AccountStatus = status; 
+            _users.UpdateUser(user);     
+
+            await _uow.SaveChangesAsync(ct); 
+            return true;
         }
     }
 }

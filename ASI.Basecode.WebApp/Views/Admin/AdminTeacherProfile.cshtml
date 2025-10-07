@@ -1,0 +1,89 @@
+﻿@model ASI.Basecode.Services.ServiceModels.TeacherProfileViewModel
+@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Profile";
+    ViewData["PageHeader"] = "Profile";
+}
+<link rel="stylesheet" href="~/css/main-site.css" />
+
+<div class="container my-4">
+    <div class="profile-card">
+        @if (TempData["ProfileSaved"] is string msg)
+        {
+            <div class="alert alert-success mb-3">@msg</div>
+        }
+
+        <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
+        <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
+
+        <form asp-action="SaveTeacher" asp-controller="AdminAccounts" asp-route-userId="@Model.UserId" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <input type="hidden" asp-for="UserId" />
+            <input type="hidden" name="Role" value="Teacher" />
+
+            <div class="role-strip p-3 bg-light rounded mb-3 role-block-teacher">
+                <div class="row g-3 uniform-row">
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Department"></label>
+                        <select class="form-select" asp-for="Department">
+                            <option value="">-- Select --</option>
+                            <option>Arts & Sciences</option>
+                            <option>Computer Studies</option>
+                            <option>Engineering</option>
+                        </select>
+                        <span asp-validation-for="Department" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="Position"></label>
+                        <select class="form-select" asp-for="Position">
+                            <option value="">-- Select --</option>
+                            <option>Full-Time Instructor</option>
+                            <option>Part-Time Instructor</option>
+                            <option>Contractual</option>
+                        </select>
+                        <span asp-validation-for="Position" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Update</button>
+                <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function(){
+          const input = document.getElementById('avatarInput');
+          const preview = document.getElementById('avatarPreview');
+          if (input && preview) {
+            preview.addEventListener('keydown', function(e){
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+            });
+            input.addEventListener('change', function (e) {
+              const file = e.target.files && e.target.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = function (ev) {
+                preview.style.backgroundImage = `url('${ev.target.result}')`;
+                preview.classList.add('has-image');
+              };
+              reader.readAsDataURL(file);
+            });
+            var url = '@(Model.ProfilePictureUrl ?? "")';
+            if (url) {
+              preview.style.backgroundImage = `url('${url}')`;
+              preview.classList.add('has-image');
+            }
+          }
+        })();
+    </script>
+}

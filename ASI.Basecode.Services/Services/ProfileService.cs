@@ -1,11 +1,12 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Services.Services
 {
@@ -31,64 +32,35 @@ namespace ASI.Basecode.Services.Services
             _httpContext = httpContext;
         }
 
-        // ------------------------------------------------------------
-        // Current user via Session ("IdNumber") + Student table
-        // ------------------------------------------------------------
         public int GetCurrentUserId()
         {
-            // Prefer cached UserId in session if you set it at login
-            var cachedUserId = _httpContext.HttpContext?.Session?.GetInt32("UserId");
-            if (cachedUserId.HasValue && cachedUserId.Value > 0)
-                return cachedUserId.Value;
+            var http = _httpContext.HttpContext;
+            var session = http.Session;
 
-            var idNumber = _httpContext.HttpContext?.Session?.GetString("IdNumber");
+            var idNumber = session.GetString("IdNumber")
+                ?? http.User?.FindFirst("IdNumber")?.Value; 
+
             if (string.IsNullOrWhiteSpace(idNumber))
-                throw new InvalidOperationException("No IdNumber found in session. Make sure to set it at login.");
+                throw new InvalidOperationException("No IdNumber found in session/claims. Set it at login.");
 
-            // Use existing repository functions only (no new repo methods)
-            var userId = _students.GetStudentsWithUser() // includes User via .Include(s => s.User)
-                .Where(s => s.User.IdNumber == idNumber)
-                .Select(s => s.UserId)
+            var userId = _users.GetUsers()
+                .Where(u => u.IdNumber == idNumber)
+                .Select(u => u.UserId)
                 .FirstOrDefault();
 
             if (userId == 0)
-                throw new InvalidOperationException($"No Student linked to IdNumber '{idNumber}'.");
+                throw new InvalidOperationException($"No User found with IdNumber '{idNumber}'.");
 
-            // Optionally cache for future requests
-            _httpContext.HttpContext?.Session?.SetInt32("UserId", userId);
+            // cache for future requests
+            session.SetInt32("UserId", userId);
+            if (session.GetString("IdNumber") == null) session.SetString("IdNumber", idNumber);
+
             return userId;
         }
 
-        public int GetCurrentStudentId()
+
+        public async Task<StudentProfileViewModel> GetStudentProfileAsync(int userId)
         {
-            // Prefer cached StudentId if available
-            var cachedStudentId = _httpContext.HttpContext?.Session?.GetInt32("StudentId");
-            if (cachedStudentId.HasValue && cachedStudentId.Value > 0)
-                return cachedStudentId.Value;
-
-            var idNumber = _httpContext.HttpContext?.Session?.GetString("IdNumber");
-            if (string.IsNullOrWhiteSpace(idNumber))
-                throw new InvalidOperationException("No IdNumber found in session. Make sure to set it at login.");
-
-            var studentId = _students.GetStudentsWithUser()
-                .Where(s => s.User.IdNumber == idNumber)
-                .Select(s => s.StudentId)
-                .FirstOrDefault();
-
-            if (studentId == 0)
-                throw new InvalidOperationException($"No Student linked to IdNumber '{idNumber}'.");
-
-            _httpContext.HttpContext?.Session?.SetInt32("StudentId", studentId);
-            return studentId;
-        }
-
-        // ------------------------------------------------------------
-        // STUDENT
-        // ------------------------------------------------------------
-        public async Task<StudentProfileViewModel> GetStudentProfileAsync()
-        {
-            var userId = GetCurrentUserId();
-
             var user = await _users.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == userId);
@@ -141,10 +113,8 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
-        public async Task UpdateStudentProfileAsync(StudentProfileViewModel input)
+        public async Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input)
         {
-            var userId = GetCurrentUserId();
-
             // Users
             var user = _users.GetUserById(userId);
             if (user == null) return;
@@ -183,13 +153,8 @@ namespace ASI.Basecode.Services.Services
             await Task.CompletedTask;
         }
 
-        // ------------------------------------------------------------
-        // TEACHER (kept for completeness)
-        // ------------------------------------------------------------
-        public async Task<TeacherProfileViewModel> GetTeacherProfileAsync()
+        public async Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId)
         {
-            var userId = GetCurrentUserId();
-
             var user = await _users.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == userId);
@@ -239,10 +204,8 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
-        public async Task UpdateTeacherProfileAsync(TeacherProfileViewModel input)
+        public async Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input)
         {
-            var userId = GetCurrentUserId();
-
             var user = _users.GetUserById(userId);
             if (user == null) return;
 
