@@ -20,8 +20,8 @@ else
         <tbody>
             @foreach (var c in Model)
             {
-                var lec = c.LecUnits;   
-                var lab = c.LabUnits;   
+                var lec = c.LecUnits;
+                var lab = c.LabUnits;
                 var total = lec + lab;
 
                 <tr>
@@ -36,6 +36,7 @@ else
                             <input type="hidden" name="id" value="@c.CourseId" />
                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                         </form>
+
                         <button class="btn btn-sm btn-outline-primary ms-1"
                                 data-bs-toggle="modal"
                                 data-bs-target="#addCourseModal"
@@ -47,7 +48,6 @@ else
                                 data-lab="@c.LabUnits">
                             Edit
                         </button>
-
                     </td>
                 </tr>
             }

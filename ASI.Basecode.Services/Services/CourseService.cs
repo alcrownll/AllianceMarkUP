@@ -3,8 +3,8 @@ using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Linq;                     // LINQ extensions
-using Microsoft.EntityFrameworkCore;   // EF async extensions
+using System.Linq;                     
+using Microsoft.EntityFrameworkCore;   
 
 namespace ASI.Basecode.Services.Services
 {
@@ -23,6 +23,11 @@ namespace ASI.Basecode.Services.Services
             await _repo.GetCourses()
                        .OrderBy(c => c.CourseCode)
                        .ToListAsync(); // use .ToList() if your repo isn't EF-backed
+
+        //implement interface method for Edit modal prefill
+        public async Task<Course?> GetByIdAsync(int id) =>
+            await _repo.GetCourses()
+                       .FirstOrDefaultAsync(c => c.CourseId == id);
 
         public async Task CreateAsync(Course course)
         {

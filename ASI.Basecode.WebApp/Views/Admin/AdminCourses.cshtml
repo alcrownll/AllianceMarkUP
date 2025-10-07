@@ -24,7 +24,7 @@
                     </li>
                 </ul>
 
-                <!-- Actions (updated with input-group) -->
+                <!-- Actions -->
                 <div class="d-flex ms-auto" style="gap:.5rem;">
                     <div class="input-group input-group-sm" style="width:260px;">
                         <button class="btn btn-outline-secondary" type="button">Filter</button>
@@ -36,8 +36,40 @@
 
         <div class="card-body">
             <div class="tab-content" id="catalogTabsContent">
-                <div class="tab-pane fade" id="programs" role="tabpanel"></div>
 
+                <!-- PROGRAMS TAB -->
+                <div class="tab-pane fade" id="programs" role="tabpanel">
+                    <div class="mt-3 d-flex justify-content-end">
+                        <button class="btn btn-primary rounded-pill px-4"
+                                data-bs-toggle="modal" data-bs-target="#addProgramModal">
+                            <span class="me-2">+</span> Add Program
+                        </button>
+                    </div>
+
+                    <!-- Placeholder list (UI only) -->
+                    <div class="mt-3">
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:140px;">Code</th>
+                                        <th>Name</th>
+                                        <th style="width:160px;">Effective SY</th>
+                                        <th style="width:110px;" class="text-center">Status</th>
+                                        <th style="width:150px;" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="programsTableBody">
+                                    <tr class="text-muted">
+                                        <td colspan="5" class="text-center py-4">No programs yet. Click “Add Program”.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COURSES TAB -->
                 <div class="tab-pane fade show active" id="courses" role="tabpanel">
                     <div class="table-responsive">
                         <div class="mt-3 d-flex justify-content-end">
@@ -57,79 +89,168 @@
                         }
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
 
+@* --- ADD/EDIT COURSE MODAL (existing) --- *@
+<div class="modal fade" id="addCourseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
+            <form id="courseForm" method="post" asp-controller="AdminCourses" asp-action="Create">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="CourseId" name="CourseId" />
 
-@* Modal partial *@
-@await Html.PartialAsync("~/Views/Admin/Partials/_CourseFormModal.cshtml")
+                    <div class="mb-2">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" id="CourseCode" name="CourseCode" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Description</label>
+                        <input class="form-control" id="CourseDescription" name="Description" required />
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Lec Units</label>
+                            <input class="form-control" id="LecUnits" name="LecUnits" type="number" step="1" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Lab Units</label>
+                            <input class="form-control" id="LabUnits" name="LabUnits" type="number" step="1" />
+                        </div>
+                    </div>
+
+                    <div class="form-text mt-1">Total units are computed on save.</div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="courseSubmitBtn" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* --- ADD PROGRAM MODAL (UI only) --- *@
+<div class="modal fade" id="addProgramModal" tabindex="-1" aria-labelledby="addProgramLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProgramLabel">Add Program</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="addProgramForm" novalidate>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <label class="form-label">Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="Code" placeholder="BSCS" maxlength="20" required>
+                            <div class="invalid-feedback">Program code is required.</div>
+                        </div>
+
+                        <div class="col-sm-8">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="Name" placeholder="Bachelor of Science in Computer Science" maxlength="150" required>
+                            <div class="invalid-feedback">Program name is required.</div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label">Effective School Year <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="EffectiveSchoolYear" placeholder="AY 2025–2026" maxlength="20" required>
+                                <button class="btn btn-outline-secondary" type="button" id="btnSyHelper">Auto</button>
+                            </div>
+                            <div class="form-text">Format like <strong>AY 2025–2026</strong>.</div>
+                            <div class="invalid-feedback">Effective School Year is required.</div>
+                        </div>
+
+                        <div class="col-sm-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" disabled>
+                                <label class="form-check-label" for="IsActive">
+                                    Active (will be set after curriculum is complete)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="Notes" rows="2" placeholder="Optional notes (UI-only, not saved yet)"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveProgram">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 @section Scripts {
     <script>
         (function () {
           const modalEl = document.getElementById('addCourseModal');
-          if (!modalEl) return;
+          const form = document.getElementById('courseForm');
+          const titleEl = modalEl.querySelector('.modal-title');
+          const submitBtn = document.getElementById('courseSubmitBtn');
 
-          // utility
-          function updateTotal() {
-            const lec = parseInt(document.getElementById('LecUnits').value || 0, 10);
-            const lab = parseInt(document.getElementById('LabUnits').value || 0, 10);
-            document.getElementById('TotalUnits').value = (lec + lab);
-          }
+          const idEl   = document.getElementById('CourseId');
+          const codeEl = document.getElementById('CourseCode');
+          const descEl = document.getElementById('CourseDescription');
+          const lecEl  = document.getElementById('LecUnits');
+          const labEl  = document.getElementById('LabUnits');
 
-          modalEl.addEventListener('show.bs.modal', function (event) {
-            const trigger = event.relatedTarget;                     // clicked button
-            const isEdit  = trigger && trigger.dataset.edit === 'true';
+          // Detect Add vs Edit every time the modal opens
+          modalEl.addEventListener('show.bs.modal', function (evt) {
+            const btn = evt.relatedTarget;               // opener button
+            const isEdit = btn?.dataset.edit === 'true';
 
-            const form     = document.getElementById('courseForm');
-            const titleEl  = document.getElementById('courseModalTitle');
-            const submitEl = document.getElementById('courseSubmitBtn');
-
-            const idEl   = document.getElementById('CourseId');
-            const codeEl = document.getElementById('CourseCode');
-            const descEl = document.getElementById('Description');
-            const lecEl  = document.getElementById('LecUnits');
-            const labEl  = document.getElementById('LabUnits');
-
-            const createUrl = form.getAttribute('data-create-action');
-            const editUrl   = form.getAttribute('data-edit-action');
+            // Clear fields first
+            idEl.value = '';
+            codeEl.value = '';
+            descEl.value = '';
+            lecEl.value = '';
+            labEl.value = '';
 
             if (isEdit) {
-              idEl.value   = trigger.dataset.id   || "";
-              codeEl.value = trigger.dataset.code || "";
-              descEl.value = trigger.dataset.desc || "";
-              lecEl.value  = trigger.dataset.lec  || 0;
-              labEl.value  = trigger.dataset.lab  || 0;
+              // Prefill from data-* attributes on Edit button
+              idEl.value   = btn.dataset.id || '';
+              codeEl.value = btn.dataset.code || '';
+              descEl.value = btn.dataset.desc || '';
+              lecEl.value  = btn.dataset.lec || '';
+              labEl.value  = btn.dataset.lab || '';
 
-              titleEl.textContent  = 'Edit Course';
-              submitEl.textContent = 'Update';
-              form.setAttribute('action', editUrl);
+              form.setAttribute('action', '@Url.Action("Edit", "AdminCourses")');
+              if (titleEl) titleEl.textContent = 'Edit Course';
+              if (submitBtn) submitBtn.textContent = 'Update';
             } else {
-              idEl.value   = "";
-              codeEl.value = "";
-              descEl.value = "";
-              lecEl.value  = 0;
-              labEl.value  = 0;
-
-              titleEl.textContent  = 'Add Course';
-              submitEl.textContent = 'Save';
-              form.setAttribute('action', createUrl);
+              form.setAttribute('action', '@Url.Action("Create", "AdminCourses")');
+              if (titleEl) titleEl.textContent = 'Add Course';
+              if (submitBtn) submitBtn.textContent = 'Save';
             }
-            updateTotal();
           });
 
-          // keep total in sync while typing
-          ['LecUnits','LabUnits'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('input', updateTotal);
+          // Optional: reset on hide so Add opens clean after an Edit
+          modalEl.addEventListener('hidden.bs.modal', function () {
+            form.reset();
+            idEl.value = '';
           });
-
-          // optional: avoid layout nudge when modal opens
-          document.addEventListener('shown.bs.modal', () => document.body.style.paddingRight = '0');
-          document.addEventListener('hidden.bs.modal', () => document.body.style.paddingRight = '');
         })();
     </script>
 }
