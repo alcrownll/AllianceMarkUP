@@ -24,6 +24,26 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Admin/AdminCourses.cshtml", courses);
         }
 
+        // NEW: fetch a single course for Edit modal prefill
+        [HttpGet]
+        public async Task<IActionResult> Get(int id)
+        {
+            // Assumes your service exposes GetByIdAsync(int)
+            var c = await _service.GetByIdAsync(id);
+            if (c == null) return NotFound();
+
+            // Return only the fields the modal needs
+            return Json(new
+            {
+                id = c.CourseId,
+                code = c.CourseCode,
+                description = c.Description,
+                lecUnits = c.LecUnits,
+                labUnits = c.LabUnits,
+                totalUnits = c.TotalUnits,   // if computed server-side
+            });
+        }
+
         // Create: accept only the fields you expect (TotalUnits is computed server-side)
         [HttpPost]
         [ValidateAntiForgeryToken]
