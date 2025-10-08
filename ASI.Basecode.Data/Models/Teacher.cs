@@ -8,7 +8,6 @@ namespace ASI.Basecode.Data.Models
     public partial class Teacher
     {
         [Key]
-        [ForeignKey("User")]
         public int TeacherId { get; set; } 
         public string Position { get; set; }
         public int UserId { get; set; }

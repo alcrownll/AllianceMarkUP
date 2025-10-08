@@ -1,10 +1,9 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
-using ASI.Basecode.Services.Manager; 
+using ASI.Basecode.Services.Manager;
 using ASI.Basecode.Services.ServiceModels;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -36,6 +35,169 @@ namespace ASI.Basecode.Services.Services
             _users = users;
             _profiles = profiles;
             _uow = uow;
+        }
+
+        // add singe record:
+
+        public async Task<(int UserId, string IdNumber)> CreateSingleStudentAsync(
+        StudentProfileViewModel vm,
+        ImportUserDefaults defaults,
+        CancellationToken ct)
+        {
+            if (vm == null) throw new ArgumentNullException(nameof(vm));
+            if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("LastName is required.");
+            if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("FirstName is required.");
+            if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
+            if (string.IsNullOrWhiteSpace(vm.AdmissionType)) throw new Exception("AdmissionType is required.");
+            if (string.IsNullOrWhiteSpace(vm.Program) || string.IsNullOrWhiteSpace(vm.YearLevel))
+                throw new Exception("Program and YearLevel are required.");
+
+            await _uow.BeginTransactionAsync(ct);
+
+            try
+            {
+                var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
+                var password = GenerateHashPassword(vm.LastName, idNumber);
+                var now = DateTime.Now;
+
+                var user = new User
+                {
+                    FirstName = vm.FirstName,
+                    LastName = vm.LastName,
+                    Email = vm.Email,
+                    IdNumber = idNumber,
+                    Password = password,
+                    Role = "Student",
+                    AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                _users.AddUser(user);
+                await _uow.SaveChangesAsync(ct); // get UserId
+
+                var profile = new UserProfile
+                {
+                    UserId = user.UserId,
+                    MiddleName = vm.MiddleName,
+                    Suffix = vm.Suffix,
+                    MobileNo = vm.MobileNo,
+                    HomeAddress = vm.HomeAddress,
+                    Province = vm.Province,
+                    Municipality = vm.Municipality,
+                    Barangay = vm.Barangay,
+                    DateOfBirth = vm.DateOfBirth,
+                    PlaceOfBirth = vm.PlaceOfBirth,
+                    Age = vm.Age ?? 0,
+                    MaritalStatus = vm.MaritalStatus,
+                    Gender = vm.Gender,
+                    Religion = vm.Religion,
+                    Citizenship = vm.Citizenship
+                };
+
+                _profiles.AddUserProfile(profile);
+                await _uow.SaveChangesAsync(ct);
+                var program = ProgramShortcut(vm.Program);
+                var admissionType = AdmissionTypeShortcut(vm.AdmissionType);
+
+                var student = new Student
+                {
+                    UserId = user.UserId,
+                    AdmissionType = admissionType,
+                    Program = program,
+                    Department = vm.Department,
+                    YearLevel = vm.YearLevel,
+                    StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled"
+                };
+
+                _students.AddStudent(student);
+                await _uow.SaveChangesAsync(ct);
+
+                await _uow.CommitAsync(ct);
+                return (user.UserId, idNumber);
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+                throw;
+            }
+        }
+
+        public async Task<(int UserId, string IdNumber)> CreateSingleTeacherAsync(
+            TeacherProfileViewModel vm,
+            ImportUserDefaults defaults,
+            CancellationToken ct)
+        {
+            if (vm == null) throw new ArgumentNullException(nameof(vm));
+            if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("LastName is required.");
+            if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("FirstName is required.");
+            if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
+
+            await _uow.BeginTransactionAsync(ct);
+
+            try
+            {
+                var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
+                var password = GenerateHashPassword(vm.LastName, idNumber);
+                var now = DateTime.Now;
+
+                var user = new User
+                {
+                    FirstName = vm.FirstName,
+                    LastName = vm.LastName,
+                    Email = vm.Email,
+                    IdNumber = idNumber,
+                    Password = password,
+                    Role = "Teacher",
+                    AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                _users.AddUser(user);
+                await _uow.SaveChangesAsync(ct);
+
+                var profile = new UserProfile
+                {
+                    UserId = user.UserId,
+                    MiddleName = vm.MiddleName,
+                    Suffix = vm.Suffix,
+                    MobileNo = vm.MobileNo,
+                    HomeAddress = vm.HomeAddress,
+                    Province = vm.Province,
+                    Municipality = vm.Municipality,
+                    Barangay = vm.Barangay,
+                    DateOfBirth = vm.DateOfBirth,
+                    PlaceOfBirth = vm.PlaceOfBirth,
+                    Age = vm.Age ?? 0,
+                    MaritalStatus = vm.MaritalStatus,
+                    Gender = vm.Gender,
+                    Religion = vm.Religion,
+                    Citizenship = vm.Citizenship
+                };
+
+                _profiles.AddUserProfile(profile);
+                await _uow.SaveChangesAsync(ct);
+
+                var teacher = new Teacher
+                {
+                    UserId = user.UserId,
+                    Position = string.IsNullOrWhiteSpace(vm.Position)
+                        ? (defaults?.DefaultTeacherPosition ?? "Instructor")
+                        : vm.Position
+                };
+
+                _teachers.AddTeacher(teacher);
+                await _uow.SaveChangesAsync(ct);
+
+                await _uow.CommitAsync(ct);
+                return (user.UserId, idNumber);
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+                throw;
+            }
         }
 
         // generating templates:
@@ -92,31 +254,48 @@ namespace ASI.Basecode.Services.Services
         {
             var result = new ImportResult();
             if (file == null || file.Length == 0)
-                return Fail("Please choose a non-empty .xlsx file.");
+                return new ImportResult { FailedCount = 1, FirstError = "Please choose a non-empty .xlsx file." };
 
+            Console.WriteLine("=== ImportStudents started ===");
             var (ws, map) = ReadWorksheetAndHeaderMap(file);
 
-            var required = new[] { "FirstName", "LastName", "Email", "Program", "YearLevel" };
+            // Require headers (AdmissionType included)
+            Console.WriteLine("Headers: " + string.Join(", ", map.Keys));
+            var required = new[] { "FirstName", "LastName", "Email", "Program", "YearLevel", "AdmissionType" };
             var missing = required.Where(h => !map.ContainsKey(h)).ToList();
             if (missing.Any())
-                return Fail("Missing required columns: " + string.Join(", ", missing));
+            {
+                var msg = "Missing required columns: " + string.Join(", ", missing);
+                Console.WriteLine(msg);
+                return new ImportResult { FailedCount = 1, FirstError = msg };
+            }
 
             var firstRow = 2;
             var lastRow = ws.LastRowUsed().RowNumber();
+            Console.WriteLine($"Detected rows: {firstRow} to {lastRow}");
 
             for (int r = firstRow; r <= lastRow; r++)
             {
                 try
                 {
+                    Console.WriteLine($"[Row {r}] Starting...");
+
                     var email = Get(ws, r, map, "Email");
-                    if (string.IsNullOrWhiteSpace(email)) continue;
+                    if (string.IsNullOrWhiteSpace(email))
+                    {
+                        Console.WriteLine($"[Row {r}] Skipped: no email");
+                        continue;
+                    }
 
                     await _uow.BeginTransactionAsync(ct);
+                    Console.WriteLine($"[Row {r}] Transaction started");
 
                     var lastName = Get(ws, r, map, "LastName");
-                    var idNumber = await GenerateUniqueIdNumberAsync(prefix: '2', ct);
+                    var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
+                    Console.WriteLine($"[Row {r}] Generated ID number: {idNumber}");
+
                     var password = GenerateHashPassword(lastName, idNumber);
-                    var now = DateTime.UtcNow;
+                    var now = DateTime.Now; // match PostgreSQL 'timestamp without time zone'
 
                     var user = new User
                     {
@@ -131,14 +310,10 @@ namespace ASI.Basecode.Services.Services
                         UpdatedAt = now
                     };
 
-                    ValidateUserRequired(user, r);
-
-                    var dup = await _users.GetUsers()
-                        .AnyAsync(u => u.Email == user.Email || u.IdNumber == user.IdNumber, ct);
-                    if (dup) throw new Exception($"Row {r}: Duplicate Email/ID Number.");
-
+                    Console.WriteLine($"[Row {r}] Adding user...");
                     _users.AddUser(user);
                     await _uow.SaveChangesAsync(ct);
+                    Console.WriteLine($"[Row {r}] User saved with ID={user.UserId}");
 
                     var profile = new UserProfile
                     {
@@ -159,66 +334,89 @@ namespace ASI.Basecode.Services.Services
                         Citizenship = Get(ws, r, map, "Citizenship")
                     };
                     _profiles.AddUserProfile(profile);
+                    Console.WriteLine($"[Row {r}] Profile added");
+                    await _uow.SaveChangesAsync(ct); 
+
+                    var program = Get(ws, r, map, "Program");
+                    var yearLevel = Get(ws, r, map, "YearLevel");
+                    var department = Get(ws, r, map, "Department");
+                    var admissionType = Get(ws, r, map, "AdmissionType");
+
+                    program = ProgramShortcut(program);
+                    admissionType = AdmissionTypeShortcut(admissionType);
+
+                    if (string.IsNullOrWhiteSpace(program) || string.IsNullOrWhiteSpace(yearLevel))
+                        throw new Exception($"Row {r}: Program/YearLevel required.");
+                    if (string.IsNullOrWhiteSpace(admissionType))
+                        throw new Exception($"Row {r}: AdmissionType required.");
+
+                    Console.WriteLine($"[Row {r}] Student about to insert: AdmissionType='{admissionType}', Program='{program}', YearLevel='{yearLevel}', Dept='{department}'");
 
                     var student = new Student
                     {
-                        AdmissionType = Get(ws, r, map, "AdmissionType"),
-                        Program = Get(ws, r, map, "Program"),
-                        Department = Get(ws, r, map, "Department"),
-                        YearLevel = Get(ws, r, map, "YearLevel"),
-                        StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled",
-                        UserId = user.UserId
+                        UserId = user.UserId,
+                        AdmissionType = admissionType,
+                        Program = program,
+                        Department = department,
+                        YearLevel = yearLevel,
+                        StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled"
                     };
-
-                    if (string.IsNullOrWhiteSpace(student.Program) || string.IsNullOrWhiteSpace(student.YearLevel))
-                        throw new Exception($"Row {r}: Program/YearLevel required.");
-
                     _students.AddStudent(student);
+                    await _uow.SaveChangesAsync(ct); // persist student now
+                    Console.WriteLine($"[Row {r}] Student added");
 
                     await _uow.CommitAsync(ct);
+                    Console.WriteLine($"[Row {r}] Transaction committed");
                     result.InsertedCount++;
                 }
                 catch (Exception ex)
                 {
                     await _uow.RollbackAsync(ct);
+                    Console.WriteLine($"[Row {r}] ERROR: {ex.Message}");
                     result.FailedCount++;
                     if (result.FirstError == null) result.FirstError = ex.Message;
                 }
             }
 
+            Console.WriteLine($"=== ImportStudents finished. Inserted={result.InsertedCount}, Failed={result.FailedCount} ===");
             return result;
-            static ImportResult Fail(string msg) => new() { FailedCount = 1, FirstError = msg };
         }
 
         public async Task<ImportResult> ImportTeachersAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
         {
             var result = new ImportResult();
             if (file == null || file.Length == 0)
-                return Fail("Please choose a non-empty .xlsx file.");
+                return new ImportResult { FailedCount = 1, FirstError = "Please choose a non-empty .xlsx file." };
 
+            Console.WriteLine("=== ImportTeachers started ===");
             var (ws, map) = ReadWorksheetAndHeaderMap(file);
-
-            var required = new[] { "FirstName", "LastName", "Email", "Position" };
-            var missing = required.Where(h => !map.ContainsKey(h)).ToList();
-            if (missing.Any())
-                return Fail("Missing required columns: " + string.Join(", ", missing));
 
             var firstRow = 2;
             var lastRow = ws.LastRowUsed().RowNumber();
+            Console.WriteLine($"Detected rows: {firstRow} to {lastRow}");
 
             for (int r = firstRow; r <= lastRow; r++)
             {
                 try
                 {
+                    Console.WriteLine($"[Row {r}] Starting...");
+
                     var email = Get(ws, r, map, "Email");
-                    if (string.IsNullOrWhiteSpace(email)) continue;
+                    if (string.IsNullOrWhiteSpace(email))
+                    {
+                        Console.WriteLine($"[Row {r}] Skipped: no email");
+                        continue;
+                    }
 
                     await _uow.BeginTransactionAsync(ct);
+                    Console.WriteLine($"[Row {r}] Transaction started");
 
                     var lastName = Get(ws, r, map, "LastName");
-                    var idNumber = await GenerateUniqueIdNumberAsync(prefix: '1', ct);
+                    var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
+                    Console.WriteLine($"[Row {r}] Generated ID number: {idNumber}");
+
                     var password = GenerateHashPassword(lastName, idNumber);
-                    var now = DateTime.UtcNow;
+                    var now = DateTime.Now; // match PostgreSQL 'timestamp without time zone'
 
                     var user = new User
                     {
@@ -233,14 +431,10 @@ namespace ASI.Basecode.Services.Services
                         UpdatedAt = now
                     };
 
-                    ValidateUserRequired(user, r);
-
-                    var dup = await _users.GetUsers()
-                        .AnyAsync(u => u.Email == user.Email || u.IdNumber == user.IdNumber, ct);
-                    if (dup) throw new Exception($"Row {r}: Duplicate Email/ID Number.");
-
+                    Console.WriteLine($"[Row {r}] Adding user...");
                     _users.AddUser(user);
                     await _uow.SaveChangesAsync(ct);
+                    Console.WriteLine($"[Row {r}] User saved with ID={user.UserId}");
 
                     var profile = new UserProfile
                     {
@@ -261,28 +455,37 @@ namespace ASI.Basecode.Services.Services
                         Citizenship = Get(ws, r, map, "Citizenship")
                     };
                     _profiles.AddUserProfile(profile);
+                    Console.WriteLine($"[Row {r}] Profile added");
+                    await _uow.SaveChangesAsync(ct); // persist profile now
 
                     var teacher = new Teacher
                     {
-                        Position = Get(ws, r, map, "Position"),
-                        UserId = user.UserId
+                        UserId = user.UserId,
+                        Position = Get(ws, r, map, "Position")
                     };
                     _teachers.AddTeacher(teacher);
+                    await _uow.SaveChangesAsync(ct); // persist teacher now
+                    Console.WriteLine($"[Row {r}] Teacher added");
 
                     await _uow.CommitAsync(ct);
+                    Console.WriteLine($"[Row {r}] Transaction committed");
                     result.InsertedCount++;
                 }
                 catch (Exception ex)
                 {
                     await _uow.RollbackAsync(ct);
+                    Console.WriteLine($"[Row {r}] ERROR: {ex.Message}");
                     result.FailedCount++;
                     if (result.FirstError == null) result.FirstError = ex.Message;
                 }
             }
 
+            Console.WriteLine($"=== ImportTeachers finished. Inserted={result.InsertedCount}, Failed={result.FailedCount} ===");
             return result;
-            static ImportResult Fail(string msg) => new() { FailedCount = 1, FirstError = msg };
         }
+
+
+        // helpers:
 
         private static (IXLWorksheet ws, Dictionary<string, int> map) ReadWorksheetAndHeaderMap(IFormFile file)
         {
@@ -344,6 +547,22 @@ namespace ASI.Basecode.Services.Services
                       : (idNumber.Length >= 4 ? idNumber[^4..] : idNumber);
             var plain = $"{ln}{last4}";
             return PasswordManager.EncryptPassword(plain);
+        }
+
+        private static string ProgramShortcut(string? value)
+        {
+            var s = (value ?? string.Empty).Trim();
+            if (s.Equals("Computer Science", StringComparison.OrdinalIgnoreCase)) return "BSCS";
+            if (s.Equals("Information Technology", StringComparison.OrdinalIgnoreCase)) return "BSIT";
+            return s; 
+        }
+
+        private static string AdmissionTypeShortcut(string? value)
+        {
+            var s = (value ?? string.Empty).Trim();
+            if (s.Equals("Old", StringComparison.OrdinalIgnoreCase)) return "Old Student";
+            if (s.Equals("New", StringComparison.OrdinalIgnoreCase)) return "New Student";
+            return s; 
         }
 
         private static DateOnly? GetDateOnly(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)

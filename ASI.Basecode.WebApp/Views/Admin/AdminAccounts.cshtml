@@ -40,7 +40,9 @@
                         + Add Student
                     </button>
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="studentsDropdown">
-                        <a class="dropdown-item" asp-controller="Students" asp-action="Create">Single Record</a>
+                        <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateStudent">
+                            Single Record
+                        </a>
                         <div class="dropdown-divider"></div>
                         <button type="button" class="dropdown-item"
                                 data-bs-toggle="modal" data-bs-target="#bulkUploadStudentsModal">
@@ -58,7 +60,9 @@
                         + Add Teacher
                     </button>
                     <div class="dropdown-menu dropdown-menu-end" aria-labelledby="teachersDropdown">
-                        <a class="dropdown-item" asp-controller="Teachers" asp-action="Create">Single Record</a>
+                        <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateTeacher">
+                            Single Record
+                        </a>
                         <div class="dropdown-divider"></div>
                         <button type="button" class="dropdown-item"
                                 data-bs-toggle="modal" data-bs-target="#bulkUploadTeachersModal">

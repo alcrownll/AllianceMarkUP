@@ -79,11 +79,15 @@ namespace ASI.Basecode.Data
             {
                 entity.HasKey(e => e.TeacherId);
 
+                entity.Property(e => e.TeacherId)
+                      .UseIdentityAlwaysColumn(); 
+
                 entity.Property(e => e.Position).IsRequired().HasMaxLength(50);
 
-                entity.HasIndex(e => e.UserId).IsUnique();        
+                entity.HasIndex(e => e.UserId).IsUnique();
+
                 entity.HasOne(d => d.User)
-                      .WithOne(p => p.Teacher)                    
+                      .WithOne(p => p.Teacher)
                       .HasForeignKey<Teacher>(d => d.UserId)
                       .OnDelete(DeleteBehavior.Restrict)
                       .HasConstraintName("FK_Teachers_Users_UserId");

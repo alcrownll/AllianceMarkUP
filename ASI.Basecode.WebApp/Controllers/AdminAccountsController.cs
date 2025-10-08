@@ -134,6 +134,81 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Index), new { tab = string.IsNullOrWhiteSpace(tab) ? "students" : tab });
         }
 
+        [HttpGet]
+        public IActionResult CreateStudent()
+        {
+            var vm = new StudentProfileViewModel();
+            ViewData["PageHeader"] = "Create Student";
+            ViewData["IsCreate"] = true;
+            ViewData["PostController"] = "AdminAccounts";
+            ViewData["PostAction"] = "CreateStudent";
+            return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateStudent(StudentProfileViewModel vm, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewData["PageHeader"] = "Create Student";
+                ViewData["IsCreate"] = true;
+                ViewData["PostController"] = "AdminAccounts";
+                ViewData["PostAction"] = "CreateStudent";
+                return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
+            }
+
+            var defaults = new ImportUserDefaults
+            {
+                DefaultAccountStatus = "Active",
+                DefaultStudentStatus = "Enrolled"
+            };
+
+            var (_, idNumber) = await _create.CreateSingleStudentAsync(vm, defaults, ct);
+
+            TempData["ImportOk"] = $"Student created successfully. ID Number: {idNumber}";
+            return RedirectToAction(nameof(Index), new { tab = "students" });
+        }
+
+
+        // ===== SINGLE CREATE (TEACHER) =====
+
+        [HttpGet]
+        public IActionResult CreateTeacher()
+        {
+            var vm = new TeacherProfileViewModel();
+            ViewData["PageHeader"] = "Create Teacher";
+            ViewData["IsCreate"] = true;
+            ViewData["PostController"] = "AdminAccounts";
+            ViewData["PostAction"] = "CreateTeacher";
+            return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateTeacher(TeacherProfileViewModel vm, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewData["PageHeader"] = "Create Teacher";
+                ViewData["IsCreate"] = true;
+                ViewData["PostController"] = "AdminAccounts";
+                ViewData["PostAction"] = "CreateTeacher";
+                return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
+            }
+
+            var defaults = new ImportUserDefaults
+            {
+                DefaultAccountStatus = "Active",
+                DefaultTeacherPosition = "Instructor"
+            };
+
+            var (_, idNumber) = await _create.CreateSingleTeacherAsync(vm, defaults, ct);
+
+            TempData["ImportOk"] = $"Teacher created successfully. ID Number: {idNumber}";
+            return RedirectToAction(nameof(Index), new { tab = "teachers" });
+        }
+
         // excel:
         [HttpGet]
         public IActionResult DownloadStudentTemplate()

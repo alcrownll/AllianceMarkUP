@@ -3,6 +3,10 @@
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Profile";
     ViewData["PageHeader"] = "Profile";
+
+    var isCreate = (ViewData["IsCreate"] as bool?) == true;
+    var postCtrl = (ViewData["PostController"] as string) ?? "AdminAccounts";
+    var postAct = (ViewData["PostAction"] as string) ?? "SaveTeacher";
 }
 <link rel="stylesheet" href="~/css/main-site.css" />
 
@@ -13,10 +17,16 @@
             <div class="alert alert-success mb-3">@msg</div>
         }
 
-        <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
-        <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
+        @if (!isCreate)
+        {
+            <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
+            <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
+        }
 
-        <form asp-action="SaveTeacher" asp-controller="AdminAccounts" asp-route-userId="@Model.UserId" method="post" enctype="multipart/form-data">
+        <form asp-action="@postAct"
+              asp-controller="@postCtrl"
+              asp-route-userId="@(isCreate ? null : Model.UserId)"
+              method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -52,7 +62,7 @@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="submit" class="btn btn-primary">@((isCreate) ? "Create" : "Update")</button>
                 <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Back</a>
             </div>
         </form>
