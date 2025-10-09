@@ -25,6 +25,10 @@ namespace ASI.Basecode.Data
         public virtual DbSet<AssignedCourse> AssignedCourses { get; set; }
         public virtual DbSet<ClassSchedule> ClassSchedules { get; set; }
         public virtual DbSet<Grade> Grades { get; set; }
+        public virtual DbSet<Program> Programs { get; set; }
+        public virtual DbSet<YearTerm> YearTerms { get; set; }
+        public virtual DbSet<ProgramCourse> ProgramCourses { get; set; }
+
 
         public virtual DbSet<Notification> Notifications { get; set; }
         public virtual DbSet<CalendarEvent> CalendarEvents { get; set; }
@@ -208,9 +212,71 @@ namespace ASI.Basecode.Data
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);  // or Restrict if you don’t want cascade
             });
+            // PROGRAM
+            modelBuilder.Entity<Program>(entity =>
+            {
+                entity.HasKey(e => e.ProgramId);
+                entity.Property(e => e.ProgramCode).IsRequired().HasMaxLength(10);
+                entity.Property(e => e.ProgramName).IsRequired().HasMaxLength(100);
+
+                entity.HasIndex(e => e.ProgramCode).IsUnique();
+            });
+
+            // YEARTERM
+            modelBuilder.Entity<YearTerm>(entity =>
+            {
+                entity.HasKey(e => e.YearTermId);
+                entity.Property(e => e.YearLevel).IsRequired();
+                entity.Property(e => e.Term).IsRequired();
+
+                entity.HasIndex(e => new { e.YearLevel, e.Term }).IsUnique();
+
+                // Seed Year 1..4 × Term 1..2
+                entity.HasData(
+                    new YearTerm { YearTermId = 1, YearLevel = 1, Term = 1 },
+                    new YearTerm { YearTermId = 2, YearLevel = 1, Term = 2 },
+                    new YearTerm { YearTermId = 3, YearLevel = 2, Term = 1 },
+                    new YearTerm { YearTermId = 4, YearLevel = 2, Term = 2 },
+                    new YearTerm { YearTermId = 5, YearLevel = 3, Term = 1 },
+                    new YearTerm { YearTermId = 6, YearLevel = 3, Term = 2 },
+                    new YearTerm { YearTermId = 7, YearLevel = 4, Term = 1 },
+                    new YearTerm { YearTermId = 8, YearLevel = 4, Term = 2 }
+                );
+            });
+
+            // PROGRAMCOURSE
+            modelBuilder.Entity<ProgramCourse>(entity =>
+            {
+                entity.HasKey(e => e.ProgramCourseId);
+
+                // Program → ProgramCourses 
+                entity.HasOne(e => e.Program)
+                      .WithMany(p => p.ProgramCourses)
+                      .HasForeignKey(e => e.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Course used by the term row (restrict)
+                entity.HasOne(e => e.Course)
+                      .WithMany()
+                      .HasForeignKey(e => e.CourseId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // YearTerm bucket (restrict)
+                entity.HasOne(e => e.YearTerm)
+                      .WithMany(yt => yt.ProgramCourses)
+                      .HasForeignKey(e => e.YearTermId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Optional prerequisite (also points to Course) (restrict)
+                entity.HasOne(e => e.PrerequisiteCourse)
+                      .WithMany()
+                      .HasForeignKey(e => e.Prerequisite)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
 
             OnModelCreatingPartial(modelBuilder);
         }
+
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
