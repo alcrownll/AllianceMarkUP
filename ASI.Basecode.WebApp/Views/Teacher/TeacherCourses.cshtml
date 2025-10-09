@@ -6,17 +6,18 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/teacher-course.css" />
     <link rel="stylesheet" href="~/css/teacher-grade-print.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 }
 
 @* Debug Information, Tang-tanga lang ni inig finalize na *@
 @if (ViewBag.DebugUserId != null || ViewBag.DebugTeacherId != null)
 {
     <div class="alert alert-info">
-        <strong>Debug Info:</strong> 
-        UserId: @ViewBag.DebugUserId, 
-        TeacherId: @ViewBag.DebugTeacherId, 
+        <strong>Debug Info:</strong>
+        UserId: @ViewBag.DebugUserId,
+        TeacherId: @ViewBag.DebugTeacherId,
         Courses Count: @ViewBag.DebugCoursesCount
     </div>
 }
@@ -35,18 +36,23 @@
 <div class="teacher-courses-container no-print">
 
     <div class="container-fluid">
-        <ul class="nav nav-tabs mb-3" id="gradeTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="grade-view-tab" data-bs-toggle="tab" data-bs-target="#grade-view" type="button" role="tab" aria-controls="grade-view" aria-selected="true">
-                    Grade View
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="grade-entry-tab" data-bs-toggle="tab" data-bs-target="#grade-entry" type="button" role="tab" aria-controls="grade-entry" aria-selected="false">
-                    Grade Entry
-                </button>
-            </li>
-        </ul>
+
+        @* ======= Centered Grade View / Grade Entry Tabs ======= *@
+        <div class="grade-tab-container">
+            <ul class="nav nav-pills" id="gradeTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="grade-view-tab" data-bs-toggle="tab" data-bs-target="#grade-view" type="button" role="tab" aria-controls="grade-view" aria-selected="true">
+                        <i class="bi bi-table me-1"></i> Grade View
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="grade-entry-tab" data-bs-toggle="tab" data-bs-target="#grade-entry" type="button" role="tab" aria-controls="grade-entry" aria-selected="false">
+                        <i class="bi bi-pencil-square me-1"></i> Grade Entry
+                    </button>
+                </li>
+            </ul>
+        </div>
+
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
                 <!-- Content for Grade View tab -->
@@ -57,13 +63,13 @@
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
                 <!-- Content for Grade Entry tab -->
-                
+
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h4 class="mb-3">Class Schedule</h4>
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle">
-                                <thead class="table-light">
+                            <table class="table table-bordered align-middle grade-entry-table">
+                                <thead>
                                     <tr>
                                         <th>EDP Code</th>
                                         <th>Subject</th>
@@ -73,7 +79,7 @@
                                         <th>Room</th>
                                         <th>Section</th>
                                         <th>Course</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -90,18 +96,32 @@
                                                 <td>@course.Room</td>
                                                 <td>@course.Section</td>
                                                 <td>@course.Course</td>
-                                                <td>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-sm btn-outline-primary" title="Edit" 
+                                                <td class="text-center">
+                                                    <div class="d-inline-flex gap-2">
+                                                        <!-- Edit -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-edit"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="Edit"
                                                                 onclick="showEditPanel('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            Edit
+                                                            <i class="bi bi-pencil-square"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-warning" title="Upload">
-                                                            Upload
+
+                                                        <!-- Upload -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-upload"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="Upload">
+                                                            <i class="bi bi-upload"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-success" title="ToPDF" 
+
+                                                        <!-- To PDF -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-pdf"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="To PDF"
                                                                 onclick="printGrades('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            To PDF
+                                                            <i class="bi bi-file-earmark-text"></i>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -122,7 +142,7 @@
 
                 <!-- Edit Grades Panel -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesEditPanel.cshtml")
-                
+
             </div>
         </div>
     </div>
@@ -187,4 +207,11 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/teacher-courses.js"></script>
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+        });
+    </script>
 }

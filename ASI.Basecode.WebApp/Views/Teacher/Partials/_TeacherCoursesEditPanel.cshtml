@@ -1,26 +1,28 @@
 <!-- Edit Grades of Students -->
 <div id="editPanel" class="col-12 mt-3 d-none">
-    <div class="card border-primary shadow-sm">
+    <div class="card shadow-sm teacher-edit-card">
         <!-- Fixed Header: Edit Grades -->
-        <div class="card-header bg-primary text-white fw-bold d-flex align-items-left">Edit Grades</div>
-        
+        <div class="card-header bg-white text-primary fw-bold fs-5 border-bottom-0 py-3">
+            Edit Grades
+        </div>
+
         <!-- Fixed Header: Course Info -->
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <div>
-                <strong>EDP Code:</strong> <span id="edpCodeText"></span> &nbsp; | 
-                <strong>Subject:</strong> <span id="subjectText"></span> &nbsp; | 
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-top-0 pt-0 pb-3">
+            <div class="medium text-secondary">
+                <strong>EDP Code:</strong> <span id="edpCodeText"></span> &nbsp; |
+                <strong>Subject:</strong> <span id="subjectText"></span> &nbsp; |
                 <strong>Schedule:</strong> <span id="scheduleText"></span>
             </div>
-            <div>
-                <button class="btn btn-sm btn-outline-primary" title="Save" onclick="saveGrades()">Save</button>
-                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="hideEditPanel()">Cancel</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm px-3" title="Save" onclick="saveGrades()">Save</button>
+                <button class="btn btn-danger btn-sm px-3" title="Cancel" onclick="hideEditPanel()">Cancel</button>
             </div>
         </div>
-        
+
         <!-- Table with Fixed Header and Scrollable Body -->
-        <div class="card-body p-0" style="height: 30vh; overflow-y: auto;">
-            <table class="table table-bordered mb-0">
-                <thead class="table-light sticky-top" style="position: sticky; top: 0; z-index: 10;">
+        <div class="card-body p-0" style="height: 35vh; overflow-y: auto;">
+            <table class="table table-bordered mb-0 edit-grade-table">
+                <thead class="sticky-top" style="position: sticky; top: 0; z-index: 10;">
                     <tr>
                         <th>No.</th>
                         <th>ID Number</th>
