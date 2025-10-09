@@ -3,6 +3,7 @@ using System;
 using ASI.Basecode.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    partial class AsiBasecodeDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251009134331_AddProgramsYearTermsProgramCourses")]
+    partial class AddProgramsYearTermsProgramCourses
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -359,7 +362,7 @@ namespace ASI.Basecode.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("TeacherId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TeacherId"));
 
                     b.Property<string>("Position")
                         .IsRequired()
