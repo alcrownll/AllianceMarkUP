@@ -1,0 +1,85 @@
+@{
+    var programs = ViewBag.Programs as List<string> ?? new List<string>();
+    var yearLevels = ViewBag.YearLevels as List<int> ?? new List<int>();
+}
+
+<div class="container-fluid bg-white rounded-4 p-4 shadow-sm mb-3">
+    <form asp-action="AssignedCourses" method="get" id="filterForm">
+        <div class="row g-3 align-items-end">
+            <!-- Filter by Course -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Filter by Course</label>
+                <select class="form-select" name="program" id="filterProgram">
+                    <option value="">All Courses</option>
+                    @foreach (var program in programs)
+                    {
+                        @if (ViewBag.FilterProgram as string == program)
+                        {
+                            <option value="@program" selected>@program</option>
+                        }
+                        else
+                        {
+                            <option value="@program">@program</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Filter by Year Level -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Filter by Year Level</label>
+                <select class="form-select" name="yearLevel" id="filterYearLevel">
+                    <option value="">All Year Levels</option>
+                    @foreach (var year in yearLevels)
+                    {
+                        var yearSuffix = year == 1 ? "st" : year == 2 ? "nd" : year == 3 ? "rd" : "th";
+                        var isSelected = ViewBag.FilterYearLevel as int? == year;
+                        @if (isSelected)
+                        {
+                            <option value="@year" selected>@year@yearSuffix Year</option>
+                        }
+                        else
+                        {
+                            <option value="@year">@year@yearSuffix Year</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Search by Name -->
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Search by Name</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" name="searchName" id="searchName" 
+                           placeholder="Search Name" value="@ViewBag.SearchName">
+                </div>
+            </div>
+
+            <!-- Search by ID Number -->
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Search by ID Number</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" name="searchId" id="searchId" 
+                           placeholder="Search ID No." value="@ViewBag.SearchId">
+                </div>
+            </div>
+
+            <!-- Search Button -->
+            <div class="col-md-2">
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-outline-primary">Search</button>
+                    @if (ViewBag.HasFilters == true)
+                    {
+                        <a href="@Url.Action("AssignedCourses")" class="btn btn-outline-secondary">Clear Filters</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

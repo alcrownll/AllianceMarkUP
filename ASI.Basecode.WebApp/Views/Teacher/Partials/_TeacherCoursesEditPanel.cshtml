@@ -1,0 +1,48 @@
+<!-- Edit Grades of Students -->
+<div id="editPanel" class="col-12 mt-3 d-none">
+    <div class="card border-primary shadow-sm">
+        <!-- Fixed Header: Edit Grades -->
+        <div class="card-header bg-primary text-white fw-bold d-flex align-items-left">Edit Grades</div>
+        
+        <!-- Fixed Header: Course Info -->
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <strong>EDP Code:</strong> <span id="edpCodeText"></span> &nbsp; | 
+                <strong>Subject:</strong> <span id="subjectText"></span> &nbsp; | 
+                <strong>Schedule:</strong> <span id="scheduleText"></span>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" title="Save" onclick="saveGrades()">Save</button>
+                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="hideEditPanel()">Cancel</button>
+            </div>
+        </div>
+        
+        <!-- Table with Fixed Header and Scrollable Body -->
+        <div class="card-body p-0" style="height: 30vh; overflow-y: auto;">
+            <table class="table table-bordered mb-0">
+                <thead class="table-light sticky-top" style="position: sticky; top: 0; z-index: 10;">
+                    <tr>
+                        <th>No.</th>
+                        <th>ID Number</th>
+                        <th>Last Name</th>
+                        <th>First Name</th>
+                        <th>Course/Year</th>
+                        <th>Gender</th>
+                        <th>Prelim</th>
+                        <th>Midterm</th>
+                        <th>Semi-final</th>
+                        <th>Final</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                    <!-- Students will be loaded dynamically -->
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            Select a course and click "Edit" to load students
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

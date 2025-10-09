@@ -264,14 +264,15 @@ namespace ASI.Basecode.Services.Services
             // Apply database-level filters first
             if (!string.IsNullOrEmpty(searchName))
             {
+                var searchNameLower = searchName.ToLower();
                 gradesQuery = gradesQuery.Where(g => 
-                    g.Student.User.FirstName.Contains(searchName) || 
-                    g.Student.User.LastName.Contains(searchName));
+                    g.Student.User.FirstName.ToLower().Contains(searchNameLower) || 
+                    g.Student.User.LastName.ToLower().Contains(searchNameLower));
             }
 
             if (!string.IsNullOrEmpty(searchId))
             {
-                gradesQuery = gradesQuery.Where(g => g.Student.User.IdNumber.Contains(searchId));
+                gradesQuery = gradesQuery.Where(g => g.Student.User.IdNumber.StartsWith(searchId));
             }
 
             if (!string.IsNullOrEmpty(program))

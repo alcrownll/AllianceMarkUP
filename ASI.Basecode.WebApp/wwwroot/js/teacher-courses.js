@@ -1,0 +1,246 @@
+// TeacherCourses JavaScript - Grade Management and Print Functionality
+// Global variables for UI state management
+let currentAssignedCourseId = 0;
+
+// UI-only functions for panel management
+function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
+    currentAssignedCourseId = assignedCourseId;
+    
+    // Update panel header with course information
+    document.getElementById("edpCodeText").innerText = edpCode;
+    document.getElementById("subjectText").innerText = subject;
+    document.getElementById("scheduleText").innerText = schedule;
+    
+    // Load students data from server
+    loadStudentsForCourse(assignedCourseId);
+    
+    // Show the edit panel
+    document.getElementById("editPanel").classList.remove("d-none");
+}
+
+function hideEditPanel() {
+    document.getElementById("editPanel").classList.add("d-none");
+    currentAssignedCourseId = 0;
+}
+
+// AJAX call to C# backend for data loading
+function loadStudentsForCourse(assignedCourseId) {
+    fetch(`/Teacher/GetStudentsForCourse?assignedCourseId=${assignedCourseId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                renderStudentsTable(data.students);
+            } else {
+                showErrorMessage('Error loading students: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorMessage('An error occurred while loading students');
+        });
+}
+
+// UI-only function for rendering students table
+function renderStudentsTable(students) {
+    const tbody = document.getElementById('studentsTableBody');
+    tbody.innerHTML = '';
+
+    if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No students found for this course</td></tr>';
+        return;
+    }
+
+    students.forEach((student, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${student.idNumber || ''}</td>
+            <td>${student.lastName || ''}</td>
+            <td>${student.firstName || ''}</td>
+            <td>${student.courseYear || ''}</td>
+            <td>${student.gender || ''}</td>
+            <td>
+                <input type="number" step="0.1" min="1.0" max="5.0" 
+                       value="${student.prelims || ''}" 
+                       data-grade-type="prelims" 
+                       data-student-id="${student.studentId}"
+                       data-grade-id="${student.gradeId}"
+                       class="form-control form-control-sm grade-input" />
+            </td>
+            <td>
+                <input type="number" step="0.1" min="1.0" max="5.0" 
+                       value="${student.midterm || ''}" 
+                       data-grade-type="midterm" 
+                       data-student-id="${student.studentId}"
+                       data-grade-id="${student.gradeId}"
+                       class="form-control form-control-sm grade-input" />
+            </td>
+            <td>
+                <input type="number" step="0.1" min="1.0" max="5.0" 
+                       value="${student.semiFinal || ''}" 
+                       data-grade-type="semifinal" 
+                       data-student-id="${student.studentId}"
+                       data-grade-id="${student.gradeId}"
+                       class="form-control form-control-sm grade-input" />
+            </td>
+            <td>
+                <input type="number" step="0.1" min="1.0" max="5.0" 
+                       value="${student.final || ''}" 
+                       data-grade-type="final" 
+                       data-student-id="${student.studentId}"
+                       data-grade-id="${student.gradeId}"
+                       class="form-control form-control-sm grade-input" />
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Saving grades
+function saveGrades() {
+    const gradeInputs = document.querySelectorAll('.grade-input');
+    const grades = [];
+
+    // Collect grade data from UI inputs
+    gradeInputs.forEach(input => {
+        const value = parseFloat(input.value);
+        if (!isNaN(value) && value >= 1.0 && value <= 5.0) {
+            const gradeType = input.getAttribute('data-grade-type');
+            const studentId = parseInt(input.getAttribute('data-student-id'));
+            const gradeId = parseInt(input.getAttribute('data-grade-id'));
+
+            let existingGrade = grades.find(g => g.gradeId === gradeId);
+            if (!existingGrade) {
+                existingGrade = {
+                    gradeId: gradeId,
+                    studentId: studentId,
+                    assignedCourseId: currentAssignedCourseId,
+                    prelims: null,
+                    midterm: null,
+                    semiFinal: null,
+                    final: null
+                };
+                grades.push(existingGrade);
+            }
+
+            existingGrade[gradeType] = value;
+        }
+    });
+
+    if (grades.length === 0) {
+        showErrorMessage('No valid grades to save');
+        return;
+    }
+
+    // Send data to C# controller
+    fetch('/Teacher/UpdateGrades', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: JSON.stringify(grades)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showSuccessMessage('Grades saved successfully!');
+            hideEditPanel();
+        } else {
+            showErrorMessage('Error saving grades: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showErrorMessage('An error occurred while saving grades');
+    });
+}
+
+// UI-only utility functions for user feedback
+function showSuccessMessage(message) {
+    // You can replace this with a more sophisticated notification system
+    alert(message);
+}
+
+function showErrorMessage(message) {
+    // You can replace this with a more sophisticated notification system
+    alert(message);
+}
+
+// Print to PDF - StudyLoad pattern
+function printGrades(edpCode, subject, schedule, assignedCourseId) {
+    console.log('Prepare print function called:', edpCode, subject, schedule, assignedCourseId);
+    
+    // Set course info in print area
+    document.getElementById('printEDPCode').textContent = edpCode;
+    document.getElementById('printSubject').textContent = subject;
+    document.getElementById('printSchedule').textContent = schedule;
+    
+    // Load students and populate print table
+    fetch(`/Teacher/GetStudentsForCourse?assignedCourseId=${assignedCourseId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Student data received:', data);
+            if (data.success && data.students) {
+                populatePrintTable(data.students);
+                
+                // Trigger print after a short delay to ensure DOM is updated
+                setTimeout(() => {
+                    console.log('Triggering print dialog...');
+                    window.print();
+                }, 100);
+            } else {
+                alert('Error: No student data found');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading students for printing');
+        });
+}
+
+// Populate the print table - StudyLoad pattern
+function populatePrintTable(students) {
+    const tbody = document.getElementById('printTableBody');
+    tbody.innerHTML = '';
+    
+    if (!students || students.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="10" class="no-rows">No students found.</td>';
+        tbody.appendChild(row);
+        document.getElementById('printTotalStudents').textContent = '0';
+        return;
+    }
+    
+    students.forEach((student, index) => {
+        const remarks = student.final ? (student.final <= 3.0 ? 'PASSED' : 'FAILED') : 'INCOMPLETE';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${student.idNumber || '—'}</td>
+            <td>${student.lastName || '—'}</td>
+            <td>${student.firstName || '—'}</td>
+            <td>${student.courseYear || '—'}</td>
+            <td>${student.prelims ? student.prelims.toFixed(1) : '—'}</td>
+            <td>${student.midterm ? student.midterm.toFixed(1) : '—'}</td>
+            <td>${student.semiFinal ? student.semiFinal.toFixed(1) : '—'}</td>
+            <td>${student.final ? student.final.toFixed(1) : '—'}</td>
+            <td>${remarks}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    document.getElementById('printTotalStudents').textContent = students.length;
+    console.log('Print table populated with', students.length, 'students');
+}

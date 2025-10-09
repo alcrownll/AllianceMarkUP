@@ -1,0 +1,114 @@
+@using Microsoft.AspNetCore.Html
+@{
+    var filteredStudents = ViewBag.FilteredStudents as List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel> ?? new List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel>();
+
+    // Helper function to get grade badge CSS class
+    string GetGradeBadgeClass(decimal? gradeValue)
+    {
+        if (!gradeValue.HasValue) return "";
+        return gradeValue <= 3.0m ? "bg-success" : gradeValue <= 5.0m ? "bg-warning" : "bg-danger";
+    }
+
+    // Helper function to render grade cell
+    IHtmlContent RenderGradeCell(decimal? gradeValue)
+    {
+        if (gradeValue.HasValue)
+        {
+            return Html.Raw($"<span class=\"badge {GetGradeBadgeClass(gradeValue)}\">{gradeValue.Value.ToString("F1")}</span>");
+        }
+        else
+        {
+            return Html.Raw("<span class=\"text-muted\">-</span>");
+        }
+    }
+
+    // Helper function to calculate remarks based on final grade
+    string CalculateRemarks(decimal? finalGrade)
+    {
+        if (!finalGrade.HasValue)
+        {
+            return "INCOMPLETE";
+        }
+        return finalGrade <= 3.0m ? "PASSED" : "FAILED";
+    }
+}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Students and Grades</h4>
+            @if (ViewBag.HasFilters == true && filteredStudents.Any())
+            {
+                <span class="badge bg-primary">@filteredStudents.Count student(s) found</span>
+            }
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">No.</th>
+                        <th style="width: 120px;">ID Number</th>
+                        <th style="width: 150px;">Last Name</th>
+                        <th style="width: 150px;">First Name</th>
+                        <th style="width: 120px;">Course/Year</th>
+                        <th style="width: 80px;" class="d-none d-md-table-cell">Gender</th>
+                        <th style="width: 80px;">Prelim</th>
+                        <th style="width: 80px;">Midterm</th>
+                        <th style="width: 80px;">Semi-final</th>
+                        <th style="width: 80px;">Final</th>
+                        <th style="width: 120px;" class="d-none d-lg-table-cell">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (filteredStudents != null && filteredStudents.Any())
+                    {
+                        @for (int i = 0; i < filteredStudents.Count; i++)
+                        {
+                            var student = filteredStudents[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>@student.IdNumber</td>
+                                <td>@student.LastName</td>
+                                <td>@student.FirstName</td>
+                                <td>@student.CourseYear</td>
+                                <td class="d-none d-md-table-cell">@student.Gender</td>
+                                <td>@RenderGradeCell(student.Prelims)</td>
+                                <td>@RenderGradeCell(student.Midterm)</td>
+                                <td>@RenderGradeCell(student.SemiFinal)</td>
+                                <td>@RenderGradeCell(student.Final)</td>
+                                <td class="d-none d-lg-table-cell">@CalculateRemarks(student.Final)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="11" class="text-center text-muted py-4">
+                                @if (ViewBag.HasFilters == true)
+                                {
+                                    <i class="bi bi-search mb-2 d-block" style="font-size: 2rem;"></i>
+                                    <span>No students found matching the search criteria.</span>
+                                    <br>
+                                    <small>Try adjusting your search filters or clear them to see all students.</small>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-people mb-2 d-block" style="font-size: 2rem;"></i>
+                                    <span>No students found in your courses.</span>
+                                    <br>
+                                    <small>Students will appear here once they are enrolled in your courses and have grade records.</small>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (filteredStudents != null && filteredStudents.Any())
+        {
+            <div class="mt-3">
+                <small class="text-muted">Showing @filteredStudents.Count student(s)</small>
+            </div>
+        }
+    </div>
+</div>

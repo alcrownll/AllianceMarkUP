@@ -3,12 +3,11 @@
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Assigned Courses";
     ViewData["PageHeader"] = "Assigned Courses";
-    var programs = ViewBag.Programs as List<string> ?? new List<string>();
-    var yearLevels = ViewBag.YearLevels as List<int> ?? new List<int>();
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/teacher-grade-print.css" />
 }
 
 @* Debug Information, Tang-tanga lang ni inig finalize na *@
@@ -32,7 +31,9 @@
 @* Antiforgery token for AJAX requests, tang-tanga ni if naay issues sa debugging *@
 @Html.AntiForgeryToken()
 
-<div class="container-fluid">
+@* Main content area - visible on screen *@
+<div class="teacher-courses-container no-print">
+
     <div class="container-fluid">
         <ul class="nav nav-tabs mb-3" id="gradeTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -48,213 +49,11 @@
         </ul>
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
-                @{
-                    var filteredStudents = ViewBag.FilteredStudents as List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel> ?? new List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel>();
-                }
                 <!-- Content for Grade View tab -->
-                <div class="container-fluid bg-white rounded-4 p-4 shadow-sm mb-3">
-                    <form asp-action="AssignedCourses" method="get" id="filterForm">
-                        <div class="row g-3 align-items-end">
-                            <!-- Filter by Course -->
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Filter by Course</label>
-                                <select class="form-select" name="program" id="filterProgram">
-                                    <option value="">All Courses</option>
-                                    @foreach (var program in programs)
-                                    {
-                                        @if (ViewBag.FilterProgram as string == program)
-                                        {
-                                            <option value="@program" selected>@program</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@program">@program</option>
-                                        }
-                                    }
-                                </select>
-                            </div>
-
-                            <!-- Filter by Year Level -->
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Filter by Year Level</label>
-                                <select class="form-select" name="yearLevel" id="filterYearLevel">
-                                    <option value="">All Year Levels</option>
-                                    @foreach (var year in yearLevels)
-                                    {
-                                        @if (ViewBag.FilterYearLevel as int? == year)
-                                        {
-                                            <option value="@year" selected>@year@(year == 1 ? "st" : year == 2 ? "nd" : year == 3 ? "rd" : "th") Year</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@year">@year@(year == 1 ? "st" : year == 2 ? "nd" : year == 3 ? "rd" : "th") Year</option>
-                                        }
-                                    }
-                                </select>
-                            </div>
-
-                            <!-- Search by Name -->
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold">Search by Name</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0">
-                                        <i class="bi bi-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control border-start-0" name="searchName" id="searchName" 
-                                           placeholder="Search Name" value="@ViewBag.SearchName">
-                                </div>
-                            </div>
-
-                            <!-- Search by ID Number -->
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold">Search by ID Number</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white border-end-0">
-                                        <i class="bi bi-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control border-start-0" name="searchId" id="searchId" 
-                                           placeholder="Search ID No." value="@ViewBag.SearchId">
-                                </div>
-                            </div>
-
-                            <!-- Search Button -->
-                            <div class="col-md-2">
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-outline-primary">Search</button>
-                                    @if (ViewBag.HasFilters == true)
-                                    {
-                                        <a href="@Url.Action("AssignedCourses")" class="btn btn-outline-secondary">Clear Filters</a>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesFilters.cshtml")
 
                 <!-- Students and Grades Table -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="mb-0">Students and Grades</h4>
-                            @if (ViewBag.HasFilters == true && filteredStudents.Any())
-                            {
-                                <span class="badge bg-primary">@filteredStudents.Count student(s) found</span>
-                            }
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 50px;">No.</th>
-                                        <th style="width: 120px;">ID Number</th>
-                                        <th style="width: 150px;">Last Name</th>
-                                        <th style="width: 150px;">First Name</th>
-                                        <th style="width: 120px;">Course/Year</th>
-                                        <th style="width: 80px;" class="d-none d-md-table-cell">Gender</th>
-                                        <th style="width: 80px;">Prelim</th>
-                                        <th style="width: 80px;">Midterm</th>
-                                        <th style="width: 80px;">Semi-final</th>
-                                        <th style="width: 80px;">Final</th>
-                                        <th style="width: 120px;" class="d-none d-lg-table-cell">Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (filteredStudents != null && filteredStudents.Any())
-                                    {
-                                        @for (int i = 0; i < filteredStudents.Count; i++)
-                                        {
-                                            var student = filteredStudents[i];
-                                            <tr>
-                                                <td>@(i + 1)</td>
-                                                <td>@student.IdNumber</td>
-                                                <td>@student.LastName</td>
-                                                <td>@student.FirstName</td>
-                                                <td>@student.CourseYear</td>
-                                                <td class="d-none d-md-table-cell">@student.Gender</td>
-                                                <td>
-                                                    @if (student.Prelims.HasValue)
-                                                    {
-                                                        <span class="badge @(student.Prelims <= 3.0m ? "bg-success" : student.Prelims <= 5.0m ? "bg-warning" : "bg-danger")">
-                                                            @student.Prelims.Value.ToString("F1")
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (student.Midterm.HasValue)
-                                                    {
-                                                        <span class="badge @(student.Midterm <= 3.0m ? "bg-success" : student.Midterm <= 5.0m ? "bg-warning" : "bg-danger")">
-                                                            @student.Midterm.Value.ToString("F1")
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (student.SemiFinal.HasValue)
-                                                    {
-                                                        <span class="badge @(student.SemiFinal <= 3.0m ? "bg-success" : student.SemiFinal <= 5.0m ? "bg-warning" : "bg-danger")">
-                                                            @student.SemiFinal.Value.ToString("F1")
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td>
-                                                    @if (student.Final.HasValue)
-                                                    {
-                                                        <span class="badge @(student.Final <= 3.0m ? "bg-success" : student.Final <= 5.0m ? "bg-warning" : "bg-danger")">
-                                                            @student.Final.Value.ToString("F1")
-                                                        </span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-muted">-</span>
-                                                    }
-                                                </td>
-                                                <td class="d-none d-lg-table-cell">@(student.Remarks ?? "-")</td>
-                                            </tr>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <tr>
-                                            <td colspan="11" class="text-center text-muted py-4">
-                                                @if (ViewBag.HasFilters == true)
-                                                {
-                                                    <i class="bi bi-search mb-2 d-block" style="font-size: 2rem;"></i>
-                                                    <span>No students found matching the search criteria.</span>
-                                                    <br>
-                                                    <small>Try adjusting your search filters or clear them to see all students.</small>
-                                                }
-                                                else
-                                                {
-                                                    <i class="bi bi-people mb-2 d-block" style="font-size: 2rem;"></i>
-                                                    <span>No students found in your courses.</span>
-                                                    <br>
-                                                    <small>Students will appear here once they are enrolled in your courses and have grade records.</small>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        @if (filteredStudents != null && filteredStudents.Any())
-                        {
-                            <div class="mt-3">
-                                <small class="text-muted">Showing @filteredStudents.Count student(s)</small>
-                            </div>
-                        }
-                    </div>
-                </div>
+                @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesGradeTable.cshtml")
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
                 <!-- Content for Grade Entry tab -->
@@ -270,7 +69,7 @@
                                         <th>Subject</th>
                                         <th>Type</th>
                                         <th>Units</th>
-                                        <th>Date & Time</th>
+                                        <th>Schedule</th>
                                         <th>Room</th>
                                         <th>Section</th>
                                         <th>Course</th>
@@ -300,7 +99,8 @@
                                                         <button class="btn btn-sm btn-outline-warning" title="Upload">
                                                             Upload
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-success" title="Save">
+                                                        <button class="btn btn-sm btn-outline-success" title="ToPDF" 
+                                                                onclick="printGrades('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
                                                             To PDF
                                                         </button>
                                                     </div>
@@ -320,249 +120,71 @@
                     </div>
                 </div>
 
-                <!-- Edit Grades of Students -->
-                <div id="editPanel" class="col-12 mt-3 d-none" style="height: 40vh; overflow-y: auto;">
-                    <div class="card border-primary shadow-sm">
-                        <div class="card-header bg-primary text-white fw-bold d-flex align-items-left">Edit Grades</div>
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>EDP Code:</strong> <span id="edpCodeText"></span> &nbsp; | 
-                                <strong>Subject:</strong> <span id="subjectText"></span> &nbsp; | 
-                                <strong>Schedule:</strong> <span id="scheduleText"></span>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary" title="Save" onclick="showSaveSuccess()">Save</button>
-                                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="hideEditPanel()">Cancel</button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>No.</th>
-                                            <th>ID Number</th>
-                                            <th>Last Name</th>
-                                            <th>First Name</th>
-                                            <th>Course/Year</th>
-                                            <th>Gender</th>
-                                            <th>Prelim</th>
-                                            <th>Midterm</th>
-                                            <th>Semi-final</th>
-                                            <th>Final</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="studentsTableBody">
-                                        <!-- Students will be loaded dynamically -->
-                                        <tr>
-                                            <td colspan="10" class="text-center text-muted">
-                                                Select a course and click "Edit" to load students
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Edit Grades Panel -->
+                @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesEditPanel.cshtml")
                 
             </div>
         </div>
     </div>
 </div>
 
+<!-- ===================== PRINT-ONLY SHEET ===================== -->
+<div class="print-sheet only-print">
+
+    <div class="sheet-header">
+        <img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-left" />
+        <div class="header-text">
+            <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
+            <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
+            <div>Website: ccs-lm.uc.ude.ph</div>
+            <div>Email: ccs.lm@uc.edu.ph</div>
+        </div>
+        <img src="~/img/ccs-crest.png" alt="CCS" class="logo-right" />
+    </div>
+
+    <!-- FOR NOW CS PA NI, WILL MAKE DYNAMIC LATER -->
+    <div class="title">STUDENT GRADES REPORT</div>
+    <div class="sub-title" id="printSubTitle">First Semester, S.Y. @ViewBag.CurrentSchoolYear</div>
+    <div class="dept">College of Computer Studies</div>
+    <div class="prog">Bachelor of Science in Computer Science</div>
+
+    <div class="info-grid">
+        <div class="lbl">Instructor</div><div class="val">: @User.Identity.Name</div>
+        <div class="lbl">EDP Code</div><div class="val">: <span id="printEDPCode"></span></div>
+        <div class="lbl">Subject</div><div class="val">: <span id="printSubject"></span></div>
+        <div class="lbl">Schedule</div><div class="val">: <span id="printSchedule"></span></div>
+    </div>
+
+    <hr class="sep" />
+
+    <table class="grid">
+        <thead>
+            <tr>
+                <th style="width:30px;">No.</th>
+                <th style="width:90px;">ID Number</th>
+                <th style="width:100px;">Last Name</th>
+                <th style="width:100px;">First Name</th>
+                <th style="width:85px;">Course/Year</th>
+                <th style="width:50px;">Prelim</th>
+                <th style="width:55px;">Midterm</th>
+                <th style="width:60px;">Semi-Final</th>
+                <th style="width:50px;">Final</th>
+                <th style="width:80px;">Remarks</th>
+            </tr>
+        </thead>
+        <tbody id="printTableBody">
+            <!-- Will be populated by JavaScript -->
+        </tbody>
+    </table>
+
+    <div class="footer-row">
+        <span><strong>Total Students:</strong> <span id="printTotalStudents">0</span></span>
+    </div>
+
+    <div class="watermark">OFFICIAL</div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Global variables for UI state management
-        let currentAssignedCourseId = 0;
-
-        // UI-only functions for panel management
-        function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
-            currentAssignedCourseId = assignedCourseId;
-            
-            // Update panel header with course information
-            document.getElementById("edpCodeText").innerText = edpCode;
-            document.getElementById("subjectText").innerText = subject;
-            document.getElementById("scheduleText").innerText = schedule;
-            
-            // Load students data from server
-            loadStudentsForCourse(assignedCourseId, 'Prelim');
-            
-            // Show the edit panel
-            document.getElementById("editPanel").classList.remove("d-none");
-        }
-
-        function hideEditPanel() {
-            document.getElementById("editPanel").classList.add("d-none");
-            currentAssignedCourseId = 0;
-        }
-
-        // AJAX call to C# backend for data loading
-        function loadStudentsForCourse(assignedCourseId, examType) {
-            fetch(`/Teacher/GetStudentsForCourse?assignedCourseId=${assignedCourseId}&examType=${examType}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        renderStudentsTable(data.students, examType);
-                    } else {
-                        showErrorMessage('Error loading students: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showErrorMessage('An error occurred while loading students');
-                });
-        }
-
-        // UI-only function for rendering students table
-        function renderStudentsTable(students, examType) {
-            const tbody = document.getElementById('studentsTableBody');
-            tbody.innerHTML = '';
-
-            if (!students || students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No students found for this course</td></tr>';
-                return;
-            }
-
-            students.forEach((student, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${student.idNumber || ''}</td>
-                    <td>${student.lastName || ''}</td>
-                    <td>${student.firstName || ''}</td>
-                    <td>${student.courseYear || ''}</td>
-                    <td>${student.gender || ''}</td>
-                    <td>
-                        <input type="number" step="0.1" min="1.0" max="5.0" 
-                               value="${student.prelims || ''}" 
-                               data-grade-type="prelims" 
-                               data-student-id="${student.studentId}"
-                               data-grade-id="${student.gradeId}"
-                               ${examType !== 'Prelim' || student.isReadOnly ? 'readonly' : ''} 
-                               class="form-control form-control-sm grade-input" />
-                    </td>
-                    <td>
-                        <input type="number" step="0.1" min="1.0" max="5.0" 
-                               value="${student.midterm || ''}" 
-                               data-grade-type="midterm" 
-                               data-student-id="${student.studentId}"
-                               data-grade-id="${student.gradeId}"
-                               ${examType !== 'Midterm' || student.isReadOnly ? 'readonly' : ''} 
-                               class="form-control form-control-sm grade-input" />
-                    </td>
-                    <td>
-                        <input type="number" step="0.1" min="1.0" max="5.0" 
-                               value="${student.semiFinal || ''}" 
-                               data-grade-type="semifinal" 
-                               data-student-id="${student.studentId}"
-                               data-grade-id="${student.gradeId}"
-                               ${examType !== 'Semi-final' || student.isReadOnly ? 'readonly' : ''} 
-                               class="form-control form-control-sm grade-input" />
-                    </td>
-                    <td>
-                        <input type="number" step="0.1" min="1.0" max="5.0" 
-                               value="${student.final || ''}" 
-                               data-grade-type="final" 
-                               data-student-id="${student.studentId}"
-                               data-grade-id="${student.gradeId}"
-                               ${examType !== 'Final' || student.isReadOnly ? 'readonly' : ''} 
-                               class="form-control form-control-sm grade-input" />
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Saving grades
-        function saveGrades() {
-            const gradeInputs = document.querySelectorAll('.grade-input:not([readonly])');
-            const grades = [];
-
-            // Collect grade data from UI inputs
-            gradeInputs.forEach(input => {
-                const value = parseFloat(input.value);
-                if (!isNaN(value) && value >= 1.0 && value <= 5.0) {
-                    const gradeType = input.getAttribute('data-grade-type');
-                    const studentId = parseInt(input.getAttribute('data-student-id'));
-                    const gradeId = parseInt(input.getAttribute('data-grade-id'));
-
-                    let existingGrade = grades.find(g => g.gradeId === gradeId);
-                    if (!existingGrade) {
-                        existingGrade = {
-                            gradeId: gradeId,
-                            studentId: studentId,
-                            assignedCourseId: currentAssignedCourseId,
-                            prelims: null,
-                            midterm: null,
-                            semiFinal: null,
-                            final: null
-                        };
-                        grades.push(existingGrade);
-                    }
-
-                    existingGrade[gradeType] = value;
-                }
-            });
-
-            if (grades.length === 0) {
-                showErrorMessage('No valid grades to save');
-                return;
-            }
-
-            // Send data to C# controller
-            fetch('/Teacher/UpdateGrades', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                },
-                body: JSON.stringify(grades)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    showSuccessMessage('Grades saved successfully!');
-                    hideEditPanel();
-                } else {
-                    showErrorMessage('Error saving grades: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showErrorMessage('An error occurred while saving grades');
-            });
-        }
-
-        // UI-only utility functions for user feedback
-        function showSuccessMessage(message) {
-            // You can replace this with a more sophisticated notification system
-            alert(message);
-        }
-
-        function showErrorMessage(message) {
-            // You can replace this with a more sophisticated notification system
-            alert(message);
-        }
-
-        // Event listeners setup (UI-only functionality)
-        document.addEventListener('DOMContentLoaded', function() {
-            // Update save button to use the correct function
-            const saveButton = document.querySelector('[onclick="showSaveSuccess()"]');
-            if (saveButton) {
-                saveButton.setAttribute('onclick', 'saveGrades()');
-            }
-        });
-    </script>
+    <script src="~/js/teacher-courses.js"></script>
 }

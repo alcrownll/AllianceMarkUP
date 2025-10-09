@@ -119,6 +119,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.FilteredStudents = filteredStudents;
                 ViewBag.HasFilters = hasFilters;
                 ViewBag.DebugCoursesCount = classSchedules?.Count ?? 0;
+                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
 
                 return View("TeacherCourses", classSchedules);
             }
@@ -348,6 +349,13 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 return 0;
             }
+        }
+
+        private static string GetCurrentSchoolYear()
+        {
+            var now = DateTime.Now;
+            var startYear = now.Month >= 6 ? now.Year : now.Year - 1;
+            return $"{startYear}-{startYear + 1}";
         }
 
         #endregion
