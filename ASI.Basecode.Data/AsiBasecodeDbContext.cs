@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using ASI.Basecode.Data.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using ASI.Basecode.Data.Models;
 
 namespace ASI.Basecode.Data
 {
@@ -64,15 +61,19 @@ namespace ASI.Basecode.Data
             {
                 entity.HasKey(e => e.StudentId);
 
+                entity.Property(e => e.StudentId)
+          .UseIdentityByDefaultColumn();
+
+
                 entity.Property(e => e.AdmissionType).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Program).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Department).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.YearLevel).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.StudentStatus).IsRequired().HasMaxLength(20);
 
-                entity.HasIndex(e => e.UserId).IsUnique();        
+                entity.HasIndex(e => e.UserId).IsUnique();
                 entity.HasOne(d => d.User)
-                      .WithOne(p => p.Student)                    
+                      .WithOne(p => p.Student)
                       .HasForeignKey<Student>(d => d.UserId)
                       .OnDelete(DeleteBehavior.Restrict)
                       .HasConstraintName("FK_Students_Users_UserId");
@@ -84,7 +85,7 @@ namespace ASI.Basecode.Data
                 entity.HasKey(e => e.TeacherId);
 
                 entity.Property(e => e.TeacherId)
-                      .UseIdentityAlwaysColumn(); 
+          .UseIdentityByDefaultColumn();
 
                 entity.Property(e => e.Position).IsRequired().HasMaxLength(50);
 
@@ -137,6 +138,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Type).IsRequired().HasMaxLength(10);
                 entity.Property(e => e.Program).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Semester).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.SchoolYear).IsRequired().HasMaxLength(9);
 
                 entity.HasOne(d => d.Course)
                       .WithMany(p => p.AssignedCourses)
@@ -181,20 +183,20 @@ namespace ASI.Basecode.Data
             });
 
             // 🔹 NOTIFICATION
-        modelBuilder.Entity<Notification>(entity =>
-        {
-            entity.HasKey(e => e.NotificationId);
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.NotificationId);
 
-            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Message).HasMaxLength(500);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Message).HasMaxLength(500);
 
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
+                entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
 
-            entity.HasOne(e => e.User)
-                  .WithMany(u => u.Notifications) // you'll need a `ICollection<Notification>` in User
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+                entity.HasOne(e => e.User)
+                      .WithMany(u => u.Notifications) // you'll need a `ICollection<Notification>` in User
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // 🔹 CALENDAR EVENT
             modelBuilder.Entity<CalendarEvent>(entity =>

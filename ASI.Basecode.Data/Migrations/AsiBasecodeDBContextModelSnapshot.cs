@@ -41,6 +41,11 @@ namespace ASI.Basecode.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("SchoolYear")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
                     b.Property<string>("Semester")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -359,7 +364,7 @@ namespace ASI.Basecode.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("TeacherId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TeacherId"));
 
                     b.Property<string>("Position")
                         .IsRequired()

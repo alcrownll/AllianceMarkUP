@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    [Migration("20251006190650_secondinitial")]
-    partial class secondinitial
+    [Migration("20251010140731_SchoolYearField")]
+    partial class SchoolYearField
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,11 @@ namespace ASI.Basecode.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("SchoolYear")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
                     b.Property<string>("Semester")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -70,6 +75,48 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("AssignedCourses");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
+                {
+                    b.Property<int>("CalendarEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CalendarEventId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndUtc")
+                        .HasColumnType("timestamp");
+
+                    b.Property<bool>("IsAllDay")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("StartUtc")
+                        .HasColumnType("timestamp");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CalendarEventId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CalendarEvents");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
@@ -173,6 +220,101 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("StudentId");
 
                     b.ToTable("Grades");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.Program", b =>
+                {
+                    b.Property<int>("ProgramId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ProgramId"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ProgramCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("ProgramName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("ProgramId");
+
+                    b.HasIndex("ProgramCode")
+                        .IsUnique();
+
+                    b.ToTable("Programs");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.ProgramCourse", b =>
+                {
+                    b.Property<int>("ProgramCourseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ProgramCourseId"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Prerequisite")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProgramId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("YearTermId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProgramCourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("Prerequisite");
+
+                    b.HasIndex("ProgramId");
+
+                    b.HasIndex("YearTermId");
+
+                    b.ToTable("ProgramCourses");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
@@ -371,6 +513,78 @@ namespace ASI.Basecode.Data.Migrations
                     b.ToTable("UserProfiles");
                 });
 
+            modelBuilder.Entity("ASI.Basecode.Data.Models.YearTerm", b =>
+                {
+                    b.Property<int>("YearTermId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("YearTermId"));
+
+                    b.Property<int>("Term")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("YearLevel")
+                        .HasColumnType("integer");
+
+                    b.HasKey("YearTermId");
+
+                    b.HasIndex("YearLevel", "Term")
+                        .IsUnique();
+
+                    b.ToTable("YearTerms");
+
+                    b.HasData(
+                        new
+                        {
+                            YearTermId = 1,
+                            Term = 1,
+                            YearLevel = 1
+                        },
+                        new
+                        {
+                            YearTermId = 2,
+                            Term = 2,
+                            YearLevel = 1
+                        },
+                        new
+                        {
+                            YearTermId = 3,
+                            Term = 1,
+                            YearLevel = 2
+                        },
+                        new
+                        {
+                            YearTermId = 4,
+                            Term = 2,
+                            YearLevel = 2
+                        },
+                        new
+                        {
+                            YearTermId = 5,
+                            Term = 1,
+                            YearLevel = 3
+                        },
+                        new
+                        {
+                            YearTermId = 6,
+                            Term = 2,
+                            YearLevel = 3
+                        },
+                        new
+                        {
+                            YearTermId = 7,
+                            Term = 1,
+                            YearLevel = 4
+                        },
+                        new
+                        {
+                            YearTermId = 8,
+                            Term = 2,
+                            YearLevel = 4
+                        });
+                });
+
             modelBuilder.Entity("ASI.Basecode.Data.Models.AssignedCourse", b =>
                 {
                     b.HasOne("ASI.Basecode.Data.Models.Course", "Course")
@@ -388,6 +602,16 @@ namespace ASI.Basecode.Data.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
+                {
+                    b.HasOne("ASI.Basecode.Data.Models.User", "User")
+                        .WithMany("CalendarEvents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
@@ -420,13 +644,59 @@ namespace ASI.Basecode.Data.Migrations
                     b.Navigation("Student");
                 });
 
+            modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
+                {
+                    b.HasOne("ASI.Basecode.Data.Models.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.ProgramCourse", b =>
+                {
+                    b.HasOne("ASI.Basecode.Data.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ASI.Basecode.Data.Models.Course", "PrerequisiteCourse")
+                        .WithMany()
+                        .HasForeignKey("Prerequisite")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ASI.Basecode.Data.Models.Program", "Program")
+                        .WithMany("ProgramCourses")
+                        .HasForeignKey("ProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ASI.Basecode.Data.Models.YearTerm", "YearTerm")
+                        .WithMany("ProgramCourses")
+                        .HasForeignKey("YearTermId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("PrerequisiteCourse");
+
+                    b.Navigation("Program");
+
+                    b.Navigation("YearTerm");
+                });
+
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
                 {
                     b.HasOne("ASI.Basecode.Data.Models.User", "User")
                         .WithOne("Student")
                         .HasForeignKey("ASI.Basecode.Data.Models.Student", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_Students_Users_UserId");
 
                     b.Navigation("User");
                 });
@@ -437,7 +707,8 @@ namespace ASI.Basecode.Data.Migrations
                         .WithOne("Teacher")
                         .HasForeignKey("ASI.Basecode.Data.Models.Teacher", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_Teachers_Users_UserId");
 
                     b.Navigation("User");
                 });
@@ -465,6 +736,11 @@ namespace ASI.Basecode.Data.Migrations
                     b.Navigation("AssignedCourses");
                 });
 
+            modelBuilder.Entity("ASI.Basecode.Data.Models.Program", b =>
+                {
+                    b.Navigation("ProgramCourses");
+                });
+
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
                 {
                     b.Navigation("Grades");
@@ -477,11 +753,20 @@ namespace ASI.Basecode.Data.Migrations
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.User", b =>
                 {
+                    b.Navigation("CalendarEvents");
+
+                    b.Navigation("Notifications");
+
                     b.Navigation("Student");
 
                     b.Navigation("Teacher");
 
                     b.Navigation("UserProfile");
+                });
+
+            modelBuilder.Entity("ASI.Basecode.Data.Models.YearTerm", b =>
+                {
+                    b.Navigation("ProgramCourses");
                 });
 #pragma warning restore 612, 618
         }
