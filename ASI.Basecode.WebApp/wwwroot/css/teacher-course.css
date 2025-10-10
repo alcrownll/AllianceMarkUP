@@ -288,3 +288,54 @@ body {
     .edit-grade-table tbody tr:hover {
         background-color: #f5f9ff;
     }
+
+/* Excel Upload Modal Styles */
+#excelUploadModal .modal-header {
+    background-color: #0252A9;
+    color: white;
+}
+
+#excelUploadModal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+#excelUploadModal .alert-info {
+    background-color: #e7f3ff;
+    border-color: #b3d9ff;
+    color: #0252A9;
+}
+
+#excelUploadModal .form-control:focus {
+    border-color: #0252A9;
+    box-shadow: 0 0 0 0.2rem rgba(2, 82, 169, 0.25);
+}
+
+#excelUploadModal .btn-outline-primary {
+    color: #0252A9;
+    border-color: #0252A9;
+}
+
+#excelUploadModal .btn-outline-primary:hover{
+    color: #fff;
+    background-color: #0252A9;
+    border-color: #0252A9;
+}
+
+#excelUploadModal .progress-bar {
+    background-color: #0252A9;
+}
+
+#excelUploadModal .alert ul {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+}
+
+#excelUploadModal .alert li {
+    margin-bottom: 0.25rem;
+}
+
+/* Upload button states */
+#uploadExcelBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
