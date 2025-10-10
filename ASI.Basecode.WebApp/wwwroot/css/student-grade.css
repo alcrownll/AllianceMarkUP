@@ -204,6 +204,30 @@ table.grades-table {
     display: block;
 }
 
+/* --- small icon button (same vibe as Study Load) --- */
+.iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(15,61,145,.18);
+    background: #fff;
+    color: #0f3d91;
+    cursor: pointer;
+    transition: background .15s ease, box-shadow .15s ease;
+}
+
+    .iconbtn:hover {
+        background: #f5f8ff;
+        box-shadow: 0 1px 2px rgba(15,61,145,.08);
+    }
+
+    .iconbtn svg {
+        display: block;
+    }
+
 /* ===== SCREEN-ONLY / PRINT-ONLY TOGGLES (like Study Load) ===== */
 @media screen {
     .only-print, .print-sheet.only-print {
