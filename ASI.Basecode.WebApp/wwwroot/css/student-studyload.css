@@ -18,9 +18,9 @@
 
 /*  Layout: match dashboard width */
 .studyload-container {
-    max-width: 1200px; 
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 10px 40px 24px; 
+    padding: 10px 40px 24px;
 }
 
 /* ==== Shared card look ==== */
@@ -42,7 +42,7 @@
     color: #6b7280;
 }
 
-/* Section: School term select (UPDATED to inline like Grades) */
+/* Section: School term select (inline like Grades) */
 .sl-section-title {
     font-weight: 700;
     font-size: 13px;
@@ -50,7 +50,7 @@
     margin-bottom: 6px;
 }
 
-/* NEW — inline toolbar to mirror Grades toolbar */
+/* Inline toolbar (matches Grades toolbar) */
 .sl-term-inline {
     display: flex;
     align-items: center;
@@ -65,7 +65,7 @@
     white-space: nowrap;
 }
 
-/* Keep consistent select look */
+/* Select look */
 .sl-select {
     display: inline-block;
     border: 1px solid rgba(15,61,145,.15);
@@ -78,19 +78,42 @@
     min-width: 200px;
 }
 
-/* Print icon button */
+/* ---------------- Icon Buttons (MATCH Grades icon style) ---------------- */
 .sl-iconbtn {
-    color: #000 !important;
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    border-radius: 8px;
-    height: 34px;
-    width: 34px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(15,61,145,.18);
+    background: #fff;
+    color: #0f3d91; /* SVG uses currentColor */
     cursor: pointer;
+    text-decoration: none; /* also for <a> */
+    transition: background .15s ease, box-shadow .15s ease, color .15s ease, border-color .15s ease, transform .05s ease;
 }
+
+    .sl-iconbtn:hover {
+        background: #f5f8ff; /* light tint on hover */
+        box-shadow: 0 1px 2px rgba(15,61,145,.08);
+    }
+
+    .sl-iconbtn:focus-visible {
+        outline: 2px solid #93c5fd; /* accessible focus ring */
+        outline-offset: 2px;
+    }
+    /* Press state: NOT fully blue (same feel as Grades) */
+    .sl-iconbtn:active {
+        background: #eaf2ff; /* very light blue */
+        color: #0f3d91; /* keep icon blue, not white */
+        border-color: #93c5fd;
+        transform: translateY(1px);
+    }
+
+    .sl-iconbtn svg {
+        display: block;
+    }
 
 /* Info block */
 .sl-infogrid {
@@ -172,6 +195,7 @@
     gap: 8px;
 }
 
+/* Responsive */
 @media (max-width: 992px) {
     .studyload-container {
         padding: 10px 24px 20px;
