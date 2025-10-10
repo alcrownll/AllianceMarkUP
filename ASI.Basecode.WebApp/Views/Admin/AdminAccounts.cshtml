@@ -5,241 +5,249 @@
     var vm = Model ?? new AdminAccountsViewModel();
     ViewData["Title"] = "Admin Accounts";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["PageHeader"] = "Manage Accounts";
 }
 
 <link rel="stylesheet" href="~/css/manage-accounts.css" />
 
-<div class="page-wrap">
-    <div class="brand">College of Computer Studies</div>
+<div class="admin-accounts-container">
+    <div class="card admin-accounts-card">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+            <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+                <!-- Tabs (underline style, not filled buttons) -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link @(vm.ActiveTab == ManageTab.Students ? "active" : "")"
+                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students"
+                           role="tab">Student’s List</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(vm.ActiveTab == ManageTab.Teachers ? "active" : "")"
+                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers"
+                           role="tab">Teacher List</a>
+                    </li>
+                </ul>
 
-    @if (TempData["ImportOk"] != null)
-    {
-        <div class="alert alert-success">@TempData["ImportOk"]</div>
-    }
-    @if (TempData["ImportErr"] != null)
-    {
-        <div class="alert alert-danger">@TempData["ImportErr"]</div>
-    }
+                <!-- Actions (right side) -->
+                <div class="d-flex align-items-center ms-auto" style="gap:.5rem;">
+                    @if (vm.ActiveTab == ManageTab.Students)
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-primary rounded-pill px-4 dropdown-toggle" type="button"
+                                    id="studentsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="me-2">+</span> Add Student
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="studentsDropdown">
+                                <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateStudent">
+                                    Single Record
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <button type="button" class="dropdown-item"
+                                        data-bs-toggle="modal" data-bs-target="#bulkUploadStudentsModal">
+                                    Student List (Bulk Upload)
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-primary rounded-pill px-4 dropdown-toggle" type="button"
+                                    id="teachersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="me-2">+</span> Add Teacher
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="teachersDropdown">
+                                <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateTeacher">
+                                    Single Record
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <button type="button" class="dropdown-item"
+                                        data-bs-toggle="modal" data-bs-target="#bulkUploadTeachersModal">
+                                    Teacher List (Bulk Upload)
+                                </button>
+                            </div>
+                        </div>
+                    }
 
-    <div class="toolbar d-flex align-items-center justify-content-between">
-        <div class="tabs d-flex align-items-center">
-            <a class="tab @(vm.ActiveTab == ManageTab.Students ? "active" : "")"
-               asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Student’s List</a>
-
-            <a class="tab @(vm.ActiveTab == ManageTab.Teachers ? "active" : "")"
-               asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Teacher List</a>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="printUsersBtn">
+                        View Suspended Accounts
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="actions d-flex align-items-center gap-2">
-            @if (vm.ActiveTab == ManageTab.Students)
+        <div class="card-body">
+            @if (TempData["ImportOk"] != null)
             {
-                <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle" type="button"
-                            id="studentsDropdown"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        + Add Student
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="studentsDropdown">
-                        <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateStudent">
-                            Single Record
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <button type="button" class="dropdown-item"
-                                data-bs-toggle="modal" data-bs-target="#bulkUploadStudentsModal">
-                            Student List (Bulk Upload)
-                        </button>
-                    </div>
-                </div>
+                <div class="alert alert-success">@TempData["ImportOk"]</div>
             }
-            else
+            @if (TempData["ImportErr"] != null)
             {
-                <div class="dropdown">
-                    <button class="btn btn-primary dropdown-toggle" type="button"
-                            id="teachersDropdown"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                        + Add Teacher
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="teachersDropdown">
-                        <a class="dropdown-item" asp-controller="AdminAccounts" asp-action="CreateTeacher">
-                            Single Record
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <button type="button" class="dropdown-item"
-                                data-bs-toggle="modal" data-bs-target="#bulkUploadTeachersModal">
-                            Teacher List (Bulk Upload)
-                        </button>
-                    </div>
-                </div>
+                <div class="alert alert-danger">@TempData["ImportErr"]</div>
             }
 
-            <button type="button" class="btn btn-primary" id="printUsersBtn">
-                View Suspend Account
-            </button>
-        </div>
-    </div>
+            <div class="table-wrap">
+                @if (vm.ActiveTab == ManageTab.Students)
+                {
+                    <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
+                        <input type="hidden" name="tab" value="students" />
 
-    <div class="panel">
-        <div class="table-wrap">
-            @if (vm.ActiveTab == ManageTab.Students)
-            {
-                <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
-                    <input type="hidden" name="tab" value="students" />
+                        <table class="accounts-table table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Program</th>
+                                    <th>Year Level</th>
+                                    <th>Name</th>
+                                    <th>ID Number</th>
+                                    <th></th>
+                                </tr>
 
-                    <table class="accounts-table">
-                        <thead>
-                            <tr>
-                                <th>Program</th>
-                                <th>Year Level</th>
-                                <th>Name</th>
-                                <th>ID Number</th>
-                                <th></th>
-                            </tr>
+                                <tr class="filters-row">
+                                    <th>
+                                        <select name="program" class="form-select" onchange="this.form.submit()">
+                                            <option value="">All Programs</option>
+                                            @foreach (var p in vm.Programs)
+                                            {
+                                                <option value="@p" selected="@(vm.Filters?.Program == p ? "selected" : null)">@p</option>
+                                            }
+                                        </select>
+                                    </th>
+                                    <th>
+                                        <select name="yearLevel" class="form-select" onchange="this.form.submit()">
+                                            <option value="">All Year Levels</option>
+                                            @foreach (var y in vm.YearLevels)
+                                            {
+                                                <option value="@y" selected="@(vm.Filters?.YearLevel == y ? "selected" : null)">@y</option>
+                                            }
+                                        </select>
+                                    </th>
+                                    <th>
+                                        <input name="name" class="form-control"
+                                               value="@(vm.Filters?.Name ?? "")"
+                                               placeholder="Search by Name" />
+                                    </th>
+                                    <th>
+                                        <input name="idNumber" class="form-control"
+                                               value="@(vm.Filters?.IdNumber ?? "")"
+                                               placeholder="Search by ID Number" />
+                                    </th>
+                                    <th class="text-end">
+                                        <button type="submit" class="btn btn-outline btn-xs">Search</button>
+                                        <a class="btn btn-link btn-xs"
+                                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Reset</a>
+                                    </th>
+                                </tr>
+                            </thead>
 
-                            <tr class="filters-row">
-                                <th>
-                                    <select name="program" class="form-select" onchange="this.form.submit()">
-                                        <option value="">All Programs</option>
-                                        @foreach (var p in vm.Programs)
-                                        {
-                                            <option value="@p" selected="@(vm.Filters?.Program == p ? "selected" : null)">@p</option>
-                                        }
-                                    </select>
-                                </th>
-                                <th>
-                                    <select name="yearLevel" class="form-select" onchange="this.form.submit()">
-                                        <option value="">All Year Levels</option>
-                                        @foreach (var y in vm.YearLevels)
-                                        {
-                                            <option value="@y" selected="@(vm.Filters?.YearLevel == y ? "selected" : null)">@y</option>
-                                        }
-                                    </select>
-                                </th>
-                                <th>
-                                    <input name="name" class="form-control"
-                                           value="@(vm.Filters?.Name ?? "")"
-                                           placeholder="Search by Name" />
-                                </th>
-                                <th>
-                                    <input name="idNumber" class="form-control"
-                                           value="@(vm.Filters?.IdNumber ?? "")"
-                                           placeholder="Search by ID Number" />
-                                </th>
-                                <th>
-                                    <button type="submit" class="btn btn-outline btn-xs">Apply</button>
-                                    <a class="btn btn-link btn-xs"
-                                       asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Reset</a>
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @if (vm.Students != null && vm.Students.Count > 0)
-                            {
-                                foreach (var s in vm.Students)
+                            <tbody>
+                                @if (vm.Students != null && vm.Students.Count > 0)
+                                {
+                                    foreach (var s in vm.Students)
+                                    {
+                                        <tr>
+                                            <td class="text-center"><span class="chip">@s.Program</span></td>
+                                            <td class="text-center">@s.YearLevel</td>
+                                            <td class="text-start">@s.FullName</td>
+                                            <td class="text-center">@s.IdNumber</td>
+                                            <td class="text-end">
+                                                <div class="row-actions">
+                                                    <a class="btn btn-primary btn-sm rounded-pill"
+                                                       asp-controller="AdminAccounts" asp-action="Student"
+                                                       asp-route-userId="@s.UserId">
+                                                        View
+                                                    </a>
+                                                    <button type="button"
+                                                            class="btn btn-danger btn-sm rounded-pill"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmSuspendModal"
+                                                            data-user-id="@s.UserId"
+                                                            data-tab="students"
+                                                            data-name="@s.FullName">
+                                                        Suspend
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
                                 {
                                     <tr>
-                                        <td><span class="chip">@s.Program</span></td>
-                                        <td>@s.YearLevel</td>
-                                        <td>@s.FullName</td>
-                                        <td>@s.IdNumber</td>
-                                        <td>
-                                            <div class="row-actions">
-                                                <a class="btn btn-primary btn-sm rounded-pill"
-                                                   asp-controller="AdminAccounts" asp-action="Student"
-                                                   asp-route-userId="@s.UserId">
-                                                    View
-                                                </a>
-                                                <button type="button"
-                                                        class="btn btn-danger btn-sm rounded-pill"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#confirmSuspendModal"
-                                                        data-user-id="@s.UserId"
-                                                        data-tab="students"
-                                                        data-name="@s.FullName">
-                                                    Suspend
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <td colspan="5" class="empty-row">No results found.</td>
                                     </tr>
                                 }
-                            }
-                            else
-                            {
+                            </tbody>
+                        </table>
+                    </form>
+                }
+                else
+                {
+                    <form id="teacherFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
+                        <input type="hidden" name="tab" value="teachers" />
+
+                        <table class="accounts-table table align-middle">
+                            <thead class="table-light">
                                 <tr>
-                                    <td colspan="5" class="empty-row">No results found.</td>
+                                    <th>Full Name</th>
+                                    <th>Position</th>
+                                    <th></th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                </form>
-            }
-            else
-            {
-                <form id="teacherFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
-                    <input type="hidden" name="tab" value="teachers" />
 
-                    <table class="accounts-table">
-                        <thead>
-                            <tr>
-                                <th>Full Name</th>
-                                <th>Position</th>
-                                <th></th>
-                            </tr>
+                                <tr class="filters-row">
+                                    <th>
+                                        <input name="name" class="form-control"
+                                               value="@(vm.Filters?.Name ?? "")"
+                                               placeholder="Search by Name" />
+                                    </th>
+                                    <th></th>
+                                    <th class="text-end">
+                                        <button type="submit" class="btn btn-outline btn-xs">Search</button>
+                                        <a class="btn btn-link btn-xs"
+                                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Reset</a>
+                                    </th>
+                                </tr>
+                            </thead>
 
-                            <tr class="filters-row">
-                                <th>
-                                    <input name="name" class="form-control"
-                                           value="@(vm.Filters?.Name ?? "")"
-                                           placeholder="Search by Name" />
-                                </th>
-                                <th><!-- Position filter optional --></th>
-                                <th>
-                                    <button type="submit" class="btn btn-outline btn-xs">Apply</button>
-                                    <a class="btn btn-link btn-xs"
-                                       asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Reset</a>
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @if (vm.Teachers != null && vm.Teachers.Count > 0)
-                            {
-                                foreach (var t in vm.Teachers)
+                            <tbody>
+                                @if (vm.Teachers != null && vm.Teachers.Count > 0)
+                                {
+                                    foreach (var t in vm.Teachers)
+                                    {
+                                        <tr>
+                                            <td class="text-start">@t.FullName</td>
+                                            <td class="text-center">@t.Position</td>
+                                            <td class="text-end">
+                                                <div class="row-actions">
+                                                    <a class="btn btn-primary btn-sm rounded-pill"
+                                                       asp-controller="AdminAccounts" asp-action="Teacher"
+                                                       asp-route-userId="@t.UserId">
+                                                        View
+                                                    </a>
+                                                    <button type="button"
+                                                            class="btn btn-danger btn-sm rounded-pill"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmSuspendModal"
+                                                            data-user-id="@t.UserId"
+                                                            data-tab="teachers"
+                                                            data-name="@t.FullName">
+                                                        Suspend
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
                                 {
                                     <tr>
-                                        <td>@t.FullName</td>
-                                        <td>@t.Position</td>
-                                        <td>
-                                            <div class="row-actions">
-                                                <a class="btn btn-primary btn-sm rounded-pill"
-                                                   asp-controller="AdminAccounts" asp-action="Teacher"
-                                                   asp-route-userId="@t.UserId">
-                                                    View
-                                                </a>
-                                                <button type="button"
-                                                        class="btn btn-danger btn-sm rounded-pill"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#confirmSuspendModal"
-                                                        data-user-id="@t.UserId"
-                                                        data-tab="teachers"
-                                                        data-name="@t.FullName">
-                                                    Suspend
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <td colspan="3" class="empty-row">No results found.</td>
                                     </tr>
                                 }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="3" class="empty-row">No results found.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </form>
-            }
+                            </tbody>
+                        </table>
+                    </form>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -251,40 +259,29 @@
             var btn = e.target.closest('[data-bs-target="#confirmSuspendModal"]');
             if (!btn) return;
 
-            var userId = btn.getAttribute('data-user-id');
-            var tab    = btn.getAttribute('data-tab') || 'students';
-            var name   = btn.getAttribute('data-name') || 'this account';
-
-            document.getElementById('suspendUserId').value = userId;
-            document.getElementById('suspendTab').value    = tab;
-            document.getElementById('suspendUserName').textContent = name;
+            document.getElementById('suspendUserId').value = btn.getAttribute('data-user-id');
+            document.getElementById('suspendTab').value    = btn.getAttribute('data-tab') || 'students';
+            document.getElementById('suspendUserName').textContent = btn.getAttribute('data-name') || 'this account';
           });
         })();
     </script>
 }
 
-<!-- MODALS (Bootstrap 5) -->
+<!-- MODALS (unchanged) -->
 <div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post">
                 @Html.AntiForgeryToken()
-
                 <input type="hidden" name="userId" id="suspendUserId" />
                 <input type="hidden" name="tab" id="suspendTab" />
-
                 <div class="modal-header">
                     <h5 class="modal-title" id="confirmSuspendLabel">Confirm suspension</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
                 <div class="modal-body">
-                    <p class="mb-0">
-                        Are you sure you want to suspend
-                        <strong id="suspendUserName">this account</strong>?
-                    </p>
+                    <p class="mb-0">Are you sure you want to suspend <strong id="suspendUserName">this account</strong>?</p>
                 </div>
-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger">Suspend Account</button>
@@ -303,24 +300,17 @@
             </div>
             <div class="modal-body">
                 <p>Download the template, fill the rows, then upload the completed Excel file.</p>
-
                 <a class="btn btn-outline-primary mb-3"
-                   asp-controller="AdminAccounts"
-                   asp-action="DownloadStudentTemplate">
+                   asp-controller="AdminAccounts" asp-action="DownloadStudentTemplate">
                     Download students template
                 </a>
-
-                <form method="post"
-                      enctype="multipart/form-data"
-                      asp-controller="AdminAccounts"
-                      asp-action="BulkUploadStudents">
+                <form method="post" enctype="multipart/form-data"
+                      asp-controller="AdminAccounts" asp-action="BulkUploadStudents">
                     @Html.AntiForgeryToken()
-
                     <div class="mb-3">
                         <label for="studentFile" class="form-label">Excel file (.xlsx)</label>
                         <input id="studentFile" type="file" name="file" class="form-control" accept=".xlsx" required />
                     </div>
-
                     <div class="modal-footer px-0">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Upload & Import</button>
@@ -340,24 +330,17 @@
             </div>
             <div class="modal-body">
                 <p>Download the template, fill the rows, then upload the file.</p>
-
                 <a class="btn btn-outline-primary mb-3"
-                   asp-controller="AdminAccounts"
-                   asp-action="DownloadTeacherTemplate">
+                   asp-controller="AdminAccounts" asp-action="DownloadTeacherTemplate">
                     Download teachers template
                 </a>
-
-                <form method="post"
-                      enctype="multipart/form-data"
-                      asp-controller="AdminAccounts"
-                      asp-action="BulkUploadTeachers">
+                <form method="post" enctype="multipart/form-data"
+                      asp-controller="AdminAccounts" asp-action="BulkUploadTeachers">
                     @Html.AntiForgeryToken()
-
                     <div class="mb-3">
                         <label for="teacherFile" class="form-label">Excel file (.xlsx)</label>
                         <input id="teacherFile" type="file" name="file" class="form-control" accept=".xlsx" required />
                     </div>
-
                     <div class="modal-footer px-0">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Upload & Import</button>

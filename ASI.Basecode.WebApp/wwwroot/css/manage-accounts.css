@@ -1,142 +1,219 @@
-.page-wrap {
-    padding: 1rem 1.25rem;
+/* ===== CONTAINER & CARD ===== */
+.admin-accounts-container {
+    padding: 1.5rem;
     background: #E5EFFB;
     min-height: 100vh;
-    font-family: system-ui, -apple-system, sans-serif;
 }
 
-.brand {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: #0f172a;
-}
-
-.toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    padding: 0 12px;
-    margin-bottom: 8px;
-}
-
-.tabs {
-    display: flex;
-    gap: .5rem;
-}
-
-.tab {
-    padding: .5rem .75rem;
-    border-radius: .5rem;
-    text-decoration: none;
-    color: #1f2937;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    font-size: .95rem;
-    cursor: pointer;
-    transition: background .2s;
-}
-
-    .tab:hover {
-        background: #f3f4f6;
-    }
-
-    .tab.active {
-        background: #1d4ed8;
-        color: #fff;
-        border-color: #1d4ed8;
-    }
-
-.actions {
-    display: flex;
-    gap: .5rem;
-}
-
-.table-wrap {
-    background: #fff;
+.admin-accounts-card {
+    max-width: 1150px;
+    margin: 0 auto;
     border-radius: .75rem;
-    box-shadow: 0 6px 18px rgba(16,24,40,.08);
+}
+
+    /* ===== TABS ===== */
+    .admin-accounts-card .nav-tabs {
+        gap: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+        .admin-accounts-card .nav-tabs .nav-link {
+            font-weight: 600;
+            color: #495057;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 0.4rem 0.6rem;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+            .admin-accounts-card .nav-tabs .nav-link:hover {
+                color: #0252A9;
+            }
+
+            .admin-accounts-card .nav-tabs .nav-link.active {
+                color: #0252A9;
+                border-bottom: 2px solid #0252A9;
+            }
+
+/* ===== TABLE WRAPPER ===== */
+.table-wrap {
+    margin-top: 1rem;
+    border-top: 1px solid #e5e7eb;
     overflow: auto;
 }
 
+/* ===== TABLE STYLING ===== */
 .accounts-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
+    background: #fff;
+    border-radius: .25rem;
 }
 
     .accounts-table thead th {
-        text-align: left; 
-        padding: .75rem 1rem;
-        background: #f8fafc;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        border-bottom: 1px solid #e5e7eb;
+        text-align: center;
+        padding: .65rem .9rem;
         font-weight: 600;
-        font-size: .95rem;
+        font-size: .9rem;
         color: #374151;
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
     }
 
     .accounts-table tbody td {
-        padding: .75rem 1rem;
-        text-align: center; 
-        font-size: .9rem;
+        padding: .65rem .9rem;
+        font-size: .88rem;
         color: #111827;
     }
 
-    .accounts-table tbody tr:nth-child(even) {
-        background: #fbfdff;
+    .accounts-table tbody tr:nth-child(odd) {
+        background-color: #fcfcfc;
     }
 
-.empty-row {
-    text-align: center;
-    padding: 2rem 1rem;
-    color: #6b7280;
-    font-size: .9rem;
-}
-
-/*para color red pls baaaaa*/
-/*di mo gana basta mo red if kani na file ang latest na modify*/
-.btn.btn-danger {
-    background-color: #dc3545 !important;
-    border-color: #dc3545 !important;
-    color: #fff !important;
-}
-
-    .btn.btn-danger:hover {
-        background-color: #bb2d3b !important;
-        border-color: #b02a37 !important;
-    }
-
+/* ===== FILTERS ROW ===== */
 .filters-row th {
     background: #fff;
-    padding: .5rem 1rem;
+    padding: .4rem .9rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
 .filters-row .form-select,
 .filters-row .form-control {
     width: 100%;
-    padding: .375rem .5rem;
-    font-size: .85rem;
+    padding: .3rem .5rem;
+    font-size: .82rem;
     border: 1px solid #d1d5db;
     border-radius: .375rem;
 }
 
+/* ===== BUTTONS ===== */
+
+/* General blue brand color: #0252A9 */
+.btn.btn-primary,
+#printUsersBtn,
+.filters-row .btn.btn-outline.btn-xs {
+    background-color: #0252A9 !important;
+    border-color: #0252A9 !important;
+    color: #fff !important;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 50px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+    .btn.btn-primary:hover,
+    #printUsersBtn:hover,
+    .filters-row .btn.btn-outline.btn-xs:hover {
+        background-color: #01448E !important;
+        border-color: #01448E !important;
+    }
+
+/* Neutral gray Reset button */
+.filters-row .btn.btn-link.btn-xs {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #d1d5db;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+    .filters-row .btn.btn-link.btn-xs:hover {
+        background-color: #e9ecef;
+        color: #0252A9;
+    }
+
+/* ===== ROW ACTION BUTTONS (View + Suspend) ===== */
+.row-actions {
+    display: inline-flex;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+    /* Default style: outlined (white background) */
+    .row-actions .btn {
+        min-width: 85px;
+        font-size: 0.8rem;
+        padding: 0.35rem 0.75rem; /* smaller height */
+        border-radius: 50px;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        /* --- VIEW BUTTON (blue outline by default) --- */
+        .row-actions .btn.btn-primary {
+            background-color: transparent !important;
+            color: #0252A9 !important;
+            border: 2px solid #0252A9 !important;
+        }
+
+            .row-actions .btn.btn-primary:hover,
+            .row-actions .btn.btn-primary:focus {
+                background-color: #0252A9 !important;
+                color: #fff !important;
+                border-color: #0252A9 !important;
+            }
+
+        /* --- SUSPEND BUTTON (red outline by default) --- */
+        .row-actions .btn.btn-danger {
+            background-color: transparent !important;
+            color: #dc3545 !important;
+            border: 2px solid #dc3545 !important;
+        }
+
+            .row-actions .btn.btn-danger:hover,
+            .row-actions .btn.btn-danger:focus {
+                background-color: #dc3545 !important;
+                color: #fff !important;
+                border-color: #dc3545 !important;
+            }
+
+        /* Optional: subtle lift on hover */
+        .row-actions .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+/* ===== MISC ELEMENTS ===== */
+.empty-row {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: #6b7280;
+    font-size: .88rem;
+}
+
 .chip {
     display: inline-block;
-    padding: .125rem .5rem;
+    padding: .1rem .5rem;
     border-radius: 999px;
     background: #eef2ff;
     color: #3730a3;
-    font-size: .8rem;
+    font-size: .78rem;
     font-weight: 500;
 }
 
-.row-actions {
-    display: flex;
-    gap: .25rem;
-    justify-content: center;
+/* ===== ALIGNMENT HELPERS ===== */
+.accounts-table td.text-start {
+    text-align: left;
+}
+
+.accounts-table td.text-center {
+    text-align: center;
+}
+
+.accounts-table td.text-end {
+    text-align: right;
+}
+
+/* ===== SCROLL FIX FOR MODALS ===== */
+html {
+    overflow-y: scroll;
+}
+
+body.modal-open {
+    padding-right: 0 !important;
 }
