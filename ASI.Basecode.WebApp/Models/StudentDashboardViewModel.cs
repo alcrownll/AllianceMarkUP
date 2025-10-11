@@ -13,7 +13,7 @@ namespace ASI.Basecode.WebApp.Models
         public decimal? CumulativeGwa { get; set; }
         public int CurrentTermUnits { get; set; }
 
-        // Honors flag (tweak to your policy)
+        // Honors flag (1.00–1.70 inclusive)
         public bool IsDeanListEligible { get; set; }
 
         // Chart helpers
@@ -23,5 +23,12 @@ namespace ASI.Basecode.WebApp.Models
         // Context
         public string CurrentSchoolYear { get; set; }    // e.g., "2025-2026"
         public string CurrentSemesterName { get; set; }  // e.g., "1st Semester"
+
+        // Dynamic “Academic Highlights” (averaged across courses)
+        // Each array holds: [Prelims, Midterm, SemiFinal, Final]
+        public decimal?[] Sem1Series { get; set; }
+        public decimal?[] Sem2Series { get; set; }
+        public string Sem1Label { get; set; } = "1st Semester";
+        public string Sem2Label { get; set; } = "2nd Semester";
     }
 }

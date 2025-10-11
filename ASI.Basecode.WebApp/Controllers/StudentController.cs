@@ -19,7 +19,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -89,28 +88,17 @@ namespace ASI.Basecode.WebApp.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
-            // ---- Cumulative GWA (weighted by units) ----
-            decimal totalWeighted = 0m;
-            decimal totalUnitsForWeight = 0m;
-
-            foreach (var g in grades)
-            {
-                var units = (g.AssignedCourse?.Units)
-                            ?? (g.AssignedCourse?.Course?.TotalUnits)
-                            ?? 0;
-                if (units <= 0) units = 1;
-
-                if (!g.Final.HasValue) continue;
-                var gwaValue = MapPercentToGwa((decimal)g.Final.Value);
-
-                totalWeighted += gwaValue * units;
-                totalUnitsForWeight += units;
-            }
-
+            // ------------------ CUMULATIVE GWA FROM ACTUAL GRADES ------------------
+            // We treat g.Final as a 1.00–5.00 GWA-style value (same as in Grades page)
             decimal? cumulativeGwa = null;
-            if (totalUnitsForWeight > 0)
-                cumulativeGwa = Math.Round(totalWeighted / totalUnitsForWeight, 2);
+            var finals = grades.Where(g => g.Final.HasValue).Select(g => g.Final.Value).ToList();
+            if (finals.Any())
+                cumulativeGwa = Math.Round((decimal)finals.Average(), 2);
 
+            // Dean’s List eligibility: 1.00–1.70 inclusive
+            bool isDeanList = cumulativeGwa.HasValue && cumulativeGwa.Value >= 1.00m && cumulativeGwa.Value <= 1.70m;
+
+            // ------------------ CURRENT CONTEXT ------------------
             var currentSy = GetCurrentSchoolYear();            // e.g., "2025-2026"
             var currentSemNameShort = GetCurrentSemesterName(); // "1st"/"2nd"/"Mid"
 
@@ -124,7 +112,57 @@ namespace ASI.Basecode.WebApp.Controllers
                 )
                 .Sum();
 
-            bool isDeanList = cumulativeGwa.HasValue && cumulativeGwa.Value <= 1.75m;
+            // ------------------ ACADEMIC HIGHLIGHTS (DYNAMIC) ------------------
+            // Group grades by school year & semester text on AssignedCourse.Semester.
+            // We’ll compute, for the LATEST school year present in data, the average
+            // of Prelims/Midterm/SemiFinal/Final within 1st and 2nd semesters.
+            var gradeRows = grades.Select(g =>
+            {
+                var rowSemesterText = g.AssignedCourse?.Semester ?? string.Empty; // e.g., "1st Semester 2025-2026"
+                var sy = ExtractSchoolYear(rowSemesterText) ?? currentSy;
+                // normalize sem name to "1st"/"2nd"
+                var semShort = rowSemesterText.Contains("1", StringComparison.OrdinalIgnoreCase) ? "1st"
+                            : rowSemesterText.Contains("2", StringComparison.OrdinalIgnoreCase) ? "2nd"
+                            : GetCurrentSemesterName();
+
+                return new
+                {
+                    SchoolYear = sy,
+                    SemShort = semShort,
+                    g.Prelims,
+                    g.Midterm,
+                    g.SemiFinal,
+                    g.Final
+                };
+            })
+            .ToList();
+
+            // Pick latest school year present
+            string latestSy = gradeRows
+                .Select(r => r.SchoolYear)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .OrderByDescending(s => s) // string works for "YYYY-YYYY"
+                .FirstOrDefault() ?? currentSy;
+
+            decimal? Avg(IEnumerable<decimal?> xs) => xs.Any(v => v.HasValue)
+                ? Math.Round(xs.Where(v => v.HasValue).Average(v => v.Value), 2)
+                : (decimal?)null;
+
+            decimal?[] MakeSeries(IEnumerable<dynamic> rowsForSem)
+                => new decimal?[]
+                {
+            Avg(rowsForSem.Select(r => (decimal?)r.Prelims)),
+            Avg(rowsForSem.Select(r => (decimal?)r.Midterm)),
+            Avg(rowsForSem.Select(r => (decimal?)r.SemiFinal)),
+            Avg(rowsForSem.Select(r => (decimal?)r.Final))
+                };
+
+            var rowsLatest = gradeRows.Where(r => string.Equals(r.SchoolYear, latestSy, StringComparison.OrdinalIgnoreCase)).ToList();
+            var rowsSem1 = rowsLatest.Where(r => string.Equals(r.SemShort, "1st", StringComparison.OrdinalIgnoreCase)).ToList();
+            var rowsSem2 = rowsLatest.Where(r => string.Equals(r.SemShort, "2nd", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            var sem1Series = MakeSeries(rowsSem1);
+            var sem2Series = MakeSeries(rowsSem2);
 
             var vm = new StudentDashboardViewModel
             {
@@ -135,11 +173,16 @@ namespace ASI.Basecode.WebApp.Controllers
                 CurrentTermUnits = currentTermUnits,
                 IsDeanListEligible = isDeanList,
                 CurrentSchoolYear = currentSy,
-                CurrentSemesterName = currentSemNameShort + " Semester"
+                CurrentSemesterName = currentSemNameShort + " Semester",
+                Sem1Series = sem1Series,
+                Sem2Series = sem2Series,
+                Sem1Label = "1st Semester",
+                Sem2Label = "2nd Semester"
             };
 
             return View("StudentDashboard", vm);
         }
+
 
         // --------------------------------------------------------------------
         // PROFILE
