@@ -14,21 +14,32 @@
     <div class="col-md-9">
         <label class="form-label">Name</label>
         <div class="row g-3 uniform-row">
-            <div class="col-md-3">
-                <input class="form-control" asp-for="LastName" />
-                <div class="caption">(Family Name)</div>
+            <!-- LEFT COLUMN: Last Name + First Name -->
+            <div class="col-md-6">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input class="form-control" asp-for="LastName" />
+                        <div class="caption">(Family Name)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <input class="form-control" asp-for="FirstName" />
+                        <div class="caption">(First Name)</div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <input class="form-control" asp-for="FirstName" />
-                <div class="caption">(First Name)</div>
-            </div>
-            <div class="col-md-3">
-                <input class="form-control" asp-for="MiddleName" />
-                <div class="caption">(Middle Name)</div>
-            </div>
-            <div class="col-md-3">
-                <input class="form-control" asp-for="Suffix" />
-                <div class="caption">(Suffix)</div>
+
+            <!-- RIGHT COLUMN: Middle Name + Suffix -->
+            <div class="col-md-6">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input class="form-control" asp-for="MiddleName" />
+                        <div class="caption">(Middle Name)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <input class="form-control" asp-for="Suffix" />
+                        <div class="caption">(Suffix)</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

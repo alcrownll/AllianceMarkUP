@@ -16,8 +16,15 @@
 @media print {
     /* Use full page and neutralize site chrome */
     @page {
-        size: A4;
+        size: A4 portrait;
         margin: 14mm 14mm;
+    }
+
+    /* Chrome-specific print fixes */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     html, body {
@@ -158,27 +165,45 @@
 
     /* ---------- Table ---------- */
     .grid {
-        border-collapse: collapse;
-        table-layout: fixed;
-        font-size: 10.5px;
-        width: 700px; /* Fixed total width to match column sum */
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        font-size: 12px;
+        width: 700px !important; /* Fixed width for Chrome consistency */
+        max-width: 700px !important;
+        margin: 0 auto; /* Center the table */
+        /* Chrome-specific table fixes */
+        -webkit-border-horizontal-spacing: 0;
+        -webkit-border-vertical-spacing: 0;
+        border-spacing: 0 !important;
     }
 
         .grid thead th {
-            border: 1px solid #bbb;
-            padding: 6px 4px;
+            border: 1px solid #e9f1ff !important;
+            padding: 8px 6px;
             text-align: center;
             font-weight: 600;
             vertical-align: middle;
+            font-size: 11px;
+            background-color: #e9f1ff !important;
+            margin: 0;
+            /* Chrome-specific fixes */
+            box-sizing: border-box !important;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .grid tbody td {
-            border: 1px solid #ddd;
-            padding: 4px;
+            border: 1px solid #e9f1ff !important;
+            padding: 6px;
             vertical-align: middle;
             word-wrap: break-word;
             text-align: center;
             overflow: hidden;
+            font-size: 11px;
+            margin: 0;
+            /* Chrome-specific fixes */
+            box-sizing: border-box !important;
+            -webkit-box-sizing: border-box !important;
         }
 
         /* Left-align text columns */
@@ -203,27 +228,27 @@
 
         .grid .no-rows {
             text-align: center;
-            color: #555;
+            color: #e9f1ff !important;
         }
 
-        /* Specific column styling with absolute widths for perfect alignment */
-        .grid th:nth-child(1), .grid td:nth-child(1) { width: 30px !important; min-width: 30px !important; max-width: 30px !important; } /* No. */
-        .grid th:nth-child(2), .grid td:nth-child(2) { width: 90px !important; min-width: 90px !important; max-width: 90px !important; } /* ID Number */
-        .grid th:nth-child(3), .grid td:nth-child(3) { width: 100px !important; min-width: 100px !important; max-width: 100px !important; } /* Last Name */
-        .grid th:nth-child(4), .grid td:nth-child(4) { width: 100px !important; min-width: 100px !important; max-width: 100px !important; } /* First Name */
-        .grid th:nth-child(5), .grid td:nth-child(5) { width: 85px !important; min-width: 85px !important; max-width: 85px !important; } /* Course/Year */
-        .grid th:nth-child(6), .grid td:nth-child(6) { width: 50px !important; min-width: 50px !important; max-width: 50px !important; } /* Prelim */
-        .grid th:nth-child(7), .grid td:nth-child(7) { width: 55px !important; min-width: 55px !important; max-width: 55px !important; } /* Midterm */
-        .grid th:nth-child(8), .grid td:nth-child(8) { width: 60px !important; min-width: 60px !important; max-width: 60px !important; } /* Semi-Final */
-        .grid th:nth-child(9), .grid td:nth-child(9) { width: 50px !important; min-width: 50px !important; max-width: 50px !important; } /* Final */
-        .grid th:nth-child(10), .grid td:nth-child(10) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; } /* Remarks */
+        /* Column widths using simple percentages */
+        .grid th:nth-child(1), .grid td:nth-child(1) { width: 30px !important; } /* No. */
+        .grid th:nth-child(2), .grid td:nth-child(2) { width: 90px !important; } /* ID Number */
+        .grid th:nth-child(3), .grid td:nth-child(3) { width: 100px !important; } /* Last Name */
+        .grid th:nth-child(4), .grid td:nth-child(4) { width: 100px !important; } /* First Name */
+        .grid th:nth-child(5), .grid td:nth-child(5) { width: 85px !important; } /* Course/Year */
+        .grid th:nth-child(6), .grid td:nth-child(6) { width: 50px !important; } /* Prelim */
+        .grid th:nth-child(7), .grid td:nth-child(7) { width: 55px !important; } /* Midterm */
+        .grid th:nth-child(8), .grid td:nth-child(8) { width: 60px !important; } /* Semi-Final */
+        .grid th:nth-child(9), .grid td:nth-child(9) { width: 50px !important; } /* Final */
+        .grid th:nth-child(10), .grid td:nth-child(10) { width: 80px !important; } /* Remarks */
 
     /* ---------- Footer row ---------- */
     .footer-row {
         display: flex;
         justify-content: flex-end;
-        margin-top: 6px;
-        font-size: 12px;
+        margin-top: 10px;
+        font-size: 14px;
     }
 
     /* ---------- Watermark ---------- */

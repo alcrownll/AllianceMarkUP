@@ -83,4 +83,25 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Semester { get; set; }
         public string ExamType { get; set; }
     }
+
+    public class ExcelGradeUploadModel
+    {
+        public string IdNumber { get; set; }
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        public decimal? Prelims { get; set; }
+        public decimal? Midterm { get; set; }
+        public decimal? SemiFinal { get; set; }
+        public decimal? Final { get; set; }
+    }
+
+    public class ExcelUploadResultModel
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public int ProcessedCount { get; set; }
+        public int ErrorCount { get; set; }
+        public List<string> Errors { get; set; } = new List<string>();
+        public List<ExcelGradeUploadModel> ProcessedGrades { get; set; } = new List<ExcelGradeUploadModel>();
+    }
 }

@@ -1,0 +1,271 @@
+﻿/* ====== STUDYLOAD — PRINT ONLY ========= */
+.only-print {
+    display: none;
+}
+
+.no-print {
+    display: block;
+}
+
+/* Never show print sheet on screen */
+.print-sheet {
+    display: none !important;
+}
+
+@media print {
+    /* === PAGE SETTINGS === */
+    @page {
+        size: A4;
+        margin: 12mm 14mm 12mm 14mm;
+    }
+
+    * {
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: auto !important;
+        height: auto !important;
+        font: 13px/1.35 "Inter","Segoe UI",Arial,sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        overflow: visible !important;
+    }
+
+    /* Hide screen UI */
+    nav, header, footer, .left-sidebar, .right-sidebar, .no-print {
+        display: none !important;
+    }
+
+    /* Reset layout containers */
+    .container, .container-fluid, .content, .content-wrapper, .main-content,
+    .page, .page-wrapper, .app, .app-container, .layout, .dash-wrap,
+    .studyload-container, .sl-card {
+        max-width: none !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    /* Show only the printable sheet */
+    .only-print,
+    .print-sheet.only-print {
+        display: block !important;
+    }
+
+    .print-sheet {
+        position: static !important;
+        width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        margin: 0 auto !important;
+        overflow: visible !important;
+    }
+
+        .print-sheet * {
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+    /* ---------- HEADER ---------- */
+    .sheet-header {
+        display: grid;
+        grid-template-columns: 120px 1fr 120px !important; /* smaller, fits one page */
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px !important;
+    }
+
+        .sheet-header .logo-left,
+        .sheet-header .logo-right {
+            width: 150px !important;
+            height: 150px !important;
+            object-fit: contain !important;
+            display: block !important;
+        }
+
+        .sheet-header .logo-right {
+            justify-self: end;
+        }
+
+        .sheet-header .header-text {
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .sheet-header .u-name {
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: .3px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+    /* ---------- TITLES ---------- */
+    .title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 18px;
+        margin-top: 60px !important; /* extra space above STUDY LOAD */
+    }
+
+    .sub-title, .dept, .prog {
+        text-align: center;
+        font-size: 13px;
+    }
+
+    .sub-title {
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
+    .dept {
+        margin-top: 8px;
+    }
+
+    .prog {
+        margin-top: 2px;
+        margin-bottom: 12px;
+    }
+
+    /* ---------- INFO GRID ---------- */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        row-gap: 4px;
+        column-gap: 6px;
+        margin-top: 60px !important; /* extra space above Name */
+        margin-bottom: 20px;
+        color: #111;
+    }
+
+        .info-grid .lbl {
+            font-weight: 600;
+        }
+
+        .info-grid .val {
+            font-weight: normal;
+        }
+
+    /* ---------- DIVIDER ---------- */
+    .sep {
+        border: none;
+        border-top: 1px solid #bbb;
+        margin: 10px 0 8px;
+    }
+
+    /* ---------- TABLE ---------- */
+    .grid {
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: 10px !important; /* slightly smaller to fit one page */
+        width: 760px;
+        margin: 0 auto;
+    }
+
+        .grid thead th {
+            border: 1px solid #bbb;
+            padding: 5px 4px !important;
+            text-align: center;
+            font-weight: 600;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .grid tbody td {
+            border: 1px solid #ddd;
+            padding: 3px 4px !important;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+
+            /* Alignment */
+            .grid tbody td:nth-child(2),
+            .grid tbody td:nth-child(3),
+            .grid tbody td:nth-child(4),
+            .grid tbody td:nth-child(8) {
+                text-align: left;
+            }
+
+            .grid tbody td:nth-child(1),
+            .grid tbody td:nth-child(5),
+            .grid tbody td:nth-child(6),
+            .grid tbody td:nth-child(7) {
+                text-align: center;
+            }
+
+        .grid tr {
+            page-break-inside: avoid;
+        }
+
+        /* Column widths (sum ~760px) */
+        .grid th:nth-child(1), .grid td:nth-child(1) {
+            width: 80px !important;
+        }
+
+        .grid th:nth-child(2), .grid td:nth-child(2) {
+            width: 110px !important;
+        }
+
+        .grid th:nth-child(3), .grid td:nth-child(3) {
+            width: 200px !important;
+        }
+
+        .grid th:nth-child(4), .grid td:nth-child(4) {
+            width: 140px !important;
+        }
+
+        .grid th:nth-child(5), .grid td:nth-child(5) {
+            width: 50px !important;
+        }
+
+        .grid th:nth-child(6), .grid td:nth-child(6) {
+            width: 60px !important;
+        }
+
+        .grid th:nth-child(7), .grid td:nth-child(7) {
+            width: 60px !important;
+        }
+
+        .grid th:nth-child(8), .grid td:nth-child(8) {
+            width: 120px !important;
+        }
+
+    /* ---------- FOOTER ---------- */
+    .footer-row {
+        display: flex;
+        justify-content: flex-end;
+        margin: 4px auto 0 !important;
+        width: 760px;
+        font-size: 12px;
+    }
+
+    /* ---------- WATERMARK ---------- */
+    .watermark {
+        position: fixed;
+        top: 55%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-35deg);
+        font-size: 130px;
+        font-weight: 700;
+        letter-spacing: 8px;
+        color: #1f2937;
+        opacity: .08;
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    /* Force white background */
+    html, body, .print-sheet, table, td, th {
+        background: #fff !important;
+    }
+}

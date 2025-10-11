@@ -2,6 +2,36 @@
 // Global variables for UI state management
 let currentAssignedCourseId = 0;
 
+// Helper function to calculate weighted GPA and determine remarks
+function calculateRemarksFromGrades(prelims, midterm, semiFinal, final) {
+    // Calculate weighted average using same weights as backend (30%, 30%, 20%, 20%)
+    const components = [
+        { score: prelims, weight: 0.3 },     // 30%
+        { score: midterm, weight: 0.3 },     // 30%
+        { score: semiFinal, weight: 0.2 },   // 20%
+        { score: final, weight: 0.2 }        // 20%
+    ];
+
+    let weightedTotal = 0;
+    let weightSum = 0;
+
+    components.forEach(component => {
+        if (component.score && !isNaN(component.score)) {
+            weightedTotal += component.score * component.weight;
+            weightSum += component.weight;
+        }
+    });
+
+    if (weightSum <= 0) {
+        return 'INCOMPLETE';
+    }
+
+    const gpa = Math.round((weightedTotal / weightSum) * 100) / 100; // Round to 2 decimal places
+    
+    // Determine pass/fail based on GPA (3.0 is passing grade)
+    return gpa <= 3.0 ? 'PASSED' : 'FAILED';
+}
+
 // UI-only functions for panel management
 function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
     currentAssignedCourseId = assignedCourseId;
@@ -223,7 +253,7 @@ function populatePrintTable(students) {
     }
     
     students.forEach((student, index) => {
-        const remarks = student.final ? (student.final <= 3.0 ? 'PASSED' : 'FAILED') : 'INCOMPLETE';
+        const remarks = calculateRemarksFromGrades(student.prelims, student.midterm, student.semiFinal, student.final);
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -244,3 +274,185 @@ function populatePrintTable(students) {
     document.getElementById('printTotalStudents').textContent = students.length;
     console.log('Print table populated with', students.length, 'students');
 }
+
+// Excel Upload Functions
+let currentUploadAssignedCourseId = 0;
+
+function openExcelUploadModal(edpCode, subject, schedule, assignedCourseId) {
+    currentUploadAssignedCourseId = assignedCourseId;
+    
+    // Update course info in modal
+    document.getElementById('uploadCourseInfo').textContent = `${edpCode} - ${subject} | ${schedule}`;
+    
+    // Reset modal state
+    document.getElementById('excelFileInput').value = '';
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('uploadResults').style.display = 'none';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('excelUploadModal'));
+    modal.show();
+}
+
+function downloadTemplate() {
+    if (currentUploadAssignedCourseId === 0) {
+        showErrorMessage('No course selected');
+        return;
+    }
+    
+    // Create a temporary link to download the template
+    const link = document.createElement('a');
+    link.href = `/Teacher/DownloadGradeTemplate?assignedCourseId=${currentUploadAssignedCourseId}`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function uploadExcelFile() {
+    const fileInput = document.getElementById('excelFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showExcelUploadError('Please select an Excel file');
+        return;
+    }
+    
+    if (currentUploadAssignedCourseId === 0) {
+        showExcelUploadError('No course selected');
+        return;
+    }
+    
+    // Validate file type
+    const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel' // .xls
+    ];
+    
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+        showExcelUploadError('Please select a valid Excel file (.xlsx or .xls)');
+        return;
+    }
+    
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showExcelUploadError('File size must be less than 5MB');
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('uploadResults').style.display = 'none';
+    document.getElementById('uploadExcelBtn').disabled = true;
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('excelFile', file);
+    formData.append('assignedCourseId', currentUploadAssignedCourseId);
+    
+    // Upload file
+    fetch('/Teacher/UploadExcelGrades', {
+        method: 'POST',
+        headers: {
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('uploadProgress').style.display = 'none';
+        document.getElementById('uploadExcelBtn').disabled = false;
+        
+        if (data.success) {
+            showExcelUploadSuccess(data.message, data.processedCount, data.errorCount, data.errors);
+            
+            // Refresh the grade data if successful
+            if (currentAssignedCourseId > 0) {
+                loadStudentsForCourse(currentAssignedCourseId);
+            }
+        } else {
+            showExcelUploadError(data.message, data.errors);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('uploadProgress').style.display = 'none';
+        document.getElementById('uploadExcelBtn').disabled = false;
+        showExcelUploadError('An error occurred while uploading the file');
+    });
+}
+
+function showExcelUploadSuccess(message, processedCount, errorCount, errors) {
+    const resultsDiv = document.getElementById('uploadResults');
+    const alertDiv = document.getElementById('uploadResultAlert');
+    const messageDiv = document.getElementById('uploadResultMessage');
+    const errorListDiv = document.getElementById('uploadErrorList');
+    const errorsList = document.getElementById('uploadErrors');
+    
+    alertDiv.className = 'alert alert-success';
+    messageDiv.innerHTML = `
+        <strong>Upload Successful!</strong><br>
+        ${message}<br>
+        <small>Processed: ${processedCount} students</small>
+    `;
+    
+    if (errors && errors.length > 0) {
+        errorsList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+        errorListDiv.style.display = 'block';
+    } else {
+        errorListDiv.style.display = 'none';
+    }
+    
+    resultsDiv.style.display = 'block';
+}
+
+function showExcelUploadError(message, errors) {
+    const resultsDiv = document.getElementById('uploadResults');
+    const alertDiv = document.getElementById('uploadResultAlert');
+    const messageDiv = document.getElementById('uploadResultMessage');
+    const errorListDiv = document.getElementById('uploadErrorList');
+    const errorsList = document.getElementById('uploadErrors');
+    
+    alertDiv.className = 'alert alert-danger';
+    messageDiv.innerHTML = `<strong>Upload Failed!</strong><br>${message}`;
+    
+    if (errors && errors.length > 0) {
+        errorsList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+        errorListDiv.style.display = 'block';
+    } else {
+        errorListDiv.style.display = 'none';
+    }
+    
+    resultsDiv.style.display = 'block';
+}
+
+// Event listeners for Excel upload modal
+document.addEventListener('DOMContentLoaded', function() {
+    // Download template button
+    document.getElementById('downloadTemplateBtn')?.addEventListener('click', downloadTemplate);
+    
+    // Upload excel button
+    document.getElementById('uploadExcelBtn')?.addEventListener('click', uploadExcelFile);
+    
+    // File input change event for validation
+    document.getElementById('excelFileInput')?.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            // Reset previous results
+            document.getElementById('uploadResults').style.display = 'none';
+            
+            // Basic validation
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showExcelUploadError('Please select a valid Excel file (.xlsx or .xls)');
+                this.value = '';
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showExcelUploadError('File size must be less than 5MB');
+                this.value = '';
+                return;
+            }
+        }
+    });
+});

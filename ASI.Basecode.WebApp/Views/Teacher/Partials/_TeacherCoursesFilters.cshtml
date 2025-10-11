@@ -3,9 +3,9 @@
     var yearLevels = ViewBag.YearLevels as List<int> ?? new List<int>();
 }
 
-<div class="container-fluid bg-white rounded-4 p-4 shadow-sm mb-3">
+<div class="container-fluid bg-white rounded-4 p-4 shadow-sm mb-4 teacher-filter-container">
     <form asp-action="AssignedCourses" method="get" id="filterForm">
-        <div class="row g-3 align-items-end">
+        <div class="row g-4 align-items-end">
             <!-- Filter by Course -->
             <div class="col-md-2">
                 <label class="form-label fw-semibold">Filter by Course</label>
@@ -47,13 +47,13 @@
             </div>
 
             <!-- Search by Name -->
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label fw-semibold">Search by Name</label>
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="form-control border-start-0" name="searchName" id="searchName" 
+                    <input type="text" class="form-control border-start-0" name="searchName" id="searchName"
                            placeholder="Search Name" value="@ViewBag.SearchName">
                 </div>
             </div>
@@ -65,18 +65,18 @@
                     <span class="input-group-text bg-white border-end-0">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" class="form-control border-start-0" name="searchId" id="searchId" 
+                    <input type="text" class="form-control border-start-0" name="searchId" id="searchId"
                            placeholder="Search ID No." value="@ViewBag.SearchId">
                 </div>
             </div>
 
             <!-- Search Button -->
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-outline-primary">Search</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-semibold">Search</button>
                     @if (ViewBag.HasFilters == true)
                     {
-                        <a href="@Url.Action("AssignedCourses")" class="btn btn-outline-secondary">Clear Filters</a>
+                        <a href="@Url.Action("AssignedCourses")" class="btn btn-outline-secondary btn-sm fw-semibold">Clear</a>
                     }
                 </div>
             </div>

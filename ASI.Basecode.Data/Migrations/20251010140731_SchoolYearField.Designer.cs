@@ -3,6 +3,7 @@ using System;
 using ASI.Basecode.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    partial class AsiBasecodeDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251010140731_SchoolYearField")]
+    partial class SchoolYearField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -71,7 +74,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("TeacherId");
 
-                    b.ToTable("AssignedCourses", (string)null);
+                    b.ToTable("AssignedCourses");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
@@ -85,37 +88,18 @@ namespace ASI.Basecode.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("EndUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp");
 
                     b.Property<bool>("IsAllDay")
                         .HasColumnType("boolean");
-
-                    b.Property<bool>("IsGlobal")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateOnly?>("LocalEndDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("LocalStartDate")
-                        .HasColumnType("date");
 
                     b.Property<string>("Location")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
                     b.Property<DateTime>("StartUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TimeZoneId")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasDefaultValue("Asia/Manila");
+                        .HasColumnType("timestamp");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -130,11 +114,9 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("CalendarEventId");
 
-                    b.HasIndex("CreatedByUserId");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("CalendarEvents", (string)null);
+                    b.ToTable("CalendarEvents");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
@@ -166,7 +148,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("AssignedCourseId");
 
-                    b.ToTable("ClassSchedules", (string)null);
+                    b.ToTable("ClassSchedules");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Course", b =>
@@ -198,7 +180,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("CourseId");
 
-                    b.ToTable("Courses", (string)null);
+                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Grade", b =>
@@ -237,7 +219,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("Grades", (string)null);
+                    b.ToTable("Grades");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
@@ -250,9 +232,6 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
@@ -273,7 +252,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Program", b =>
@@ -379,7 +358,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Students", (string)null);
+                    b.ToTable("Students");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Teacher", b =>
@@ -403,7 +382,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Teachers", (string)null);
+                    b.ToTable("Teachers");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.User", b =>
@@ -463,7 +442,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("IdNumber")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.UserProfile", b =>
@@ -531,7 +510,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserProfiles", (string)null);
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.YearTerm", b =>
@@ -627,18 +606,10 @@ namespace ASI.Basecode.Data.Migrations
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
                 {
-                    b.HasOne("ASI.Basecode.Data.Models.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ASI.Basecode.Data.Models.User", "User")
                         .WithMany("CalendarEvents")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("CreatedBy");
 
                     b.Navigation("User");
                 });

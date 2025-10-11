@@ -1,58 +1,59 @@
-﻿@* UI-only partial: Add Program Modal *@
+﻿@* Step 1: Program Basic Details *@
 <div class="modal fade" id="addProgramModal" tabindex="-1" aria-labelledby="addProgramLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content shadow">
             <div class="modal-header">
-                <h5 class="modal-title" id="addProgramLabel">Add Program</h5>
+                <h5 class="modal-title" id="addProgramLabel">Add Program — Basic Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form id="addProgramForm" novalidate>
                 <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Step 1 of 2: Enter the program code and name before proceeding to build the curriculum.
+                    </p>
+
                     <div class="row g-3">
-                        <div class="col-sm-4">
+                        <!-- Program Code -->
+                        <div class="col-sm-5">
                             <label class="form-label">Code <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="Code" placeholder="BSCS" maxlength="20" required>
                             <div class="invalid-feedback">Program code is required.</div>
                         </div>
 
-                        <div class="col-sm-8">
+                        <!-- Program Name -->
+                        <div class="col-sm-7">
                             <label class="form-label">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="Name" placeholder="Bachelor of Science in Computer Science" maxlength="150" required>
+                            <input type="text" class="form-control" name="Name"
+                                   placeholder="Bachelor of Science in Computer Science"
+                                   maxlength="150" required>
                             <div class="invalid-feedback">Program name is required.</div>
                         </div>
 
-                        <div class="col-sm-6">
-                            <label class="form-label">Effective School Year <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="EffectiveSchoolYear" placeholder="AY 2025–2026" maxlength="20" required>
-                                <button class="btn btn-outline-secondary" type="button" id="btnSyHelper">Auto</button>
-                            </div>
-                            <div class="form-text">Format like <strong>AY 2025–2026</strong>.</div>
-                            <div class="invalid-feedback">Effective School Year is required.</div>
+                        <!-- Notes -->
+                        <div class="col-12">
+                            <label class="form-label">Description / Notes</label>
+                            <textarea class="form-control" name="Notes" rows="2"
+                                      placeholder="Brief description or internal notes"></textarea>
                         </div>
 
-                        <div class="col-sm-6 d-flex align-items-end">
+                        <!-- Status -->
+                        <div class="col-12 mt-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" disabled>
                                 <label class="form-check-label" for="IsActive">
-                                    Active (will be set after curriculum is complete)
+                                    Active (will be set after curriculum is completed)
                                 </label>
                             </div>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" name="Notes" rows="2" placeholder="Optional notes (UI-only, not saved yet)"></textarea>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveProgram">Save</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="btnNextProgram">Next</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</div> 

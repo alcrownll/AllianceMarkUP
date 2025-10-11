@@ -11,6 +11,7 @@ namespace ASI.Basecode.Services.Interfaces
     public interface IProfileService
     {
         public int GetCurrentUserId();
+        public int GetCurrentTeacherId();
 
         Task<StudentProfileViewModel> GetStudentProfileAsync(int userId);
         Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input);

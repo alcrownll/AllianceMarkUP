@@ -1,0 +1,77 @@
+﻿@* Step 2: Prospectus / Curriculum Builder (UI-only) *@
+<div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xxl">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="prospectusLabel">Build Prospectus</h5>
+                    <div class="text-muted small">
+                        Program: <strong id="sumCode">—</strong> — <span id="sumName">—</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" data-bs-target="#year1" role="tab">I — First Year</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#year2" role="tab">II — Second Year</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#year3" role="tab">III — Third Year</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#year4" role="tab">IV — Fourth Year</a></li>
+                </ul>
+
+                <div class="tab-content pt-3">
+                    @* ---------- YEAR 1 ---------- *@
+                    <div class="tab-pane fade show active" id="year1" role="tabpanel">
+                        <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
+                                 view-data='new ViewDataDictionary(ViewData) { { "Year", 1 } }' />
+                    </div>
+
+                    @* ---------- YEAR 2 ---------- *@
+                    <div class="tab-pane fade" id="year2" role="tabpanel">
+                        <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
+                                 view-data='new ViewDataDictionary(ViewData) { { "Year", 2 } }' />
+                    </div>
+
+                    @* ---------- YEAR 3 ---------- *@
+                    <div class="tab-pane fade" id="year3" role="tabpanel">
+                        <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
+                                 view-data='new ViewDataDictionary(ViewData) { { "Year", 3 } }' />
+                    </div>
+
+                    @* ---------- YEAR 4 ---------- *@
+                    <div class="tab-pane fade" id="year4" role="tabpanel">
+                        <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
+                                 view-data='new ViewDataDictionary(ViewData) { { "Year", 4 } }' />
+                    </div>
+                </div> <!-- /tab-content -->
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="btnBackToProgram">Back</button>
+                <button type="button" class="btn btn-primary" id="btnFinishProspectus">Finish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // back to Step 1
+    document.getElementById('btnBackToProgram')?.addEventListener('click', function () {
+      const m2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
+      const m1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('addProgramModal'));
+      m2.hide(); setTimeout(() => m1.show(), 150);
+    });
+</script>
+
+<style>
+    /* Prospectus modal: wider + keep headers on one line */
+    #programProspectusModal .modal-dialog {
+        max-width: 80vw;
+    }
+
+    #programProspectusModal table th,
+    #programProspectusModal table td {
+        white-space: nowrap;
+    }
+</style>

@@ -11,6 +11,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
+using System.IO;
+using ClosedXML.Excel;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -173,6 +175,145 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Teacher")]
+        [HttpPost]
+        public async Task<IActionResult> UploadExcelGrades(IFormFile excelFile, int assignedCourseId)
+        {
+            try
+            {
+                var teacherId = GetCurrentTeacherId();
+                if (teacherId == 0)
+                    return Json(new { success = false, message = "Teacher not found" });
+
+                if (excelFile == null || excelFile.Length == 0)
+                    return Json(new { success = false, message = "No file uploaded" });
+
+                // Validate file type
+                var allowedExtensions = new[] { ".xlsx", ".xls" };
+                var fileExtension = Path.GetExtension(excelFile.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                    return Json(new { success = false, message = "Only Excel files (.xlsx, .xls) are allowed" });
+
+                // Validate file size (5MB max)
+                if (excelFile.Length > 5 * 1024 * 1024)
+                    return Json(new { success = false, message = "File size must be less than 5MB" });
+
+                // Read file to byte array
+                byte[] fileBytes;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await excelFile.CopyToAsync(memoryStream);
+                    fileBytes = memoryStream.ToArray();
+                }
+
+                // Parse Excel file
+                var parseResult = _teacherCourseService.ParseExcelFile(fileBytes);
+                if (!parseResult.Success)
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = parseResult.Message,
+                        errors = parseResult.Errors 
+                    });
+                }
+
+                // Process and save grades to database
+                var uploadResult = await _teacherCourseService.ProcessExcelGradeUploadAsync(assignedCourseId, parseResult.ProcessedGrades);
+                
+                return Json(new { 
+                    success = uploadResult.Success, 
+                    message = uploadResult.Message,
+                    processedCount = uploadResult.ProcessedCount,
+                    errorCount = uploadResult.ErrorCount,
+                    errors = uploadResult.Errors 
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"An error occurred while processing the Excel file: {ex.Message}" });
+            }
+        }
+
+        [Authorize(Roles = "Teacher")]
+        [HttpGet]
+        public async Task<IActionResult> DownloadGradeTemplate(int assignedCourseId)
+        {
+            try
+            {
+                var teacherId = GetCurrentTeacherId();
+                if (teacherId == 0)
+                    return BadRequest("Teacher not found");
+
+                // Get students for the course
+                var students = await _teacherCourseService.GetStudentGradesForClassAsync(assignedCourseId);
+                
+                // Get course info for filename
+                var courses = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId);
+                var course = courses.FirstOrDefault(c => c.AssignedCourseId == assignedCourseId);
+                var teacherProfile = await _profileService.GetTeacherProfileAsync(_profileService.GetCurrentUserId());
+                
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Grades Template");
+
+                // Add headers
+                worksheet.Cell(1, 1).Value = "ID Number";
+                worksheet.Cell(1, 2).Value = "Last Name";
+                worksheet.Cell(1, 3).Value = "First Name";
+                worksheet.Cell(1, 4).Value = "Prelims";
+                worksheet.Cell(1, 5).Value = "Midterm";
+                worksheet.Cell(1, 6).Value = "Semi-Final";
+                worksheet.Cell(1, 7).Value = "Final";
+
+                // Style headers
+                var headerRange = worksheet.Range(1, 1, 1, 7);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+                headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thick;
+
+                // Add student data
+                for (int i = 0; i < students.Count; i++)
+                {
+                    var student = students[i];
+                    var row = i + 2;
+                    
+                    worksheet.Cell(row, 1).Value = student.IdNumber;
+                    worksheet.Cell(row, 2).Value = student.LastName;
+                    worksheet.Cell(row, 3).Value = student.FirstName;
+                    worksheet.Cell(row, 4).Value = student.Prelims?.ToString() ?? "";
+                    worksheet.Cell(row, 5).Value = student.Midterm?.ToString() ?? "";
+                    worksheet.Cell(row, 6).Value = student.SemiFinal?.ToString() ?? "";
+                    worksheet.Cell(row, 7).Value = student.Final?.ToString() ?? "";
+                }
+
+                // Auto-fit columns
+                worksheet.Columns().AdjustToContents();
+
+                // Add data validation for grade columns (1.0 to 5.0)
+                for (int col = 4; col <= 7; col++)
+                {
+                    var gradeRange = worksheet.Range(2, col, students.Count + 1, col);
+                    gradeRange.CreateDataValidation().Decimal.Between(1.0, 5.0);
+                }
+
+                // Generate file
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                stream.Position = 0;
+
+                // Create filename: TeacherName_EDPCode_Subject
+                var teacherName = $"{teacherProfile?.FirstName}_{teacherProfile?.LastName}".Replace(" ", "_");
+                var edpCode = course?.EDPCode?.Replace(" ", "_") ?? "Unknown";
+                var subject = course?.Subject?.Replace(" ", "_") ?? "Subject";
+                var fileName = $"{teacherName}_{edpCode}_{subject}.xlsx";
+                
+                return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error generating template: {ex.Message}");
+            }
+        }
+
+        [Authorize(Roles = "Teacher")]
         [HttpGet]
         public async Task<IActionResult> SearchStudents(string searchName = null, string searchId = null, 
             string program = null, int? yearLevel = null)
@@ -323,27 +464,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
         private int GetCurrentTeacherId()
         {
-            try
-            {
-                // Get user ID from session or claims
-                var userId = _profileService.GetCurrentUserId();
-                if (userId <= 0)
-                    return 0;
-
-                // Need to query the Teacher table to get the actual TeacherId using the UserId
-                // We'll use the database context through one of our existing services
-                // This is a temporary solution - ideally this should be in a service
-                using (var scope = HttpContext.RequestServices.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
-                    return teacher?.TeacherId ?? 0;
-                }
-            }
-            catch
-            {
-                return 0;
-            }
+            return _profileService.GetCurrentTeacherId();
         }
 
         private static string GetCurrentSchoolYear()

@@ -7,302 +7,41 @@
 }
 
 @section Styles {
-    <style>
-        body {
-            background: #eaf1ff;
-        }
-
-        .grades-page {
-            max-width: 1020px;
-            margin: 0 auto;
-            padding: 16px 0 32px;
-        }
-
-        .grades-card {
-            background: #fff;
-            border-radius: 14px;
-            overflow: hidden;
-        }
-
-        /* Toolbar */
-        .grades-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 16px 18px 10px;
-        }
-
-        .toolbar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .toolbar-label {
-            font-weight: 700;
-            color: #0f3d91;
-            font-size: .85rem;
-            white-space: nowrap;
-        }
-
-        .term-inline {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-            .term-inline select {
-                border: 1px solid rgba(15,61,145,.15);
-                border-radius: 8px;
-                padding: 5px 8px;
-                font-size: .85rem;
-                font-weight: 600;
-                color: #10224f;
-                background: #fff;
-                min-width: 160px;
-            }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0,0,0,0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        .btn-pill {
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: #0f3d91;
-            color: #fff;
-            border: none;
-            font-weight: 700;
-            font-size: .82rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-            .btn-pill:hover {
-                filter: brightness(.95);
-            }
-
-        /* Info (screen) */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 12px 18px;
-        }
-
-        .info-left, .info-right {
-            display: grid;
-            gap: 6px;
-        }
-
-        .info-line {
-            font-size: .78rem;
-            color: #0f172a;
-            white-space: nowrap;
-        }
-
-            .info-line small {
-                color: #6b7aa6;
-                font-size: .78rem;
-                margin-right: 6px;
-            }
-
-            .info-line b {
-                color: #0f172a;
-                font-weight: 600;
-            }
-
-        .divider {
-            height: 1px;
-            background: rgba(15,61,145,.10);
-            margin: 0 18px 10px;
-        }
-
-        /* Table (screen) */
-        .grades-table-wrapper {
-            margin: 0 18px 12px;
-            border: 1px solid rgba(15,61,145,.10);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        table.grades-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: .8rem;
-            table-layout: auto;
-        }
-
-            table.grades-table thead {
-                background: #f0f4ff;
-            }
-
-            table.grades-table th, table.grades-table td {
-                padding: 8px 10px;
-                text-align: left;
-                vertical-align: middle;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            table.grades-table th {
-                font-weight: 700;
-                color: #0f3d91;
-                text-transform: uppercase;
-                font-size: .72rem;
-            }
-
-            table.grades-table tbody tr {
-                border-bottom: 1px solid rgba(15,61,145,.06);
-            }
-
-                table.grades-table tbody tr:hover {
-                    background: rgba(15,61,145,.03);
-                }
-
-        .remarks-pass {
-            color: #1f9d63;
-            font-weight: 700;
-            font-size: .78rem;
-            text-transform: uppercase;
-        }
-
-        .remarks-fail {
-            color: #d9534f;
-            font-weight: 700;
-            font-size: .78rem;
-            text-transform: uppercase;
-        }
-
-        .card-bottom {
-            padding: 0 18px 18px;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        /* Empty state */
-        .empty-state {
-            background: #fff;
-            border-radius: 14px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 6px 18px rgba(15,61,145,.08);
-        }
-
-            .empty-state h3 {
-                margin-bottom: 6px;
-                color: #10224f;
-            }
-
-            .empty-state p {
-                color: #6b7aa6;
-                font-size: .9rem;
-            }
-
-        .no-print {
-            display: inline-flex;
-        }
-
-        /* keep base print-visibility; design is in grade-print.css */
-        @@media print {
-            body {
-                background: #fff;
-            }
-
-                body * {
-                    visibility: hidden;
-                }
-
-            #gradesPrintArea, #gradesPrintArea * {
-                visibility: visible;
-            }
-
-            #gradesPrintArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                box-shadow: none;
-            }
-
-            .no-print {
-                display: none !important;
-            }
-        }
-    </style>
-
-    <link rel="stylesheet" href="~/css/grade-print.css" media="print" />
+    <link rel="stylesheet" href="~/css/student-grade.css" />
+    <link rel="stylesheet" href="~/css/student-grade-print.css" />
 }
 
 @section Scripts {
     <script>
-        function submitTermFilters(){ const f=document.getElementById('termFilterForm'); if(f) f.submit(); }
-        function printGrades(){ window.print(); }
+        function submitTermFilters() {
+            const f = document.getElementById('termFilterForm');
+            if (f) f.submit();
+        }
+
+        function printGrades() {
+            window.print();
+        }
     </script>
 }
 
 <div class="grades-page">
+
     @if (Model?.Grades == null || !Model.Grades.Any())
     {
         <div class="empty-state">
             <h3>No grades available yet</h3>
             <p>Once grades are uploaded to the system, they will appear here.</p>
-            <button class="btn-pill" onclick="printGrades()">Print Records</button>
+
+            <!-- keep a bottom-only print button for empty-state -->
+            <div style="margin-top:18px;">
+                <button class="btn-pill" onclick="printGrades()">Print Records</button>
+            </div>
         </div>
     }
     else
     {
-        <div class="grades-card" id="gradesPrintArea">
-
-            <!-- PRINT-ONLY HEADER: hidden by default; shown via grade-print.css -->
-            <div class="only-print" hidden>
-                <div class="print-header">
-                    <img class="print-logo" src="~/images/uc-logo.png" alt="University of Cebu logo" />
-                    <div class="print-school">
-                        <h2>UNIVERSITY OF CEBU LAPU-<br />LAPU AND MANDAUE</h2>
-                        <div class="addr">
-                            A.C. Cortes Avenue, Mandaue City, Philippines<br />
-                            Website: ccs-lm.uc.ude.ph &nbsp;&nbsp; Email: ccs.lm@uc.edu.ph
-                        </div>
-                    </div>
-                    <img class="print-logo" src="~/images/ccs-logo.png" alt="CCS logo" />
-                </div>
-
-                <div class="print-title"><h3>GRADES</h3></div>
-                <div class="print-subtitle">
-                    <div><strong>@(Model.SelectedSemester ?? Model.Semester)</strong>, S.Y. <strong>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</strong></div>
-                    <div>College of Computer Studies</div>
-                    <div>@Model.Program</div>
-                </div>
-
-                <div class="print-info-lines">
-                    <div class="left">
-                        <div><span>Name :</span><b>@Model.StudentName</b></div>
-                        <div><span>Program :</span><b>@Model.Program</b></div>
-                    </div>
-                    <div class="right">
-                        <div><span>School Year :</span><b>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</b></div>
-                        <div><span>Semester :</span><b>@(Model.SelectedSemester ?? Model.Semester)</b></div>
-                        <div><span>GPA :</span><b>@(Model.Gpa?.ToString("0.0") ?? "—")</b></div>
-                    </div>
-                </div>
-            </div>
-            <!-- /PRINT-ONLY HEADER -->
-            <!-- Screen toolbar -->
+        <!-- ================= SCREEN VERSION ================= -->
+        <div class="grades-card no-print">
             <div class="grades-toolbar">
                 <div class="toolbar-left">
                     <span class="toolbar-label">Select School Term</span>
@@ -324,13 +63,21 @@
                                 <option value="@sem" selected="@(isSelected ? "selected" : null)">@sem</option>
                             }
                         </select>
+
+                        <!-- NEW: print icon beside dropdowns (same UX as Study Load) -->
+                        <button type="button" class="iconbtn" title="Print Grades" onclick="printGrades()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
+                                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <span class="sr-only">Print</span>
+                        </button>
                     </form>
                 </div>
 
-                <button class="btn-pill no-print" type="button" onclick="printGrades()">Print Records</button>
+                <!-- REMOVED the big right-side Print Records button -->
             </div>
 
-            <!-- Info (screen) -->
             <div class="info-grid">
                 <div class="info-left">
                     <div class="info-line"><small>Name :</small><b>@Model.StudentName</b></div>
@@ -344,9 +91,6 @@
                 </div>
             </div>
 
-            <div class="divider"></div>
-
-            <!-- Table -->
             <div class="grades-table-wrapper">
                 <table class="grades-table">
                     <thead>
@@ -384,14 +128,102 @@
                 </table>
             </div>
 
-            <!-- GPA (print-only) -->
-            <div class="gpa-line only-print" hidden>
-                GPA:&nbsp;<b>@(Model.Gpa?.ToString("0.0") ?? "—")</b>
-            </div>
-
+            <!-- Moved the full-size print button to the bottom (like you asked) -->
             <div class="card-bottom">
-                <button class="btn-pill no-print" type="button" onclick="printGrades()">Print Grades</button>
+                <button class="btn-pill" type="button" onclick="printGrades()">Print Records</button>
             </div>
         </div>
+        <!-- ================= /SCREEN VERSION ================= -->
+        <!-- ================= PRINT VERSION ================= -->
+        <div id="gradesPrintArea" class="print-sheet only-print">
+            <div class="sheet-header">
+                <img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-left" />
+                <div class="header-text">
+                    <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
+                    <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
+                    <div>Website: ccs-lm.uc.ude.ph</div>
+                    <div>Email: ccs.lm@uc.edu.ph</div>
+                </div>
+                <img src="~/img/ccs-crest.png" alt="CCS" class="logo-right" />
+            </div>
+
+            <div class="title">GRADES</div>
+            <div class="sub-title">
+                @(Model.SelectedSemester ?? Model.Semester), S.Y. @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)
+            </div>
+            <div class="dept">College of Computer Studies</div>
+            <div class="prog">@Model.Program</div>
+
+            <div class="info-grid">
+                <div class="lbl">Name</div><div class="val">: @Model.StudentName</div>
+                <div class="lbl">School Year</div><div class="val">: @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</div>
+                <div class="lbl">Semester</div><div class="val">: @(Model.SelectedSemester ?? Model.Semester)</div>
+                <div class="lbl">Year Level</div><div class="val">: @Model.YearLevel</div>
+                <div class="lbl">GPA</div><div class="val">: @(Model.Gpa?.ToString("0.0") ?? "—")</div>
+            </div>
+
+            <hr class="sep" />
+
+            <table class="grid">
+                <colgroup>
+                    <col style="width:12%">
+                    <col style="width:26%">
+                    <col style="width:16%">
+                    <col style="width:6%">
+                    <col style="width:6%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:6%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Description</th>
+                        <th>Instructor</th>
+                        <th>Type</th>
+                        <th>Units</th>
+                        <th>Prelim</th>
+                        <th>Midterm</th>
+                        <th>Semi-Final</th>
+                        <th>Final</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Grades?.Any() == true)
+                    {
+                        foreach (var item in Model.Grades)
+                        {
+                            var isPassed = !string.IsNullOrWhiteSpace(item.Remarks) && item.Remarks.ToUpper().Contains("PASS");
+                            <tr>
+                                <td>@item.SubjectCode</td>
+                                <td>@item.Description</td>
+                                <td>@item.Instructor</td>
+                                <td>@item.Type</td>
+                                <td>@item.Units</td>
+                                <td>@(item.Prelims?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.Midterm?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.SemiFinal?.ToString("0.0") ?? "—")</td>
+                                <td>@(item.Final?.ToString("0.0") ?? "—")</td>
+                                <td class="@(isPassed ? "remarks-pass" : "remarks-fail")">@((item.Remarks ?? "").ToUpper())</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="10" class="no-rows">No grades found.</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="footer-row">
+                <span><strong>Total Units:</strong> @Model.Grades.Sum(g => g.Units)</span>
+            </div>
+
+            <div class="watermark">OFFICIAL</div>
+        </div>
+        <!-- ================= /PRINT VERSION ================= -->
     }
 </div>

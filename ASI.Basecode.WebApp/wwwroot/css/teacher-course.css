@@ -1,0 +1,341 @@
+﻿/* ============ TEACHER COURSE PAGE STYLES ============ */
+
+body {
+    background-color: #eef3f9;
+}
+
+/* Center the tab container */
+.grade-tab-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+    /* Pills style (rounded buttons) */
+    .grade-tab-container .nav-pills {
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.25rem;
+        display: inline-flex;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+        /* Each tab button */
+        .grade-tab-container .nav-pills .nav-link {
+            border-radius: 999px;
+            color: #0f172a;
+            font-weight: 600;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+            /* Active tab turns blue */
+            .grade-tab-container .nav-pills .nav-link.active {
+                background-color: #0252A9;
+                color: #fff !important;
+                box-shadow: 0 2px 6px rgba(2, 82, 169, 0.3);
+            }
+
+            /* Hover effect for inactive tabs */
+            .grade-tab-container .nav-pills .nav-link:hover:not(.active) {
+                background-color: #d7e6ff;
+                color: #0252A9;
+            }
+
+/* Table alignment */
+.table th, .table td {
+    vertical-align: middle;
+}
+
+/* Card styling */
+.card {
+    border-radius: .75rem;
+}
+
+/* Buttons */
+.btn-group .btn {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Ensure consistent spacing for content */
+.teacher-courses-container {
+    padding-bottom: 3rem;
+}
+
+/* =========================================== Filter Section Styling ============================================= */
+.teacher-filter-container {
+    margin-top: 1.25rem;
+}
+
+    /* Add space between rows and controls */
+    .teacher-filter-container .row {
+        row-gap: 1.5rem;
+    }
+
+    /* Make dropdowns and inputs more elegant */
+    .teacher-filter-container .form-select,
+    .teacher-filter-container .form-control {
+        border-radius: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Compact search button (filled blue) */
+    .teacher-filter-container .btn-primary {
+        background-color: #0252A9;
+        border-color: #0252A9;
+        font-size: 0.85rem;
+        padding: 0.45rem 0.75rem;
+        transition: 0.2s ease-in-out;
+    }
+
+        .teacher-filter-container .btn-primary:hover {
+            background-color: #013b7e;
+            border-color: #013b7e;
+        }
+
+    /* Adjust the Clear button */
+    .teacher-filter-container .btn-outline-secondary {
+        font-size: 0.85rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    /* Make icons aligned nicely */
+    .teacher-filter-container .input-group-text i {
+        color: #0252A9;
+    }
+
+/* =============================== Students & Grades Table Styling ======================================= */
+.teacher-grades-card {
+    border-left: 16px solid #0252A9; /* blue bar on the left */
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* Table font and spacing */
+.teacher-grade-table {
+    font-size: 0.9rem;
+}
+
+    /* Light blue header background */
+    .teacher-grade-table thead th {
+        background-color: #e9f1ff !important;
+        color: #0f172a;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        border-color: #dee2e6;
+    }
+
+    /* Make cells compact and text smaller */
+    .teacher-grade-table td {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+        color: #1e293b;
+    }
+
+    /* Subtle row hover effect */
+    .teacher-grade-table tbody tr:hover {
+        background-color: #f5f9ff;
+    }
+
+    /* Improve badge visibility */
+    .teacher-grade-table .badge {
+        font-size: 0.75rem;
+        padding: 0.4em 0.6em;
+        border-radius: 0.4rem;
+    }
+
+/* Keep the blue bar visible even on hover */
+.teacher-grades-card:hover {
+    border-left-color: #013b7e;
+    transition: 0.2s ease;
+}
+
+/* ====================================== Grade Entry Table ================================================== */
+.grade-entry-table {
+    font-size: 0.9rem;
+}
+
+    .grade-entry-table thead th {
+        background-color: #e9f1ff !important;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: none;
+        border-color: #dfe7f3;
+    }
+
+    .grade-entry-table td {
+        font-size: 0.85rem;
+        color: #1e293b;
+        padding: 0.55rem 0.75rem;
+    }
+
+/* ===== Icon Buttons ===== */
+.icon-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2f7;
+    color: #374151;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 0 rgba(16,24,40,0.04), inset 0 0 0 1px rgba(16,24,40,0.06);
+}
+
+    .icon-btn i {
+        font-size: 1.15rem;
+    }
+
+    .icon-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(16,24,40,0.12), inset 0 0 0 1px rgba(16,24,40,0.08);
+    }
+
+    .icon-btn:active {
+        transform: scale(0.97);
+    }
+
+/* Color Variants */
+.icon-edit {
+    background-color: #e7f2ff; /* light blue */
+}
+
+.icon-upload {
+    background-color: #fff6cc; /* soft yellow */
+}
+
+.icon-pdf {
+    background-color: #e7f9ee; /* soft green */
+}
+
+/* Tooltip adjustments */
+.tooltip .tooltip-inner {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.5rem;
+}
+
+/* =================================== Edit Grades ======================================= */
+.teacher-edit-card {
+    border-left: 16px solid #0252A9;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-left: -6px;
+    margin-right: -6px;
+}
+
+    /* Header: remove bg, increase size, emphasize text */
+    .teacher-edit-card .card-header:first-child {
+        background: #fff !important;
+        color: #0252A9;
+        font-size: 1.25rem; /* slightly bigger */
+        font-weight: 700; /* bold */
+        border-bottom: none;
+        padding-top: 1rem;
+        padding-bottom: 0.75rem;
+    }
+
+    /* Info section below title */
+    .teacher-edit-card .card-header + .card-header {
+        border-top: none;
+        background: #fff;
+        font-size: 0.9rem;
+    }
+
+    /* Save/Cancel buttons */
+    .teacher-edit-card .btn-primary {
+        background-color: #0252A9;
+        border-color: #0252A9;
+    }
+
+        .teacher-edit-card .btn-primary:hover {
+            background-color: #013b7e;
+            border-color: #013b7e;
+        }
+
+    .teacher-edit-card .btn-danger {
+        background-color: #e53935;
+        border-color: #e53935;
+    }
+
+        .teacher-edit-card .btn-danger:hover {
+            background-color: #c62828;
+            border-color: #c62828;
+        }
+
+.edit-grade-table {
+    font-size: 0.9rem;
+}
+
+    .edit-grade-table thead th {
+        background: #e9f1ff !important;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-color: #dfe7f3;
+    }
+
+    .edit-grade-table td {
+        font-size: 0.85rem;
+        padding: .5rem .75rem;
+        color: #1e293b;
+    }
+
+    .edit-grade-table tbody tr:hover {
+        background-color: #f5f9ff;
+    }
+
+/* Excel Upload Modal Styles */
+#excelUploadModal .modal-header {
+    background-color: #0252A9;
+    color: white;
+}
+
+#excelUploadModal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+#excelUploadModal .alert-info {
+    background-color: #e7f3ff;
+    border-color: #b3d9ff;
+    color: #0252A9;
+}
+
+#excelUploadModal .form-control:focus {
+    border-color: #0252A9;
+    box-shadow: 0 0 0 0.2rem rgba(2, 82, 169, 0.25);
+}
+
+#excelUploadModal .btn-outline-primary {
+    color: #0252A9;
+    border-color: #0252A9;
+}
+
+#excelUploadModal .btn-outline-primary:hover{
+    color: #fff;
+    background-color: #0252A9;
+    border-color: #0252A9;
+}
+
+#excelUploadModal .progress-bar {
+    background-color: #0252A9;
+}
+
+#excelUploadModal .alert ul {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+}
+
+#excelUploadModal .alert li {
+    margin-bottom: 0.25rem;
+}
+
+/* Upload button states */
+#uploadExcelBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

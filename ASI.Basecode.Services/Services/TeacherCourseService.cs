@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using Microsoft.EntityFrameworkCore;
+using ClosedXML.Excel;
 
 namespace ASI.Basecode.Services.Services
 {
@@ -315,10 +317,8 @@ namespace ASI.Basecode.Services.Services
                 var avgSemiFinal = semiFinalValues.Any() ? (decimal?)Math.Round(semiFinalValues.Average(), 2) : null;
                 var avgFinal = finalValues.Any() ? (decimal?)Math.Round(finalValues.Average(), 2) : null;
                 
-                // Use the most recent or relevant remarks
-                var remarks = studentGradeRecords.Where(g => !string.IsNullOrEmpty(g.Remarks))
-                                                .OrderByDescending(g => g.GradeId)
-                                                .FirstOrDefault()?.Remarks ?? "";
+                // Calculate weighted GPA and determine remarks based on student's performance
+                var remarks = CalculateRemarksFromGrades(avgPrelims, avgMidterm, avgSemiFinal, avgFinal);
 
                 result.Add(new StudentGradeViewModel
                 {
@@ -344,6 +344,40 @@ namespace ASI.Basecode.Services.Services
 
 
         #region Private Helper Methods
+
+        private string CalculateRemarksFromGrades(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+        {
+            // Calculate weighted average similar to AdminDashboardService and AdminReportsService
+            var components = new (decimal? Score, decimal Weight)[]
+            {
+                (prelims, 0.3m),     // 30%
+                (midterm, 0.3m),     // 30%
+                (semiFinal, 0.2m),   // 20%
+                (final, 0.2m)        // 20%
+            };
+
+            var weightedTotal = 0m;
+            var weightSum = 0m;
+
+            foreach (var component in components)
+            {
+                if (component.Score.HasValue)
+                {
+                    weightedTotal += component.Score.Value * component.Weight;
+                    weightSum += component.Weight;
+                }
+            }
+
+            if (weightSum <= 0)
+            {
+                return "INCOMPLETE";
+            }
+
+            var gpa = Math.Round(weightedTotal / weightSum, 2);
+            
+            // Determine pass/fail based on GPA (assuming 3.0 is passing grade)
+            return gpa <= 3.0m ? "PASSED" : "FAILED";
+        }
 
         private bool IsYearLevelMatch(string dbYearLevel, int selectedYearLevel)
         {
@@ -427,6 +461,201 @@ namespace ASI.Basecode.Services.Services
                 "BSECE" => "4C",
                 _ => "1A"
             };
+        }
+
+        #endregion
+
+        #region Excel Upload Methods
+
+        public ExcelUploadResultModel ParseExcelFile(byte[] fileBytes)
+        {
+            var result = new ExcelUploadResultModel();
+            var excelGrades = new List<ExcelGradeUploadModel>();
+
+            try
+            {
+                using var stream = new MemoryStream(fileBytes);
+                using var workbook = new XLWorkbook(stream);
+                var worksheet = workbook.Worksheet(1);
+
+                // Expected columns: ID Number, Last Name, First Name, Prelims, Midterm, Semi-Final, Final
+                var rows = worksheet.RowsUsed().Skip(1); // Skip header row
+
+                foreach (var row in rows)
+                {
+                    try
+                    {
+                        var excelGrade = new ExcelGradeUploadModel
+                        {
+                            IdNumber = row.Cell(1).GetString().Trim(),
+                            LastName = row.Cell(2).GetString().Trim(),
+                            FirstName = row.Cell(3).GetString().Trim()
+                        };
+
+                        // Parse numeric grades (allow empty/null values)
+                        if (!string.IsNullOrWhiteSpace(row.Cell(4).GetString()))
+                        {
+                            if (decimal.TryParse(row.Cell(4).GetString(), out decimal prelims) && prelims >= 1.0m && prelims <= 5.0m)
+                                excelGrade.Prelims = prelims;
+                            else
+                                result.Errors.Add($"Row {row.RowNumber()}: Invalid Prelims grade '{row.Cell(4).GetString()}' for {excelGrade.IdNumber}");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(row.Cell(5).GetString()))
+                        {
+                            if (decimal.TryParse(row.Cell(5).GetString(), out decimal midterm) && midterm >= 1.0m && midterm <= 5.0m)
+                                excelGrade.Midterm = midterm;
+                            else
+                                result.Errors.Add($"Row {row.RowNumber()}: Invalid Midterm grade '{row.Cell(5).GetString()}' for {excelGrade.IdNumber}");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(row.Cell(6).GetString()))
+                        {
+                            if (decimal.TryParse(row.Cell(6).GetString(), out decimal semiFinal) && semiFinal >= 1.0m && semiFinal <= 5.0m)
+                                excelGrade.SemiFinal = semiFinal;
+                            else
+                                result.Errors.Add($"Row {row.RowNumber()}: Invalid Semi-Final grade '{row.Cell(6).GetString()}' for {excelGrade.IdNumber}");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(row.Cell(7).GetString()))
+                        {
+                            if (decimal.TryParse(row.Cell(7).GetString(), out decimal final) && final >= 1.0m && final <= 5.0m)
+                                excelGrade.Final = final;
+                            else
+                                result.Errors.Add($"Row {row.RowNumber()}: Invalid Final grade '{row.Cell(7).GetString()}' for {excelGrade.IdNumber}");
+                        }
+
+                        if (string.IsNullOrWhiteSpace(excelGrade.IdNumber))
+                        {
+                            result.Errors.Add($"Row {row.RowNumber()}: ID Number is required");
+                            continue;
+                        }
+
+                        excelGrades.Add(excelGrade);
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"Row {row.RowNumber()}: Error processing row - {ex.Message}");
+                    }
+                }
+
+                result.ProcessedGrades = excelGrades;
+                result.ProcessedCount = excelGrades.Count;
+                result.ErrorCount = result.Errors.Count;
+                result.Success = result.Errors.Count == 0;
+                result.Message = result.Success 
+                    ? $"Successfully parsed {result.ProcessedCount} records" 
+                    : $"Parsed {result.ProcessedCount} records with {result.ErrorCount} errors";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"Error reading Excel file: {ex.Message}";
+                result.Errors.Add(ex.Message);
+            }
+
+            return result;
+        }
+
+        public async Task<ExcelUploadResultModel> ProcessExcelGradeUploadAsync(int assignedCourseId, List<ExcelGradeUploadModel> excelGrades)
+        {
+            var result = new ExcelUploadResultModel();
+            var successCount = 0;
+            var errorCount = 0;
+
+            try
+            {
+                // Get all students and grades for this assigned course
+                var studentsWithGrades = await _ctx.Grades
+                    .Include(g => g.Student)
+                    .ThenInclude(s => s.User)
+                    .Where(g => g.AssignedCourseId == assignedCourseId)
+                    .ToListAsync();
+
+                foreach (var excelGrade in excelGrades)
+                {
+                    try
+                    {
+                        // Find matching student by ID Number
+                        var gradeRecord = studentsWithGrades
+                            .FirstOrDefault(g => g.Student.User.IdNumber.Equals(excelGrade.IdNumber.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                        if (gradeRecord == null)
+                        {
+                            result.Errors.Add($"Student with ID Number '{excelGrade.IdNumber}' not found in this course");
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Validate student name matches (optional but recommended for data integrity)
+                        var studentFullName = $"{gradeRecord.Student.User.FirstName} {gradeRecord.Student.User.LastName}".ToLower();
+                        var excelFullName = $"{excelGrade.FirstName} {excelGrade.LastName}".ToLower();
+                        
+                        if (!studentFullName.Contains(excelGrade.FirstName.ToLower()) || 
+                            !studentFullName.Contains(excelGrade.LastName.ToLower()))
+                        {
+                            result.Errors.Add($"Name mismatch for ID '{excelGrade.IdNumber}': Expected '{studentFullName}', Excel has '{excelFullName}'");
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Update grades (only update non-null values)
+                        var updated = false;
+                        if (excelGrade.Prelims.HasValue && gradeRecord.Prelims != excelGrade.Prelims)
+                        {
+                            gradeRecord.Prelims = excelGrade.Prelims;
+                            updated = true;
+                        }
+                        if (excelGrade.Midterm.HasValue && gradeRecord.Midterm != excelGrade.Midterm)
+                        {
+                            gradeRecord.Midterm = excelGrade.Midterm;
+                            updated = true;
+                        }
+                        if (excelGrade.SemiFinal.HasValue && gradeRecord.SemiFinal != excelGrade.SemiFinal)
+                        {
+                            gradeRecord.SemiFinal = excelGrade.SemiFinal;
+                            updated = true;
+                        }
+                        if (excelGrade.Final.HasValue && gradeRecord.Final != excelGrade.Final)
+                        {
+                            gradeRecord.Final = excelGrade.Final;
+                            updated = true;
+                        }
+
+                        if (updated)
+                        {
+                            _gradeRepository.UpdateGrade(gradeRecord);
+                            successCount++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"Error processing student '{excelGrade.IdNumber}': {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                // Save all changes to database
+                if (successCount > 0)
+                {
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                result.ProcessedCount = successCount;
+                result.ErrorCount = errorCount;
+                result.Success = errorCount == 0 && successCount > 0;
+                result.Message = result.Success 
+                    ? $"Successfully updated {successCount} student grades" 
+                    : $"Updated {successCount} grades with {errorCount} errors";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"Database error: {ex.Message}";
+                result.Errors.Add(ex.Message);
+            }
+
+            return result;
         }
 
         #endregion

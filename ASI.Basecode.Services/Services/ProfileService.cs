@@ -65,6 +65,27 @@ namespace ASI.Basecode.Services.Services
             return userId;
         }
 
+        public int GetCurrentTeacherId()
+        {
+            try
+            {
+                // Get user ID using existing method
+                var userId = GetCurrentUserId();
+                if (userId <= 0)
+                    return 0;
+
+                // Get teacher ID from the teachers repository
+                var teacher = _teachers.GetTeachers()
+                    .FirstOrDefault(t => t.UserId == userId);
+                
+                return teacher?.TeacherId ?? 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
 
         public async Task<StudentProfileViewModel> GetStudentProfileAsync(int userId)
         {

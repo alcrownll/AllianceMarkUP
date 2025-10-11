@@ -6,17 +6,18 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/teacher-course.css" />
     <link rel="stylesheet" href="~/css/teacher-grade-print.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 }
 
 @* Debug Information, Tang-tanga lang ni inig finalize na *@
 @if (ViewBag.DebugUserId != null || ViewBag.DebugTeacherId != null)
 {
     <div class="alert alert-info">
-        <strong>Debug Info:</strong> 
-        UserId: @ViewBag.DebugUserId, 
-        TeacherId: @ViewBag.DebugTeacherId, 
+        <strong>Debug Info:</strong>
+        UserId: @ViewBag.DebugUserId,
+        TeacherId: @ViewBag.DebugTeacherId,
         Courses Count: @ViewBag.DebugCoursesCount
     </div>
 }
@@ -35,18 +36,23 @@
 <div class="teacher-courses-container no-print">
 
     <div class="container-fluid">
-        <ul class="nav nav-tabs mb-3" id="gradeTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="grade-view-tab" data-bs-toggle="tab" data-bs-target="#grade-view" type="button" role="tab" aria-controls="grade-view" aria-selected="true">
-                    Grade View
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="grade-entry-tab" data-bs-toggle="tab" data-bs-target="#grade-entry" type="button" role="tab" aria-controls="grade-entry" aria-selected="false">
-                    Grade Entry
-                </button>
-            </li>
-        </ul>
+
+        @* ======= Centered Grade View / Grade Entry Tabs ======= *@
+        <div class="grade-tab-container">
+            <ul class="nav nav-pills" id="gradeTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="grade-view-tab" data-bs-toggle="tab" data-bs-target="#grade-view" type="button" role="tab" aria-controls="grade-view" aria-selected="true">
+                        <i class="bi bi-table me-1"></i> Grade View
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="grade-entry-tab" data-bs-toggle="tab" data-bs-target="#grade-entry" type="button" role="tab" aria-controls="grade-entry" aria-selected="false">
+                        <i class="bi bi-pencil-square me-1"></i> Grade Entry
+                    </button>
+                </li>
+            </ul>
+        </div>
+
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
                 <!-- Content for Grade View tab -->
@@ -57,13 +63,13 @@
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
                 <!-- Content for Grade Entry tab -->
-                
+
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h4 class="mb-3">Class Schedule</h4>
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle">
-                                <thead class="table-light">
+                            <table class="table table-bordered align-middle grade-entry-table">
+                                <thead>
                                     <tr>
                                         <th>EDP Code</th>
                                         <th>Subject</th>
@@ -73,7 +79,7 @@
                                         <th>Room</th>
                                         <th>Section</th>
                                         <th>Course</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -90,18 +96,33 @@
                                                 <td>@course.Room</td>
                                                 <td>@course.Section</td>
                                                 <td>@course.Course</td>
-                                                <td>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-sm btn-outline-primary" title="Edit" 
+                                                <td class="text-center">
+                                                    <div class="d-inline-flex gap-2">
+                                                        <!-- Edit -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-edit"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="Edit"
                                                                 onclick="showEditPanel('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            Edit
+                                                            <i class="bi bi-pencil-square"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-warning" title="Upload">
-                                                            Upload
+
+                                                        <!-- Upload -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-upload"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="Upload Excel Grades"
+                                                                onclick="openExcelUploadModal('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
+                                                            <i class="bi bi-upload"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-success" title="ToPDF" 
+
+                                                        <!-- To PDF -->
+                                                        <button type="button"
+                                                                class="icon-btn icon-pdf"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="To PDF"
                                                                 onclick="printGrades('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            To PDF
+                                                            <i class="bi bi-file-earmark-text"></i>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -122,7 +143,7 @@
 
                 <!-- Edit Grades Panel -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesEditPanel.cshtml")
-                
+
             </div>
         </div>
     </div>
@@ -160,16 +181,16 @@
     <table class="grid">
         <thead>
             <tr>
-                <th style="width:30px;">No.</th>
-                <th style="width:90px;">ID Number</th>
-                <th style="width:100px;">Last Name</th>
-                <th style="width:100px;">First Name</th>
-                <th style="width:85px;">Course/Year</th>
-                <th style="width:50px;">Prelim</th>
-                <th style="width:55px;">Midterm</th>
-                <th style="width:60px;">Semi-Final</th>
-                <th style="width:50px;">Final</th>
-                <th style="width:80px;">Remarks</th>
+                <th>No.</th>
+                <th>ID Number</th>
+                <th>Last Name</th>
+                <th>First Name</th>
+                <th>Course/Year</th>
+                <th>Prelim</th>
+                <th>Midterm</th>
+                <th>Semi-Final</th>
+                <th>Final</th>
+                <th>Remarks</th>
             </tr>
         </thead>
         <tbody id="printTableBody">
@@ -184,7 +205,100 @@
     <div class="watermark">OFFICIAL</div>
 </div>
 
+<!-- Excel Upload Modal -->
+<div class="modal fade" id="excelUploadModal" tabindex="-1" aria-labelledby="excelUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="excelUploadModalLabel">Upload Excel Grades</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Course Info -->
+                    <div class="col-12 mb-3">
+                        <div class="alert alert-info">
+                            <strong>Course:</strong> <span id="uploadCourseInfo"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <h6>Instructions:</h6>
+                        <ol class="small text-muted">
+                            <li>Download the Excel template to get the correct format with student data</li>
+                            <li>Fill in the grades for Prelims, Midterm, Semi-Final, and Final columns</li>
+                            <li>Grades must be between 1.0 and 5.0</li>
+                            <li>Leave cells blank if no grade is available</li>
+                            <li>Do not modify student information (ID, Name) columns</li>
+                            <li>Remarks are automatically determined by the system based on grades</li>
+                            <li>Upload the completed Excel file</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Download Template Button -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-outline-primary" id="downloadTemplateBtn">
+                            <i class="bi bi-download me-1"></i>Download Excel Template
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="excelFileInput" class="form-label">Select Excel File</label>
+                            <input type="file" class="form-control" id="excelFileInput" accept=".xlsx,.xls">
+                            <div class="form-text">Accepted formats: .xlsx, .xls (Max size: 5MB)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div class="row" id="uploadProgress" style="display: none;">
+                    <div class="col-12">
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
+                                Processing...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Results -->
+                <div class="row" id="uploadResults" style="display: none;">
+                    <div class="col-12">
+                        <div class="alert" id="uploadResultAlert">
+                            <div id="uploadResultMessage"></div>
+                            <div id="uploadErrorList" style="display: none;">
+                                <strong>Errors:</strong>
+                                <ul id="uploadErrors"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="uploadExcelBtn">Upload & Process</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/teacher-courses.js"></script>
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+        });
+    </script>
 }
