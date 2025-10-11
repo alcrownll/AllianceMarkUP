@@ -4,7 +4,6 @@
     var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "");
     var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? "");
 
-    // returns "active" when controller/action match; pass null to ignore action check
     Func<string, string, string> isActive = (ctrl, act) =>
     {
         bool ctrlMatch = string.Equals(currentController, ctrl, System.StringComparison.OrdinalIgnoreCase);
