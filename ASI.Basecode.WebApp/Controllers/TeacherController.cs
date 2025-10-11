@@ -76,10 +76,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 var userId = _profileService.GetCurrentUserId();
                 var teacherId = GetCurrentTeacherId();
                 
-                // Debug information
-                ViewBag.DebugUserId = userId;
-                ViewBag.DebugTeacherId = teacherId;
-                
                 if (teacherId == 0)
                 {
                     TempData["Error"] = $"Unable to identify teacher. UserId: {userId}, TeacherId: {teacherId}. Please check if you have a Teacher record.";
@@ -120,7 +116,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.SearchId = searchId;
                 ViewBag.FilteredStudents = filteredStudents;
                 ViewBag.HasFilters = hasFilters;
-                ViewBag.DebugCoursesCount = classSchedules?.Count ?? 0;
                 ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
 
                 return View("TeacherCourses", classSchedules);

@@ -16,7 +16,6 @@ namespace ASI.Basecode.Data.Models
         public decimal? Midterm { get; set; }
         public decimal? SemiFinal { get; set; }
         public decimal? Final { get; set; }
-        public string Remarks { get; set; }
 
         public Student Student { get; set; }
         public AssignedCourse AssignedCourse { get; set; }

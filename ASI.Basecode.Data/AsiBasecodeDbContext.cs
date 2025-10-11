@@ -175,8 +175,6 @@ namespace ASI.Basecode.Data
             {
                 entity.HasKey(e => e.GradeId);
 
-                entity.Property(e => e.Remarks).HasMaxLength(50);
-
                 entity.HasOne(d => d.Student)
                       .WithMany(p => p.Grades)
                       .HasForeignKey(d => d.StudentId)

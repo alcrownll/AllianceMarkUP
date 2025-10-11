@@ -309,11 +309,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 var teacherUser = assignedCourse?.Teacher?.User;
                 var rowSemester = assignedCourse?.Semester ?? "N/A";
                 var rowSchoolYear = ExtractSchoolYear(rowSemester) ?? defaultSchoolYear;
-                var remarks = !string.IsNullOrWhiteSpace(g.Remarks)
-                    ? g.Remarks
-                    : g.Final.HasValue
-                        ? (g.Final.Value >= 75 ? "PASSED" : "FAILED")
-                        : "N/A";
+                var remarks = CalculateRemarksFromGrades(g.Prelims, g.Midterm, g.SemiFinal, g.Final);
                 return new StudentGradeRowViewModel
                 {
                     SubjectCode = assignedCourse?.EDPCode,
@@ -579,6 +575,41 @@ namespace ASI.Basecode.WebApp.Controllers
             if (now.Month is >= 6 and <= 10) return "1st";
             if (now.Month is >= 11 || now.Month <= 3) return "2nd";
             return "Mid";
+        }
+
+        // Calculate remarks based on grades (same logic as TeacherCourseService)
+        private static string CalculateRemarksFromGrades(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+        {
+            // Calculate weighted average similar to TeacherCourseService
+            var components = new (decimal? Score, decimal Weight)[]
+            {
+                (prelims, 0.3m),     // 30%
+                (midterm, 0.3m),     // 30%
+                (semiFinal, 0.2m),   // 20%
+                (final, 0.2m)        // 20%
+            };
+
+            var weightedTotal = 0m;
+            var weightSum = 0m;
+
+            foreach (var component in components)
+            {
+                if (component.Score.HasValue)
+                {
+                    weightedTotal += component.Score.Value * component.Weight;
+                    weightSum += component.Weight;
+                }
+            }
+
+            if (weightSum <= 0)
+            {
+                return "INCOMPLETE";
+            }
+
+            var gpa = Math.Round(weightedTotal / weightSum, 2);
+            
+            // Determine pass/fail based on GPA (assuming 3.0 is passing grade)
+            return gpa <= 3.0m ? "PASSED" : "FAILED";
         }
 
         // Match current term based on text in AssignedCourse.Semester

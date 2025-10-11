@@ -43,7 +43,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string LastName { get; set; }
         public string FirstName { get; set; }
         public string FullName => $"{FirstName} {LastName}";
-        public string CourseYear { get; set; }     // "BSCS 4"
+        public string CourseYear { get; set; }
         public string Gender { get; set; }
         
         [Range(1.0, 5.0, ErrorMessage = "Grade must be between 1.0 and 5.0")]
@@ -71,7 +71,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public decimal? Midterm { get; set; }
         public decimal? SemiFinal { get; set; }
         public decimal? Final { get; set; }
-        public string Remarks { get; set; }
+        // Note: Remarks is calculated from grades, not stored in database
     }
 
     public class TeacherCourseFilterModel

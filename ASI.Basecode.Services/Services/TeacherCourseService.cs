@@ -101,7 +101,7 @@ namespace ASI.Basecode.Services.Services
                 Midterm = g.Midterm,
                 SemiFinal = g.SemiFinal,
                 Final = g.Final,
-                Remarks = g.Remarks ?? ""
+                Remarks = CalculateRemarksFromGrades(g.Prelims, g.Midterm, g.SemiFinal, g.Final)
             }).OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList();
         }
 
@@ -193,8 +193,7 @@ namespace ASI.Basecode.Services.Services
                             existingGrade.SemiFinal = gradeUpdate.SemiFinal;
                         if (gradeUpdate.Final.HasValue)
                             existingGrade.Final = gradeUpdate.Final;
-                        if (!string.IsNullOrEmpty(gradeUpdate.Remarks))
-                            existingGrade.Remarks = gradeUpdate.Remarks;
+                        // Note: Remarks is no longer stored in database, calculated from grades
 
                         _gradeRepository.UpdateGrade(existingGrade);
                     }
