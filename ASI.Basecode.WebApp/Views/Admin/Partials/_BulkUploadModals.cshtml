@@ -1,0 +1,63 @@
+﻿@using ASI.Basecode.Services.ServiceModels
+
+@* Bulk Upload Students Modal *@
+<div class="modal fade" id="bulkUploadStudentsModal" tabindex="-1" aria-labelledby="bulkUploadStudentsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUploadStudentsLabel">Bulk upload students (.xlsx)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Download the template, fill the rows, then upload the completed Excel file.</p>
+                <a class="btn btn-outline-primary mb-3"
+                   asp-controller="AdminAccounts" asp-action="DownloadStudentTemplate">
+                    Download students template
+                </a>
+                <form method="post" enctype="multipart/form-data"
+                      asp-controller="AdminAccounts" asp-action="BulkUploadStudents">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="studentFile" class="form-label">Excel file (.xlsx)</label>
+                        <input id="studentFile" type="file" name="file" class="form-control" accept=".xlsx" required />
+                    </div>
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload & Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Bulk Upload Teachers Modal *@
+<div class="modal fade" id="bulkUploadTeachersModal" tabindex="-1" aria-labelledby="bulkUploadTeachersLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUploadTeachersLabel">Bulk upload teachers (.xlsx)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Download the template, fill the rows, then upload the file.</p>
+                <a class="btn btn-outline-primary mb-3"
+                   asp-controller="AdminAccounts" asp-action="DownloadTeacherTemplate">
+                    Download teachers template
+                </a>
+                <form method="post" enctype="multipart/form-data"
+                      asp-controller="AdminAccounts" asp-action="BulkUploadTeachers">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="teacherFile" class="form-label">Excel file (.xlsx)</label>
+                        <input id="teacherFile" type="file" name="file" class="form-control" accept=".xlsx" required />
+                    </div>
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload & Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

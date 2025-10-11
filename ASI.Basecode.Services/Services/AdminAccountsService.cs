@@ -1,11 +1,9 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +32,10 @@ namespace ASI.Basecode.Services.Services
         // fetch data and filters
         public async Task<AccountsFilterResult> GetStudentsAsync(AccountsFilters filters, CancellationToken ct)
         {
-            var query = _students.GetStudentsWithUser();
+            var status = string.IsNullOrWhiteSpace(filters.Status) ? "Active" : filters.Status!.Trim();
+
+            var query = _students.GetStudentsWithUser()
+                .Where(s => s.User.AccountStatus == status);
 
             if (!string.IsNullOrWhiteSpace(filters.Program))
                 query = query.Where(s => s.Program == filters.Program);
@@ -69,6 +70,10 @@ namespace ASI.Basecode.Services.Services
                 })
                 .ToListAsync(ct);
 
+            var baseForLists = _students.GetStudentsWithUser()
+                .Where(s => s.User.AccountStatus == status);
+
+
             var programs = await _students.GetStudents()
                 .Select(s => s.Program)
                 .Where(p => !string.IsNullOrEmpty(p))
@@ -94,7 +99,10 @@ namespace ASI.Basecode.Services.Services
 
         public async Task<AccountsFilterResult> GetTeachersAsync(AccountsFilters filters, CancellationToken ct)
         {
-            var query = _teachers.GetTeachersWithUser();
+            var status = string.IsNullOrWhiteSpace(filters.Status) ? "Active" : filters.Status!.Trim();
+
+            var query = _teachers.GetTeachersWithUser()
+                .Where(t => t.User.AccountStatus == status);
 
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
@@ -128,10 +136,10 @@ namespace ASI.Basecode.Services.Services
 
             if (user == null) return false;
 
-            user.AccountStatus = status; 
-            _users.UpdateUser(user);     
+            user.AccountStatus = status;
+            _users.UpdateUser(user);
 
-            await _uow.SaveChangesAsync(ct); 
+            await _uow.SaveChangesAsync(ct);
             return true;
         }
     }

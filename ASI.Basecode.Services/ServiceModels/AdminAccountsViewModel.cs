@@ -13,7 +13,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string? YearLevel { get; set; }
         public string? Name { get; set; }
         public string? IdNumber { get; set; }
-        public string? AccountStatus { get; set; }
+        public string? Status { get; set; }
     }
 
     public class StudentListItem

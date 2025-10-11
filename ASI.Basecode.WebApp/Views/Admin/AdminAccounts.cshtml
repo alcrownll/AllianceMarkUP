@@ -6,6 +6,13 @@
     ViewData["Title"] = "Admin Accounts";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["PageHeader"] = "Manage Accounts";
+
+    // status helpers for toggle
+    var currentTab = vm.ActiveTab == ManageTab.Teachers ? "teachers" : "students";
+    var currentStatus = vm?.Filters?.Status ?? "Active";
+    var isInactive = string.Equals(currentStatus, "Inactive", StringComparison.OrdinalIgnoreCase);
+    var toggleStatus = isInactive ? "active" : "inactive";
+    var toggleText = isInactive ? "Back to Active Accounts" : "View Suspended Accounts";
 }
 
 <link rel="stylesheet" href="~/css/manage-accounts.css" />
@@ -18,12 +25,16 @@
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link @(vm.ActiveTab == ManageTab.Students ? "active" : "")"
-                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students"
+                           asp-controller="AdminAccounts" asp-action="Index"
+                           asp-route-tab="students"
+                           asp-route-status="@(currentStatus.Equals("Inactive", StringComparison.OrdinalIgnoreCase) ? "inactive" : "active")"
                            role="tab">Student’s List</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link @(vm.ActiveTab == ManageTab.Teachers ? "active" : "")"
-                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers"
+                           asp-controller="AdminAccounts" asp-action="Index"
+                           asp-route-tab="teachers"
+                           asp-route-status="@(currentStatus.Equals("Inactive", StringComparison.OrdinalIgnoreCase) ? "inactive" : "active")"
                            role="tab">Teacher List</a>
                     </li>
                 </ul>
@@ -69,9 +80,18 @@
                         </div>
                     }
 
-                    <button type="button" class="btn btn-primary rounded-pill px-4" id="printUsersBtn">
-                        View Suspended Accounts
-                    </button>
+                    <!-- Toggle Active <-> Inactive -->
+                    <a class="btn btn-primary rounded-pill px-4"
+                       asp-controller="AdminAccounts"
+                       asp-action="Index"
+                       asp-route-tab="@currentTab"
+                       asp-route-status="@toggleStatus"
+                       asp-route-program="@(vm.Filters?.Program)"
+                       asp-route-yearLevel="@(vm.Filters?.YearLevel)"
+                       asp-route-name="@(vm.Filters?.Name)"
+                       asp-route-idNumber="@(vm.Filters?.IdNumber)">
+                        @toggleText
+                    </a>
                 </div>
             </div>
         </div>
@@ -91,6 +111,7 @@
                 {
                     <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                         <input type="hidden" name="tab" value="students" />
+                        <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
 
                         <table class="accounts-table table align-middle">
                             <thead class="table-light">
@@ -134,7 +155,9 @@
                                     <th class="text-end">
                                         <button type="submit" class="btn btn-outline btn-xs">Search</button>
                                         <a class="btn btn-link btn-xs"
-                                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Reset</a>
+                                           asp-controller="AdminAccounts" asp-action="Index"
+                                           asp-route-tab="students"
+                                           asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
                                     </th>
                                 </tr>
                             </thead>
@@ -156,15 +179,33 @@
                                                        asp-route-userId="@s.UserId">
                                                         View
                                                     </a>
-                                                    <button type="button"
-                                                            class="btn btn-danger btn-sm rounded-pill"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmSuspendModal"
-                                                            data-user-id="@s.UserId"
-                                                            data-tab="students"
-                                                            data-name="@s.FullName">
-                                                        Suspend
-                                                    </button>
+                                                    @if (!isInactive)
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@s.UserId"
+                                                                data-tab="students"
+                                                                data-name="@s.FullName"
+                                                                data-status="Inactive">
+                                                            Suspend
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@s.UserId"
+                                                                data-tab="students"
+                                                                data-name="@s.FullName"
+                                                                data-status="Active">
+
+                                                            Lift Suspension
+                                                        </button>
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>
@@ -184,6 +225,7 @@
                 {
                     <form id="teacherFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                         <input type="hidden" name="tab" value="teachers" />
+                        <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
 
                         <table class="accounts-table table align-middle">
                             <thead class="table-light">
@@ -203,7 +245,9 @@
                                     <th class="text-end">
                                         <button type="submit" class="btn btn-outline btn-xs">Search</button>
                                         <a class="btn btn-link btn-xs"
-                                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers">Reset</a>
+                                           asp-controller="AdminAccounts" asp-action="Index"
+                                           asp-route-tab="teachers"
+                                           asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
                                     </th>
                                 </tr>
                             </thead>
@@ -223,15 +267,32 @@
                                                        asp-route-userId="@t.UserId">
                                                         View
                                                     </a>
-                                                    <button type="button"
-                                                            class="btn btn-danger btn-sm rounded-pill"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmSuspendModal"
-                                                            data-user-id="@t.UserId"
-                                                            data-tab="teachers"
-                                                            data-name="@t.FullName">
-                                                        Suspend
-                                                    </button>
+                                                    @if (!isInactive)
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId"
+                                                                data-tab="teachers"
+                                                                data-name="@t.FullName"
+                                                                data-status="Inactive">
+                                                            Suspend
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId"
+                                                                data-tab="teachers"
+                                                                data-name="@t.FullName"
+                                                                data-status="Active">
+                                                            Lift Suspension
+                                                        </button>
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>
@@ -252,101 +313,43 @@
     </div>
 </div>
 
+@await Html.PartialAsync("~/Views/Admin/Partials/_SuspendAccountModal.cshtml")
+@await Html.PartialAsync("~/Views/Admin/Partials/_BulkUploadModals.cshtml")
+
 @section Scripts {
     <script>
         (function () {
           document.addEventListener('click', function (e) {
-            var btn = e.target.closest('[data-bs-target="#confirmSuspendModal"]');
+            const btn = e.target.closest('.js-status-btn');
             if (!btn) return;
 
-            document.getElementById('suspendUserId').value = btn.getAttribute('data-user-id');
-            document.getElementById('suspendTab').value    = btn.getAttribute('data-tab') || 'students';
-            document.getElementById('suspendUserName').textContent = btn.getAttribute('data-name') || 'this account';
+            const userId   = btn.getAttribute('data-user-id');
+            const tab      = btn.getAttribute('data-tab') || 'students';
+            const name     = btn.getAttribute('data-name') || 'this account';
+            const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim(); 
+
+            document.getElementById('suspendUserId').value = userId;
+            document.getElementById('suspendTab').value    = tab;
+            document.getElementById('statusToSet').value   = statusTo;
+            document.getElementById('viewStatus').value    = '@(((vm?.Filters?.Status ?? "Active").Equals("Inactive", StringComparison.OrdinalIgnoreCase)) ? "inactive" : "active")';
+
+            const lifting = statusTo.toLowerCase() === 'active';
+            const titleEl  = document.getElementById('confirmActionTitle');
+            const promptEl = document.getElementById('confirmActionPrompt');
+            const nameEl   = document.getElementById('suspendUserName');
+            const actionEl = document.getElementById('confirmActionBtn');
+
+            titleEl.textContent  = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
+            promptEl.textContent = lifting ? 'Are you sure you want to lift the suspension for' : 'Are you sure you want to suspend';
+            nameEl.textContent   = name;
+
+            actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
+            actionEl.classList.remove('btn-danger', 'btn-success');
+            actionEl.classList.add(lifting ? 'btn-success' : 'btn-danger');
           });
         })();
     </script>
 }
 
-<!-- MODALS (unchanged) -->
-<div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="userId" id="suspendUserId" />
-                <input type="hidden" name="tab" id="suspendTab" />
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmSuspendLabel">Confirm suspension</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to suspend <strong id="suspendUserName">this account</strong>?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Suspend Account</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+}
 
-<div class="modal fade" id="bulkUploadStudentsModal" tabindex="-1" aria-labelledby="bulkUploadStudentsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bulkUploadStudentsLabel">Bulk upload students (.xlsx)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Download the template, fill the rows, then upload the completed Excel file.</p>
-                <a class="btn btn-outline-primary mb-3"
-                   asp-controller="AdminAccounts" asp-action="DownloadStudentTemplate">
-                    Download students template
-                </a>
-                <form method="post" enctype="multipart/form-data"
-                      asp-controller="AdminAccounts" asp-action="BulkUploadStudents">
-                    @Html.AntiForgeryToken()
-                    <div class="mb-3">
-                        <label for="studentFile" class="form-label">Excel file (.xlsx)</label>
-                        <input id="studentFile" type="file" name="file" class="form-control" accept=".xlsx" required />
-                    </div>
-                    <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Upload & Import</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="bulkUploadTeachersModal" tabindex="-1" aria-labelledby="bulkUploadTeachersLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bulkUploadTeachersLabel">Bulk upload teachers (.xlsx)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Download the template, fill the rows, then upload the file.</p>
-                <a class="btn btn-outline-primary mb-3"
-                   asp-controller="AdminAccounts" asp-action="DownloadTeacherTemplate">
-                    Download teachers template
-                </a>
-                <form method="post" enctype="multipart/form-data"
-                      asp-controller="AdminAccounts" asp-action="BulkUploadTeachers">
-                    @Html.AntiForgeryToken()
-                    <div class="mb-3">
-                        <label for="teacherFile" class="form-label">Excel file (.xlsx)</label>
-                        <input id="teacherFile" type="file" name="file" class="form-control" accept=".xlsx" required />
-                    </div>
-                    <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Upload & Import</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>

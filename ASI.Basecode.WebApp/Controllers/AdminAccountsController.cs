@@ -3,6 +3,7 @@ using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,16 +28,20 @@ namespace ASI.Basecode.WebApp.Controllers
 
         // TABS 
         [HttpGet]
-        public async Task<IActionResult> Index(
-            string? tab, string? program, string? yearLevel, string? name, string? idNumber, CancellationToken ct)
+        public async Task<IActionResult> Index(string? tab, string? program, string? yearLevel, string? name, string? idNumber, string? status, CancellationToken ct)
         {
+            var normalizedStatus = string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase)
+                ? "Inactive"
+                : "Active";
+
             var isTeachers = (tab?.ToLower() == "teachers");
             var filters = new AccountsFilters
             {
                 Program = program,
                 YearLevel = yearLevel,
                 Name = name,
-                IdNumber = idNumber
+                IdNumber = idNumber,
+                Status = normalizedStatus
             };
 
             AdminAccountsViewModel vm;

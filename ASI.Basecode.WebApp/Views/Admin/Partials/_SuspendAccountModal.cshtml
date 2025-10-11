@@ -1,0 +1,30 @@
+﻿<div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" id="suspendUserId" />
+                <input type="hidden" name="tab" id="suspendTab" />
+                <input type="hidden" name="status" id="statusToSet" />     
+                <input type="hidden" name="viewStatus" id="viewStatus" />  
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmSuspendLabel"><span id="confirmActionTitle">Confirm action</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-0">
+                        <span id="confirmActionPrompt">Are you sure you want to</span>
+                        <strong id="suspendUserName">this account</strong>?
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn" id="confirmActionBtn">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
