@@ -4,7 +4,7 @@
     ViewData["Title"] = "Profile";
     ViewData["PageHeader"] = "Profile";
 }
-<link rel="stylesheet" href="~/css/main-site.css" />
+<link rel="stylesheet" href="~/css/user-profile.css" />
 
 <div class="container my-4">
     <div class="profile-card">
@@ -16,69 +16,78 @@
         <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
         <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
 
-        <form asp-action="SaveProfile" asp-controller="Student" method="post" enctype="multipart/form-data">
+        <form id="profileForm" asp-action="SaveProfile" asp-controller="Student" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
-            <input type="hidden" asp-for="UserId" />
-            <input type="hidden" name="Role" value="Student" />
+            <input type="hidden" asp-for="UserId" data-static="true" />
+            <input type="hidden" name="Role" value="Student" data-static="true" />
 
-            <!-- STUDENT STRIP (inside the form so values are posted) -->
-            <div class="role-strip p-3 bg-light rounded mb-3 role-block-student">
+            <!-- === STUDENT INFO (always read-only, shown like disabled inputs) === -->
+            <h3 class="section-title mb-2">Enrollment Details</h3>
+            <div class="mb-3">
                 <div class="row g-3 uniform-row">
                     <div class="col-md-3">
-                        <label class="form-label" asp-for="AdmissionType"></label>
-                        <select class="form-select" asp-for="AdmissionType">
-                            <option value="">-- Select --</option>
-                            <option>New</option>
-                            <option>Old</option>
-                            <option>Transferee</option>
-                        </select>
-                        <span asp-validation-for="AdmissionType" class="text-danger"></span>
+                        <label class="form-label">Admission Type</label>
+                        <input type="text"
+                               class="form-control"
+                               value="@Model.AdmissionType"
+                               disabled
+                               aria-disabled="true"
+                               tabindex="-1"
+                               data-locked="true" />
+                        <input type="hidden" asp-for="AdmissionType" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label" asp-for="Department"></label>
-                        <select class="form-select" asp-for="Department">
-                            <option value="">-- Select --</option>
-                            <option>Arts & Sciences</option>
-                            <option>Computer Studies</option>
-                            <option>Engineering</option>
-                        </select>
-                        <span asp-validation-for="Department" class="text-danger"></span>
+                        <label class="form-label">Department</label>
+                        <input type="text"
+                               class="form-control"
+                               value="@Model.Department"
+                               disabled
+                               aria-disabled="true"
+                               tabindex="-1"
+                               data-locked="true" />
+                        <input type="hidden" asp-for="Department" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label" asp-for="Program"></label>
-                        <select class="form-select" asp-for="Program">
-                            <option value="">-- Select --</option>
-                            <option>Computer Science</option>
-                            <option>Information Technology</option>
-                            <option>Information Systems</option>
-                        </select>
-                        <span asp-validation-for="Program" class="text-danger"></span>
+                        <label class="form-label">Program</label>
+                        <input type="text"
+                               class="form-control"
+                               value="@Model.Program"
+                               disabled
+                               aria-disabled="true"
+                               tabindex="-1"
+                               data-locked="true" />
+                        <input type="hidden" asp-for="Program" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label" asp-for="YearLevel"></label>
-                        <select class="form-select" asp-for="YearLevel">
-                            <option value="">-- Select --</option>
-                            <option>1st Year</option>
-                            <option>2nd Year</option>
-                            <option>3rd Year</option>
-                            <option>4th Year</option>
-                        </select>
-                        <span asp-validation-for="YearLevel" class="text-danger"></span>
+                        <label class="form-label">Year Level</label>
+                        <input type="text"
+                               class="form-control"
+                               value="@Model.YearLevel"
+                               disabled
+                               aria-disabled="true"
+                               tabindex="-1"
+                               data-locked="true" />
+                        <input type="hidden" asp-for="YearLevel" data-locked="true" />
                     </div>
                 </div>
             </div>
 
-            @* Shared profile fields (name, email, address, DateOfBirth, etc.) *@
+
+
+
+            @* Shared profile fields (name, email, address, DateOfBirth, avatar, etc.) *@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
 
+            <!-- === Bottom action row (same spot as original Update) === -->
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
+                <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
+                <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
             </div>
         </form>
     </div>
@@ -86,31 +95,81 @@
 
 @section Scripts {
     <script>
-        (function(){
-          const input = document.getElementById('avatarInput');
-          const preview = document.getElementById('avatarPreview');
-          if (input && preview) {
-            preview.addEventListener('keydown', function(e){
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
-            });
-            input.addEventListener('change', function (e) {
-              const file = e.target.files && e.target.files[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = function (ev) {
-                preview.style.backgroundImage = `url('${ev.target.result}')`;
-                preview.classList.add('has-image');
-              };
-              reader.readAsDataURL(file);
-            });
+        (function () {
+            const form = document.getElementById('profileForm');
+            const btnEdit = document.getElementById('btnEdit');
+            const btnSave = document.getElementById('btnSave');
+            const btnCancel = document.getElementById('btnCancel');
 
-            // Initial preview if Model has an existing picture
-            var url = '@(Model.ProfilePictureUrl ?? "")';
-            if (url) {
-              preview.style.backgroundImage = `url('${url}')`;
-              preview.classList.add('has-image');
+            // Avatar elems (likely inside the partial)
+            const avatarInput = document.getElementById('avatarInput');
+            const avatarPreview = document.getElementById('avatarPreview');
+
+            function setFormEditable(isEditable) {
+                // Enable/disable all editable fields except those explicitly locked or static
+                const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
+                fields.forEach(el => {
+                    const isHidden = el.type === 'hidden';
+                    const isStatic = el.getAttribute('data-static') === 'true';
+                    const isLocked = el.getAttribute('data-locked') === 'true'; // our four student fields
+                    if (isHidden || isStatic || isLocked) return;
+                    el.disabled = !isEditable;
+                });
+
+                // Buttons
+                btnEdit.classList.toggle('d-none', isEditable);
+                btnSave.classList.toggle('d-none', !isEditable);
+                btnCancel.classList.toggle('d-none', !isEditable);
+
+                form.classList.toggle('is-readonly', !isEditable);
             }
-          }
+
+            function resetToInitial() {
+                form.reset();
+                // Restore avatar preview if model had an existing picture
+                if (avatarPreview) {
+                    const existing = '@(Model.ProfilePictureUrl ?? "")';
+                    if (existing) {
+                        avatarPreview.style.backgroundImage = `url('${existing}')`;
+                        avatarPreview.classList.add('has-image');
+                    } else {
+                        avatarPreview.style.backgroundImage = '';
+                        avatarPreview.classList.remove('has-image');
+                    }
+                }
+            }
+
+            // Initial: read-only
+            setFormEditable(false);
+
+            btnEdit.addEventListener('click', () => setFormEditable(true));
+            btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
+
+            // Avatar preview interaction (only responds while enabled)
+            if (avatarInput && avatarPreview) {
+                avatarPreview.addEventListener('keydown', function(e){
+                    if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
+                        e.preventDefault(); avatarInput.click();
+                    }
+                });
+                avatarInput.addEventListener('change', function (e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        avatarPreview.style.backgroundImage = `url('${ev.target.result}')`;
+                        avatarPreview.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                // Initial preview
+                var url = '@(Model.ProfilePictureUrl ?? "")';
+                if (url) {
+                    avatarPreview.style.backgroundImage = `url('${url}')`;
+                    avatarPreview.classList.add('has-image');
+                }
+            }
         })();
     </script>
 }

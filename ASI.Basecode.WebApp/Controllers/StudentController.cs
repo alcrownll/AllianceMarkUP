@@ -32,6 +32,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IWebHostEnvironment _env; // for serving prospectus pdfs
         private readonly IProfileService _profileService;
         private readonly IHttpContextAccessor _httpContext;
+        private readonly INotificationService _notificationService;
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -40,7 +41,8 @@ namespace ASI.Basecode.WebApp.Controllers
             IClassScheduleRepository classScheduleRepository,
             IWebHostEnvironment env,
             IProfileService profileService,
-            IHttpContextAccessor httpContext)
+            IHttpContextAccessor httpContext,
+            INotificationService notificationService)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -49,6 +51,7 @@ namespace ASI.Basecode.WebApp.Controllers
             _env = env;
             _profileService = profileService;
             _httpContext = httpContext;
+            _notificationService = notificationService;
 
         }
 
@@ -399,13 +402,34 @@ namespace ASI.Basecode.WebApp.Controllers
             ViewData["PageHeader"] = "Calendar";
             return View("~/Views/Shared/Partials/Calendar.cshtml");
         }
-
+        
         [Authorize(Roles = "Student")]
-        public IActionResult Notifications()
+        public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Student")]
+        public IActionResult MarkNotificationRead(int id)
         {
-            ViewData["PageHeader"] = "Student Notifications";
-            return View("~/Views/Shared/Partials/Notifications.cshtml");
+            var userId = _profileService.GetCurrentUserId();
+            _notificationService.MarkRead(userId, id);
+
+            // Go back to the notifications page
+            return RedirectToAction(nameof(Notifications));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Student")]
+        public IActionResult MarkAllNotificationsRead()
+        {
+            var userId = _profileService.GetCurrentUserId();
+            _notificationService.MarkAllRead(userId);
+
+            return RedirectToAction(nameof(Notifications));
+        }
+
+
 
         // --------------------------------------------------------------------
         // PROSPECTUS DOWNLOAD (BSCS / BSIT)

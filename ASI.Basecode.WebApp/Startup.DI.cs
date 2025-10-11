@@ -44,7 +44,10 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<ICourseService, CourseService>();   
             this._services.AddScoped<ITeacherCourseService, TeacherCourseService>();
             this._services.AddScoped<IRightSidebarService, RightSidebarService>();
+            this._services.AddScoped<INotificationService, NotificationService>();
             this._services.AddScoped<ICalendarService, CalendarService>();
+
+            this._services.AddScoped<IWebRootPathAccessor, LocalWebRootPathAccessor>();
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();

@@ -197,16 +197,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Teacher")]
         public IActionResult Calendar()
         {
-            ViewData["PageHeader"] = "Calendar";
-            return View("~/Views/Shared/Partials/Calendar.cshtml"); // Shared UI
+            return RedirectToAction("Index", "Calendar");
         }
 
         [Authorize(Roles = "Teacher")]
-        public IActionResult Notifications()
-        {
-            ViewData["PageHeader"] = "Notifications";
-            return View("~/Views/Shared/Partials/Notifications.cshtml"); // Shared UI
-        }
+        public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
         //Logout
 

@@ -121,17 +121,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult Calendar()
         {
-            ViewData["PageHeader"] = "Calendar";
-            return View("~/Views/Shared/Partials/Calendar.cshtml");
+            return RedirectToAction("Index", "Calendar");
         }
 
-        // ✅ Notifications (send system-wide announcements)
         [Authorize(Roles = "Admin")]
-        public IActionResult Notifications()
-        {
-            ViewData["PageHeader"] = "Student Notifications";
-            return View("~/Views/Shared/Partials/Notifications.cshtml");
-        }
+        public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
         [Authorize(Roles = "Admin")]
         [HttpGet]

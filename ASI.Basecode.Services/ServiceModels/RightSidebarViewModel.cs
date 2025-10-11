@@ -10,6 +10,7 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public string LastName { get; set; }
         public string Role { get; set; }
+        public string ProfilePictureUrl { get; set; }
         public List<NotificationItemVm> Notifications { get; set; } = new();
         public List<UpcomingEventItemVm> UpcomingEvents { get; set; } = new();
     }

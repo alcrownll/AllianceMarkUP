@@ -3,6 +3,7 @@ using System;
 using ASI.Basecode.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    partial class AsiBasecodeDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251010134350_AlterCalendarTable")]
+    partial class AlterCalendarTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,7 +69,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("TeacherId");
 
-                    b.ToTable("AssignedCourses", (string)null);
+                    b.ToTable("AssignedCourses");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.CalendarEvent", b =>
@@ -129,7 +132,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CalendarEvents", (string)null);
+                    b.ToTable("CalendarEvents");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.ClassSchedule", b =>
@@ -161,7 +164,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("AssignedCourseId");
 
-                    b.ToTable("ClassSchedules", (string)null);
+                    b.ToTable("ClassSchedules");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Course", b =>
@@ -193,7 +196,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("CourseId");
 
-                    b.ToTable("Courses", (string)null);
+                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Grade", b =>
@@ -232,7 +235,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("Grades", (string)null);
+                    b.ToTable("Grades");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Notification", b =>
@@ -268,7 +271,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Student", b =>
@@ -312,7 +315,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Students", (string)null);
+                    b.ToTable("Students");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.Teacher", b =>
@@ -336,7 +339,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Teachers", (string)null);
+                    b.ToTable("Teachers");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.User", b =>
@@ -396,7 +399,7 @@ namespace ASI.Basecode.Data.Migrations
                     b.HasIndex("IdNumber")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.UserProfile", b =>
@@ -464,7 +467,7 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserProfiles", (string)null);
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("ASI.Basecode.Data.Models.AssignedCourse", b =>

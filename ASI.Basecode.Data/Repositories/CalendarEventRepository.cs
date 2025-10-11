@@ -17,8 +17,9 @@ namespace ASI.Basecode.Data.Repositories
         {
             var set = GetDbSet<CalendarEvent>();
             return set.Where(e =>
-                (includeGlobal ? (e.UserId == null || e.UserId == userId) : e.UserId == userId) &&
-                e.EndUtc >= startUtc && e.StartUtc <= endUtc);
+                    (includeGlobal ? (e.IsGlobal || e.UserId == userId) : e.UserId == userId) &&
+                    e.EndUtc >= startUtc &&
+                    e.StartUtc <= endUtc);
         }
 
         public CalendarEvent GetNextForUser(int userId, DateTime fromLocal, bool includeGlobal = true)
@@ -26,7 +27,7 @@ namespace ASI.Basecode.Data.Repositories
             var set = GetDbSet<CalendarEvent>();
             return set
                 .Where(e =>
-                    (includeGlobal ? (e.UserId == null || e.UserId == userId) : e.UserId == userId) &&
+                    (includeGlobal ? (e.IsGlobal || e.UserId == userId) : e.UserId == userId) &&
                     e.StartUtc >= fromLocal)
                 .OrderBy(e => e.StartUtc)
                 .FirstOrDefault();
@@ -37,15 +38,35 @@ namespace ASI.Basecode.Data.Repositories
             var set = GetDbSet<CalendarEvent>();
             return set
                 .Where(e =>
-                    (includeGlobal ? (e.UserId == null || e.UserId == userId) : e.UserId == userId) &&
-                    e.StartUtc >= fromLocal && e.StartUtc <= toLocal)
+                    (includeGlobal ? (e.IsGlobal || e.UserId == userId) : e.UserId == userId) &&
+                    e.StartUtc >= fromLocal &&
+                    e.StartUtc <= toLocal)
                 .OrderBy(e => e.StartUtc);
         }
 
-        public CalendarEvent GetById(int id) => GetDbSet<CalendarEvent>().FirstOrDefault(x => x.CalendarEventId == id);
+        public CalendarEvent GetById(int id) =>
+            GetDbSet<CalendarEvent>().FirstOrDefault(x => x.CalendarEventId == id);
 
-        public void Add(CalendarEvent e) { GetDbSet<CalendarEvent>().Add(e); UnitOfWork.SaveChanges(); }
-        public void Update(CalendarEvent e) { GetDbSet<CalendarEvent>().Update(e); UnitOfWork.SaveChanges(); }
-        public void Delete(int id) { var e = GetById(id); if (e != null) { GetDbSet<CalendarEvent>().Remove(e); UnitOfWork.SaveChanges(); } }
+        public void Add(CalendarEvent e)
+        {
+            GetDbSet<CalendarEvent>().Add(e);
+            UnitOfWork.SaveChanges();
+        }
+
+        public void Update(CalendarEvent e)
+        {
+            GetDbSet<CalendarEvent>().Update(e);
+            UnitOfWork.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var e = GetById(id);
+            if (e != null)
+            {
+                GetDbSet<CalendarEvent>().Remove(e);
+                UnitOfWork.SaveChanges();
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ namespace ASI.Basecode.Data.Interfaces
 {
     public interface INotificationRepository
     {
+        IQueryable<Notification> GetAll();
         IQueryable<Notification> GetByUser(int userId);
         void Add(Notification n);
         void MarkRead(int notificationId);

@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace ASI.Basecode.Services.Services
 {
@@ -17,19 +18,25 @@ namespace ASI.Basecode.Services.Services
         private readonly IStudentRepository _students;
         private readonly ITeacherRepository _teachers;
         private readonly IHttpContextAccessor _httpContext;
+        private readonly IWebRootPathAccessor _webRoot;
+        private readonly INotificationService _notifications;
 
         public ProfileService(
             IUserRepository users,
             IUserProfileRepository profiles,
             IStudentRepository students,
             ITeacherRepository teachers,
-            IHttpContextAccessor httpContext)
+            IHttpContextAccessor httpContext,
+            IWebRootPathAccessor webRoot,
+            INotificationService notifications)
         {
             _users = users;
             _profiles = profiles;
             _students = students;
             _teachers = teachers;
             _httpContext = httpContext;
+            _webRoot = webRoot;
+            _notifications = notifications;
         }
 
         public int GetCurrentUserId()
@@ -129,20 +136,35 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
+                // If no new file and no inbound URL, leave null; MapProfile won’t overwrite later.
                 MapProfile(profile, input);
                 _profiles.AddUserProfile(profile);
             }
             else
             {
+                // Preserve current URL unless a new file is uploaded or inbound URL is non-empty
                 MapProfile(profile, input);
                 _profiles.UpdateUserProfile(profile);
+            }
+
+            // Avatar upload (only if user selected a new file)
+            if (input.ProfilePhotoFile != null && input.ProfilePhotoFile.Length > 0)
+            {
+                var oldUrl = profile.ProfilePictureUrl;
+                var newUrl = SaveAvatarFile(userId, input.ProfilePhotoFile);
+                if (!string.IsNullOrWhiteSpace(newUrl))
+                {
+                    profile.ProfilePictureUrl = newUrl;
+                    _profiles.UpdateUserProfile(profile);
+                    TryDeleteOldAvatar(oldUrl);
+                }
             }
 
             // Student
             var student = _students.GetStudents().FirstOrDefault(s => s.UserId == userId);
             if (student != null)
             {
-                student.AdmissionType = input.AdmissionTypeDb; 
+                student.AdmissionType = input.AdmissionTypeDb;
                 student.Program = input.ProgramDb;
                 student.Department = input.Department;
                 student.YearLevel = input.YearLevel;
@@ -150,6 +172,7 @@ namespace ASI.Basecode.Services.Services
                 _students.UpdateStudent(student);
             }
 
+            _notifications.NotifyProfileUpdated(userId);
             await Task.CompletedTask;
         }
 
@@ -218,13 +241,26 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-                MapProfile(profile, input);
+                MapProfile(profile, input);                  // won’t null out URL anymore
                 _profiles.AddUserProfile(profile);
             }
             else
             {
                 MapProfile(profile, input);
                 _profiles.UpdateUserProfile(profile);
+            }
+
+            // 🔹 Avatar upload support for teachers too
+            if (input.ProfilePhotoFile != null && input.ProfilePhotoFile.Length > 0)
+            {
+                var oldUrl = profile.ProfilePictureUrl;
+                var newUrl = SaveAvatarFile(userId, input.ProfilePhotoFile);
+                if (!string.IsNullOrWhiteSpace(newUrl))
+                {
+                    profile.ProfilePictureUrl = newUrl;
+                    _profiles.UpdateUserProfile(profile);
+                    TryDeleteOldAvatar(oldUrl);
+                }
             }
 
             var teacher = _teachers.GetTeachers().FirstOrDefault(t => t.UserId == userId);
@@ -237,12 +273,16 @@ namespace ASI.Basecode.Services.Services
             await Task.CompletedTask;
         }
 
+
         // ------------------------------------------------------------
         // Helper
         // ------------------------------------------------------------
         private static void MapProfile(ASI.Basecode.Data.Models.UserProfile db, ProfileViewModel vm)
         {
-            db.ProfilePictureUrl = vm.ProfilePictureUrl;
+
+            if (!string.IsNullOrWhiteSpace(vm.ProfilePictureUrl))
+                db.ProfilePictureUrl = vm.ProfilePictureUrl;
+
             db.MiddleName = vm.MiddleName;
             db.Suffix = vm.Suffix;
             db.MobileNo = vm.MobileNo;
@@ -258,5 +298,66 @@ namespace ASI.Basecode.Services.Services
             db.Religion = vm.Religion;
             db.Citizenship = vm.Citizenship;
         }
+
+        // ------------------------------------------------------------
+        // Avatar helpers
+        // ------------------------------------------------------------
+        private string? SaveAvatarFile(int userId, IFormFile file)
+        {
+            if (file == null || file.Length == 0) return null;
+
+            // 2 MB guard
+            const long maxBytes = 2 * 1024 * 1024;
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException("Image exceeds 2 MB.");
+
+            // Allow-list
+            var contentType = (file.ContentType ?? string.Empty).ToLowerInvariant();
+            var allowed = new[] { "image/png", "image/jpeg", "image/jpg", "image/webp" };
+            if (!allowed.Contains(contentType))
+                throw new InvalidOperationException("Only PNG, JPG, or WEBP images are allowed.");
+
+            // Ensure upload folder
+            var uploadRoot = Path.Combine(_webRoot.WebRootPath, "uploads", "avatars");
+            Directory.CreateDirectory(uploadRoot);
+
+            // Choose extension
+            var ext = contentType switch
+            {
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+                _ => ".jpg"
+            };
+
+            // Unique filename (cache-busting)
+            var fileName = $"{userId}_{DateTime.UtcNow.Ticks}{ext}";
+            var absPath = Path.Combine(uploadRoot, fileName);
+
+            using (var fs = new FileStream(absPath, FileMode.Create))
+                file.CopyTo(fs);
+
+            // Return public web path
+            return $"/uploads/avatars/{fileName}";
+        }
+
+        private void TryDeleteOldAvatar(string? webUrl)
+        {
+            if (string.IsNullOrWhiteSpace(webUrl)) return;
+            // Expecting format: /uploads/avatars/<name>
+            if (!webUrl.StartsWith("/uploads/avatars/", StringComparison.OrdinalIgnoreCase)) return;
+
+            var absPath = Path.Combine(_webRoot.WebRootPath, webUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            try
+            {
+                if (File.Exists(absPath)) File.Delete(absPath);
+            }
+            catch
+            {
+                // Swallow: deleting old files is best-effort
+            }
+        }
+
+
+
     }
 }

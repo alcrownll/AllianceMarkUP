@@ -1,29 +1,255 @@
-﻿@{
-    ViewData["Title"] = "Calendar";
+﻿@using ASI.Basecode.Services.ServiceModels
+@model CalendarViewModel
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Calendar";
     var isAdmin = User.IsInRole("Admin");
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" />
+    <link rel="stylesheet" href="~/css/calendar.css" />
+}
 
-<div class="calendar-wrapper shadow-sm rounded-4 bg-white p-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="fw-bold mb-0">📅 Calendar of Events</h3>
-        @if (isAdmin)
-        {
-            <button class="btn btn-primary" id="addEventBtn">+ Add Event</button>
-        }
+<div class="calendar-page">
+    <div class="calendar-toolbar">
+        <div class="left-controls">
+            <button id="btnPrev" class="btn btn-light icon-btn" title="Previous">‹</button>
+            <button id="btnNext" class="btn btn-light icon-btn" title="Next">›</button>
+            <button id="btnToday" class="btn btn-outline-secondary">Today</button>
+            <h2 id="calTitle" class="calendar-title">Calendar</h2>
+        </div>
+        <div class="right-controls">
+            <div class="btn-group me-2" role="group">
+                <button id="btnMonth" class="btn btn-outline-secondary active">Month</button>
+                <button id="btnWeek" class="btn btn-outline-secondary">Week</button>
+                <button id="btnDay" class="btn btn-outline-secondary">Day</button>
+                <button id="btnList" class="btn btn-outline-secondary">Agenda</button>
+            </div>
+            <button id="btnAdd" class="btn btn-primary">+ Add event</button>
+        </div>
     </div>
 
     <div id="calendar"
-         data-is-admin="@(isAdmin ? "true" : "false")"
-         data-events-url="/api/events">
+         data-feed-url="/Calendar/Feed"
+         data-is-admin="@(isAdmin ? "true" : "false")"></div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">Add Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="eventForm" asp-action="Create" asp-controller="Calendar" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="eventId" />
+
+                <!-- Hidden UTC fields the server binds to -->
+                <input type="hidden" name="StartUtc" id="startUtc" />
+                <input type="hidden" name="EndUtc" id="endUtc" />
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input name="Title" id="title" class="form-control" maxlength="200" required />
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Start (local)</label>
+                            <input type="datetime-local" id="startLocal" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">End (local)</label>
+                            <input type="datetime-local" id="endLocal" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="IsAllDay" id="allDay" />
+                        <label class="form-check-label" for="allDay">All day</label>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">Location</label>
+                        <input name="Location" id="location" class="form-control" maxlength="200" />
+                    </div>
+
+                    @if (isAdmin)
+                    {
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="IsGlobal" id="isGlobal" />
+                            <label class="form-check-label" for="isGlobal">Make Global (visible to everyone)</label>
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-footer justify-content-between">
+                    <div>
+                        <button type="button" id="btnDelete" class="btn btn-outline-danger d-none"
+                                data-delete-action="/Calendar/Delete">
+                            Delete
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="btnSave">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-@* Your modal partial for create/edit *@
-@await Html.PartialAsync("_EventModal")
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script>
+        // local datetime-local -> UTC ISO (Z)
+        function toUtcISOString(localValue) {
+            if (!localValue) return "";
+            const d = new Date(localValue);
+            return new Date(Date.UTC(
+                d.getFullYear(), d.getMonth(), d.getDate(),
+                d.getHours(), d.getMinutes(), 0, 0
+            )).toISOString();
+        }
 
-<!-- Load your page script (once) -->
-<script type="module" src="~/js/calendar.js"></script>
+        // Date -> yyyy-MM-ddTHH:mm
+        function toInputValue(date) {
+            if (!date) return "";
+            const pad = (n) => (n < 10 ? "0" + n : n);
+            const yr = date.getFullYear();
+            const mo = pad(date.getMonth() + 1);
+            const dy = pad(date.getDate());
+            const hr = pad(date.getHours());
+            const mi = pad(date.getMinutes());
+            return `${yr}-${mo}-${dy}T${hr}:${mi}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const calEl = document.getElementById('calendar');
+            const feedUrl = calEl.dataset.feedUrl || '/Calendar/Feed';
+            const isAdmin = calEl.dataset.isAdmin === 'true';
+
+            const calendar = new FullCalendar.Calendar(calEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                timeZone: 'local',
+                headerToolbar: false,
+                selectable: true,
+
+                select: (info) => {
+                    document.getElementById('eventModalTitle').innerText = 'Add Event';
+                    document.getElementById('eventForm').setAttribute('action', '/Calendar/Create');
+                    document.getElementById('eventId').value = '';
+                    document.getElementById('title').value = '';
+                    document.getElementById('location').value = '';
+                    document.getElementById('allDay').checked = info.allDay;
+                    document.getElementById('startLocal').value = toInputValue(info.start);
+                    document.getElementById('endLocal').value   = toInputValue(info.end || info.start);
+                    const delBtn = document.getElementById('btnDelete');
+                    delBtn.classList.add('d-none');
+                    if (isAdmin) document.getElementById('isGlobal').checked = false;
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
+                },
+
+                eventClick: (info) => {
+                    const e = info.event.extendedProps;
+                    document.getElementById('eventModalTitle').innerText = 'Edit Event';
+                    document.getElementById('eventForm').setAttribute('action', '/Calendar/Update');
+                    document.getElementById('eventId').value = info.event.id;
+                    document.getElementById('title').value = info.event.title || '';
+                    document.getElementById('location').value = e.location || '';
+                    document.getElementById('allDay').checked = info.event.allDay || false;
+                    document.getElementById('startLocal').value = toInputValue(info.event.start);
+                    document.getElementById('endLocal').value   = toInputValue(info.event.end || info.event.start);
+                    const delBtn = document.getElementById('btnDelete');
+                    if (e.canEdit) delBtn.classList.remove('d-none'); else delBtn.classList.add('d-none');
+                    if (isAdmin) document.getElementById('isGlobal').checked = !!e.isGlobal;
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
+                },
+
+                events: (fetchInfo, success, failure) => {
+                    const url = `${feedUrl}?start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
+                    fetch(url, { credentials: 'same-origin' })
+                        .then(r => r.json())
+                        .then(data => success(data))
+                        .catch(err => failure(err));
+                },
+
+                     eventClassNames: (arg) => {
+            const e = arg.event.extendedProps || {};
+            const key = e.category || e.calendarId || e.program || arg.event.id || arg.event.title || '';
+            let h = 0;
+            for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+            const idx = Math.abs(h) % 10;
+            return ['evt-badge', `evt-color-${idx}`];
+        },
+
+                eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: true }
+            });
+            calendar.render();
+
+            // toolbar
+            document.getElementById('btnPrev').addEventListener('click', () => { calendar.prev(); syncTitle(); });
+            document.getElementById('btnNext').addEventListener('click', () => { calendar.next(); syncTitle(); });
+            document.getElementById('btnToday').addEventListener('click', () => { calendar.today(); syncTitle(); });
+            const btnMonth = document.getElementById('btnMonth');
+            const btnWeek  = document.getElementById('btnWeek');
+            const btnDay   = document.getElementById('btnDay');
+            const btnList  = document.getElementById('btnList');
+            function setActive(btn) { [btnMonth, btnWeek, btnDay, btnList].forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+            btnMonth.addEventListener('click', () => { calendar.changeView('dayGridMonth'); setActive(btnMonth); syncTitle(); });
+            btnWeek.addEventListener('click',  () => { calendar.changeView('timeGridWeek'); setActive(btnWeek);  syncTitle(); });
+            btnDay.addEventListener('click',   () => { calendar.changeView('timeGridDay');  setActive(btnDay);   syncTitle(); });
+            btnList.addEventListener('click',  () => { calendar.changeView('listWeek');     setActive(btnList);  syncTitle(); });
+            function syncTitle() { document.getElementById('calTitle').innerText = calendar.view.title; }
+            syncTitle();
+
+            // Add button
+            document.getElementById('btnAdd').addEventListener('click', () => {
+                document.getElementById('eventModalTitle').innerText = 'Add Event';
+                document.getElementById('eventForm').setAttribute('action', '/Calendar/Create');
+                document.getElementById('eventId').value = '';
+                document.getElementById('title').value = '';
+                document.getElementById('location').value = '';
+                document.getElementById('allDay').checked = false;
+                const now = new Date();
+                document.getElementById('startLocal').value = toInputValue(now);
+                document.getElementById('endLocal').value   = toInputValue(new Date(now.getTime() + 60*60*1000));
+                const delBtn = document.getElementById('btnDelete');
+                delBtn.classList.add('d-none');
+                if (isAdmin) document.getElementById('isGlobal').checked = false;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
+            });
+
+            // Delete button
+            document.getElementById('btnDelete').addEventListener('click', () => {
+                const id = document.getElementById('eventId').value;
+                if (!id) return;
+                if (!confirm('Delete this event?')) return;
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/Calendar/Delete';
+                form.innerHTML = `
+                    <input name="id" value="${id}" type="hidden" />
+                    ${document.querySelector('#eventForm input[name="__RequestVerificationToken"]').outerHTML}
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            });
+
+            // Before submit: copy local -> UTC hidden fields
+            document.getElementById('eventForm').addEventListener('submit', () => {
+                const startLocal = document.getElementById('startLocal').value;
+                const endLocal   = document.getElementById('endLocal').value;
+                document.getElementById('startUtc').value = toUtcISOString(startLocal);
+                document.getElementById('endUtc').value   = toUtcISOString(endLocal);
+            });
+        });
+    </script>
+}

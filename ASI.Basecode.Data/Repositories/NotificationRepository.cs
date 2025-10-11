@@ -13,8 +13,10 @@ namespace ASI.Basecode.Data.Repositories
     {
         public NotificationRepository(IUnitOfWork uow) : base(uow) { }
 
+        public IQueryable<Notification> GetAll() => this.GetDbSet<Notification>();
         public IQueryable<Notification> GetByUser(int userId)
-            => GetDbSet<Notification>().Where(n => n.UserId == userId);
+        => GetDbSet<Notification>()
+         .Where(n => n.UserId == userId && !n.IsDeleted);
 
         public void Add(Notification n)
         {

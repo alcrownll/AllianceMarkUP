@@ -1,14 +1,76 @@
-﻿@{
+﻿@model ASI.Basecode.Services.ServiceModels.NotificationPageVm
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
 }
 
-<div class="notifications-container">
-    <h3>@ViewData["PageHeader"]</h3>
-    <p>This is the shared notifications view. Messages and alerts will change depending on role.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/notifications.css" />
+}
 
-    <!-- Example placeholder notifications -->
-    <ul>
-        <li>🔔 Notification 1 (role-based)</li>
-        <li>🔔 Notification 2 (role-based)</li>
-    </ul>
+<div class="notifications-page">
+    <div class="n-card">
+        <div class="n-header">
+            <h3 class="n-title"><i class="fa-solid fa-bell me-2"></i>@ViewData["PageHeader"]</h3>
+            <div class="n-actions">
+                @if (Model.UnreadCount > 0)
+                {
+                    <form id="formAll" method="post" action="@Url.Action("MarkAllNotificationsRead","Student")" class="m-0 p-0">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="n-btn" id="btnMarkAll">
+                            <i class="fa-solid fa-check-double me-1"></i>Mark all as read (@Model.UnreadCount)
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @if (Model.Items != null && Model.Items.Any())
+        {
+            <ul class="n-list" id="notifList">
+                @foreach (var item in Model.Items)
+                {
+                    var icon = item.Title?.ToLowerInvariant() switch
+                    {
+                        var t when t.Contains("grade") => "fa-book-open-reader",
+                        var t when t.Contains("profile") => "fa-user-pen",
+                        var t when t.Contains("schedule") => "fa-calendar-days",
+                        _ => "fa-bell"
+                    };
+
+                    <li class="n-item @(item.IsRead ? "" : "unread")" data-id="@item.Id">
+                        <div class="n-main">
+                            <div class="n-icon"><i class="fa-solid @icon"></i></div>
+                            <div class="n-content">
+                                <div class="n-row">
+                                    <div class="n-title-sm">@item.Title</div>
+                                    <div class="n-when">@item.When</div>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(item.Message))
+                                {
+                                    <div class="n-sub">@item.Message</div>
+                                }
+                            </div>
+                        </div>
+                        @if (!item.IsRead)
+                        {
+                            <form method="post" action="@Url.Action("MarkNotificationRead","Student")" class="m-0 p-0 n-action">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="n-btn-small">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Mark Read
+                                </button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="n-empty">
+                <i class="fa-regular fa-bell-slash fa-2x mb-2"></i>
+                <p>You have no notifications yet.</p>
+            </div>
+        }
+    </div>
 </div>

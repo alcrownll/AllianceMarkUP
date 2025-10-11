@@ -1,0 +1,326 @@
+﻿/* ===========================
+   CALENDAR THEME TOKENS
+   =========================== */
+:root {
+    --cal-header-bg: #0d6efd; /* top header row (days of week) */
+    --cal-header-fg: #ffffff; /* header text */
+    --cal-grid-border: #eef2f6; /* grid lines */
+    --today-bg: #eaf2ff; /* soft blue for "today" cell */
+}
+
+/* ===========================
+   SHELL & TOOLBAR
+   =========================== */
+.calendar-page {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1rem 1rem 1.25rem;
+    box-shadow: 0 2px 20px rgba(16,24,40,.06);
+}
+
+.calendar-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .75rem;
+    flex-wrap: wrap;
+}
+
+.calendar-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0 0 0 .75rem;
+    letter-spacing: .2px;
+}
+
+.left-controls,
+.right-controls {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: .6rem;
+    line-height: 1;
+    font-size: 1.2rem;
+    padding: 0;
+    border: 1px solid #e5eaf0;
+    background: #fff;
+}
+
+    .icon-btn:hover {
+        background: #f8fafc;
+    }
+
+.btn-group .btn.active,
+.btn-group .btn:focus {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Calendar container */
+#calendar {
+    min-height: 720px;
+    border-radius: .75rem;
+    overflow: hidden;
+}
+
+/* ===========================
+   FULLCALENDAR POLISH
+   =========================== */
+
+/* Remove all link underlines inside FC */
+.fc a {
+    text-decoration: none !important;
+}
+
+/* Softer borders */
+.fc .fc-scrollgrid,
+.fc .fc-theme-standard td,
+.fc .fc-theme-standard th {
+    border-color: var(--cal-grid-border);
+}
+
+/* Top header row (days of week) */
+.fc .fc-col-header {
+    background: var(--cal-header-bg);
+}
+
+.fc .fc-col-header-cell,
+.fc .fc-col-header-cell-cushion {
+    background: transparent !important;
+    color: var(--cal-header-fg) !important;
+}
+
+.fc .fc-col-header-cell-cushion {
+    padding: .65rem 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+/* Day numbers */
+.fc .fc-daygrid-day-number {
+    font-weight: 700;
+    color: #0f172a;
+    padding: .35rem .45rem;
+}
+
+/* Hover feedback on cells/time slots */
+.fc .fc-daygrid-day,
+.fc .fc-timegrid-slot {
+    transition: background .12s ease;
+}
+
+    .fc .fc-daygrid-day:hover,
+    .fc .fc-timegrid-slot:hover {
+        background: #f8fafc;
+    }
+
+/* TODAY highlight: switch from yellow to soft blue, remove thick ring */
+.fc .fc-day-today,
+.fc .fc-timegrid-col.fc-day-today {
+    background: var(--today-bg) !important;
+    border: 0 !important;
+}
+
+/* Now indicator line – subtle */
+.fc .fc-timegrid-now-indicator-line,
+.fc .fc-timegrid-now-indicator-arrow {
+    border-color: #ef4444 !important; /* red line */
+}
+
+/* ===========================
+   EVENT BADGES (Google-like)
+   =========================== */
+
+/* Base "badge" style for events */
+.fc .fc-event.evt-badge {
+    border: none;
+    border-radius: .6rem;
+    padding: 2px 6px;
+    font-weight: 600;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04);
+    position: relative;
+}
+
+    /* Left color strip */
+    .fc .fc-event.evt-badge::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-top-left-radius: .6rem;
+        border-bottom-left-radius: .6rem;
+    }
+
+/* 10-color pastel palette (bg translucent; strip/text solid) */
+.fc .evt-color-0 {
+    background: rgba(99,102,241,.14) !important;
+    color: #312e81 !important;
+}
+
+    .fc .evt-color-0::before {
+        background: #6366f1;
+    }
+
+.fc .evt-color-1 {
+    background: rgba(244,63,94,.14) !important;
+    color: #7f1d1d !important;
+}
+
+    .fc .evt-color-1::before {
+        background: #f43f5e;
+    }
+
+.fc .evt-color-2 {
+    background: rgba(16,185,129,.14) !important;
+    color: #064e3b !important;
+}
+
+    .fc .evt-color-2::before {
+        background: #10b981;
+    }
+
+.fc .evt-color-3 {
+    background: rgba(245,158,11,.18) !important;
+    color: #78350f !important;
+}
+
+    .fc .evt-color-3::before {
+        background: #f59e0b;
+    }
+
+.fc .evt-color-4 {
+    background: rgba(59,130,246,.14) !important;
+    color: #1e3a8a !important;
+}
+
+    .fc .evt-color-4::before {
+        background: #3b82f6;
+    }
+
+.fc .evt-color-5 {
+    background: rgba(192,38,211,.14) !important;
+    color: #6b21a8 !important;
+}
+
+    .fc .evt-color-5::before {
+        background: #c026d3;
+    }
+
+.fc .evt-color-6 {
+    background: rgba(20,184,166,.14) !important;
+    color: #134e4a !important;
+}
+
+    .fc .evt-color-6::before {
+        background: #14b8a6;
+    }
+
+.fc .evt-color-7 {
+    background: rgba(2,132,199,.14) !important;
+    color: #0c4a6e !important;
+}
+
+    .fc .evt-color-7::before {
+        background: #0284c7;
+    }
+
+.fc .evt-color-8 {
+    background: rgba(234,179,8,.18) !important;
+    color: #713f12 !important;
+}
+
+    .fc .evt-color-8::before {
+        background: #eab308;
+    }
+
+.fc .evt-color-9 {
+    background: rgba(236,72,153,.14) !important;
+    color: #831843 !important;
+}
+
+    .fc .evt-color-9::before {
+        background: #ec4899;
+    }
+
+/* Make Agenda/List dots match event color */
+.fc .fc-list-event.evt-color-0 .fc-event-dot {
+    border-color: #6366f1;
+}
+
+.fc .fc-list-event.evt-color-1 .fc-event-dot {
+    border-color: #f43f5e;
+}
+
+.fc .fc-list-event.evt-color-2 .fc-event-dot {
+    border-color: #10b981;
+}
+
+.fc .fc-list-event.evt-color-3 .fc-event-dot {
+    border-color: #f59e0b;
+}
+
+.fc .fc-list-event.evt-color-4 .fc-event-dot {
+    border-color: #3b82f6;
+}
+
+.fc .fc-list-event.evt-color-5 .fc-event-dot {
+    border-color: #c026d3;
+}
+
+.fc .fc-list-event.evt-color-6 .fc-event-dot {
+    border-color: #14b8a6;
+}
+
+.fc .fc-list-event.evt-color-7 .fc-event-dot {
+    border-color: #0284c7;
+}
+
+.fc .fc-list-event.evt-color-8 .fc-event-dot {
+    border-color: #eab308;
+}
+
+.fc .fc-list-event.evt-color-9 .fc-event-dot {
+    border-color: #ec4899;
+}
+
+/* ===========================
+   LIST/AGENDA POLISH
+   =========================== */
+.fc .fc-list {
+    border-radius: .75rem;
+    overflow: hidden;
+}
+
+.fc .fc-list-table tr {
+    transition: background .12s ease;
+}
+
+    .fc .fc-list-table tr:hover {
+        background: #f8fafc;
+    }
+
+/* ===========================
+   MODAL COSMETIC
+   =========================== */
+.modal-content {
+    border-radius: 1rem;
+}
+
+/* ===========================
+   RESPONSIVE TWEAKS
+   =========================== */
+@media (max-width: 576px) {
+    .calendar-title {
+        display: none;
+    }
+}

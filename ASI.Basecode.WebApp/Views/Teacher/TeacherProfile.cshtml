@@ -4,7 +4,7 @@
     ViewData["Title"] = "Profile";
     ViewData["PageHeader"] = "Profile";
 }
-<link rel="stylesheet" href="~/css/main-site.css" />
+<link rel="stylesheet" href="~/css/user-profile.css" />
 
 <div class="container my-4">
     <div class="profile-card">
@@ -16,16 +16,16 @@
         <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
         <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
 
-        <form asp-action="SaveProfile" asp-controller="Teacher" method="post" enctype="multipart/form-data">
+        <form id="profileForm" asp-action="SaveProfile" asp-controller="Teacher" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
-            <input type="hidden" asp-for="UserId" />
-            <input type="hidden" name="Role" value="Teacher" />
+            <input type="hidden" asp-for="UserId" data-static="true" />
+            <input type="hidden" name="Role" value="Teacher" data-static="true" />
 
-            <!-- TEACHER STRIP (inside the form so values are posted) -->
-            <div class="role-strip p-3 bg-light rounded mb-3 role-block-teacher">
+            <!-- === TEACHER INFO (initially read-only, enabled only on Edit) === -->
+            <h3 class="section-title mb-2">Faculty Details</h3>
+            <div class="mb-3 role-strip p-3 bg-light rounded role-block-teacher">
                 <div class="row g-3 uniform-row">
                     <div class="col-md-6">
                         <label class="form-label" asp-for="Department"></label>
@@ -51,11 +51,14 @@
                 </div>
             </div>
 
-            @* Shared profile fields (name, email, address, DateOfBirth, etc.) *@
+            @* Shared profile fields (name, email, address, DateOfBirth, avatar, etc.) *@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
 
+            <!-- === Bottom action row (like Student) === -->
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
+                <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
+                <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
             </div>
         </form>
     </div>
@@ -63,31 +66,83 @@
 
 @section Scripts {
     <script>
-        (function(){
-          const input = document.getElementById('avatarInput');
-          const preview = document.getElementById('avatarPreview');
-          if (input && preview) {
-            preview.addEventListener('keydown', function(e){
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
-            });
-            input.addEventListener('change', function (e) {
-              const file = e.target.files && e.target.files[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = function (ev) {
-                preview.style.backgroundImage = `url('${ev.target.result}')`;
-                preview.classList.add('has-image');
-              };
-              reader.readAsDataURL(file);
-            });
+        (function () {
+            const form = document.getElementById('profileForm');
+            const btnEdit = document.getElementById('btnEdit');
+            const btnSave = document.getElementById('btnSave');
+            const btnCancel = document.getElementById('btnCancel');
 
-            // Initial preview if Model has an existing picture
-            var url = '@(Model.ProfilePictureUrl ?? "")';
-            if (url) {
-              preview.style.backgroundImage = `url('${url}')`;
-              preview.classList.add('has-image');
+            // Avatar elems (from the shared partial)
+            const avatarInput = document.getElementById('avatarInput');
+            const avatarPreview = document.getElementById('avatarPreview');
+
+            function setFormEditable(isEditable) {
+                // Enable/disable all editable fields except those explicitly static/locked
+                const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
+                fields.forEach(el => {
+                    const isHidden = el.type === 'hidden';
+                    const isStatic = el.getAttribute('data-static') === 'true';
+                    const isLocked = el.getAttribute('data-locked') === 'true';
+                    if (isHidden || isStatic || isLocked) return;
+                    el.disabled = !isEditable;
+                    if (isEditable) el.removeAttribute('aria-disabled');
+                    else el.setAttribute('aria-disabled', 'true');
+                });
+
+                // Buttons
+                btnEdit.classList.toggle('d-none', isEditable);
+                btnSave.classList.toggle('d-none', !isEditable);
+                btnCancel.classList.toggle('d-none', !isEditable);
+
+                form.classList.toggle('is-readonly', !isEditable);
             }
-          }
+
+            function resetToInitial() {
+                form.reset();
+                // Restore avatar preview if model had an existing picture
+                if (avatarPreview) {
+                    const existing = '@(Model.ProfilePictureUrl ?? "")';
+                    if (existing) {
+                        avatarPreview.style.backgroundImage = `url('${existing}')`;
+                        avatarPreview.classList.add('has-image');
+                    } else {
+                        avatarPreview.style.backgroundImage = '';
+                        avatarPreview.classList.remove('has-image');
+                    }
+                }
+            }
+
+            // Initial: read-only (match Student behavior)
+            setFormEditable(false);
+
+            btnEdit.addEventListener('click', () => setFormEditable(true));
+            btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
+
+            // Avatar keyboard interaction + live preview (only when enabled)
+            if (avatarInput && avatarPreview) {
+                avatarPreview.addEventListener('keydown', function(e){
+                    if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
+                        e.preventDefault(); avatarInput.click();
+                    }
+                });
+                avatarInput.addEventListener('change', function (e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        avatarPreview.style.backgroundImage = `url('${ev.target.result}')`;
+                        avatarPreview.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                // Initial preview if picture exists
+                var url = '@(Model.ProfilePictureUrl ?? "")';
+                if (url) {
+                    avatarPreview.style.backgroundImage = `url('${url}')`;
+                    avatarPreview.classList.add('has-image');
+                }
+            }
         })();
     </script>
 }

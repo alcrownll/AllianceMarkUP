@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -19,6 +20,7 @@ namespace ASI.Basecode.Services.ServiceModels
 
         // UserProfiles table
         public string ProfilePictureUrl { get; set; }
+        public IFormFile? ProfilePhotoFile { get; set; }
         public string MiddleName { get; set; }
         public string Suffix { get; set; }
         public string MobileNo { get; set; }

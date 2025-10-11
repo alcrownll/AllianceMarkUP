@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using ASI.Basecode.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using ASI.Basecode.Data.Models;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System;
+using System.Collections.Generic;
 
 namespace ASI.Basecode.Data
 {
@@ -192,7 +193,13 @@ namespace ASI.Basecode.Data
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-            // 🔹 CALENDAR EVENT
+
+            // 🔹 CALENDAR EVENT (updated)
+
+            var utcConv = new ValueConverter<DateTime, DateTime>(
+        v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
             modelBuilder.Entity<CalendarEvent>(entity =>
             {
                 entity.HasKey(e => e.CalendarEventId);
@@ -200,14 +207,38 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Location).HasMaxLength(200);
 
-                entity.Property(e => e.StartUtc).HasColumnType("timestamp");
-                entity.Property(e => e.EndUtc).HasColumnType("timestamp");
+                entity.Property(e => e.TimeZoneId)
+                      .IsRequired()
+                      .HasMaxLength(100)
+                      .HasDefaultValue("Asia/Manila");
+
+                // Map and force UTC
+                entity.Property(e => e.StartUtc)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv);
+
+                entity.Property(e => e.EndUtc)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv);
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv);
+
+                entity.Property(e => e.UpdatedAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv);
+
+                entity.Property(e => e.LocalStartDate).HasColumnType("date");
+                entity.Property(e => e.LocalEndDate).HasColumnType("date");
 
                 entity.HasOne(e => e.User)
-                      .WithMany(u => u.CalendarEvents) // you'll need a `ICollection<CalendarEvent>` in User
+                      .WithMany(u => u.CalendarEvents)
                       .HasForeignKey(e => e.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);  // or Restrict if you don’t want cascade
+                      .OnDelete(DeleteBehavior.Cascade);
             });
+
+
 
             OnModelCreatingPartial(modelBuilder);
         }
