@@ -19,7 +19,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -33,7 +32,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IProfileService _profileService;
         private readonly IHttpContextAccessor _httpContext;
         private readonly INotificationService _notificationService;
-
+        private readonly IStudentDashboardService _studentDashboardService;
         public StudentController(
             IGradeRepository gradeRepository,
             IStudentRepository studentRepository,
@@ -42,7 +41,8 @@ namespace ASI.Basecode.WebApp.Controllers
             IWebHostEnvironment env,
             IProfileService profileService,
             IHttpContextAccessor httpContext,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            IStudentDashboardService studentDashboardService)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -52,7 +52,7 @@ namespace ASI.Basecode.WebApp.Controllers
             _profileService = profileService;
             _httpContext = httpContext;
             _notificationService = notificationService;
-
+            _studentDashboardService = studentDashboardService;
         }
 
         // --------------------------------------------------------------------
@@ -63,83 +63,14 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             ViewData["PageHeader"] = "Dashboard";
 
-            // Identify logged-in student
             var idNumber = HttpContext.Session.GetString("IdNumber");
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
-            var user = await _userRepository.GetUsers()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
-
-            if (user == null)
-                return View("StudentDashboard", new StudentDashboardViewModel());
-
-            var student = await _studentRepository.GetStudents()
-                .Include(s => s.User)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.UserId == user.UserId);
-
-            if (student == null)
-                return View("StudentDashboard", new StudentDashboardViewModel());
-
-            var grades = await _gradeRepository.GetGrades()
-                .Where(g => g.StudentId == student.StudentId)
-                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
-                .AsNoTracking()
-                .ToListAsync();
-
-            // ---- Cumulative GWA (weighted by units) ----
-            decimal totalWeighted = 0m;
-            decimal totalUnitsForWeight = 0m;
-
-            foreach (var g in grades)
-            {
-                var units = (g.AssignedCourse?.Units)
-                            ?? (g.AssignedCourse?.Course?.TotalUnits)
-                            ?? 0;
-                if (units <= 0) units = 1;
-
-                if (!g.Final.HasValue) continue;
-                var gwaValue = MapPercentToGwa((decimal)g.Final.Value);
-
-                totalWeighted += gwaValue * units;
-                totalUnitsForWeight += units;
-            }
-
-            decimal? cumulativeGwa = null;
-            if (totalUnitsForWeight > 0)
-                cumulativeGwa = Math.Round(totalWeighted / totalUnitsForWeight, 2);
-
-            var currentSy = GetCurrentSchoolYear();            // e.g., "2025-2026"
-            var currentSemNameShort = GetCurrentSemesterName(); // "1st"/"2nd"/"Mid"
-
-            var currentTermUnits = grades
-                .Where(g => g.AssignedCourse != null
-                            && MatchesCurrentTerm(g.AssignedCourse.Semester, currentSy, currentSemNameShort))
-                .Select(g =>
-                    (g.AssignedCourse?.Units as int?)
-                    ?? g.AssignedCourse?.Course?.TotalUnits
-                    ?? 0
-                )
-                .Sum();
-
-            bool isDeanList = cumulativeGwa.HasValue && cumulativeGwa.Value <= 1.75m;
-
-            var vm = new StudentDashboardViewModel
-            {
-                StudentName = $"{student.User.FirstName} {student.User.LastName}",
-                Program = student.Program,
-                YearLevel = FormatYearLevel(student.YearLevel),
-                CumulativeGwa = cumulativeGwa,
-                CurrentTermUnits = currentTermUnits,
-                IsDeanListEligible = isDeanList,
-                CurrentSchoolYear = currentSy,
-                CurrentSemesterName = currentSemNameShort + " Semester"
-            };
-
+            var vm = await _studentDashboardService.BuildAsync(idNumber);
             return View("StudentDashboard", vm);
         }
+
 
         // --------------------------------------------------------------------
         // PROFILE

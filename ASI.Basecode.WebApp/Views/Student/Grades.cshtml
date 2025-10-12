@@ -87,7 +87,7 @@
                 <div class="info-right">
                     <div class="info-line"><small>School Year :</small><b>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</b></div>
                     <div class="info-line"><small>Semester :</small><b>@(Model.SelectedSemester ?? Model.Semester)</b></div>
-                    <div class="info-line"><small>GPA :</small><b>@(Model.Gpa?.ToString("0.0") ?? "—")</b></div>
+                    <div class="info-line"><small>GPA :</small><b>@(Model.Gpa?.ToString("0.00") ?? "—")</b></div>
                 </div>
             </div>
 
@@ -159,7 +159,7 @@
                 <div class="lbl">School Year</div><div class="val">: @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</div>
                 <div class="lbl">Semester</div><div class="val">: @(Model.SelectedSemester ?? Model.Semester)</div>
                 <div class="lbl">Year Level</div><div class="val">: @Model.YearLevel</div>
-                <div class="lbl">GPA</div><div class="val">: @(Model.Gpa?.ToString("0.0") ?? "—")</div>
+                <div class="lbl">GPA</div><div class="val">: @(Model.Gpa?.ToString("0.00") ?? "—")</div>
             </div>
 
             <hr class="sep" />

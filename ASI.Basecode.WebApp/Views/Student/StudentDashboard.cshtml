@@ -1,4 +1,4 @@
-﻿@model ASI.Basecode.WebApp.Models.StudentDashboardViewModel
+﻿@model ASI.Basecode.Services.ServiceModels.StudentDashboardViewModel
 
 @{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
@@ -80,70 +80,24 @@
                     </div>
                 </div>
 
-                <!-- Line (demo) -->
+                <!-- Dynamic line -->
                 <div class="chart-col">
                     <div class="tabs">
-                        <div class="tab active" id="tabSem1">1st Semester</div>
-                        <div class="tab" id="tabSem2">2nd Semester</div>
+                        <div class="tab active" id="tabSem1">@Model.Sem1Label</div>
+                        <div class="tab" id="tabSem2">@Model.Sem2Label</div>
                     </div>
                     <div class="chart-area">
-                        <canvas id="termLine"></canvas>
+                        <canvas id="termLine"
+                                data-sem1='@Newtonsoft.Json.JsonConvert.SerializeObject(Model.Sem1Series ?? new decimal?[] { })'
+                                data-sem2='@Newtonsoft.Json.JsonConvert.SerializeObject(Model.Sem2Series ?? new decimal?[] { })'>
+                        </canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bottom panels (sample content) -->
-    <div class="grid two-cols">
-        <div class="card p24">
-            <div class="panel-title">Announcements</div>
-            <div class="list">
-                <div class="item">
-                    <div class="dot">🔔</div>
-                    <div>
-                        <div class="i-title">4th Year Skills Test</div>
-                        <div class="i-sub">College of Computer Studies</div>
-                        <a class="link" href="#">Read &gt;</a>
-                    </div>
-                    <div class="i-meta">07/17/25</div>
-                </div>
-                <div class="item">
-                    <div class="dot">🗓️</div>
-                    <div>
-                        <div class="i-title">Enrollment opens next week</div>
-                        <div class="i-sub">Registrar</div>
-                        <a class="link" href="#">Read &gt;</a>
-                    </div>
-                    <div class="i-meta">07/15/25</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card p24">
-            <div class="panel-title">Student Life</div>
-            <div class="list">
-                <div class="item">
-                    <div class="dot">🎮</div>
-                    <div>
-                        <div class="i-title">CCS conducts first stud...</div>
-                        <div class="i-sub">Bits &amp; Bytes</div>
-                        <a class="link" href="#">Read &gt;</a>
-                    </div>
-                    <div class="i-meta">07/17/25</div>
-                </div>
-                <div class="item">
-                    <div class="dot">📷</div>
-                    <div>
-                        <div class="i-title">Photography club orientation</div>
-                        <div class="i-sub">Campus Org</div>
-                        <a class="link" href="#">Read &gt;</a>
-                    </div>
-                    <div class="i-meta">07/10/25</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Removed: Announcements / Student Life panels -->
 </div>
 
 @section Scripts {
@@ -190,16 +144,17 @@
             }]
         });
 
-        // ---------- Line chart (demo) ----------
+        // ---------- Line chart (dynamic from server) ----------
         const ctxLine = document.getElementById('termLine');
         let line;
-        const datasets = {
-            sem1: [3.0, 2.4, 3.2, 3.2],
-            sem2: [3.5, 2.9, 3.1, 2.7]
-        };
+        const sem1 = JSON.parse(ctxLine.dataset.sem1 || '[]');
+        const sem2 = JSON.parse(ctxLine.dataset.sem2 || '[]');
 
-        function drawLine(data) {
+        function drawLine(arr) {
             if (line) line.destroy();
+            // Fallback to zeros for missing items to keep 4 points
+            const data = [...Array(4)].map((_, i) => (arr && arr[i] != null) ? arr[i] : null);
+
             line = new Chart(ctxLine, {
                 type: 'line',
                 data: {
@@ -234,17 +189,18 @@
                 }
             });
         }
-        drawLine(datasets.sem1);
+        drawLine(sem1);
 
-        document.getElementById('tabSem1').addEventListener('click', () => {
-            document.getElementById('tabSem1').classList.add('active');
-            document.getElementById('tabSem2').classList.remove('active');
-            drawLine(datasets.sem1);
-        });
-        document.getElementById('tabSem2').addEventListener('click', () => {
-            document.getElementById('tabSem2').classList.add('active');
-            document.getElementById('tabSem1').classList.remove('active');
-            drawLine(datasets.sem2);
-        });
+        const t1 = document.getElementById('tabSem1');
+        const t2 = document.getElementById('tabSem2');
+
+        function activate(el, other, data) {
+            el.classList.add('active');
+            other.classList.remove('active');
+            drawLine(data);
+        }
+
+        t1.addEventListener('click', () => activate(t1, t2, sem1));
+        t2.addEventListener('click', () => activate(t2, t1, sem2));
     </script>
 }
