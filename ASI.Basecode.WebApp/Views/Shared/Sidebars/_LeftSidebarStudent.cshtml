@@ -20,8 +20,9 @@
 <body>
     <nav class="sidebar">
         <!-- Logo / Brand -->
-        <a class="brand" asp-controller="Student" asp-action="Dashboard" aria-label="MarkUp Home">
+        <a class="brand" asp-controller="Student" asp-action="Dashboard" aria-label="MarkUp Home" data-label="Home">
             <img src="~/img/MarkUPLogo.png" alt="MarkUp" />
+            <span class="sr-only">Home</span>
         </a>
 
         <!-- Centered Navigation -->
@@ -30,10 +31,12 @@
                 <!-- Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "Dashboard")"
-                       asp-controller="Student" asp-action="Dashboard">
+                       asp-controller="Student" asp-action="Dashboard"
+                       data-label="Dashboard">
                         <span class="icon-wrap">
                             <i class="bi bi-grid icon-outline"></i>
                             <i class="bi bi-grid-fill icon-fill"></i>
+                            <span class="sr-only">Dashboard</span>
                         </span>
                     </a>
                 </li>
@@ -41,10 +44,12 @@
                 <!-- Study Load -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "StudyLoad")"
-                       asp-controller="Student" asp-action="StudyLoad">
+                       asp-controller="Student" asp-action="StudyLoad"
+                       data-label="Study Load">
                         <span class="icon-wrap">
                             <i class="bi bi-journal-bookmark icon-outline"></i>
                             <i class="bi bi-journal-bookmark-fill icon-fill"></i>
+                            <span class="sr-only">Study Load</span>
                         </span>
                     </a>
                 </li>
@@ -52,10 +57,12 @@
                 <!-- Grades -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "Grades")"
-                       asp-controller="Student" asp-action="Grades">
+                       asp-controller="Student" asp-action="Grades"
+                       data-label="Grades">
                         <span class="icon-wrap">
                             <i class="bi bi-file-earmark-bar-graph icon-outline"></i>
                             <i class="bi bi-file-earmark-bar-graph-fill icon-fill"></i>
+                            <span class="sr-only">Grades</span>
                         </span>
                     </a>
                 </li>
@@ -63,10 +70,12 @@
                 <!-- Calendar -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "Calendar")"
-                       asp-controller="Student" asp-action="Calendar">
+                       asp-controller="Student" asp-action="Calendar"
+                       data-label="Calendar">
                         <span class="icon-wrap">
                             <i class="bi bi-calendar-event icon-outline"></i>
                             <i class="bi bi-calendar-event-fill icon-fill"></i>
+                            <span class="sr-only">Calendar</span>
                         </span>
                     </a>
                 </li>
@@ -74,10 +83,12 @@
                 <!-- Notifications -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "Notifications")"
-                       asp-controller="Student" asp-action="Notifications">
+                       asp-controller="Student" asp-action="Notifications"
+                       data-label="Notifications">
                         <span class="icon-wrap">
                             <i class="bi bi-bell icon-outline"></i>
                             <i class="bi bi-bell-fill icon-fill"></i>
+                            <span class="sr-only">Notifications</span>
                         </span>
                     </a>
                 </li>
@@ -85,10 +96,12 @@
                 <!-- Profile -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Student", "Profile")"
-                       asp-controller="Student" asp-action="Profile">
+                       asp-controller="Student" asp-action="Profile"
+                       data-label="Profile">
                         <span class="icon-wrap">
                             <i class="bi bi-person icon-outline"></i>
                             <i class="bi bi-person-fill icon-fill"></i>
+                            <span class="sr-only">Profile</span>
                         </span>
                     </a>
                 </li>
@@ -98,15 +111,82 @@
         <!-- Logout pinned at bottom -->
         <div class="logout">
             <form asp-controller="Login" asp-action="StudentLogout" method="post">
-                <button type="submit">
+                <button type="submit" data-label="Logout">
                     <span class="icon-wrap">
                         <i class="bi bi-box-arrow-right icon-outline"></i>
                         <i class="bi bi-box-arrow-right icon-fill"></i>
                     </span>
                     <div>Logout</div>
+                    <span class="sr-only">Logout</span>
                 </button>
             </form>
         </div>
     </nav>
+
+    <!-- Sidebar-only floating label -->
+    <div id="hoverLabel" role="status" aria-live="polite" aria-hidden="true"></div>
+
+    <!-- Sidebar-scoped script -->
+    <script>
+        (function () {
+            const label = document.getElementById('hoverLabel');
+            const scope = document.querySelector('.sidebar'); // 👈 limit to left sidebar only
+            if (!label || !scope) return;
+
+            const OFFSET_X = 16, OFFSET_Y = 12;
+            let hideTimer = null;
+
+            const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+            function positionLabel(x, y) {
+                const rect = label.getBoundingClientRect();
+                const maxX = window.innerWidth - rect.width - 8;
+                const maxY = window.innerHeight - rect.height - 8;
+                label.style.left = clamp(x + OFFSET_X, 8, maxX) + 'px';
+                label.style.top  = clamp(y + OFFSET_Y, 8, maxY) + 'px';
+            }
+
+            function showLabel(text) {
+                label.textContent = text || '';
+                label.setAttribute('aria-hidden', text ? 'false' : 'true');
+                label.classList.add('is-visible');
+            }
+
+            function hideLabel() {
+                label.classList.remove('is-visible');
+                label.setAttribute('aria-hidden', 'true');
+            }
+
+            function bind(el) {
+                const text = (el.dataset.label || '').trim();
+                if (!text) return;
+
+                el.addEventListener('mouseenter', e => {
+                    if (hideTimer) clearTimeout(hideTimer);
+                    showLabel(text);
+                    positionLabel(e.clientX, e.clientY);
+                });
+                el.addEventListener('mousemove', e => positionLabel(e.clientX, e.clientY));
+                el.addEventListener('mouseleave', () => { hideTimer = setTimeout(hideLabel, 60); });
+
+                el.addEventListener('click', e => {
+                    showLabel(text);
+                    positionLabel(e.clientX, e.clientY);
+                    if (hideTimer) clearTimeout(hideTimer);
+                    hideTimer = setTimeout(hideLabel, 450);
+                });
+
+                el.addEventListener('focus', () => {
+                    const r = el.getBoundingClientRect();
+                    showLabel(text);
+                    positionLabel(r.left + r.width / 2, r.top + 8);
+                });
+                el.addEventListener('blur', hideLabel);
+            }
+
+            // bind only inside the sidebar
+            scope.querySelectorAll('[data-label]').forEach(bind);
+        })();
+    </script>
 </body>
 </html>

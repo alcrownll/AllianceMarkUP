@@ -22,8 +22,9 @@
 <body>
     <nav class="sidebar">
         <!-- Logo / Brand -->
-        <a class="brand" asp-controller="Teacher" asp-action="Dashboard" aria-label="MarkUp Home">
+        <a class="brand" asp-controller="Teacher" asp-action="Dashboard" aria-label="MarkUp Home" data-label="Home">
             <img src="~/img/MarkUPLogo.png" alt="MarkUp" />
+            <span class="sr-only">Home</span>
         </a>
 
         <!-- Centered Navigation -->
@@ -32,10 +33,12 @@
                 <!-- Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Teacher", "Dashboard")"
-                       asp-controller="Teacher" asp-action="Dashboard">
+                       asp-controller="Teacher" asp-action="Dashboard"
+                       data-label="Dashboard">
                         <span class="icon-wrap">
                             <i class="bi bi-grid icon-outline"></i>
                             <i class="bi bi-grid-fill icon-fill"></i>
+                            <span class="sr-only">Dashboard</span>
                         </span>
                     </a>
                 </li>
@@ -43,10 +46,12 @@
                 <!-- Assigned Courses -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Teacher", "AssignedCourses")"
-                       asp-controller="Teacher" asp-action="AssignedCourses">
+                       asp-controller="Teacher" asp-action="AssignedCourses"
+                       data-label="Assigned Courses">
                         <span class="icon-wrap">
                             <i class="bi bi-journal-bookmark icon-outline"></i>
                             <i class="bi bi-journal-bookmark-fill icon-fill"></i>
+                            <span class="sr-only">Assigned Courses</span>
                         </span>
                     </a>
                 </li>
@@ -54,10 +59,12 @@
                 <!-- Calendar -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Teacher", "Calendar")"
-                       asp-controller="Teacher" asp-action="Calendar">
+                       asp-controller="Teacher" asp-action="Calendar"
+                       data-label="Calendar">
                         <span class="icon-wrap">
                             <i class="bi bi-calendar-event icon-outline"></i>
                             <i class="bi bi-calendar-event-fill icon-fill"></i>
+                            <span class="sr-only">Calendar</span>
                         </span>
                     </a>
                 </li>
@@ -65,10 +72,12 @@
                 <!-- Notifications -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Teacher", "Notifications")"
-                       asp-controller="Teacher" asp-action="Notifications">
+                       asp-controller="Teacher" asp-action="Notifications"
+                       data-label="Notifications">
                         <span class="icon-wrap">
                             <i class="bi bi-bell icon-outline"></i>
                             <i class="bi bi-bell-fill icon-fill"></i>
+                            <span class="sr-only">Notifications</span>
                         </span>
                     </a>
                 </li>
@@ -76,10 +85,12 @@
                 <!-- Profile -->
                 <li class="nav-item">
                     <a class="nav-link @isActive("Teacher", "Profile")"
-                       asp-controller="Teacher" asp-action="Profile">
+                       asp-controller="Teacher" asp-action="Profile"
+                       data-label="Profile">
                         <span class="icon-wrap">
                             <i class="bi bi-person icon-outline"></i>
                             <i class="bi bi-person-fill icon-fill"></i>
+                            <span class="sr-only">Profile</span>
                         </span>
                     </a>
                 </li>
@@ -89,15 +100,49 @@
         <!-- Logout pinned at bottom -->
         <div class="logout">
             <form asp-controller="Login" asp-action="TeacherLogout" method="post">
-                <button type="submit">
+                <button type="submit" data-label="Logout">
                     <span class="icon-wrap">
                         <i class="bi bi-box-arrow-right icon-outline"></i>
                         <i class="bi bi-box-arrow-right icon-fill"></i>
                     </span>
                     <div>Logout</div>
+                    <span class="sr-only">Logout</span>
                 </button>
             </form>
         </div>
     </nav>
+
+    <!-- Floating tooltip -->
+    <div id="hoverLabel" role="status" aria-live="polite" aria-hidden="true"></div>
+
+    <script>
+        (function () {
+            const label = document.getElementById('hoverLabel');
+            const scope = document.querySelector('.sidebar');
+            if (!label || !scope) return;
+            const OFFSET_X = 16, OFFSET_Y = 12;
+            let hideTimer = null;
+
+            const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+            function positionLabel(x, y) {
+                const r = label.getBoundingClientRect();
+                label.style.left = clamp(x + OFFSET_X, 8, window.innerWidth - r.width - 8) + 'px';
+                label.style.top  = clamp(y + OFFSET_Y, 8, window.innerHeight - r.height - 8) + 'px';
+            }
+            function showLabel(text) { label.textContent = text; label.classList.add('is-visible'); label.setAttribute('aria-hidden', 'false'); }
+            function hideLabel() { label.classList.remove('is-visible'); label.setAttribute('aria-hidden', 'true'); }
+
+            function bind(el) {
+                const text = (el.dataset.label || '').trim();
+                if (!text) return;
+                el.addEventListener('mouseenter', e => { clearTimeout(hideTimer); showLabel(text); positionLabel(e.clientX, e.clientY); });
+                el.addEventListener('mousemove', e => positionLabel(e.clientX, e.clientY));
+                el.addEventListener('mouseleave', () => hideTimer = setTimeout(hideLabel, 60));
+                el.addEventListener('click', e => { showLabel(text); positionLabel(e.clientX, e.clientY); hideTimer = setTimeout(hideLabel, 450); });
+            }
+
+            scope.querySelectorAll('[data-label]').forEach(bind);
+        })();
+    </script>
 </body>
 </html>

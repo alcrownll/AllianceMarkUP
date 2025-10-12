@@ -4,6 +4,8 @@ using ASI.Basecode.Services.Manager;
 using ASI.Basecode.WebApp.Authentication;
 using ASI.Basecode.WebApp.Extensions.Configuration;
 using ASI.Basecode.WebApp.Models;
+using ASI.Basecode.Services.Interfaces;  
+using ASI.Basecode.Services.Services;    
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -107,6 +109,9 @@ namespace ASI.Basecode.WebApp
 
             // DI Services
             this.ConfigureOtherServices();
+
+            // ADD: register StudyLoad service for DI
+            services.AddScoped<IStudyLoadService, StudyLoadService>(); 
 
             // Authorization (Add Policy)
             this.ConfigureAuthorization();

@@ -34,6 +34,8 @@ var configurer = new StartupConfigurer(builder.Configuration);
 configurer.ConfigureServices(builder.Services);
 
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
+builder.Services.AddScoped<IStudyLoadService, StudyLoadService>(); 
+
 
 // If you are NOT adding MVC in StartupConfigurer, uncomment this:
 // builder.Services.AddControllersWithViews();

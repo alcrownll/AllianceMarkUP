@@ -1,5 +1,4 @@
-﻿`<!--_MainLayout.cshtml-->
-
+﻿<!-- _MainLayout.cshtml -->
 @using static ASI.Basecode.Resources.Views.Screen
 <!DOCTYPE html>
 <html lang="en">
@@ -14,10 +13,13 @@
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
           crossorigin="anonymous">
     <link rel="stylesheet" href="~/css/main-site.css" />
+
+    <!-- Hover label (global) -->
+    <link rel="stylesheet" href="~/css/hover-label.css" />
+
     <!-- For Mini Calendar -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-   
 
     <script>
         (function () {
@@ -26,7 +28,7 @@
             var url = el.getAttribute('data-url');
             if (!url) return;
 
-            fetch(url, { credentials: 'same-origin' }) // 👈 must include cookies
+            fetch(url, { credentials: 'same-origin' })
               .then(r => r.text())
               .then(html => {
                 el.innerHTML = html;
@@ -41,10 +43,7 @@
         })();
     </script>
 
-
-
     @RenderSection("Styles", required: false)
-
 </head>
 <body>
 
@@ -112,6 +111,12 @@
 
     <!-- Your site-wide JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Hover label (global) JS -->
+    <script src="~/js/hover-label.js" asp-append-version="true"></script>
+
+    <!-- Floating cursor-follow label (global) -->
+    <div id="hoverLabel" role="status" aria-live="polite" aria-hidden="true"></div>
 
     @await RenderSectionAsync("Scripts", required: false)
 

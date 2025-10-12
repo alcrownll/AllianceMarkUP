@@ -22,27 +22,99 @@ namespace ASI.Basecode.Services.Services
 
         public async Task<StudyLoadViewModel> GetStudyLoadAsync(int userId, string termValue)
         {
-            // Resolve the current student via logged-in user
+            // Resolve student
             var student = await _ctx.Students
                 .Include(s => s.User)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.UserId == userId);
 
             if (student == null)
-                return new StudyLoadViewModel { SelectedTerm = termValue, Terms = BuildTerms(termValue ?? GetDefaultTerm()) };
+                return new StudyLoadViewModel { SelectedTerm = termValue, Terms = new List<TermItem>() };
 
-            // Expect "YYYY-YYYY-1" or "YYYY-YYYY-2"
-            var selectedTerm = string.IsNullOrWhiteSpace(termValue) ? GetDefaultTerm() : termValue;
+            // -----------------------
+            // 1) Build term list from DB (AssignedCourses joined via Grades)
+            // -----------------------
+            var rawTerms = await _ctx.Grades
+                .Where(g => g.StudentId == student.StudentId && g.AssignedCourse != null)
+                .Select(g => new
+                {
+                    SchoolYear = g.AssignedCourse.SchoolYear,     // e.g., "2025-2026"
+                    SemesterText = g.AssignedCourse.Semester      // e.g., "1st Semester"
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x.SchoolYear) && !string.IsNullOrWhiteSpace(x.SemesterText))
+                .Distinct()
+                .ToListAsync();
 
-            // AssignedCourseIds via Grades (enrollment)
+            // Map to value "YYYY-YYYY-<1|2>" but keep Text from DB
+            var terms = rawTerms
+                .Select(x => new
+                {
+                    x.SchoolYear,
+                    SemesterNum = SemTextToNum(x.SemesterText),
+                    x.SemesterText
+                })
+                .Where(x => x.SemesterNum != null)
+                .OrderBy(x => x.SchoolYear)
+                .ThenBy(x => x.SemesterNum)
+                .Select(x => new TermItem
+                {
+                    Value = $"{x.SchoolYear}-{x.SemesterNum}",                    // used in querystring
+                    Text = $"S.Y. {x.SchoolYear} - {x.SemesterText}",
+                    Selected = false
+                })
+                .ToList();
+
+            // If student has no data yet, return basic shell
+            if (terms.Count == 0)
+            {
+                return new StudyLoadViewModel
+                {
+                    StudentName = $"{student.User.FirstName} {student.User.LastName}",
+                    Program = student.Program,
+                    YearLevel = student.YearLevel?.ToString(),
+                    SelectedTerm = termValue,
+                    Terms = new List<TermItem>(),
+                    Rows = new List<StudyLoadRow>()
+                };
+            }
+
+            // -----------------------
+            // 2) Pick selected term
+            // -----------------------
+            string selected = termValue;
+
+            // If the query param is empty or not among the available terms, choose:
+            // - current SY + current sem if it exists; otherwise
+            // - the latest term by SY then sem number.
+            if (string.IsNullOrWhiteSpace(selected) || !terms.Any(t => t.Value.Equals(selected, StringComparison.OrdinalIgnoreCase)))
+            {
+                var currentSy = GetCurrentSchoolYear();
+                var currentSemNum = GetCurrentSemesterNum(); // 1 or 2
+
+                var currentValue = $"{currentSy}-{currentSemNum}";
+                selected = terms.Any(t => t.Value == currentValue)
+                    ? currentValue
+                    : terms.OrderBy(t => t.Value).Last().Value; // latest
+            }
+
+            foreach (var t in terms) t.Selected = t.Value.Equals(selected, StringComparison.OrdinalIgnoreCase);
+
+            // Parse "YYYY-YYYY-<n>"
+            var (sy, semNum) = ParseTerm(selected);
+            var semText = SemNumToText(semNum);
+
+            // -----------------------
+            // 3) Load courses for the selected term
+            // -----------------------
             var acIds = await _ctx.Grades
-                .Where(g => g.StudentId == student.StudentId &&
-                            g.AssignedCourse.Semester == selectedTerm)
+                .Where(g => g.StudentId == student.StudentId
+                         && g.AssignedCourse != null
+                         && g.AssignedCourse.SchoolYear == sy
+                         && g.AssignedCourse.Semester == semText)
                 .Select(g => g.AssignedCourseId)
                 .Distinct()
                 .ToListAsync();
 
-            // Load assigned courses (Course + Teacher.User)
             var assigned = await _ctx.AssignedCourses
                 .Where(ac => acIds.Contains(ac.AssignedCourseId))
                 .Include(ac => ac.Course)
@@ -50,7 +122,6 @@ namespace ASI.Basecode.Services.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            // Load schedules separately and build lookup by AssignedCourseId
             var schedules = await _ctx.ClassSchedules
                 .Where(cs => acIds.Contains(cs.AssignedCourseId))
                 .AsNoTracking()
@@ -61,7 +132,6 @@ namespace ASI.Basecode.Services.Services
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var rows = new List<StudyLoadRow>();
-
             foreach (var ac in assigned)
             {
                 schedLookup.TryGetValue(ac.AssignedCourseId, out var schedsForCourse);
@@ -72,11 +142,11 @@ namespace ASI.Basecode.Services.Services
                     Subject = ac.Course?.CourseCode ?? "",
                     Description = ac.Course?.Description ?? "",
                     Instructor = ac.Teacher?.User != null
-                                  ? $"{ac.Teacher.User.FirstName} {ac.Teacher.User.LastName}"
-                                  : "",
+                                ? $"{ac.Teacher.User.FirstName} {ac.Teacher.User.LastName}"
+                                : "",
                     Units = ac.Units > 0
-                                  ? ac.Units
-                                  : (ac.Course != null ? (ac.Course.LabUnits + ac.Course.LecUnits) : 0),
+                                ? ac.Units
+                                : (ac.Course != null ? (ac.Course.LabUnits + ac.Course.LecUnits) : 0),
                     Type = ac.Type,
                     Room = schedsForCourse?.FirstOrDefault()?.Room ?? "",
                     DateTime = FormatSchedule(schedsForCourse)
@@ -88,54 +158,53 @@ namespace ASI.Basecode.Services.Services
                 StudentName = $"{student.User.FirstName} {student.User.LastName}",
                 Program = student.Program,
                 YearLevel = student.YearLevel?.ToString(),
-                SelectedTerm = selectedTerm,
-                Terms = BuildTerms(selectedTerm),
+                SelectedTerm = selected,       // "2025-2026-1"
+                Terms = terms,                 // built from DB
                 Rows = rows.OrderBy(r => r.Subject).ThenBy(r => r.Type).ToList()
             };
         }
 
-        private static List<TermItem> BuildTerms(string selected)
-        {
-            // Generate current ±1 school years for demo
-            var now = DateTime.UtcNow;
-            int syStart = now.Month >= 6 ? now.Year : now.Year - 1;
-            var candidates = new List<string>
-            {
-                $"{syStart-1}-{syStart}-1",
-                $"{syStart-1}-{syStart}-2",
-                $"{syStart}-{syStart+1}-1",
-                $"{syStart}-{syStart+1}-2",
-                $"{syStart+1}-{syStart+2}-1",
-                $"{syStart+1}-{syStart+2}-2",
-            };
+        // ---------- helpers ----------
 
-            return candidates.Distinct().Select(v => new TermItem
-            {
-                Value = v,
-                Text = ToPrettyTerm(v),
-                Selected = string.Equals(v, selected, StringComparison.OrdinalIgnoreCase)
-            }).ToList();
-        }
-
-        private static string GetDefaultTerm()
+        private static (string sy, int semNum) ParseTerm(string value)
         {
-            var now = DateTime.UtcNow;
-            int syStart = now.Month >= 6 ? now.Year : now.Year - 1;
-            return $"{syStart}-{syStart + 1}-1"; // default to First Sem
-        }
-
-        private static string ToPrettyTerm(string value)
-        {
-            // "2025-2026-1" => "S.Y. 2025-2026 - First Semester"
-            if (string.IsNullOrWhiteSpace(value)) return value;
+            // "2025-2026-1" => ("2025-2026", 1)
+            if (string.IsNullOrWhiteSpace(value)) return (null, 1);
             var parts = value.Split('-');
-            if (parts.Length < 3) return value;
-            var sy = $"{parts[0]}-{parts[1]}";
-            var sem = parts[2] == "1" ? "First Semester" : parts[2] == "2" ? "Second Semester" : parts[2];
-            return $"S.Y. {sy} - {sem}";
+            if (parts.Length < 3) return (value, 1);
+            return ($"{parts[0]}-{parts[1]}", int.TryParse(parts[2], out var n) ? n : 1);
         }
 
-        // -------- Schedule formatting helpers (DayOfWeek + TimeSpan) --------
+        private static int GetCurrentSemesterNum()
+        {
+            var now = DateTime.Now;
+            if (now.Month is >= 6 and <= 10) return 1;      // Jun–Oct
+            if (now.Month is >= 11 || now.Month <= 3) return 2; // Nov–Mar
+            return 1;
+        }
+
+        private static string GetCurrentSchoolYear()
+        {
+            var now = DateTime.Now;
+            var startYear = now.Month >= 6 ? now.Year : now.Year - 1;
+            return $"{startYear}-{startYear + 1}";
+        }
+
+        private static int? SemTextToNum(string semText)
+        {
+            if (string.IsNullOrWhiteSpace(semText)) return null;
+            semText = semText.Trim().ToLowerInvariant();
+            if (semText.Contains("1st")) return 1;
+            if (semText.Contains("first")) return 1;
+            if (semText.Contains("2nd")) return 2;
+            if (semText.Contains("second")) return 2;
+            return null;
+        }
+
+        private static string SemNumToText(int semNum)
+        {
+            return semNum == 2 ? "2nd Semester" : "1st Semester";
+        }
 
         private static string FormatSchedule(ICollection<ClassSchedule> scheds)
         {
@@ -153,24 +222,20 @@ namespace ASI.Basecode.Services.Services
                 var timeStr = $"{To12h(g.Key.StartTime)} - {To12h(g.Key.EndTime)}";
                 parts.Add($"{dayStr} ({timeStr})");
             }
-
             return string.Join("; ", parts);
         }
 
-        private static string AbbrevDay(DayOfWeek day)
+        private static string AbbrevDay(DayOfWeek day) => day switch
         {
-            return day switch
-            {
-                DayOfWeek.Monday => "M",
-                DayOfWeek.Tuesday => "T",
-                DayOfWeek.Wednesday => "W",
-                DayOfWeek.Thursday => "TH",
-                DayOfWeek.Friday => "F",
-                DayOfWeek.Saturday => "SAT",
-                DayOfWeek.Sunday => "SUN",
-                _ => ""
-            };
-        }
+            DayOfWeek.Monday => "M",
+            DayOfWeek.Tuesday => "T",
+            DayOfWeek.Wednesday => "W",
+            DayOfWeek.Thursday => "TH",
+            DayOfWeek.Friday => "F",
+            DayOfWeek.Saturday => "SAT",
+            DayOfWeek.Sunday => "SUN",
+            _ => ""
+        };
 
         private static string To12h(TimeSpan t)
         {
