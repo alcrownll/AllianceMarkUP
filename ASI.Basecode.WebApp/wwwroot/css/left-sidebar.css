@@ -1,0 +1,155 @@
+﻿/* ================= LEFT SIDEBAR (shared) ================= */
+:root {
+    --lsb-width: 110px;
+    --lsb-line: #e5e7eb;
+    --lsb-ink: #0f172a;
+    --lsb-muted: #94a3b8;
+    --lsb-active: #2563eb;
+    --lsb-bg: #fff;
+}
+
+.sidebar {
+    width: var(--lsb-width);
+    background: var(--lsb-bg);
+    border-right: 1px solid var(--lsb-line);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+    .sidebar .brand {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin: 8px 0 4px;
+    }
+
+        .sidebar .brand img {
+            display: block;
+            width: 68px;
+            height: auto;
+        }
+
+    /* Navigation block */
+    .sidebar .nav-center {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 35px;
+    }
+
+    .sidebar .nav {
+        width: 100%;
+    }
+
+    .sidebar .nav-item {
+        margin: 0.8rem 0; /* ✅ Slightly tighter spacing between icons */
+    }
+
+    .sidebar .nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        text-decoration: none;
+        outline: none;
+    }
+
+/* Icon stack (outline/fill) */
+.icon-wrap {
+    position: relative;
+    width: 1.6rem;
+    height: 1.6rem;
+    display: inline-block;
+}
+
+    .icon-wrap .icon-outline,
+    .icon-wrap .icon-fill {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        font-size: 1.6rem;
+        line-height: 1;
+        transition: opacity .15s ease, color .15s ease;
+    }
+
+    /* Default: outline visible, fill hidden */
+    .icon-wrap .icon-outline {
+        opacity: 1;
+        color: var(--lsb-muted);
+    }
+
+    .icon-wrap .icon-fill {
+        opacity: 0;
+        color: var(--lsb-active);
+    }
+
+/* Hover/active: fill shows */
+.sidebar .nav-link:hover .icon-outline,
+.sidebar .nav-link.active .icon-outline {
+    opacity: 0;
+}
+
+.sidebar .nav-link:hover .icon-fill,
+.sidebar .nav-link.active .icon-fill {
+    opacity: 1;
+}
+
+.sidebar .nav-link i {
+    transition: opacity .15s ease, color .15s ease;
+}
+
+/* Logout pinned at bottom */
+.sidebar .logout {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+    .sidebar .logout button {
+        font-size: 0.9rem;
+        color: #6b7280;
+        background: none;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+
+        .sidebar .logout button:hover {
+            color: #dc2626;
+        }
+
+    .sidebar .logout i {
+        font-size: 1.4rem;
+        margin-bottom: 0.25rem;
+    }
+
+/* Content offset helper */
+.main-content {
+    margin-left: var(--lsb-width);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .icon-wrap .icon-outline,
+    .icon-wrap .icon-fill {
+        transition: none;
+    }
+}

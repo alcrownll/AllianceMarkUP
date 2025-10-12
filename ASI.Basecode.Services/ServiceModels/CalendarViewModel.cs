@@ -14,8 +14,8 @@ namespace ASI.Basecode.Services.ServiceModels
         public int Id { get; set; }
         public string Title { get; set; }
         public string Location { get; set; }
-        public DateTime StartUtc { get; set; }   // stored/displayed as UTC
-        public DateTime EndUtc { get; set; }     // stored/displayed as UTC
+        public DateTime StartUtc { get; set; }
+        public DateTime EndUtc { get; set; }    
         public bool IsAllDay { get; set; }
         public bool IsGlobal { get; set; }
         public bool CanEdit { get; set; }

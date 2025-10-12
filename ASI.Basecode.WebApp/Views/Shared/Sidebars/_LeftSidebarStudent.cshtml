@@ -1,96 +1,101 @@
 ﻿@{
-    Layout = null;
-    string currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    Func<string, bool> isActive = a => string.Equals(currentAction, a, System.StringComparison.OrdinalIgnoreCase);
-}
+    var currentPath = Context?.Request?.Path.Value ?? "";
 
+    Func<string, string, string> isActive = (ctrl, act) =>
+    {
+        var target = Url.Action(act, ctrl) ?? "";
+        return (!string.IsNullOrEmpty(target) && currentPath.StartsWith(target, StringComparison.OrdinalIgnoreCase))
+            ? "active"
+            : "";
+    };
+}
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Sidebar Navigation</title>
+    <title>Student Sidebar</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/main-site.css" />
+    <link rel="stylesheet" href="~/css/left-sidebar.css" />
 </head>
 <body>
-    <nav class="sidebar d-flex flex-column align-items-center py-3">
-
-        <!-- Brand (top) -->
-        <a class="brand" asp-controller="Student" asp-action="Dashboard" aria-label="MarkUP Home">
-            <!-- Use your real logo asset if you have it -->
-            <img src="~/img/MarkUPLogo.png" alt="MarkUP" />
-            <!-- Fallback text if no image: <span>MarkUP</span> -->
+    <nav class="sidebar">
+        <!-- Logo / Brand -->
+        <a class="brand" asp-controller="Student" asp-action="Dashboard" aria-label="MarkUp Home">
+            <img src="~/img/MarkUPLogo.png" alt="MarkUp" />
         </a>
 
-        <ul class="nav flex-column flex-grow-1 text-center">
+        <!-- Centered Navigation -->
+        <div class="nav-center">
+            <ul class="nav flex-column text-center">
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "Dashboard")"
+                       asp-controller="Student" asp-action="Dashboard">
+                        <span class="icon-wrap">
+                            <i class="bi bi-grid icon-outline"></i>
+                            <i class="bi bi-grid-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("Dashboard") ? "active" : "")"
-                   asp-controller="Student" asp-action="Dashboard"
-                   data-label="Dashboard">
-                    <span class="icon-wrap">
-                        <i class="bi bi-grid icon-outline"></i>
-                        <i class="bi bi-grid-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
+                <!-- Study Load -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "StudyLoad")"
+                       asp-controller="Student" asp-action="StudyLoad">
+                        <span class="icon-wrap">
+                            <i class="bi bi-journal-bookmark icon-outline"></i>
+                            <i class="bi bi-journal-bookmark-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("Profile") ? "active" : "")"
-                   asp-controller="Student" asp-action="Profile"
-                   data-label="Profile">
-                    <span class="icon-wrap">
-                        <i class="bi bi-person icon-outline"></i>
-                        <i class="bi bi-person-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
+                <!-- Grades -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "Grades")"
+                       asp-controller="Student" asp-action="Grades">
+                        <span class="icon-wrap">
+                            <i class="bi bi-file-earmark-bar-graph icon-outline"></i>
+                            <i class="bi bi-file-earmark-bar-graph-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("StudyLoad") ? "active" : "")"
-                   asp-controller="Student" asp-action="StudyLoad"
-                   data-label="Study Load">
-                    <span class="icon-wrap">
-                        <i class="bi bi-people icon-outline"></i>
-                        <i class="bi bi-people-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
+                <!-- Calendar -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "Calendar")"
+                       asp-controller="Student" asp-action="Calendar">
+                        <span class="icon-wrap">
+                            <i class="bi bi-calendar-event icon-outline"></i>
+                            <i class="bi bi-calendar-event-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("Grades") ? "active" : "")"
-                   asp-controller="Student" asp-action="Grades"
-                   data-label="Grades">
-                    <span class="icon-wrap">
-                        <i class="bi bi-journal-text icon-outline"></i>
-                        <i class="bi bi-journal-text-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
+                <!-- Notifications -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "Notifications")"
+                       asp-controller="Student" asp-action="Notifications">
+                        <span class="icon-wrap">
+                            <i class="bi bi-bell icon-outline"></i>
+                            <i class="bi bi-bell-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("Calendar") ? "active" : "")"
-                   asp-controller="Student" asp-action="Calendar"
-                   data-label="Calendar">
-                    <span class="icon-wrap">
-                        <i class="bi bi-calendar-event icon-outline"></i>
-                        <i class="bi bi-calendar-event-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
+                <!-- Profile -->
+                <li class="nav-item">
+                    <a class="nav-link @isActive("Student", "Profile")"
+                       asp-controller="Student" asp-action="Profile">
+                        <span class="icon-wrap">
+                            <i class="bi bi-person icon-outline"></i>
+                            <i class="bi bi-person-fill icon-fill"></i>
+                        </span>
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-            <li class="nav-item">
-                <a class="nav-link @(isActive("Notifications") ? "active" : "")"
-                   asp-controller="Student" asp-action="Notifications"
-                   data-label="Notifications">
-                    <span class="icon-wrap">
-                        <i class="bi bi-bell icon-outline"></i>
-                        <i class="bi bi-bell-fill icon-fill"></i>
-                    </span>
-                </a>
-            </li>
-        </ul>
-
+        <!-- Logout pinned at bottom -->
         <div class="logout">
             <form asp-controller="Login" asp-action="StudentLogout" method="post">
                 <button type="submit">

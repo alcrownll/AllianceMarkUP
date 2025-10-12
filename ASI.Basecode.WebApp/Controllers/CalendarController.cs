@@ -3,111 +3,117 @@ using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
-    [Authorize]
-    [Route("[controller]")]
+    [Authorize(Roles = "Student,Teacher,Admin")]
     public class CalendarController : Controller
     {
-        private readonly ICalendarService _svc;
-        public CalendarController(ICalendarService svc) => _svc = svc;
+        private readonly IProfileService _profileService;
+        private readonly ICalendarService _calendarService;
 
-        [HttpGet("")]
-        public async Task<IActionResult> Index(DateTime? startUtc, DateTime? endUtc)
+        public CalendarController(IProfileService profileService, ICalendarService calendarService)
         {
-            DateTime start = startUtc.HasValue
-                ? DateTime.SpecifyKind(startUtc.Value, DateTimeKind.Utc)
-                : new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-            DateTime end = endUtc.HasValue
-                ? DateTime.SpecifyKind(endUtc.Value, DateTimeKind.Utc)
-                : start.AddMonths(1).AddTicks(-1);
-
-            var vm = await _svc.GetUserCalendarAsync(User, start, end);
-            return View("~/Views/Shared/Partials/Calendar.cshtml", vm);
+            _profileService = profileService;
+            _calendarService = calendarService;
         }
 
-        // FullCalendar event feed (normalize to UTC)
-        [HttpGet("Feed")]
-        public async Task<IActionResult> Feed(DateTimeOffset start, DateTimeOffset end)
-        {
-            var vm = await _svc.GetUserCalendarAsync(User, start.UtcDateTime, end.UtcDateTime);
+        // --------------------------------------------------------------------
+        // Canonical GET routes per role (Student / Teacher / Admin)
+        // --------------------------------------------------------------------
 
-            var json = vm.Events.Select(e => new
-            {
-                id = e.Id,
-                title = e.Title,
-                start = DateTime.SpecifyKind(e.StartUtc, DateTimeKind.Utc),
-                end = DateTime.SpecifyKind(e.EndUtc, DateTimeKind.Utc),
-                allDay = e.IsAllDay,
-                extendedProps = new
-                {
-                    location = e.Location,
-                    isGlobal = e.IsGlobal,
-                    canEdit = e.CanEdit
-                }
-            });
-            return Json(json);
+        [HttpGet("/Student/Calendar", Name = "StudentCalendar")]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> StudentIndex(DateTime? from = null, DateTime? to = null)
+            => await BuildCalendarViewAsync(from, to);
+
+        [HttpGet("/Teacher/Calendar", Name = "TeacherCalendar")]
+        [Authorize(Roles = "Teacher")]
+        public async Task<IActionResult> TeacherIndex(DateTime? from = null, DateTime? to = null)
+            => await BuildCalendarViewAsync(from, to);
+
+        [HttpGet("/Admin/Calendar", Name = "AdminCalendar")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminIndex(DateTime? from = null, DateTime? to = null)
+            => await BuildCalendarViewAsync(from, to);
+
+        // --------------------------------------------------------------------
+        // Shared builder used by all three
+        // --------------------------------------------------------------------
+        private async Task<IActionResult> BuildCalendarViewAsync(DateTime? from, DateTime? to)
+        {
+            ViewData["PageHeader"] = "Calendar";
+
+            // Default range = ±30 days
+            var start = from ?? DateTime.UtcNow.AddDays(-30);
+            var end = to ?? DateTime.UtcNow.AddDays(30);
+
+            var model = await _calendarService.GetUserCalendarAsync(User, start, end);
+            return View("~/Views/Shared/Partials/Calendar.cshtml", model);
         }
 
-        [HttpPost("Create")]
+        // --------------------------------------------------------------------
+        // JSON Feed for FullCalendar
+        // --------------------------------------------------------------------
+        [HttpGet("/Calendar/Feed")]
+        public async Task<IActionResult> Feed(DateTime start, DateTime end)
+        {
+            var model = await _calendarService.GetUserCalendarAsync(User, start, end);
+            return Json(model.Events);
+        }
+
+        // --------------------------------------------------------------------
+        // CRUD: Create / Update / Delete
+        // --------------------------------------------------------------------
+        [HttpPost("/Calendar/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromForm] CalendarEventCreateVm input)
+        public async Task<IActionResult> Create(CalendarEventCreateVm input)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                TempData["CalendarError"] = string.Join("; ",
-                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToAction(nameof(Index));
+                await _calendarService.CreateAsync(User, input);
+                return RedirectToRoleCalendar();
             }
-
-            var created = await _svc.CreateAsync(User, input);
-
-            // Use created (not updated) and emit UTC with Z via DateTimeOffset
-            var m0 = new DateTimeOffset(
-                new DateTime(created.StartUtc.Year, created.StartUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc));
-            var m1 = m0.AddMonths(1).AddTicks(-1);
-
-            TempData["CalendarOk"] = "Event created.";
-            return RedirectToAction(nameof(Index), new { startUtc = m0, endUtc = m1 });
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToRoleCalendar();
+            }
         }
 
-        [HttpPost("Update")]
+        [HttpPost("/Calendar/Update")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update([FromForm] CalendarEventUpdateVm input)
+        public async Task<IActionResult> Update(CalendarEventUpdateVm input)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                TempData["CalendarError"] = string.Join("; ",
-                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToAction(nameof(Index));
+                await _calendarService.UpdateAsync(User, input);
+                return RedirectToRoleCalendar();
             }
-
-            var updated = await _svc.UpdateAsync(User, input);
-            if (updated == null)
+            catch (Exception ex)
             {
-                TempData["CalendarError"] = "Unable to update (not found or no permission).";
-                return RedirectToAction(nameof(Index));
+                TempData["Error"] = ex.Message;
+                return RedirectToRoleCalendar();
             }
-
-            var m0 = new DateTimeOffset(
-                new DateTime(updated.StartUtc.Year, updated.StartUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc));
-            var m1 = m0.AddMonths(1).AddTicks(-1);
-
-            TempData["CalendarOk"] = "Event updated.";
-            return RedirectToAction(nameof(Index), new { startUtc = m0, endUtc = m1 });
         }
 
-        [HttpPost("Delete")]
+        [HttpPost("/Calendar/Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            await _svc.DeleteAsync(User, id);
-            TempData["CalendarOk"] = "Event deleted.";
-            return RedirectToAction(nameof(Index));
+            await _calendarService.DeleteAsync(User, id);
+            return RedirectToRoleCalendar();
+        }
+
+        // --------------------------------------------------------------------
+        // Helper: redirect user to their own role-scoped calendar URL
+        // --------------------------------------------------------------------
+        private IActionResult RedirectToRoleCalendar()
+        {
+            if (User.IsInRole("Admin")) return RedirectToRoute("AdminCalendar");
+            if (User.IsInRole("Teacher")) return RedirectToRoute("TeacherCalendar");
+            return RedirectToRoute("StudentCalendar");
         }
     }
 }
