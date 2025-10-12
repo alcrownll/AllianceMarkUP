@@ -340,119 +340,11 @@ namespace ASI.Basecode.WebApp.Controllers
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
         //Logout
-
         [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync("ASI_Basecode");
             return RedirectToAction("TeacherLogin", "Login"); // redirect to login page
-        }
-
-        // TEMPORARY SEED DATA METHOD - Remove after debugging
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> SeedTestData()
-        {
-            try
-            {
-                var userId = _profileService.GetCurrentUserId();
-                
-                using (var scope = HttpContext.RequestServices.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
-                    // Check if teacher exists
-                    var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
-                    if (teacher == null)
-                    {
-                        // Create teacher record
-                        teacher = new ASI.Basecode.Data.Models.Teacher
-                        {
-                            UserId = userId,
-                            Position = "Faculty"
-                        };
-                        context.Teachers.Add(teacher);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    // Create sample course if none exists
-                    if (!context.Courses.Any())
-                    {
-                        var course = new ASI.Basecode.Data.Models.Course
-                        {
-                            CourseCode = "CS-101",
-                            Description = "Introduction to Computer Science",
-                            LecUnits = 3,
-                            LabUnits = 0,
-                            TotalUnits = 3
-                        };
-                        context.Courses.Add(course);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    // Create assigned course if none exists
-                    if (!context.AssignedCourses.Any(ac => ac.TeacherId == teacher.TeacherId))
-                    {
-                        var course = context.Courses.First();
-                        var assignedCourse = new ASI.Basecode.Data.Models.AssignedCourse
-                        {
-                            EDPCode = "12345",
-                            CourseId = course.CourseId,
-                            Type = "LEC",
-                            Units = 3,
-                            Program = "BSCS",
-                            TeacherId = teacher.TeacherId,
-                            Semester = "2024-2025-1"
-                        };
-                        context.AssignedCourses.Add(assignedCourse);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    return Json(new { Success = true, Message = "Test data created successfully!" });
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Success = false, Error = ex.Message });
-            }
-        }
-
-        // TEMPORARY DEBUG METHOD - Remove after debugging
-        [Authorize(Roles = "Teacher")]
-        public IActionResult DebugData()
-        {
-            try
-            {
-                var userId = _profileService.GetCurrentUserId();
-                var teacherId = GetCurrentTeacherId();
-                
-                using (var scope = HttpContext.RequestServices.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
-                    var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
-                    var assignedCourses = context.AssignedCourses.Where(ac => ac.TeacherId == teacherId).ToList();
-                    var allTeachers = context.Teachers.ToList();
-                    var allAssignedCourses = context.AssignedCourses.ToList();
-                    
-                    var debugInfo = new
-                    {
-                        UserId = userId,
-                        TeacherId = teacherId,
-                        TeacherExists = teacher != null,
-                        TeacherRecord = teacher,
-                        AssignedCoursesCount = assignedCourses.Count,
-                        AssignedCourses = assignedCourses,
-                        TotalTeachers = allTeachers.Count,
-                        TotalAssignedCourses = allAssignedCourses.Count
-                    };
-                    
-                    return Json(debugInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Error = ex.Message, StackTrace = ex.StackTrace });
-            }
         }
 
         #region Private Helper Methods
