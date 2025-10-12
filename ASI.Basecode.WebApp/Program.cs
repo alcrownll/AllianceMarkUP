@@ -1,8 +1,11 @@
-﻿using ASI.Basecode.WebApp;
+﻿using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.Services;
+using ASI.Basecode.WebApp;
 using ASI.Basecode.WebApp.Extensions.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.IO;
@@ -29,6 +32,8 @@ builder.Logging
 // Services via your StartupConfigurer (keeps your existing pattern)
 var configurer = new StartupConfigurer(builder.Configuration);
 configurer.ConfigureServices(builder.Services);
+
+builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
 
 // If you are NOT adding MVC in StartupConfigurer, uncomment this:
 // builder.Services.AddControllersWithViews();
