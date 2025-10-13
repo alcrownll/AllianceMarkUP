@@ -335,6 +335,8 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Teacher")]
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
+        //Logout
+
         [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Logout()
         {
@@ -349,14 +351,16 @@ namespace ASI.Basecode.WebApp.Controllers
             try
             {
                 var userId = _profileService.GetCurrentUserId();
-
+                
                 using (var scope = HttpContext.RequestServices.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-
+                    
+                    // Check if teacher exists
                     var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
                     if (teacher == null)
                     {
+                        // Create teacher record
                         teacher = new ASI.Basecode.Data.Models.Teacher
                         {
                             UserId = userId,
@@ -365,7 +369,8 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.Teachers.Add(teacher);
                         await context.SaveChangesAsync();
                     }
-
+                    
+                    // Create sample course if none exists
                     if (!context.Courses.Any())
                     {
                         var course = new ASI.Basecode.Data.Models.Course
@@ -379,7 +384,8 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.Courses.Add(course);
                         await context.SaveChangesAsync();
                     }
-
+                    
+                    // Create assigned course if none exists
                     if (!context.AssignedCourses.Any(ac => ac.TeacherId == teacher.TeacherId))
                     {
                         var course = context.Courses.First();
@@ -396,7 +402,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.AssignedCourses.Add(assignedCourse);
                         await context.SaveChangesAsync();
                     }
-
+                    
                     return Json(new { Success = true, Message = "Test data created successfully!" });
                 }
             }
@@ -414,16 +420,16 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 var userId = _profileService.GetCurrentUserId();
                 var teacherId = GetCurrentTeacherId();
-
+                
                 using (var scope = HttpContext.RequestServices.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-
+                    
                     var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
                     var assignedCourses = context.AssignedCourses.Where(ac => ac.TeacherId == teacherId).ToList();
                     var allTeachers = context.Teachers.ToList();
                     var allAssignedCourses = context.AssignedCourses.ToList();
-
+                    
                     var debugInfo = new
                     {
                         UserId = userId,
@@ -435,7 +441,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         TotalTeachers = allTeachers.Count,
                         TotalAssignedCourses = allAssignedCourses.Count
                     };
-
+                    
                     return Json(debugInfo);
                 }
             }

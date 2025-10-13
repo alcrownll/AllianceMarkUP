@@ -101,7 +101,7 @@ namespace ASI.Basecode.Services.Services
                 Midterm = g.Midterm,
                 SemiFinal = g.SemiFinal,
                 Final = g.Final,
-                Remarks = CalculateRemarksFromGrades(g.Prelims, g.Midterm, g.SemiFinal, g.Final)
+                Remarks = CalculateRemarks(g.Prelims, g.Midterm, g.SemiFinal, g.Final)
             }).OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList();
         }
 
@@ -317,7 +317,7 @@ namespace ASI.Basecode.Services.Services
                 var avgFinal = finalValues.Any() ? (decimal?)Math.Round(finalValues.Average(), 2) : null;
                 
                 // Calculate weighted GPA and determine remarks based on student's performance
-                var remarks = CalculateRemarksFromGrades(avgPrelims, avgMidterm, avgSemiFinal, avgFinal);
+                var remarks = CalculateRemarks(avgPrelims, avgMidterm, avgSemiFinal, avgFinal);
 
                 result.Add(new StudentGradeViewModel
                 {
@@ -344,7 +344,7 @@ namespace ASI.Basecode.Services.Services
 
         #region Private Helper Methods
 
-        private string CalculateRemarksFromGrades(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+        private string CalculateRemarks(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
         {
             // Calculate weighted average similar to AdminDashboardService and AdminReportsService
             var components = new (decimal? Score, decimal Weight)[]
