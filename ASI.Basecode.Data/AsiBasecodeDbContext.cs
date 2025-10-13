@@ -71,7 +71,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Program).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Department).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.YearLevel).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.StudentStatus).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Section).IsRequired().HasMaxLength(20);
 
                 entity.HasIndex(e => e.UserId).IsUnique();
                 entity.HasOne(d => d.User)
@@ -140,6 +140,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Type).IsRequired().HasMaxLength(10);
                 entity.Property(e => e.Semester).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.SchoolYear).IsRequired().HasMaxLength(9);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(10);
 
                 entity.HasOne(d => d.Course)
                       .WithMany(p => p.AssignedCourses)

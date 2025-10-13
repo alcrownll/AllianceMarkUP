@@ -13,7 +13,7 @@ namespace ASI.Basecode.Data.Models
         public string Program { get; set; }
         public string Department { get; set; }
         public string YearLevel { get; set; }
-        public string StudentStatus { get; set; }
+        public string Section { get; set; }
         public int UserId { get; set; }
 
         public User User { get; set; }

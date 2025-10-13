@@ -573,17 +573,18 @@ namespace ASI.Basecode.Services.Services
                 .OrderBy(g => g.Name)
                 .ToList();
 
-            var statuses = students
-                .Select(s => string.IsNullOrWhiteSpace(s.StudentStatus) ? "Unknown" : s.StudentStatus)
-                .GroupBy(status => status)
+            var sections = students
+                .Select(s => string.IsNullOrWhiteSpace(s.Section) ? "Unassigned" : s.Section)
+                .GroupBy(sec => sec)
                 .Select(g => new NamedValueModel { Name = g.Key, Value = g.Count() })
+                .OrderBy(x => x.Name)
                 .ToList();
 
             return new DemographicBreakdownModel
             {
                 GenderSplit = genders,
                 AgeBands = ageBands,
-                Statuses = statuses
+                Statuses = sections
             };
         }
         // VALIDATIONS

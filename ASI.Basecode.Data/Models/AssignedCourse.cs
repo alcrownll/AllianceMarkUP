@@ -18,6 +18,7 @@ namespace ASI.Basecode.Data.Models
         public int TeacherId { get; set; }
         public string Semester { get; set; }
         public string SchoolYear { get; set; }
+        public string Status { get; set; }
 
         public Course Course { get; set; }
         public Teacher Teacher { get; set; }

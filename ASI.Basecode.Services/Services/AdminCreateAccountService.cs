@@ -49,6 +49,7 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("FirstName is required.");
             if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
             if (string.IsNullOrWhiteSpace(vm.AdmissionType)) throw new Exception("AdmissionType is required.");
+            if (string.IsNullOrWhiteSpace(vm.Section)) throw new Exception("Section is required.");
             if (string.IsNullOrWhiteSpace(vm.Program) || string.IsNullOrWhiteSpace(vm.YearLevel))
                 throw new Exception("Program and YearLevel are required.");
 
@@ -107,7 +108,7 @@ namespace ASI.Basecode.Services.Services
                     Program = program,
                     Department = vm.Department,
                     YearLevel = vm.YearLevel,
-                    StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled"
+                    Section = vm.Section
                 };
 
                 _students.AddStudent(student);
@@ -209,7 +210,7 @@ namespace ASI.Basecode.Services.Services
                 "FirstName","LastName","Email",
                 "MiddleName","Suffix","MobileNo","HomeAddress","Province","Municipality","Barangay",
                 "DateOfBirth","PlaceOfBirth","Age","MaritalStatus","Gender","Religion","Citizenship",
-                "AdmissionType","Program","Department","YearLevel"
+                "AdmissionType","Program","Department","YearLevel","Section"
             };
 
             using var wb = new XLWorkbook();
@@ -261,7 +262,7 @@ namespace ASI.Basecode.Services.Services
 
             // Require headers (AdmissionType included)
             Console.WriteLine("Headers: " + string.Join(", ", map.Keys));
-            var required = new[] { "FirstName", "LastName", "Email", "Program", "YearLevel", "AdmissionType" };
+            var required = new[] { "FirstName", "LastName", "Email", "Program", "YearLevel", "AdmissionType", "Section" };
             var missing = required.Where(h => !map.ContainsKey(h)).ToList();
             if (missing.Any())
             {
@@ -341,6 +342,7 @@ namespace ASI.Basecode.Services.Services
                     var yearLevel = Get(ws, r, map, "YearLevel");
                     var department = Get(ws, r, map, "Department");
                     var admissionType = Get(ws, r, map, "AdmissionType");
+                    var section = Get(ws, r, map, "Section");
 
                     program = ProgramShortcut(program);
                     admissionType = AdmissionTypeShortcut(admissionType);
@@ -359,7 +361,7 @@ namespace ASI.Basecode.Services.Services
                         Program = program,
                         Department = department,
                         YearLevel = yearLevel,
-                        StudentStatus = defaults?.DefaultStudentStatus ?? "Enrolled"
+                        Section = section
                     };
                     _students.AddStudent(student);
                     await _uow.SaveChangesAsync(ct); // persist student now

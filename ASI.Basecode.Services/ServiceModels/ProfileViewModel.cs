@@ -91,7 +91,7 @@ namespace ASI.Basecode.Services.ServiceModels
         }
         public string Department { get; set; }
         public string YearLevel { get; set; }
-        public string StudentStatus { get; set; }
+        public string Section { get; set; }
     }
 
     public class TeacherProfileViewModel : ProfileViewModel

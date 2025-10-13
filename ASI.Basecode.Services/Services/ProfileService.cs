@@ -137,7 +137,7 @@ namespace ASI.Basecode.Services.Services
                 ProgramDb = student.Program,
                 Department = student.Department,
                 YearLevel = student.YearLevel,
-                StudentStatus = "Enrolled"
+                Section = student.Section
             };
         }
 
@@ -189,7 +189,7 @@ namespace ASI.Basecode.Services.Services
                 student.Program = input.ProgramDb;
                 student.Department = input.Department;
                 student.YearLevel = input.YearLevel;
-                student.StudentStatus = "Enrolled";
+                student.Section = "4A"; // temporary
                 _students.UpdateStudent(student);
             }
 
