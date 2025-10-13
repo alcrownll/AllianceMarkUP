@@ -14,13 +14,15 @@ namespace ASI.Basecode.Data.Models
         public int CourseId { get; set; }
         public string Type { get; set; }
         public int Units { get; set; }
-        public string Program { get; set; }
+        public int ProgramId { get; set; }
         public int TeacherId { get; set; }
         public string Semester { get; set; }
         public string SchoolYear { get; set; }
 
         public Course Course { get; set; }
         public Teacher Teacher { get; set; }
+        public Program Program { get; set; }
+
         public ICollection<ClassSchedule> ClassSchedules { get; set; }
         public ICollection<Grade> Grades { get; set; }
     }

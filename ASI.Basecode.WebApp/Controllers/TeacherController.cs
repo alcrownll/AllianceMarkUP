@@ -395,7 +395,7 @@ namespace ASI.Basecode.WebApp.Controllers
                             CourseId = course.CourseId,
                             Type = "LEC",
                             Units = 3,
-                            Program = "BSCS",
+                            ProgramId = 1,
                             TeacherId = teacher.TeacherId,
                             Semester = "2024-2025-1"
                         };

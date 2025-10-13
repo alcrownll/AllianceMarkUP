@@ -54,11 +54,18 @@
             @* Shared profile fields (name, email, address, DateOfBirth, avatar, etc.) *@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
 
-            <!-- === Bottom action row (like Student) === -->
-            <div class="mt-4 d-flex gap-2">
-                <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
-                <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
-                <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
+            <div class="mt-4 d-flex align-items-center w-100">
+                <div class="d-flex gap-2">
+                    <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
+                    <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
+                    <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
+                </div>
+>
+                <a asp-controller="Account"
+                   asp-action="ChangePassword"
+                   class="btn btn-primary ms-auto">
+                    Change Password
+                </a>
             </div>
         </form>
     </div>

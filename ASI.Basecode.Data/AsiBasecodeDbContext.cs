@@ -1,11 +1,7 @@
 ﻿using ASI.Basecode.Data.Models;
 using Microsoft.EntityFrameworkCore;
-using ASI.Basecode.Data.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
-using System.Collections.Generic;
 
 namespace ASI.Basecode.Data
 {
@@ -142,7 +138,6 @@ namespace ASI.Basecode.Data
                 entity.HasIndex(e => e.EDPCode).IsUnique();
 
                 entity.Property(e => e.Type).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.Program).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Semester).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.SchoolYear).IsRequired().HasMaxLength(9);
 
@@ -155,6 +150,11 @@ namespace ASI.Basecode.Data
                       .WithMany(p => p.AssignedCourses)
                       .HasForeignKey(d => d.TeacherId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.Program)
+                     .WithMany(p => p.AssignedCourses)
+                     .HasForeignKey(d => d.ProgramId)
+                     .OnDelete(DeleteBehavior.Cascade);
             });
 
             // CLASS SCHEDULE

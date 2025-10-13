@@ -61,6 +61,7 @@ namespace ASI.Basecode.Services.Services
 
             // ===============================================
             // Fetch all assigned courses for this teacher
+            // NOTE: Program now comes from FK -> Program.ProgramCode
             // ===============================================
             var assignedRaw = await _assignedRepo.GetAssignedCourses()
                 .AsNoTracking()
@@ -69,7 +70,7 @@ namespace ASI.Basecode.Services.Services
                 {
                     a.AssignedCourseId,
                     a.CourseId,
-                    a.Program // e.g. "BSCS" / "BSIT"
+                    ProgramCode = a.Program != null ? a.Program.ProgramCode : null
                 })
                 .ToListAsync();
 
@@ -83,12 +84,12 @@ namespace ASI.Basecode.Services.Services
                     Summary = new ProgramSummary()
                 };
 
-            // Normalize "BSCS" → "CS", "BSIT" → "IT"
+            // Normalize ProgramCode -> "IT" / "CS" buckets for UI
             var assigned = assignedRaw.Select(a => new
             {
                 a.AssignedCourseId,
                 a.CourseId,
-                ProgramUi = NormalizeProgram(a.Program)
+                ProgramUi = NormalizeProgram(a.ProgramCode)
             }).ToList();
 
             var assignedIds = assigned.Select(a => a.AssignedCourseId).ToList();
@@ -187,6 +188,7 @@ namespace ASI.Basecode.Services.Services
 
         // ===============================================
         // HELPER: Normalize Program Codes Safely
+        // Accepts Program.ProgramCode (e.g., "BSIT", "BSCS")
         // ===============================================
         private static string NormalizeProgram(string raw)
         {
@@ -197,7 +199,7 @@ namespace ASI.Basecode.Services.Services
             if (s == "BSIT" || s == "IT") return "IT";
             if (s == "BSCS" || s == "CS") return "CS";
 
-            // Edge handling: fallback defaults
+            // Edge handling: fallback heuristics
             if (s.Contains("IT")) return "IT";
             if (s.Contains("CS")) return "CS";
 

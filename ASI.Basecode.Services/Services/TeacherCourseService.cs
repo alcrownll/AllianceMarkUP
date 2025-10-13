@@ -47,6 +47,7 @@ namespace ASI.Basecode.Services.Services
                 .Where(ac => ac.TeacherId == teacherId)
                 .Where(ac => string.IsNullOrEmpty(semester) || ac.Semester == currentSemester)
                 .Include(ac => ac.Course)
+                .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
                 .Include(ac => ac.Grades).ThenInclude(g => g.Student)
                 .AsNoTracking()
@@ -69,8 +70,8 @@ namespace ASI.Basecode.Services.Services
                     Units = ac.Units > 0 ? ac.Units : (ac.Course?.LecUnits + ac.Course?.LabUnits ?? 0),
                     DateTime = FormatSchedule(schedules),
                     Room = schedules.FirstOrDefault()?.Room ?? "",
-                    Section = DetermineSection(ac.Program),
-                    Course = ac.Program,
+                    Section = DetermineSection(ac.Program?.ProgramCode),
+                    Course = ac.Program?.ProgramCode,
                     Semester = ac.Semester,
                     StudentCount = studentCount
                 });
@@ -113,6 +114,7 @@ namespace ASI.Basecode.Services.Services
                 .Where(ac => ac.TeacherId == teacherId)
                 .Where(ac => string.IsNullOrEmpty(semester) || ac.Semester == currentSemester)
                 .Include(ac => ac.Course)
+                .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
                 .AsNoTracking()
                 .ToListAsync();
@@ -133,8 +135,8 @@ namespace ASI.Basecode.Services.Services
                     Units = ac.Units > 0 ? ac.Units : (ac.Course?.LecUnits + ac.Course?.LabUnits ?? 0),
                     DateTime = FormatSchedule(schedules),
                     Room = schedules.FirstOrDefault()?.Room ?? "",
-                    Section = DetermineSection(ac.Program),
-                    Course = ac.Program,
+                    Section = DetermineSection(ac.Program?.ProgramCode),
+                    Course = ac.Program?.ProgramCode,
                     Students = students
                 });
             }
@@ -212,7 +214,8 @@ namespace ASI.Basecode.Services.Services
         {
             var programs = await _assignedCourseRepository.GetAssignedCourses()
                 .Where(ac => ac.TeacherId == teacherId)
-                .Select(ac => ac.Program)
+                .Include(ac => ac.Program)
+                .Select(ac => ac.Program.ProgramCode)
                 .Distinct()
                 .Where(p => !string.IsNullOrEmpty(p))
                 .ToListAsync();

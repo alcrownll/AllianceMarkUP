@@ -106,6 +106,8 @@ namespace ASI.Basecode.Services.Services
                 .Include(t => t.AssignedCourses)
                 .ThenInclude(ac => ac.Course)
                 .Include(t => t.AssignedCourses)
+                .ThenInclude(ac => ac.Program)
+                .Include(t => t.AssignedCourses)
                 .ThenInclude(ac => ac.Grades)
                 .Include(t => t.AssignedCourses)
                 .ThenInclude(ac => ac.ClassSchedules)
@@ -1064,11 +1066,11 @@ namespace ASI.Basecode.Services.Services
 
         private static string ResolveTeacherDepartment(Teacher teacher, IList<AssignedCourse> scopedCourses)
         {
-            var program = scopedCourses?
-                .Select(ac => ac.Program)
+            var programCode = scopedCourses?
+                .Select(ac => ac.Program?.ProgramCode)
                 .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
 
-            return program ?? "N/A";
+            return programCode ?? "N/A";
         }
     }
 
