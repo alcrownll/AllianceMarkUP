@@ -104,14 +104,17 @@ namespace ASI.Basecode.WebApp
                 options.Cookie.Name = Const.Issuer;
             });
 
+            // ✅ Needed because TeacherController injects it
+            services.AddHttpContextAccessor();
+
             // DI Services AutoMapper(Add Profile)
             this.ConfigureAutoMapper();
 
             // DI Services
             this.ConfigureOtherServices();
 
-            // ADD: register StudyLoad service for DI
-            services.AddScoped<IStudyLoadService, StudyLoadService>(); 
+            services.AddScoped<IStudyLoadService, StudyLoadService>();
+            services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 
             // Authorization (Add Policy)
             this.ConfigureAuthorization();

@@ -21,21 +21,38 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IProfileService _profileService;
         private readonly ITeacherCourseService _teacherCourseService;
         private readonly IHttpContextAccessor _httpContext;
+        private readonly ITeacherDashboardService _dashboardService;
 
-        public TeacherController(IProfileService profileService,
+        public TeacherController(
+            IProfileService profileService,
             ITeacherCourseService teacherCourseService,
-            IHttpContextAccessor httpContext)
+            IHttpContextAccessor httpContext,
+            ITeacherDashboardService dashboardService)   // <-- inject dashboard service
         {
             _profileService = profileService;
             _teacherCourseService = teacherCourseService;
             _httpContext = httpContext;
+            _dashboardService = dashboardService;
         }
 
         [Authorize(Roles = "Teacher")]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
             ViewData["PageHeader"] = "Teacher Dashboard";
-            return View("TeacherDashboard");
+
+            // Get IdNumber from session (the service needs IdNumber)
+            var idNumber = GetCurrentIdNumber();
+            if (string.IsNullOrEmpty(idNumber))
+                return RedirectToAction("TeacherLogin", "Login");
+
+            // Build dynamic VM
+            var vm = await _dashboardService.BuildAsync(idNumber);
+
+            // Defensive fallbacks for KPIs
+            vm.TotalCourses = vm.TotalCourses == 0 ? (vm.IT?.Courses?.Count ?? 0) + (vm.CS?.Courses?.Count ?? 0) : vm.TotalCourses;
+            vm.TotalStudents = vm.TotalStudents == 0 ? (vm.IT?.StudentsTotal ?? 0) + (vm.CS?.StudentsTotal ?? 0) : vm.TotalStudents;
+
+            return View("TeacherDashboard", vm); // uses your existing Razor view
         }
 
         [Authorize(Roles = "Teacher")]
@@ -66,44 +83,37 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> AssignedCourses(string semester = null, string program = null, 
+        public async Task<IActionResult> AssignedCourses(string semester = null, string program = null,
             int? yearLevel = null, string searchName = null, string searchId = null)
         {
             ViewData["PageHeader"] = "Assigned Courses";
-            
+
             try
             {
                 var userId = _profileService.GetCurrentUserId();
                 var teacherId = GetCurrentTeacherId();
-                
+
                 if (teacherId == 0)
                 {
                     TempData["Error"] = $"Unable to identify teacher. UserId: {userId}, TeacherId: {teacherId}. Please check if you have a Teacher record.";
                     return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
                 }
 
-                // Get teacher's assigned courses for grade entry tab
                 var classSchedules = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId, semester);
-                
-                // Apply client-side filtering if search parameters are provided
-                if (!string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) || 
+
+                if (!string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) ||
                     !string.IsNullOrEmpty(program) || yearLevel.HasValue)
                 {
-                    // Filter courses based on search criteria - this is a simplified approach
-                    // In a more complex scenario, you might want to filter at the service level
                     if (!string.IsNullOrEmpty(program))
                     {
                         classSchedules = classSchedules.Where(c => c.Course == program).ToList();
                     }
                 }
-                
-                // Get filtered students for Grade View tab
-                // Always call SearchStudentsAsync - it will return all students when no filters are applied
+
                 var filteredStudents = await _teacherCourseService.SearchStudentsAsync(teacherId, searchName, searchId, program, yearLevel);
-                var hasFilters = !string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) || 
+                var hasFilters = !string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) ||
                                 !string.IsNullOrEmpty(program) || yearLevel.HasValue;
-                
-                // Get filter options
+
                 var programs = await _teacherCourseService.GetTeacherProgramsAsync(teacherId);
                 var yearLevels = await _teacherCourseService.GetTeacherYearLevelsAsync(teacherId);
 
@@ -157,7 +167,7 @@ namespace ASI.Basecode.WebApp.Controllers
                     return Json(new { success = false, message = "Teacher not found" });
 
                 var success = await _teacherCourseService.UpdateStudentGradesAsync(grades);
-                
+
                 if (success)
                     return Json(new { success = true, message = "Grades updated successfully" });
                 else
@@ -182,17 +192,14 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (excelFile == null || excelFile.Length == 0)
                     return Json(new { success = false, message = "No file uploaded" });
 
-                // Validate file type
                 var allowedExtensions = new[] { ".xlsx", ".xls" };
                 var fileExtension = Path.GetExtension(excelFile.FileName).ToLowerInvariant();
                 if (!allowedExtensions.Contains(fileExtension))
                     return Json(new { success = false, message = "Only Excel files (.xlsx, .xls) are allowed" });
 
-                // Validate file size (5MB max)
                 if (excelFile.Length > 5 * 1024 * 1024)
                     return Json(new { success = false, message = "File size must be less than 5MB" });
 
-                // Read file to byte array
                 byte[] fileBytes;
                 using (var memoryStream = new MemoryStream())
                 {
@@ -200,26 +207,26 @@ namespace ASI.Basecode.WebApp.Controllers
                     fileBytes = memoryStream.ToArray();
                 }
 
-                // Parse Excel file
                 var parseResult = _teacherCourseService.ParseExcelFile(fileBytes);
                 if (!parseResult.Success)
                 {
-                    return Json(new { 
-                        success = false, 
+                    return Json(new
+                    {
+                        success = false,
                         message = parseResult.Message,
-                        errors = parseResult.Errors 
+                        errors = parseResult.Errors
                     });
                 }
 
-                // Process and save grades to database
                 var uploadResult = await _teacherCourseService.ProcessExcelGradeUploadAsync(assignedCourseId, parseResult.ProcessedGrades);
-                
-                return Json(new { 
-                    success = uploadResult.Success, 
+
+                return Json(new
+                {
+                    success = uploadResult.Success,
                     message = uploadResult.Message,
                     processedCount = uploadResult.ProcessedCount,
                     errorCount = uploadResult.ErrorCount,
-                    errors = uploadResult.Errors 
+                    errors = uploadResult.Errors
                 });
             }
             catch (Exception ex)
@@ -238,18 +245,15 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (teacherId == 0)
                     return BadRequest("Teacher not found");
 
-                // Get students for the course
                 var students = await _teacherCourseService.GetStudentGradesForClassAsync(assignedCourseId);
-                
-                // Get course info for filename
+
                 var courses = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId);
                 var course = courses.FirstOrDefault(c => c.AssignedCourseId == assignedCourseId);
                 var teacherProfile = await _profileService.GetTeacherProfileAsync(_profileService.GetCurrentUserId());
-                
-                using var workbook = new XLWorkbook();
+
+                using var workbook = new ClosedXML.Excel.XLWorkbook();
                 var worksheet = workbook.Worksheets.Add("Grades Template");
 
-                // Add headers
                 worksheet.Cell(1, 1).Value = "ID Number";
                 worksheet.Cell(1, 2).Value = "Last Name";
                 worksheet.Cell(1, 3).Value = "First Name";
@@ -258,18 +262,16 @@ namespace ASI.Basecode.WebApp.Controllers
                 worksheet.Cell(1, 6).Value = "Semi-Final";
                 worksheet.Cell(1, 7).Value = "Final";
 
-                // Style headers
                 var headerRange = worksheet.Range(1, 1, 1, 7);
                 headerRange.Style.Font.Bold = true;
                 headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
                 headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thick;
 
-                // Add student data
                 for (int i = 0; i < students.Count; i++)
                 {
                     var student = students[i];
                     var row = i + 2;
-                    
+
                     worksheet.Cell(row, 1).Value = student.IdNumber;
                     worksheet.Cell(row, 2).Value = student.LastName;
                     worksheet.Cell(row, 3).Value = student.FirstName;
@@ -279,27 +281,23 @@ namespace ASI.Basecode.WebApp.Controllers
                     worksheet.Cell(row, 7).Value = student.Final?.ToString() ?? "";
                 }
 
-                // Auto-fit columns
                 worksheet.Columns().AdjustToContents();
 
-                // Add data validation for grade columns (1.0 to 5.0)
                 for (int col = 4; col <= 7; col++)
                 {
                     var gradeRange = worksheet.Range(2, col, students.Count + 1, col);
                     gradeRange.CreateDataValidation().Decimal.Between(1.0, 5.0);
                 }
 
-                // Generate file
                 using var stream = new MemoryStream();
                 workbook.SaveAs(stream);
                 stream.Position = 0;
 
-                // Create filename: TeacherName_EDPCode_Subject
                 var teacherName = $"{teacherProfile?.FirstName}_{teacherProfile?.LastName}".Replace(" ", "_");
                 var edpCode = course?.EDPCode?.Replace(" ", "_") ?? "Unknown";
                 var subject = course?.Subject?.Replace(" ", "_") ?? "Subject";
                 var fileName = $"{teacherName}_{edpCode}_{subject}.xlsx";
-                
+
                 return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
             }
             catch (Exception ex)
@@ -310,7 +308,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [Authorize(Roles = "Teacher")]
         [HttpGet]
-        public async Task<IActionResult> SearchStudents(string searchName = null, string searchId = null, 
+        public async Task<IActionResult> SearchStudents(string searchName = null, string searchId = null,
             string program = null, int? yearLevel = null)
         {
             try
@@ -328,8 +326,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-
-
         [Authorize(Roles = "Teacher")]
         public IActionResult Calendar()
         {
@@ -339,13 +335,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Teacher")]
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
-        //Logout
-
         [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync("ASI_Basecode");
-            return RedirectToAction("TeacherLogin", "Login"); // redirect to login page
+            return RedirectToAction("TeacherLogin", "Login");
         }
 
         // TEMPORARY SEED DATA METHOD - Remove after debugging
@@ -355,16 +349,14 @@ namespace ASI.Basecode.WebApp.Controllers
             try
             {
                 var userId = _profileService.GetCurrentUserId();
-                
+
                 using (var scope = HttpContext.RequestServices.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
-                    // Check if teacher exists
+
                     var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
                     if (teacher == null)
                     {
-                        // Create teacher record
                         teacher = new ASI.Basecode.Data.Models.Teacher
                         {
                             UserId = userId,
@@ -373,8 +365,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.Teachers.Add(teacher);
                         await context.SaveChangesAsync();
                     }
-                    
-                    // Create sample course if none exists
+
                     if (!context.Courses.Any())
                     {
                         var course = new ASI.Basecode.Data.Models.Course
@@ -388,8 +379,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.Courses.Add(course);
                         await context.SaveChangesAsync();
                     }
-                    
-                    // Create assigned course if none exists
+
                     if (!context.AssignedCourses.Any(ac => ac.TeacherId == teacher.TeacherId))
                     {
                         var course = context.Courses.First();
@@ -406,7 +396,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         context.AssignedCourses.Add(assignedCourse);
                         await context.SaveChangesAsync();
                     }
-                    
+
                     return Json(new { Success = true, Message = "Test data created successfully!" });
                 }
             }
@@ -424,16 +414,16 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 var userId = _profileService.GetCurrentUserId();
                 var teacherId = GetCurrentTeacherId();
-                
+
                 using (var scope = HttpContext.RequestServices.CreateScope())
                 {
                     var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
+
                     var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
                     var assignedCourses = context.AssignedCourses.Where(ac => ac.TeacherId == teacherId).ToList();
                     var allTeachers = context.Teachers.ToList();
                     var allAssignedCourses = context.AssignedCourses.ToList();
-                    
+
                     var debugInfo = new
                     {
                         UserId = userId,
@@ -445,7 +435,7 @@ namespace ASI.Basecode.WebApp.Controllers
                         TotalTeachers = allTeachers.Count,
                         TotalAssignedCourses = allAssignedCourses.Count
                     };
-                    
+
                     return Json(debugInfo);
                 }
             }
@@ -457,9 +447,17 @@ namespace ASI.Basecode.WebApp.Controllers
 
         #region Private Helper Methods
 
-        private int GetCurrentTeacherId()
+        private int GetCurrentTeacherId() => _profileService.GetCurrentTeacherId();
+
+        private string GetCurrentIdNumber()
         {
-            return _profileService.GetCurrentTeacherId();
+            // Prefer session IdNumber; fall back to claim if needed
+            var id = HttpContext?.Session?.GetString("IdNumber");
+            if (!string.IsNullOrWhiteSpace(id)) return id;
+
+            // Optional: if you also store it in claims
+            var claim = User?.Claims?.FirstOrDefault(c => c.Type == "IdNumber")?.Value;
+            return claim ?? string.Empty;
         }
 
         private static string GetCurrentSchoolYear()

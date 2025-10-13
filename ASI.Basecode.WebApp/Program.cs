@@ -34,8 +34,11 @@ var configurer = new StartupConfigurer(builder.Configuration);
 configurer.ConfigureServices(builder.Services);
 
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
-builder.Services.AddScoped<IStudyLoadService, StudyLoadService>(); 
+builder.Services.AddScoped<IStudyLoadService, StudyLoadService>();
+builder.Services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 
+// ✅ REQUIRED because TeacherController injects IHttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 // If you are NOT adding MVC in StartupConfigurer, uncomment this:
 // builder.Services.AddControllersWithViews();

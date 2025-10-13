@@ -1,7 +1,24 @@
-﻿@{
+﻿@using System.Text.Json
+@model ASI.Basecode.Services.ServiceModels.TeacherDashboardViewModel
+
+@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Teacher Dashboard";
     ViewData["PageHeader"] = "Teacher Dashboard";
+
+    var clientData = new
+    {
+        IT = (Model.IT?.Courses ?? new List<ASI.Basecode.Services.ServiceModels.CourseItem>())
+                .Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
+        CS = (Model.CS?.Courses ?? new List<ASI.Basecode.Services.ServiceModels.CourseItem>())
+                .Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
+        itStudents = Model.Summary?.IT_Students ?? 0,
+        csStudents = Model.Summary?.CS_Students ?? 0,
+        itCourses = Model.Summary?.IT_Courses ?? 0,
+        csCourses = Model.Summary?.CS_Courses ?? 0,
+        gradedPct = Model.GradedPct
+    };
+    var json = JsonSerializer.Serialize(clientData);
 }
 
 @section Styles {
@@ -11,58 +28,52 @@
 <div class="dash-wrap grid teacher-dashboard">
     <!-- KPI row -->
     <div class="grid kpis">
-        <!-- Subjects Handled -->
         <div class="card kpi" aria-label="Courses Handled">
             <div class="kpi-body">
                 <h4>Courses Handled</h4>
-                <div class="value" id="kpiSubjectsValue">0</div>
+                <div class="value" id="kpiSubjectsValue">@Model.TotalCourses</div>
                 <div class="meta" id="kpiSubjectsMeta">Across programs</div>
             </div>
             <div class="icon" aria-hidden="true">📘</div>
         </div>
 
-        <!-- Total Students -->
         <div class="card kpi" aria-label="Total Students">
             <div class="kpi-body">
                 <h4>Total Students</h4>
-                <div class="value" id="kpiStudentsValue">0</div>
+                <div class="value" id="kpiStudentsValue">@Model.TotalStudents</div>
                 <div class="meta" id="kpiStudentsMeta">Across selected program</div>
             </div>
             <div class="icon" aria-hidden="true">👥</div>
         </div>
     </div>
 
-    <!-- Courses Handled: IT / CS toggle + list -->
+    <!-- Courses Handled: BSCS / BSIT toggle + list -->
     <div class="card p24">
         <div class="panel-title-row">
             <div class="panel-title">Courses Handled</div>
             <div class="seg" role="tablist" aria-label="Program">
-                <button class="seg-btn active" id="segIT" aria-pressed="true" role="tab" aria-selected="true">IT</button>
-                <button class="seg-btn" id="segCS" aria-pressed="false" role="tab" aria-selected="false">CS</button>
+                <!-- BSCS FIRST and ACTIVE by default -->
+                <button class="seg-btn active" id="segCS" aria-pressed="true" role="tab" aria-selected="true">BSCS</button>
+                <button class="seg-btn" id="segIT" aria-pressed="false" role="tab" aria-selected="false">BSIT</button>
             </div>
         </div>
 
-        <div class="list" id="coursesList">
-            <!-- Populated by script -->
-        </div>
+        <div class="list" id="coursesList"><!-- populated by script --></div>
     </div>
 
-    <!-- Teaching Highlights: Donut + Bar -->
+    <!-- Teaching Highlights -->
     <div class="card p24 grid hi">
         <div>
             <div class="hi-title">Teaching Highlights</div>
-
             <div class="hi-inner">
-                <!-- Donut (you can keep as progress or repurpose later) -->
                 <div class="ring-wrap">
                     <canvas id="gradingRing" class="ring-canvas" role="img" aria-label="Grading progress ring"></canvas>
                     <div class="ring-legend">
-                        <div>Graded: <span id="gradedPctLabel">72%</span></div>
-                        <div>Remaining: <span id="remainingPctLabel">28%</span></div>
+                        <div>Graded: <span id="gradedPctLabel">0%</span></div>
+                        <div>Remaining: <span id="remainingPctLabel">0%</span></div>
                     </div>
                 </div>
 
-                <!-- Bar (Students vs Courses per Program) -->
                 <div class="chart-col">
                     <div class="chart-title">Students vs Courses per Program</div>
                     <div class="chart-area">
@@ -77,179 +88,126 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ======= Static demo data (replace with server-side ViewModel later) =======
-        const programData = {
-            IT: [
-                { code: "IT201", title: "Web Systems",               students: 64 },
-                { code: "IT305", title: "Data Communications",       students: 32 },
-                { code: "IT310", title: "Systems Integration",       students: 28 }
-            ],
-            CS: [
-                { code: "CS301", title: "Algorithms",                students: 58 },
-                { code: "CS302", title: "Operating Systems",         students: 27 }
-            ]
-        };
+        // ======= Data from server =======
+        const server = @Html.Raw(json);
+        const programData = { IT: server.IT, CS: server.CS };
+        const gradedPct = Number(server.gradedPct || 0);
 
-        // Used only for the donut (you can later bind this to actual progress)
-        const gradedPct = 0.72;
-
-        // ======= Elements =======
+        // Elements
         const segIT = document.getElementById('segIT');
         const segCS = document.getElementById('segCS');
         const coursesList = document.getElementById('coursesList');
-
         const kpiSubjectsValue = document.getElementById('kpiSubjectsValue');
         const kpiSubjectsMeta  = document.getElementById('kpiSubjectsMeta');
-
         const kpiStudentsValue = document.getElementById('kpiStudentsValue');
         const kpiStudentsMeta  = document.getElementById('kpiStudentsMeta');
 
-        // ======= Helpers =======
-        function sumStudents(arr) {
-            return (arr || []).reduce((acc, c) => acc + (c.students || 0), 0);
-        }
+        // Display text mapping (UI shows BSCS/BSIT)
+        const displayName = (key) => key === 'CS' ? 'BSCS' : 'BSIT';
 
-        // ======= Render Courses Handled (IT/CS) =======
         function renderCourses(programKey) {
-            const list = programData[programKey] || [];
-            coursesList.innerHTML = "";
+          const list = programData[programKey] || [];
+          coursesList.innerHTML = "";
+          let studentsTotal = 0;
 
-            let studentsTotal = 0;
+          list.forEach(c => {
+            studentsTotal += (Number(c.students) || 0);
 
-            list.forEach(c => {
-                studentsTotal += (c.students || 0);
+            const item  = document.createElement('div');
+            item.className = 'item';
 
-                const item = document.createElement('div');
-                item.className = 'item';
+            const dot   = document.createElement('div');
+            dot.className = 'dot';
+            dot.textContent = '📄';
 
-                const dot = document.createElement('div');
-                dot.className = 'dot';
-                dot.textContent = '📄';
+            const main  = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'i-title';
+            title.textContent = `${c.code} • ${c.title}`;
 
-                const main = document.createElement('div');
-                const title = document.createElement('div');
-                title.className = 'i-title';
-                title.textContent = `${c.code} • ${c.title}`;
+            const sub   = document.createElement('div');
+            sub.className = 'i-sub';
+            sub.textContent = `${c.students} students`;
 
-                // NOTE: Removed "sections" from the subtext per request
-                const sub = document.createElement('div');
-                sub.className = 'i-sub';
-                sub.textContent = `${c.students} students`;
+            main.appendChild(title);
+            main.appendChild(sub);
+            item.appendChild(dot);
+            item.appendChild(main);
+            coursesList.appendChild(item);
+          });
 
-                main.appendChild(title);
-                main.appendChild(sub);
+          // ✅ KPIs per selected tab (0 when empty)
+          const subjectsCount = list.length;
+          kpiSubjectsValue.textContent = subjectsCount;
+          kpiStudentsValue.textContent = studentsTotal;
+          kpiSubjectsMeta.textContent  = `${displayName(programKey)} • ${subjectsCount} ${subjectsCount === 1 ? 'course' : 'courses'}`;
+          kpiStudentsMeta.textContent  = `${displayName(programKey)} • total students`;
 
-                item.appendChild(dot);
-                item.appendChild(main);
-
-                coursesList.appendChild(item);
-            });
-
-            // Update KPIs
-            const subjectsCount = list.length;
-            kpiSubjectsValue.textContent = subjectsCount;
-            kpiSubjectsMeta.textContent  = `${programKey} • ${subjectsCount} ${subjectsCount === 1 ? 'courses' : 'courses'}`;
-
-            kpiStudentsValue.textContent = studentsTotal;
-            kpiStudentsMeta.textContent  = `${programKey} • total students`;
-
-            // Toggle button states
-            const on = (btn) => { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); btn.setAttribute('aria-selected','true'); };
-            const off = (btn) => { btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); btn.setAttribute('aria-selected','false'); };
-            if (programKey === 'IT') { on(segIT); off(segCS); } else { on(segCS); off(segIT); }
+          // Toggle states
+          const on = (btn) => { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); btn.setAttribute('aria-selected','true'); };
+          const off = (btn) => { btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); btn.setAttribute('aria-selected','false'); };
+          if (programKey === 'CS') { on(segCS); off(segIT); } else { on(segIT); off(segCS); }
         }
 
-        segIT.addEventListener('click', () => renderCourses('IT'));
         segCS.addEventListener('click', () => renderCourses('CS'));
-        segIT.addEventListener('keydown', e => { if (['ArrowRight','Enter',' '].includes(e.key)) renderCourses('CS'); });
-        segCS.addEventListener('keydown', e => { if (['ArrowLeft','Enter',' '].includes(e.key)) renderCourses('IT'); });
+        segIT.addEventListener('click', () => renderCourses('IT'));
+        segCS.addEventListener('keydown', e => { if (['ArrowRight','Enter',' '].includes(e.key)) renderCourses('IT'); });
+        segIT.addEventListener('keydown', e => { if (['ArrowLeft','Enter',' '].includes(e.key)) renderCourses('CS'); });
 
-        // Initial render (IT by default)
-        renderCourses('IT');
+        // ✅ Initial: BSCS first & active
+        renderCourses('CS');
 
-        // ======= Donut: Grading Progress (unchanged) =======
+        // ======= Donut (unchanged) =======
         new Chart(document.getElementById('gradingRing'), {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [gradedPct, 1 - gradedPct],
-                    borderWidth: 0,
-                    backgroundColor: ['#22c55e', '#e8eef7'],
-                    cutout: '78%'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1,
-                plugins: { legend: { display: false }, tooltip: { enabled: false } }
-            },
-            plugins: [{
-                id: 'centerTextTeacher',
-                afterDraw(chart) {
-                    const { ctx, chartArea } = chart;
-                    if (!chartArea) return;
-                    const cx = (chartArea.left + chartArea.right) / 2;
-                    const cy = (chartArea.top + chartArea.bottom) / 2;
-                    ctx.save();
-                    ctx.font = '700 44px Inter, system-ui, -apple-system, Segoe UI, Roboto';
-                    ctx.fillStyle = '#22c55e';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(Math.round(gradedPct * 100) + '%', cx, cy - 12);
-                    ctx.font = '12px Inter, system-ui, -apple-system, Segoe UI, Roboto';
-                    ctx.fillStyle = '#6b7280';
-                    ctx.fillText('Grading Progress', cx, cy + 18);
-                    ctx.restore();
-                }
-            }]
+          type: 'doughnut',
+          data: { datasets: [{ data: [gradedPct, 1 - gradedPct], borderWidth: 0, backgroundColor: ['#22c55e', '#e8eef7'], cutout: '78%' }] },
+          options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+          plugins: [{
+            id: 'centerTextTeacher',
+            afterDraw(chart) {
+              const { ctx, chartArea } = chart; if (!chartArea) return;
+              const cx = (chartArea.left + chartArea.right) / 2;
+              const cy = (chartArea.top + chartArea.bottom) / 2;
+              ctx.save();
+              ctx.font = '700 44px Inter, system-ui, -apple-system, Segoe UI, Roboto';
+              ctx.fillStyle = '#22c55e';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(Math.round(gradedPct * 100) + '%', cx, cy - 12);
+              ctx.font = '12px Inter, system-ui, -apple-system, Segoe UI, Roboto';
+              ctx.fillStyle = '#6b7280';
+              ctx.fillText('Grading Progress', cx, cy + 18);
+              ctx.restore();
+            }
+          }]
         });
 
         document.getElementById('gradedPctLabel').textContent = Math.round(gradedPct * 100) + '%';
         document.getElementById('remainingPctLabel').textContent = (100 - Math.round(gradedPct * 100)) + '%';
 
-        // ======= Bar: Students vs Courses per Program (static) =======
-        // Compute static values from the above object (still "static" since object is hard-coded)
-        const itCourses = programData.IT.length;
-        const csCourses = programData.CS.length;
-        const itStudents = sumStudents(programData.IT);
-        const csStudents = sumStudents(programData.CS);
+        // ======= Bar (unchanged) =======
+        const itCourses = Number(server.itCourses || 0);
+        const csCourses = Number(server.csCourses || 0);
+        const itStudents = Number(server.itStudents || 0);
+        const csStudents = Number(server.csStudents || 0);
 
         new Chart(document.getElementById('byProgramBar'), {
-            type: 'bar',
-            data: {
-                labels: ['IT', 'CS'],
-                datasets: [
-                    {
-                        label: 'Students',
-                        data: [itStudents, csStudents],
-                        borderWidth: 0,
-                        backgroundColor: '#2563eb'
-                    },
-                    {
-                        label: 'Courses',
-                        data: [itCourses, csCourses],
-                        borderWidth: 0,
-                        backgroundColor: '#22c55e'
-                    }
-                ]
+          type: 'bar',
+          data: {
+            labels: ['IT', 'CS'],
+            datasets: [
+              { label: 'Students', data: [itStudents, csStudents], borderWidth: 0, backgroundColor: '#2563eb' },
+              { label: 'Courses',  data: [itCourses,  csCourses],  borderWidth: 0, backgroundColor: '#22c55e' }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, grid: { color: '#eef2f7' }, ticks: { color: '#64748b', font: { size: 11 } } },
+              x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#eef2f7' },
-                        ticks: { color: '#64748b', font: { size: 11 } }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#64748b', font: { size: 11 } }
-                    }
-                },
-                plugins: { legend: { display: true } }
-            }
+            plugins: { legend: { display: true } }
+          }
         });
     </script>
 }
