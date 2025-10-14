@@ -13,16 +13,16 @@ namespace ASI.Basecode.Services.ServiceModels
         // Donut (0..1)
         public decimal GradedPct { get; set; }
 
-        // Lists per program
-        public ProgramCourses IT { get; set; } = new();
-        public ProgramCourses CS { get; set; } = new();
+        // Dynamic programs list
+        public List<ProgramData> Programs { get; set; } = new();
 
-        // Chart summary
-        public ProgramSummary Summary { get; set; } = new();
+        // Chart summary (now dynamic)
+        public List<ProgramSummaryItem> Summary { get; set; } = new();
     }
 
-    public class ProgramCourses
+    public class ProgramData
     {
+        public string ProgramCode { get; set; }           // e.g., "BSCS", "BSIT", "BSECE"
         public List<CourseItem> Courses { get; set; } = new();
         public int StudentsTotal { get; set; }
     }
@@ -34,11 +34,10 @@ namespace ASI.Basecode.Services.ServiceModels
         public int Students { get; set; }         // distinct Student count from Grades
     }
 
-    public class ProgramSummary
+    public class ProgramSummaryItem
     {
-        public int IT_Courses { get; set; }
-        public int CS_Courses { get; set; }
-        public int IT_Students { get; set; }
-        public int CS_Students { get; set; }
+        public string ProgramCode { get; set; }
+        public int Courses { get; set; }
+        public int Students { get; set; }
     }
 }

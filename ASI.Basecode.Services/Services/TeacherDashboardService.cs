@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ASI.Basecode.Services.Interfaces;
@@ -56,7 +57,7 @@ namespace ASI.Basecode.Services.Services
                     TotalCourses = 0,
                     TotalStudents = 0,
                     GradedPct = 0,
-                    Summary = new ProgramSummary()
+                    Summary = new List<ProgramSummaryItem>()
                 };
 
             // ===============================================
@@ -81,15 +82,15 @@ namespace ASI.Basecode.Services.Services
                     TotalCourses = 0,
                     TotalStudents = 0,
                     GradedPct = 0,
-                    Summary = new ProgramSummary()
+                    Summary = new List<ProgramSummaryItem>()
                 };
 
-            // Normalize ProgramCode -> "IT" / "CS" buckets for UI
+            // Keep original program codes instead of normalizing
             var assigned = assignedRaw.Select(a => new
             {
                 a.AssignedCourseId,
                 a.CourseId,
-                ProgramUi = NormalizeProgram(a.ProgramCode)
+                ProgramCode = string.IsNullOrWhiteSpace(a.ProgramCode) ? "Unknown" : a.ProgramCode.Trim()
             }).ToList();
 
             var assignedIds = assigned.Select(a => a.AssignedCourseId).ToList();
@@ -134,17 +135,15 @@ namespace ASI.Basecode.Services.Services
             // ===============================================
             // Build Dashboard Model
             // ===============================================
-            var model = new TeacherDashboardViewModel
-            {
-                TeacherName = $"{user.FirstName} {user.LastName}",
-                GradedPct = Math.Round(gradedPct, 4)
-            };
-
-            // Helper to build program grouping
-            ProgramCourses BuildProgram(string programCode)
+            
+            // Get all unique programs from assigned courses
+            var allPrograms = assigned.Select(a => a.ProgramCode).Distinct().ToList();
+            
+            // Helper to build program data
+            async Task<ProgramData> BuildProgramDataAsync(string programCode)
             {
                 var ac = assigned
-                    .Where(a => string.Equals(a.ProgramUi, programCode, StringComparison.OrdinalIgnoreCase))
+                    .Where(a => string.Equals(a.ProgramCode, programCode, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
                 var items = ac
@@ -161,50 +160,61 @@ namespace ASI.Basecode.Services.Services
                     .ThenBy(ci => ci.Code)
                     .ToList();
 
-                return new ProgramCourses
+                // Calculate unique students for this program (avoid double counting within program)
+                var programAssignedIds = ac.Select(a => a.AssignedCourseId).ToList();
+                var uniqueStudentsCount = programAssignedIds.Count > 0
+                    ? await _gradeRepo.GetGrades()
+                        .AsNoTracking()
+                        .Where(g => programAssignedIds.Contains(g.AssignedCourseId))
+                        .Select(g => g.StudentId)
+                        .Distinct()
+                        .CountAsync()
+                    : 0;
+
+                return new ProgramData
                 {
+                    ProgramCode = programCode,
                     Courses = items,
-                    StudentsTotal = items.Sum(i => i.Students)
+                    StudentsTotal = uniqueStudentsCount  // Use unique student count instead of sum
                 };
             }
 
-            // Build IT and CS blocks
-            model.IT = BuildProgram("IT");
-            model.CS = BuildProgram("CS");
-
-            model.TotalCourses = model.IT.Courses.Count + model.CS.Courses.Count;
-            model.TotalStudents = model.IT.StudentsTotal + model.CS.StudentsTotal;
-
-            model.Summary = new ProgramSummary
+            // Build all programs dynamically
+            var programs = new List<ProgramData>();
+            var summaryItems = new List<ProgramSummaryItem>();
+            
+            foreach (var programCode in allPrograms)
             {
-                IT_Courses = model.IT.Courses.Count,
-                CS_Courses = model.CS.Courses.Count,
-                IT_Students = model.IT.StudentsTotal,
-                CS_Students = model.CS.StudentsTotal
+                var programData = await BuildProgramDataAsync(programCode);
+                programs.Add(programData);
+                
+                summaryItems.Add(new ProgramSummaryItem
+                {
+                    ProgramCode = programCode,
+                    Courses = programData.Courses.Count,
+                    Students = programData.StudentsTotal
+                });
+            }
+
+            // Calculate total unique students across ALL assigned courses (to avoid double counting)
+            var allUniqueStudents = await _gradeRepo.GetGrades()
+                .AsNoTracking()
+                .Where(g => assignedIds.Contains(g.AssignedCourseId))
+                .Select(g => g.StudentId)
+                .Distinct()
+                .CountAsync();
+
+            var model = new TeacherDashboardViewModel
+            {
+                TeacherName = $"{user.FirstName} {user.LastName}",
+                GradedPct = Math.Round(gradedPct, 4),
+                Programs = programs,
+                Summary = summaryItems,
+                TotalCourses = programs.Sum(p => p.Courses.Count),
+                TotalStudents = allUniqueStudents  // Use unique student count instead of summing per course
             };
 
             return model;
-        }
-
-        // ===============================================
-        // HELPER: Normalize Program Codes Safely
-        // Accepts Program.ProgramCode (e.g., "BSIT", "BSCS")
-        // ===============================================
-        private static string NormalizeProgram(string raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw)) return "CS";
-            var s = raw.Trim().ToUpperInvariant();
-
-            // Exact matches only
-            if (s == "BSIT" || s == "IT") return "IT";
-            if (s == "BSCS" || s == "CS") return "CS";
-
-            // Edge handling: fallback heuristics
-            if (s.Contains("IT")) return "IT";
-            if (s.Contains("CS")) return "CS";
-
-            // Default fallback to CS (safer for visualization)
-            return "CS";
         }
     }
 }
