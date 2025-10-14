@@ -21,6 +21,7 @@
         passFail: null
     };
 
+
     const colorPalette = ['#2563eb', '#22c55e', '#f97316', '#a855f7', '#0ea5e9', '#f59e0b', '#ec4899'];
 
     let currentDetail = payload.detail || {};
@@ -34,7 +35,6 @@
         }
 
         charts.trend?.destroy();
-
         const trendPoints = Array.isArray(payload.trend) ? payload.trend : [];
         if (!trendPoints.length) {
             charts.trend = createEmptyChart(ctx, 'line', 'No data');

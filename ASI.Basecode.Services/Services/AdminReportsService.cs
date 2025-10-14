@@ -57,11 +57,16 @@ namespace ASI.Basecode.Services.Services
                 ? await GetTeacherDetailAsync(teacherId.Value, normalizedSchoolYear, normalizedTermKey)
                 : new TeacherDetailModel();
 
-            var studentData = await BuildStudentOptionsAsync();
+            var studentData = await BuildStudentOptionsAsync(normalizedSchoolYear, normalizedTermKey);
             var studentOptions = studentData.Options;
             var programs = studentData.Programs;
             var sections = studentData.Sections;
-            var studentId = highlightedStudentId ?? studentOptions.FirstOrDefault()?.StudentId;
+            var studentId = highlightedStudentId;
+            if (studentId.HasValue && !studentOptions.Any(option => option.StudentId == studentId.Value))
+            {
+                studentId = null;
+            }
+
             var studentAnalytics = studentId.HasValue
                 ? await GetStudentAnalyticsAsync(studentId.Value, normalizedSchoolYear, normalizedTermKey)
                 : new StudentAnalyticsModel();
@@ -123,17 +128,43 @@ namespace ASI.Basecode.Services.Services
                 .Where(ac => MatchesTerm(ac.Semester, schoolYear, termKey))
                 .ToList();
 
-            var grades = scopedCourses
-                .SelectMany(ac => ac.Grades ?? Enumerable.Empty<Grade>())
+            var courseDetails = scopedCourses
+                .Select(ac => new
+                {
+                    AssignedCourse = ac,
+                    Grades = (ac.Grades ?? new List<Grade>()).ToList()
+                })
+                .ToList();
+
+            var grades = courseDetails
+                .SelectMany(x => x.Grades)
                 .ToList();
 
             var passCount = grades.Count(g => ExtractFinalScore(g) >= 75m);
             var gradedCount = grades.Count(g => ExtractFinalScore(g).HasValue);
             var passRate = gradedCount == 0 ? 0m : Math.Round(passCount * 100m / gradedCount, 1);
 
-            var completionPercent = scopedCourses.Count == 0
+            var totalCourses = courseDetails.Count;
+            var completedCourses = courseDetails.Count(x => x.Grades.Any(g => ExtractFinalScore(g).HasValue));
+            var completionPercent = totalCourses == 0
                 ? 0m
-                : Math.Round(scopedCourses.Count(ac => ac.Grades.Any(g => ExtractFinalScore(g).HasValue)) * 100m / scopedCourses.Count, 1);
+                : Math.Round(completedCourses * 100m / totalCourses, 1);
+
+            var submissionSummary = new List<NamedValueModel>();
+            if (totalCourses > 0)
+            {
+                submissionSummary.Add(new NamedValueModel
+                {
+                    Name = "All grades submitted",
+                    Value = completedCourses
+                });
+
+                submissionSummary.Add(new NamedValueModel
+                {
+                    Name = "Some grades are ungraded",
+                    Value = totalCourses - completedCourses
+                });
+            }
 
             return new TeacherDetailModel
             {
@@ -143,38 +174,39 @@ namespace ASI.Basecode.Services.Services
                 Email = teacher.User?.Email ?? string.Empty,
                 Rank = teacher.Position,
                 TeachingLoadUnits = scopedCourses.Sum(ac => ac.Units),
-                SectionCount = scopedCourses.Count,
+                SectionCount = totalCourses,
                 PassRatePercent = passRate,
                 SubmissionCompletionPercent = completionPercent,
-                Assignments = scopedCourses.Select(ac => new TeacherAssignmentModel
+                SubmissionSummary = submissionSummary,
+                Assignments = courseDetails.Select(x => new TeacherAssignmentModel
                 {
-                    CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
-                    Section = ac.EDPCode,
-                    Schedule = BuildSchedule(ac.ClassSchedules),
-                    Units = ac.Units,
-                    Enrolled = ac.Grades?.Select(g => g.StudentId).Distinct().Count() ?? 0
+                    CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
+                    Section = x.AssignedCourse.EDPCode,
+                    Schedule = BuildSchedule(x.AssignedCourse.ClassSchedules),
+                    Units = x.AssignedCourse.Units,
+                    Enrolled = x.Grades.Select(g => g.StudentId).Distinct().Count()
                 }).ToList(),
-                CoursePassRates = scopedCourses.Select(ac =>
+                CoursePassRates = courseDetails.Select(x =>
                 {
-                    var courseGrades = ac.Grades ?? new List<Grade>();
+                    var courseGrades = x.Grades;
                     var graded = courseGrades.Where(g => ExtractFinalScore(g).HasValue).ToList();
                     var pass = graded.Count(g => ExtractFinalScore(g) >= 75m);
                     var rate = graded.Count == 0 ? 0m : Math.Round(pass * 100m / graded.Count, 1);
                     return new CoursePassRateModel
                     {
-                        CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
+                        CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
                         PassRatePercent = rate
                     };
                 }).ToList(),
-                SubmissionStatuses = scopedCourses.Select(ac =>
+                SubmissionStatuses = courseDetails.Select(x =>
                 {
-                    var hasFinals = ac.Grades.Any(g => g.Final.HasValue);
-                    var status = hasFinals ? "Final grades submitted" : "Pending final grades";
+                    var hasAllGrades = x.Grades.Any() && x.Grades.All(g => ExtractFinalScore(g).HasValue);
+                    var status = hasAllGrades ? "All grades submitted" : "Some grades are ungraded";
                     return new TeacherSubmissionStatusModel
                     {
-                        CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
+                        CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
                         Status = status,
-                        IsComplete = hasFinals
+                        IsComplete = hasAllGrades
                     };
                 }).ToList()
             };
@@ -182,6 +214,29 @@ namespace ASI.Basecode.Services.Services
 
         public async Task<StudentAnalyticsModel> GetStudentAnalyticsAsync(int studentId, string schoolYear = null, string termKey = null)
         {
+            var studentRecord = await _students.GetStudents()
+                .Include(s => s.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.StudentId == studentId);
+
+            if (studentRecord == null && studentId > 0)
+            {
+                studentRecord = await _students.GetStudents()
+                    .Include(s => s.User)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.UserId == studentId);
+
+                if (studentRecord != null)
+                {
+                    studentId = studentRecord.StudentId;
+                }
+            }
+
+            if (studentRecord == null)
+            {
+                return new StudentAnalyticsModel();
+            }
+
             var baseGrades = _grades.GetGrades()
                 .Include(g => g.AssignedCourse)
                 .ThenInclude(ac => ac.Course)
@@ -252,55 +307,98 @@ namespace ASI.Basecode.Services.Services
 
             if (!gradeEntries.Any())
             {
+                var gradeBreakdownEmpty = ungradedRows.Select(row => new StudentGradeBreakdownModel
+                {
+                    EdpCode = row.EdpCode,
+                    Subject = row.EdpCode,
+                    Status = "Incomplete"
+                }).ToList();
+
                 return new StudentAnalyticsModel
                 {
-                    Snapshot = ungradedRows
+                    Snapshot = ungradedRows,
+                    GradeBreakdown = gradeBreakdownEmpty,
+                    StatusMix = new List<NamedValueModel>
+                    {
+                        new NamedValueModel { Name = "Pass", Value = 0 },
+                        new NamedValueModel { Name = "Fail", Value = 0 },
+                        new NamedValueModel { Name = "Incomplete", Value = gradeBreakdownEmpty.Count }
+                    }
                 };
             }
 
-            var gwaTrend = gradeEntries
-                .GroupBy(g => g.AssignedCourse.Semester ?? "Unknown")
-                .Select(g => new StudentTrendPointModel
+            decimal? ConvertComponent(decimal? value) => value.HasValue ? MapPercentToGwa(value.Value) : (decimal?)null;
+
+            var courseSummaries = gradeEntries.Select(entry =>
+            {
+                var finalPercent = ExtractFinalScore(entry);
+                var gwa = finalPercent.HasValue ? MapPercentToGwa(finalPercent.Value) : (decimal?)null;
+
+                return new
                 {
-                    TermKey = g.Key,
-                    Label = g.Key,
-                    Gwa = MapPercentToGwa(g.Select(ExtractFinalScore).AverageOrDefault())
-                })
-                .OrderBy(g => g.TermKey)
-                .ToList();
+                    Entry = entry,
+                    FinalPercent = finalPercent,
+                    Gwa = gwa,
+                    CourseCode = entry.AssignedCourse?.Course?.CourseCode ?? entry.AssignedCourse?.EDPCode ?? "--",
+                    Subject = entry.AssignedCourse?.Course?.Description
+                        ?? entry.AssignedCourse?.Course?.CourseCode
+                        ?? entry.AssignedCourse?.EDPCode
+                        ?? string.Empty
+                };
+            }).ToList();
 
-            var courseGrades = gradeEntries
-                .Select(g => new StudentCourseGradeModel
+            var gradedSummaries = courseSummaries.Where(summary => summary.Gwa.HasValue).ToList();
+
+            var courseGrades = gradedSummaries
+                .Select(summary => new StudentCourseGradeModel
                 {
-                    CourseCode = g.AssignedCourse?.Course?.CourseCode ?? g.AssignedCourse?.EDPCode,
-                    Grade = ExtractFinalScore(g) ?? 0m
+                    CourseCode = summary.CourseCode,
+                    Grade = summary.Gwa!.Value
                 })
+                .OrderBy(summary => summary.CourseCode)
                 .ToList();
 
-            var earnedUnits = gradeEntries
-                .Where(g => ExtractFinalScore(g) >= 75m)
-                .Sum(g => g.AssignedCourse?.Units ?? 0);
+            var earnedUnits = courseSummaries
+                .Where(summary => summary.Gwa.HasValue && summary.Gwa.Value <= 3.0m)
+                .Sum(summary => summary.Entry.AssignedCourse?.Units ?? 0);
 
-            var passCount = gradeEntries.Count(g => ExtractFinalScore(g) >= 75m);
-            var failCount = gradeEntries.Count(g => ExtractFinalScore(g) < 75m);
-            var incompleteCount = gradeEntries.Count(g => !ExtractFinalScore(g).HasValue);
+            var passCount = courseSummaries.Count(summary => summary.Gwa.HasValue && summary.Gwa.Value <= 3.0m);
+            var failCount = courseSummaries.Count(summary => summary.Gwa.HasValue && summary.Gwa.Value > 3.0m);
+            var incompleteCount = courseSummaries.Count(summary => !summary.Gwa.HasValue);
 
-            var topStrengths = courseGrades
-                .OrderBy(g => g.Grade)
+            var topStrengths = gradedSummaries
+                .OrderBy(summary => summary.Gwa.Value)
                 .Take(3)
-                .Select(g => $"A in {g.CourseCode}")
+                .Select(summary => $"{summary.Gwa!.Value:F2} in {summary.CourseCode}")
                 .ToList();
 
-            var riskCourses = courseGrades
-                .Where(g => g.Grade < 75m)
-                .OrderBy(g => g.Grade)
+            var riskCourses = gradedSummaries
+                .Where(summary => summary.Gwa!.Value > 3.0m)
+                .OrderByDescending(summary => summary.Gwa.Value)
                 .Take(3)
-                .Select(g => $"Low grade in {g.CourseCode}")
+                .Select(summary => $"{summary.Gwa!.Value:F2} in {summary.CourseCode}")
+                .ToList();
+
+            var gradeBreakdown = courseSummaries
+                .Select(summary => new StudentGradeBreakdownModel
+                {
+                    EdpCode = summary.Entry.AssignedCourse?.EDPCode ?? summary.CourseCode,
+                    Subject = summary.Subject,
+                    Prelim = ConvertComponent(summary.Entry.Prelims),
+                    Midterm = ConvertComponent(summary.Entry.Midterm),
+                    Prefinal = ConvertComponent(summary.Entry.SemiFinal),
+                    Final = ConvertComponent(summary.Entry.Final),
+                    FinalGrade = summary.Gwa,
+                    Status = summary.Gwa.HasValue
+                        ? (summary.Gwa.Value > 3.0m ? "Fail" : "Pass")
+                        : "Incomplete"
+                })
+                .OrderBy(row => row.Subject)
                 .ToList();
 
             return new StudentAnalyticsModel
             {
-                GwaTrend = gwaTrend,
+                GwaTrend = new List<StudentTrendPointModel>(),
                 CourseGrades = courseGrades,
                 UnitsProgress = new StudentUnitsProgressModel
                 {
@@ -320,7 +418,8 @@ namespace ASI.Basecode.Services.Services
                     AttendancePercent = 0,
                     OnTimeSubmissionPercent = 0,
                     MissingWorkCount = incompleteCount
-                }
+                },
+                GradeBreakdown = gradeBreakdown
             };
         }
 
@@ -726,7 +825,7 @@ namespace ASI.Basecode.Services.Services
             .ToList();
         }
 
-        private async Task<(IList<StudentOptionModel> Options, IList<string> Programs, IList<string> Sections)> BuildStudentOptionsAsync()
+        private async Task<(IList<StudentOptionModel> Options, IList<string> Programs, IList<string> Sections)> BuildStudentOptionsAsync(string schoolYear, string termKey)
         {
             var students = await _students.GetStudents()
                 .Include(s => s.User)
@@ -737,18 +836,32 @@ namespace ASI.Basecode.Services.Services
                 .ThenBy(s => s.User.FirstName)
                 .ToListAsync();
 
-            var options = students
-                .Select(s => new StudentOptionModel
+            var scopedStudents = students
+                .Select(s => new
                 {
-                    StudentId = s.StudentId,
-                    Name = BuildName(s.User),
-                    Program = s.Program,
-                    Sections = s.Grades?
-                        .Select(g => g.AssignedCourse?.EDPCode)
-                        .Where(code => !string.IsNullOrWhiteSpace(code))
-                        .Distinct()
-                        .OrderBy(code => code)
-                        .ToList() ?? new List<string>()
+                    Student = s,
+                    Grades = (s.Grades ?? new List<Grade>())
+                        .Where(g => g.AssignedCourse != null && MatchesTerm(g.AssignedCourse.Semester, schoolYear, termKey))
+                        .ToList()
+                })
+                .Where(x => x.Grades.Any())
+                .ToList();
+
+            var options = scopedStudents
+                .Select(x =>
+                {
+                    return new StudentOptionModel
+                    {
+                        StudentId = x.Student.StudentId,
+                        Name = BuildName(x.Student.User),
+                        Program = x.Student.Program,
+                        Sections = x.Grades
+                            .Select(g => g.AssignedCourse?.EDPCode)
+                            .Where(code => !string.IsNullOrWhiteSpace(code))
+                            .Distinct()
+                            .OrderBy(code => code)
+                            .ToList() ?? new List<string>()
+                    };
                 })
                 .ToList();
 
@@ -808,7 +921,7 @@ namespace ASI.Basecode.Services.Services
             {
                 return spaceParts[0];
             }
-
+            
             var ordinal = ExtractTermToken(semester);
             if (!string.IsNullOrWhiteSpace(ordinal))
             {

@@ -61,82 +61,11 @@
     </nav>
 
     <section class="tab-panel active" data-panel="student" role="tabpanel">
-        <header class="student-snapshot glass">
-            <div class="snapshot-meta">
-                <div class="snapshot-row">
-                    <div>
-                        <span class="snapshot-label">EDP Code</span>
-                        <strong class="snapshot-value" data-field="snapshot-edp">--</strong>
-                    </div>
-                    <div>
-                        <span class="snapshot-label">Subject</span>
-                        <strong class="snapshot-value" data-field="snapshot-subject">--</strong>
-                    </div>
-                    <div>
-                        <span class="snapshot-label">Schedule</span>
-                        <strong class="snapshot-value" data-field="snapshot-schedule">--</strong>
-                    </div>
-                </div>
-                <div class="snapshot-row">
-                    <div>
-                        <label class="form-label" for="snapshotProgram">Program</label>
-                        <select id="snapshotProgram" class="form-select form-select-sm">
-                            <option value="" selected>All Programs</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" for="snapshotSection">Section</label>
-                        <select id="snapshotSection" class="form-select form-select-sm">
-                            <option value="" selected>All Sections</option>
-                        </select>
-                    </div>
-                    <div class="snapshot-actions">
-                        <button class="btn btn-outline-primary btn-sm" type="button" data-action="download-student-report">Download</button>
-                    </div>
-                </div>
-            </div>
-            <div class="snapshot-table">
-                <table class="table table-sm align-middle" data-table="student-snapshot">
-                    <thead>
-                        <tr>
-                            <th>EDP Code</th>
-                            <th>ID Number</th>
-                            <th>Last Name</th>
-                            <th>First Name</th>
-                            <th>Program</th>
-                            <th>Gender</th>
-                            <th>Year</th>
-                            <th>GWA</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr data-empty="true">
-                            <td colspan="9" class="text-center">No records yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="snapshot-summary">
-                <article class="summary-card">
-                    <span class="summary-label">Number of IT students passed</span>
-                    <strong class="summary-value" data-field="summary-it-pass">0</strong>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-label">Number of CS students passed</span>
-                    <strong class="summary-value" data-field="summary-cs-pass">0</strong>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-label">Number of ungraded</span>
-                    <strong class="summary-value" data-field="summary-ungraded">0</strong>
-                </article>
-            </div>
-        </header>
-
         <header class="student-controls glass">
             <div class="control-group">
                 <label for="studentSelector" class="form-label">Student</label>
                 <select id="studentSelector" class="form-select" data-selector="student">
+                    <option value="">Select Student</option>
                     @if (dashboard?.Student?.Students?.Any() == true)
                     {
                         foreach (var option in dashboard.Student.Students)
@@ -145,28 +74,7 @@
                             <option value="@option.StudentId" selected="@(selected)">@option.Name (@option.Program)</option>
                         }
                     }
-                    else
-                    {
-                        <option value="">No students</option>
-                    }
                 </select>
-            </div>
-            <div class="control-group">
-                <label for="studentTerm" class="form-label">Term</label>
-                <select id="studentTerm" class="form-select" data-selector="student-term">
-                    <option value="">All Terms</option>
-                    @if (termOptions.Any())
-                    {
-                        foreach (var option in termOptions.Where(t => !string.IsNullOrEmpty(t.TermKey)))
-                        {
-                            <option value="@option.TermKey">@option.Label</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="riskThreshold" class="form-label">At-Risk Threshold (GWA)</label>
-                <input id="riskThreshold" type="number" step="0.1" value="2.5" class="form-control" />
             </div>
             <div class="control-group actions">
                 <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
@@ -177,20 +85,8 @@
             <article class="panel glass span-2">
                 <header class="panel-header">
                     <div>
-                        <h2>GWA Trend</h2>
-                        <span>Term-over-term academic performance.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="studentGwaChart" height="260"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
                         <h2>Grades by Course</h2>
-                        <span>Compare course outcomes for the selected range.</span>
+                        <span>Performance per subject for the selected student.</span>
                     </div>
                 </header>
                 <div class="panel-body">
@@ -201,23 +97,8 @@
             <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
-                        <h2>Units Progress</h2>
-                        <span>Earned vs required for program completion.</span>
-                    </div>
-                </header>
-                <div class="panel-body units-progress">
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" data-field="student-units-progress">0%</div>
-                    </div>
-                    <p data-field="student-units-label">0 of 0 required units completed.</p>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Pass/Fail/Incomplete</h2>
-                        <span>Distribution for current filter.</span>
+                        <h2>Pass vs Fail</h2>
+                        <span>GPA-based distribution of final grades.</span>
                     </div>
                 </header>
                 <div class="panel-body">
@@ -229,7 +110,7 @@
                 <header class="panel-header">
                     <div>
                         <h2>Top Strengths &amp; Risks</h2>
-                        <span>Identify courses needing support.</span>
+                        <span>Surface standout and at-risk subjects.</span>
                     </div>
                 </header>
                 <div class="panel-body">
@@ -241,9 +122,40 @@
                     </div>
                 </div>
             </article>
-
+            <article class="panel glass span-2 student-grade-breakdown">
+                <header class="panel-header">
+                    <div>
+                        <h2>Student Grade Breakdown</h2>
+                        <span>Detailed term grades across all components.</span>
+                    </div>
+                </header>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle" data-table="student-grades">
+                            <thead>
+                                <tr>
+                                    <th>EDP Code</th>
+                                    <th>Subject</th>
+                                    <th>Prelim</th>
+                                    <th>Midterm</th>
+                                    <th>Prefinal</th>
+                                    <th>Final</th>
+                                    <th>Final Grade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-empty="true">
+                                    <td colspan="8" class="text-center">Select a student.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </article>
         </div>
     </section>
+
 
     <section class="tab-panel" data-panel="overall" role="tabpanel">
         <div class="kpi-row">
@@ -418,120 +330,71 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="active">
-                            <td>Prof. Maria Santos</td>
-                            <td>Computer Studies</td>
-                            <td>msantos@ucc.edu.ph</td>
-                            <td>Associate</td>
-                            <td>18 units</td>
-                            <td>4</td>
-                        </tr>
-                        <tr>
-                            <td>Prof. Carlo Reyes</td>
-                            <td>Engineering</td>
-                            <td>creyes@ucc.edu.ph</td>
-                            <td>Assistant</td>
-                            <td>15 units</td>
-                            <td>3</td>
-                        </tr>
-                        <tr>
-                            <td>Prof. Aira Gomez</td>
-                            <td>Computer Studies</td>
-                            <td>agomez@ucc.edu.ph</td>
-                            <td>Professor</td>
-                            <td>21 units</td>
-                            <td>5</td>
-                        </tr>
-                        <tr>
-                            <td>Prof. John Lee</td>
-                            <td>Business</td>
-                            <td>jlee@ucc.edu.ph</td>
-                            <td>Lecturer</td>
-                            <td>12 units</td>
-                            <td>2</td>
+                        <tr data-empty="true">
+                            <td colspan="6" class="text-center">Loading directory...</td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="directory-footer">
-                    <button class="btn btn-secondary btn-sm" type="button">Print teacher summary</button>
-                </div>
             </aside>
 
             <section class="teacher-detail glass">
                 <header class="detail-header">
                     <div>
-                        <h2>Prof. Maria Santos</h2>
-                        <span>Associate Professor · College of Computer Studies</span>
+                        <h2 data-field="teacher-name">Select a teacher</h2>
+                        <span data-field="teacher-meta">--</span>
                     </div>
                     <div class="detail-actions">
-                        <button class="btn btn-outline-primary btn-sm" type="button">Export Classes</button>
-                        <button class="btn btn-primary btn-sm" type="button">Print summary</button>
+                        <button class="btn btn-primary btn-sm" type="button" data-action="print-teacher">Print teaching assignments</button>
                     </div>
                 </header>
 
                 <div class="detail-kpis">
                     <article class="mini-card">
                         <span class="mini-label">Teaching Load</span>
-                        <strong class="mini-value">18 units</strong>
+                        <strong class="mini-value" data-field="teacher-load">0 units</strong>
                     </article>
                     <article class="mini-card">
                         <span class="mini-label">Sections</span>
-                        <strong class="mini-value">4</strong>
+                        <strong class="mini-value" data-field="teacher-sections">0</strong>
                     </article>
                     <article class="mini-card">
                         <span class="mini-label">Pass Rate</span>
-                        <strong class="mini-value">84%</strong>
+                        <strong class="mini-value" data-field="teacher-pass">0%</strong>
                     </article>
                     <article class="mini-card">
                         <span class="mini-label">Submissions Finalized</span>
-                        <strong class="mini-value">92%</strong>
+                        <strong class="mini-value" data-field="teacher-submissions">0%</strong>
                     </article>
                 </div>
 
                 <div class="detail-body">
                     <article class="panel">
                         <header><h3>Teaching Assignments</h3></header>
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Course</th>
-                                    <th>Section</th>
-                                    <th>Schedule</th>
-                                    <th>Units</th>
-                                    <th>Enrolled</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>CS-FREEEL</td>
-                                    <td>CS31A</td>
-                                    <td>MWF 7:30-9:00 AM</td>
-                                    <td>3</td>
-                                    <td>32</td>
-                                </tr>
-                                <tr>
-                                    <td>CS-DATABASE</td>
-                                    <td>CS32A</td>
-                                    <td>TTh 1:00-2:30 PM</td>
-                                    <td>3</td>
-                                    <td>28</td>
-                                </tr>
-                                <tr>
-                                    <td>CS-ALGO2</td>
-                                    <td>CS41B</td>
-                                    <td>MWF 10:00-11:00 AM</td>
-                                    <td>3</td>
-                                    <td>35</td>
-                                </tr>
-                                <tr>
-                                    <td>CS-CAPSTONE</td>
-                                    <td>CS51C</td>
-                                    <td>Sat 8:00-11:00 AM</td>
-                                    <td>3</td>
-                                    <td>24</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-sm" data-table="teacher-assignments">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Section</th>
+                                        <th>Schedule</th>
+                                        <th>Units</th>
+                                        <th>Enrolled</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr data-empty="true">
+                                        <td colspan="5" class="text-center">Select a teacher to load assignments.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Submission Progress</h3></header>
+                        <div class="panel-body submission-chart">
+                            <canvas id="teacherSubmissionChart" height="220"></canvas>
+                        </div>
                     </article>
 
                     <article class="panel">
@@ -543,11 +406,8 @@
 
                     <article class="panel">
                         <header><h3>Submission Status</h3></header>
-                        <ul class="status-list">
-                            <li class="complete">Free Elective · Final grades submitted</li>
-                            <li class="complete">Database Systems · Final grades submitted</li>
-                            <li class="pending">Algorithms 2 · Awaiting chair approval</li>
-                            <li class="pending">Capstone · Midterm grades missing</li>
+                        <ul class="status-list" data-list="teacher-submissions">
+                            <li data-empty="true" class="pending">Select a teacher to load submission statuses.</li>
                         </ul>
                     </article>
                 </div>

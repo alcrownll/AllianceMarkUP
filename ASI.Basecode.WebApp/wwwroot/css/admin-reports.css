@@ -402,12 +402,17 @@
 
 .student-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
 }
 
 .student-grid .span-2 {
     grid-column: span 2;
+}
+
+.student-grade-breakdown .table-responsive {
+    max-height: 360px;
+    overflow: auto;
 }
 
 .units-progress .progress {

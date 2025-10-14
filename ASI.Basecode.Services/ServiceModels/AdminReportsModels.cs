@@ -117,6 +117,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<TeacherAssignmentModel> Assignments { get; set; } = new List<TeacherAssignmentModel>();
         public IList<CoursePassRateModel> CoursePassRates { get; set; } = new List<CoursePassRateModel>();
         public IList<TeacherSubmissionStatusModel> SubmissionStatuses { get; set; } = new List<TeacherSubmissionStatusModel>();
+        public IList<NamedValueModel> SubmissionSummary { get; set; } = new List<NamedValueModel>();
     }
 
     public class TeacherAssignmentModel
@@ -168,6 +169,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<string> Risks { get; set; } = new List<string>();
         public StudentEngagementModel Engagement { get; set; } = new StudentEngagementModel();
         public IList<StudentSnapshotRowModel> Snapshot { get; set; } = new List<StudentSnapshotRowModel>();
+        public IList<StudentGradeBreakdownModel> GradeBreakdown { get; set; } = new List<StudentGradeBreakdownModel>();
     }
 
     public class StudentTrendPointModel
@@ -193,6 +195,18 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Gender { get; set; }
         public string YearLevel { get; set; }
         public decimal? Gwa { get; set; }
+        public string Status { get; set; }
+    }
+
+    public class StudentGradeBreakdownModel
+    {
+        public string EdpCode { get; set; }
+        public string Subject { get; set; }
+        public decimal? Prelim { get; set; }
+        public decimal? Midterm { get; set; }
+        public decimal? Prefinal { get; set; }
+        public decimal? Final { get; set; }
+        public decimal? FinalGrade { get; set; }
         public string Status { get; set; }
     }
 
