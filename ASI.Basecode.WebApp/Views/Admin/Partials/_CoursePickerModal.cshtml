@@ -1,0 +1,168 @@
+﻿<!-- Course Picker (select from DB) -->
+<div class="modal fade" id="coursePickerModal" tabindex="-1" aria-labelledby="coursePickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="coursePickerLabel">Select Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Course <span class="text-danger">*</span></label>
+                        <select id="selCourse" class="form-select" required></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Prerequisite (optional)</label>
+                        <select id="selPrereq" class="form-select"><option value="">— None —</option></select>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-light">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div><strong>Code:</strong> <span id="pvCode">—</span></div>
+                                <div><strong>Title:</strong> <span id="pvTitle">—</span></div>
+                                <div><strong>Lec:</strong> <span id="pvLec">0</span></div>
+                                <div><strong>Lab:</strong> <span id="pvLab">0</span></div>
+                                <div><strong>Units:</strong> <span id="pvUnits">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="coursePickerError" class="text-danger small" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnAddCourseToTerm">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+      // target year/term for the course we’re adding
+      window.COURSE_PICK_TARGET = { year: 1, term: 1 };
+
+      // dom refs
+      const modalEl   = document.getElementById('coursePickerModal');
+      const selCourse = document.getElementById('selCourse');
+      const selPrereq = document.getElementById('selPrereq');
+      const err       = document.getElementById('coursePickerError');
+      const pv = {
+        code: document.getElementById('pvCode'),
+        title: document.getElementById('pvTitle'),
+        lec:  document.getElementById('pvLec'),
+        lab:  document.getElementById('pvLab'),
+        units:document.getElementById('pvUnits')
+      };
+
+      const esc = s => (s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      const setErr = m => { err.textContent = m || ''; err.style.display = m ? 'block' : 'none'; };
+
+      // Flexible mapper so we survive different API shapes
+      function mapCourse(raw) {
+        if (!raw) return null;
+        const courseId   = raw.courseId ?? raw.id ?? raw.CourseId ?? raw.ID;
+        const courseCode = raw.courseCode ?? raw.code ?? raw.CourseCode ?? raw.Code;
+        const description= raw.description ?? raw.title ?? raw.Description ?? raw.Title ?? '';
+        const lecUnits   = raw.lecUnits ?? raw.lec ?? raw.LecUnits ?? 0;
+        const labUnits   = raw.labUnits ?? raw.lab ?? raw.LabUnits ?? 0;
+        return { courseId: Number(courseId), courseCode, description, lecUnits: Number(lecUnits), labUnits: Number(labUnits) };
+      }
+
+      function renderSelects(items) {
+        const options = ['<option value="">— Select —</option>']
+          .concat(items.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
+        selCourse.innerHTML = options.join('');
+
+        const prereqOpts = ['<option value="">— None —</option>']
+          .concat(items.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
+        selPrereq.innerHTML = prereqOpts.join('');
+      }
+
+      function updatePreview() {
+        const id = Number(selCourse.value || 0);
+        const c = window.COURSES?.find(x => x.courseId === id) || null;
+        pv.code.textContent  = c?.courseCode ?? '—';
+        pv.title.textContent = c?.description ?? '—';
+        pv.lec.textContent   = c?.lecUnits ?? 0;
+        pv.lab.textContent   = c?.labUnits ?? 0;
+        pv.units.textContent = c ? (c.lecUnits || 0) + (c.labUnits || 0) : 0;
+      }
+      selCourse?.addEventListener('change', updatePreview);
+
+      // Capture where to insert (year/term)
+      document.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.btnPickCourse');
+        if (!btn) return;
+        window.COURSE_PICK_TARGET = {
+          year: Number(btn.getAttribute('data-year') || 1),
+          term: Number(btn.getAttribute('data-term') || 1)
+        };
+      });
+
+      // Fetch every time picker opens (so we see changes without reload)
+      modalEl?.addEventListener('show.bs.modal', async () => {
+        setErr('');
+        try {
+          console.log('[picker] fetching /admin/courses/all …');
+          const res = await fetch('/admin/courses/all', { method: 'GET' });
+          const json = await res.json().catch(() => ({}));
+          console.log('[picker] response:', json);
+
+          // Accept either { ok:true, items:[...] } or plain array
+          const rawItems = Array.isArray(json) ? json : (json.items || []);
+          if (!Array.isArray(rawItems) || rawItems.length === 0) {
+            setErr('No courses returned. Check the /admin/courses/all endpoint.');
+          }
+
+          // normalize
+          window.COURSES = rawItems.map(mapCourse).filter(Boolean);
+          console.log('[picker] normalized COURSES:', window.COURSES);
+
+          renderSelects(window.COURSES);
+          updatePreview();
+        } catch (e) {
+          console.error(e);
+          setErr(e.message || 'Unable to load courses.');
+        }
+      });
+
+      // Add button
+      document.getElementById('btnAddCourseToTerm')?.addEventListener('click', () => {
+        setErr('');
+        const courseId = Number(selCourse.value || 0);
+        if (!courseId) { setErr('Please select a course.'); return; }
+        const prereqId = selPrereq.value ? Number(selPrereq.value) : null;
+
+        const c = window.COURSES?.find(x => x.courseId === courseId) || null;
+        const p = prereqId ? window.COURSES?.find(x => x.courseId === prereqId) : null;
+        if (!c) { setErr('Selected course not found.'); return; }
+
+        const payload = {
+          year:  window.COURSE_PICK_TARGET.year,
+          term:  window.COURSE_PICK_TARGET.term,
+          courseId: c.courseId,
+          courseCode: c.courseCode,
+          title: c.description,
+          lec: c.lecUnits ?? 0,
+          lab: c.labUnits ?? 0,
+          prereqCourseId: prereqId,
+          prereqCode: p?.courseCode || null
+        };
+
+        if (typeof window.onCoursePicked !== 'function') {
+          setErr('onCoursePicked is not defined (include the Option C script).');
+          return;
+        }
+        const ok = window.onCoursePicked(payload);
+        if (ok === false) { setErr('Course already added to this term.'); return; }
+
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      });
+    })();
+</script>

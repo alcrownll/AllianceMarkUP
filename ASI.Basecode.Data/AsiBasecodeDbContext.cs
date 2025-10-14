@@ -261,20 +261,20 @@ namespace ASI.Basecode.Data
             {
                 entity.HasKey(e => e.YearTermId);
                 entity.Property(e => e.YearLevel).IsRequired();
-                entity.Property(e => e.Term).IsRequired();
+                entity.Property(e => e.TermNumber).IsRequired();
 
-                entity.HasIndex(e => new { e.YearLevel, e.Term }).IsUnique();
+                entity.HasIndex(e => new { e.YearLevel, e.TermNumber }).IsUnique();
 
                 // Seed Year 1..4 × Term 1..2
                 entity.HasData(
-                    new YearTerm { YearTermId = 1, YearLevel = 1, Term = 1 },
-                    new YearTerm { YearTermId = 2, YearLevel = 1, Term = 2 },
-                    new YearTerm { YearTermId = 3, YearLevel = 2, Term = 1 },
-                    new YearTerm { YearTermId = 4, YearLevel = 2, Term = 2 },
-                    new YearTerm { YearTermId = 5, YearLevel = 3, Term = 1 },
-                    new YearTerm { YearTermId = 6, YearLevel = 3, Term = 2 },
-                    new YearTerm { YearTermId = 7, YearLevel = 4, Term = 1 },
-                    new YearTerm { YearTermId = 8, YearLevel = 4, Term = 2 }
+                    new YearTerm { YearTermId = 1, YearLevel = 1, TermNumber = 1 },
+                    new YearTerm { YearTermId = 2, YearLevel = 1, TermNumber = 2 },
+                    new YearTerm { YearTermId = 3, YearLevel = 2, TermNumber = 1 },
+                    new YearTerm { YearTermId = 4, YearLevel = 2, TermNumber = 2 },
+                    new YearTerm { YearTermId = 5, YearLevel = 3, TermNumber = 1 },
+                    new YearTerm { YearTermId = 6, YearLevel = 3, TermNumber = 2 },
+                    new YearTerm { YearTermId = 7, YearLevel = 4, TermNumber = 1 },
+                    new YearTerm { YearTermId = 8, YearLevel = 4, TermNumber = 2 }
                 );
             });
 

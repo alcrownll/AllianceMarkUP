@@ -8,12 +8,17 @@ namespace ASI.Basecode.Data.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int YearTermId { get; set; }
+        public int YearTermId { get; set; }     
 
-        public int YearLevel { get; set; }  // 1, 2, 3, 4
-        public int Term { get; set; }       // 1 or 2
+        public int YearLevel { get; set; }       // 1..4
 
-        // Optional navigation property (if you want EF to connect automatically)
+        [Column("TermNumber")]
+        public int TermNumber { get; set; }            // 1..2
+
+        // DB-computed stored column (we'll configure in DbContext)
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public int Sequence { get; private set; } // 1..8
+
         public ICollection<ProgramCourse> ProgramCourses { get; set; }
     }
 }

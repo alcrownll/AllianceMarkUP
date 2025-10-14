@@ -3,36 +3,46 @@ using ASI.Basecode.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
-using System.Collections.Generic; // added for List<Course>
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
     [Authorize(Roles = "Admin")]
+    [Route("admin/courses")] // 🔹 add a route prefix so URLs are /admin/courses/...
     public class AdminCoursesController : Controller
     {
         private readonly ICourseService _service;
+        public AdminCoursesController(ICourseService service) => _service = service;
 
-        public AdminCoursesController(ICourseService service)
-        {
-            _service = service;
-        }
-
-        [HttpGet]
+        [HttpGet("")] // GET /admin/courses
         public async Task<IActionResult> Index()
         {
             var courses = await _service.GetAllAsync() ?? new List<Course>();
             return View("~/Views/Admin/AdminCourses.cshtml", courses);
         }
 
-        // NEW: fetch a single course for Edit modal prefill
-        [HttpGet]
+        // 🔹 JSON for the course picker: GET /admin/courses/all
+        [HttpGet("all")]
+        public async Task<IActionResult> All()
+        {
+            var items = (await _service.GetAllAsync() ?? new List<Course>())
+                .Select(c => new {
+                    courseId = c.CourseId,
+                    courseCode = c.CourseCode,
+                    description = c.Description,
+                    lecUnits = c.LecUnits,
+                    labUnits = c.LabUnits
+                });
+            return Json(new { items });
+        }
+
+        // GET /admin/courses/get?id=123  (kept as-is, or you can change to [HttpGet("{id:int}")])
+        [HttpGet("get")]
         public async Task<IActionResult> Get(int id)
         {
-            // Assumes your service exposes GetByIdAsync(int)
             var c = await _service.GetByIdAsync(id);
             if (c == null) return NotFound();
-
-            // Return only the fields the modal needs
             return Json(new
             {
                 id = c.CourseId,
@@ -40,12 +50,11 @@ namespace ASI.Basecode.WebApp.Controllers
                 description = c.Description,
                 lecUnits = c.LecUnits,
                 labUnits = c.LabUnits,
-                totalUnits = c.TotalUnits,   // if computed server-side
+                totalUnits = c.TotalUnits,
             });
         }
 
-        // Create: accept only the fields you expect (TotalUnits is computed server-side)
-        [HttpPost]
+        [HttpPost("create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
@@ -57,8 +66,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Edit: include the key and the editable fields
-        [HttpPost]
+        [HttpPost("edit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit([Bind("CourseId,CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
@@ -70,7 +78,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
