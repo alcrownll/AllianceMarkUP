@@ -9,44 +9,66 @@
     <link rel="stylesheet" href="~/css/user-login.css" />
 }
 
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-form">
-            <h2 class="title">Admin Portal</h2>
-
-            <form asp-controller="Login" asp-action="AdminLogin" method="post">
-                @Html.AntiForgeryToken()
-
-                <div class="form-group">
-                    <label asp-for="IdNumber">ID Number</label>
-                    <input asp-for="IdNumber" id="idNumber" class="form-control" placeholder="Enter ID Number" />
-                    <span asp-validation-for="IdNumber" class="text-danger"></span>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="Password">Password</label>
-                    <input asp-for="Password" class="form-control" placeholder="Enter Password" type="password" />
-                    <span asp-validation-for="Password" class="text-danger"></span>
-                </div>
-
-                <div class="form-options">
-                    <label>
-                        <input asp-for="RememberMe" type="checkbox" /> Remember Me
-                    </label>
-                    <a href="#">Forgot Password?</a>
-                </div>
-
-                <button type="submit" class="btn-login">Login</button>
-            </form>
-
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <p class="error-message">@TempData["ErrorMessage"]</p>
-            }
+<div class="auth-wall" style="--side:form-right;">
+    <div class="glass-stage">
+        <!-- LEFT: FROSTED GLASS BRAND PANEL -->
+        <div class="pane pane-brand">
+            <div class="brand-card">
+                <img src="~/img/MarkUp-login.png" class="hero-logo" alt="MarkUP Logo">
+                <div class="tagline">STUDENT PERFORMANCE TRACKER</div>
+                <p class="subcopy">
+                    Empowering institutions through<br />
+                    intelligent performance tracking
+                </p>
+            </div>
         </div>
 
-        <div class="login-illustration">
-            <img src="~/img/admin-illustration.svg" alt="Admin Illustration" />
+        <!-- RIGHT: SOLID WHITE FORM PANEL -->
+        <div class="pane pane-form">
+            <div class="mini-brand">
+                <img src="~/img/MarkUPLogo.png" alt="MarkUP Logo" />
+            </div>
+
+            <div class="welcome">
+                <div class="eyebrow">WELCOME TO</div>
+                <h2 class="portal-title">ADMIN PORTAL</h2>
+            </div>
+
+            <form asp-controller="Login" asp-action="AdminLogin" method="post" class="form-stack">
+                @Html.AntiForgeryToken()
+
+                <div class="notched-field with-icon id">
+                    <input asp-for="IdNumber" id="idNumber" placeholder=" " required />
+                    <label for="idNumber">ID Number</label>
+                    <span asp-validation-for="IdNumber" class="val text-danger"></span>
+                </div>
+
+                <div class="notched-field with-icon pw">
+                    <input asp-for="Password" id="Password" type="password" placeholder=" " required />
+                    <label for="Password">Password</label>
+                    <span asp-validation-for="Password" class="val text-danger"></span>
+                </div>
+
+                <div class="row options">
+                    <label class="remember">
+                        <input asp-for="RememberMe" type="checkbox" />
+                        <span>Remember Me</span>
+                    </label>
+                    <a class="muted" href="#">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10 17l5-5-5-5v10zM19 19H5V5h6V3H5c-1.1 0-2 .9-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-6h-2v6z" />
+                    </svg>
+                    Login
+                </button>
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <p class="error">@TempData["ErrorMessage"]</p>
+                }
+            </form>
         </div>
     </div>
 </div>
