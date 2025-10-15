@@ -25,6 +25,6 @@ namespace ASI.Basecode.Services.ServiceModels
     public class ComposeCourseDto
     {
         public int CourseId { get; set; }
-        public int PrereqCourseId { get; set; }
+        public int PrereqCourseId { get; set; }   // ← nullable
     }
 }

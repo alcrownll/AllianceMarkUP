@@ -1,5 +1,6 @@
 ﻿<!-- Course Picker (select from DB) -->
-<div class="modal fade" id="coursePickerModal" tabindex="-1" aria-labelledby="coursePickerLabel" aria-hidden="true">
+<div class="modal fade" id="coursePickerModal" tabindex="-1" aria-labelledby="coursePickerLabel" aria-hidden="true" data-bs-backdrop="static"
+     data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow">
             <div class="modal-header">
@@ -18,15 +19,13 @@
                         <select id="selPrereq" class="form-select"><option value="">— None —</option></select>
                     </div>
 
-                    <div class="col-12">
-                        <div class="border rounded p-3 bg-light">
-                            <div class="d-flex flex-wrap gap-4">
-                                <div><strong>Code:</strong> <span id="pvCode">—</span></div>
-                                <div><strong>Title:</strong> <span id="pvTitle">—</span></div>
-                                <div><strong>Lec:</strong> <span id="pvLec">0</span></div>
-                                <div><strong>Lab:</strong> <span id="pvLab">0</span></div>
-                                <div><strong>Units:</strong> <span id="pvUnits">0</span></div>
+                    <div class="col-12 mt-3">
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>Stack (to be added):</strong>
+                                <small class="text-muted">Term target: <span id="stackTermTarget">—</span></small>
                             </div>
+                            <div id="stackList" class="small text-muted">Empty. Use “Add to Stack”.</div>
                         </div>
                     </div>
 
@@ -34,135 +33,297 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnAddCourseToTerm">Add</button>
+            <!-- replace your .modal-footer with this -->
+            <div class="modal-footer flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+
+                <!-- NEW: add/stack buttons -->
+                <div class="ms-auto"></div>
+                <button type="button" class="btn btn-outline-primary" id="btnAddToStack">Add to Stack</button>
+                <button type="button" class="btn btn-success" id="btnApplyStackToTerm">Apply Stack to Term</button>
+                <button type="button" class="btn btn-outline-danger" id="btnClearStack">Clear Stack</button>
             </div>
+
         </div>
     </div>
 </div>
-
 <script>
     (function () {
-      // target year/term for the course we’re adding
+      // ===== Globals =====
       window.COURSE_PICK_TARGET = { year: 1, term: 1 };
+      window.PICK_STACK = [];
+      window.PROGRAM_DRAFT = window.PROGRAM_DRAFT || { years: [] };
 
-      // dom refs
+      // ===== DOM =====
       const modalEl   = document.getElementById('coursePickerModal');
       const selCourse = document.getElementById('selCourse');
       const selPrereq = document.getElementById('selPrereq');
       const err       = document.getElementById('coursePickerError');
+
       const pv = {
-        code: document.getElementById('pvCode'),
+        code:  document.getElementById('pvCode'),
         title: document.getElementById('pvTitle'),
-        lec:  document.getElementById('pvLec'),
-        lab:  document.getElementById('pvLab'),
-        units:document.getElementById('pvUnits')
+        lec:   document.getElementById('pvLec'),
+        lab:   document.getElementById('pvLab'),
+        units: document.getElementById('pvUnits')
       };
 
+      const stackList       = document.getElementById('stackList');
+      const stackTermTarget = document.getElementById('stackTermTarget');
+      const btnAddToStack   = document.getElementById('btnAddToStack');
+      const btnApplyStack   = document.getElementById('btnApplyStackToTerm');
+      const btnClearStack   = document.getElementById('btnClearStack');
+
+      // ===== Utils =====
       const esc = s => (s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
       const setErr = m => { err.textContent = m || ''; err.style.display = m ? 'block' : 'none'; };
 
-      // Flexible mapper so we survive different API shapes
       function mapCourse(raw) {
         if (!raw) return null;
-        const courseId   = raw.courseId ?? raw.id ?? raw.CourseId ?? raw.ID;
-        const courseCode = raw.courseCode ?? raw.code ?? raw.CourseCode ?? raw.Code;
-        const description= raw.description ?? raw.title ?? raw.Description ?? raw.Title ?? '';
-        const lecUnits   = raw.lecUnits ?? raw.lec ?? raw.LecUnits ?? 0;
-        const labUnits   = raw.labUnits ?? raw.lab ?? raw.LabUnits ?? 0;
+        const courseId    = raw.courseId ?? raw.id ?? raw.CourseId ?? raw.ID;
+        const courseCode  = raw.courseCode ?? raw.code ?? raw.CourseCode ?? raw.Code;
+        const description = raw.description ?? raw.title ?? raw.Description ?? raw.Title ?? '';
+        const lecUnits    = raw.lecUnits ?? raw.lec ?? raw.LecUnits ?? 0;
+        const labUnits    = raw.labUnits ?? raw.lab ?? raw.LabUnits ?? 0;
         return { courseId: Number(courseId), courseCode, description, lecUnits: Number(lecUnits), labUnits: Number(labUnits) };
       }
 
       function renderSelects(items) {
-        const options = ['<option value="">— Select —</option>']
+        const opts = ['<option value="">— Select —</option>']
           .concat(items.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
-        selCourse.innerHTML = options.join('');
+        selCourse.innerHTML = opts.join('');
 
-        const prereqOpts = ['<option value="">— None —</option>']
+        const preOpts = ['<option value="">— None —</option>']
           .concat(items.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
-        selPrereq.innerHTML = prereqOpts.join('');
+        selPrereq.innerHTML = preOpts.join('');
       }
 
       function updatePreview() {
         const id = Number(selCourse.value || 0);
         const c = window.COURSES?.find(x => x.courseId === id) || null;
-        pv.code.textContent  = c?.courseCode ?? '—';
-        pv.title.textContent = c?.description ?? '—';
-        pv.lec.textContent   = c?.lecUnits ?? 0;
-        pv.lab.textContent   = c?.labUnits ?? 0;
-        pv.units.textContent = c ? (c.lecUnits || 0) + (c.labUnits || 0) : 0;
+        if (pv.code)  pv.code.textContent  = c?.courseCode ?? '—';
+        if (pv.title) pv.title.textContent = c?.description ?? '—';
+        if (pv.lec)   pv.lec.textContent   = c?.lecUnits ?? 0;
+        if (pv.lab)   pv.lab.textContent   = c?.labUnits ?? 0;
+        if (pv.units) pv.units.textContent = c ? (c.lecUnits || 0) + (c.labUnits || 0) : 0;
       }
       selCourse?.addEventListener('change', updatePreview);
 
-      // Capture where to insert (year/term)
+      function labelForTarget(tgt) {
+        const yr = tgt?.year ?? '?';
+        const tm = tgt?.term === 2 ? '2nd Sem' : '1st Sem';
+        return `Year ${yr} — ${tm}`;
+      }
+
+      // ===== Stack render =====
+      function renderStack() {
+        if (!Array.isArray(window.PICK_STACK) || window.PICK_STACK.length === 0) {
+          stackList.innerHTML = 'Empty. Use “Add to Stack”.';
+          return;
+        }
+        const lines = window.PICK_STACK.map((item, idx) => {
+          const c = window.COURSES?.find(x => x.courseId === item.courseId);
+          const p = item.prereqId ? window.COURSES?.find(x => x.courseId === item.prereqId) : null;
+          const code  = c?.courseCode ?? '(?)';
+          const title = c?.description ?? '(no title)';
+          const lec   = c?.lecUnits ?? 0;
+          const lab   = c?.labUnits ?? 0;
+          const units = lec + lab;
+          const pre   = p ? p.courseCode : '—';
+          return `
+            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+              <div>
+                <strong>${esc(code)}</strong> — ${esc(title)}
+                <span class="text-muted">(${lec}/${lab}, ${units}u)</span>
+                <span class="ms-2 small">Prereq: ${esc(pre)}</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger" data-remove="${idx}">Remove</button>
+            </div>`;
+        });
+        stackList.innerHTML = lines.join('');
+        stackList.querySelectorAll('button[data-remove]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.getAttribute('data-remove'));
+            window.PICK_STACK.splice(i, 1);
+            renderStack();
+          });
+        });
+      }
+
+      // ===== Term table helpers =====
+      function recalcUnits(termKey) {
+        const tbody = document.getElementById(`tbl-${termKey}`);
+        const totalSpan = document.getElementById(`units-${termKey}`);
+        let total = 0;
+        if (tbody) {
+          tbody.querySelectorAll('tr[data-row="course"]').forEach(tr => {
+            const unitsCell = tr.querySelector('[data-col="units"]');
+            if (unitsCell) total += Number(unitsCell.textContent || 0);
+          });
+          if (!tbody.querySelector('tr[data-row="course"]')) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>`;
+          }
+        }
+        if (totalSpan) totalSpan.textContent = total;
+      }
+      window.recalcUnits = recalcUnits;
+
+      function appendRowToTerm(ctx, c, prereq) {
+        const key = `Y${ctx.year}T${ctx.term}`;
+        const tbody = document.getElementById(`tbl-${key}`);
+        if (!tbody) return;
+
+        const onlyRow = (tbody.children.length === 1) ? tbody.children[0] : null;
+        if (onlyRow && !onlyRow.hasAttribute('data-row')) onlyRow.remove();
+
+        const code  = c.courseCode;
+        const title = c.description;
+        const lec   = c.lecUnits ?? 0;
+        const lab   = c.labUnits ?? 0;
+        const units = lec + lab;
+        const prereqId = prereq?.courseId ?? null;
+        const prereqCode = prereqId ? (prereq?.courseCode || '') : '—';
+
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-row', 'course');
+        tr.innerHTML = `
+          <td>${esc(code)}</td>
+          <td>${esc(title)}</td>
+          <td class="text-center">${lec}</td>
+          <td class="text-center">${lab}</td>
+          <td class="text-center" data-col="units">${units}</td>
+          <td>${esc(prereqCode)}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    onclick="this.closest('tr').remove(); window.recalcUnits('${key}')">Remove</button>
+          </td>
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][CourseId]" value="${c.courseId}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][PrerequisiteCourseId]" value="${prereqId ?? ''}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LecUnits]" value="${lec}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LabUnits]" value="${lab}">
+        `;
+        tbody.appendChild(tr);
+        recalcUnits(key);
+      }
+
+      // ===== Wire up triggers =====
       document.addEventListener('click', (ev) => {
-        const btn = ev.target.closest('.btnPickCourse');
+        const btn = ev.target.closest('[data-bs-target="#coursePickerModal"][data-year][data-term]');
         if (!btn) return;
         window.COURSE_PICK_TARGET = {
           year: Number(btn.getAttribute('data-year') || 1),
           term: Number(btn.getAttribute('data-term') || 1)
         };
+        if (stackTermTarget) stackTermTarget.textContent = labelForTarget(window.COURSE_PICK_TARGET);
       });
 
-      // Fetch every time picker opens (so we see changes without reload)
-      modalEl?.addEventListener('show.bs.modal', async () => {
+      // Load courses when modal opens (use 'shown' to avoid timing issues)
+      modalEl?.addEventListener('shown.bs.modal', async () => {
         setErr('');
+        if (stackTermTarget) stackTermTarget.textContent = labelForTarget(window.COURSE_PICK_TARGET);
         try {
-          console.log('[picker] fetching /admin/courses/all …');
           const res = await fetch('/admin/courses/all', { method: 'GET' });
           const json = await res.json().catch(() => ({}));
-          console.log('[picker] response:', json);
-
-          // Accept either { ok:true, items:[...] } or plain array
           const rawItems = Array.isArray(json) ? json : (json.items || []);
           if (!Array.isArray(rawItems) || rawItems.length === 0) {
             setErr('No courses returned. Check the /admin/courses/all endpoint.');
           }
-
-          // normalize
           window.COURSES = rawItems.map(mapCourse).filter(Boolean);
-          console.log('[picker] normalized COURSES:', window.COURSES);
-
           renderSelects(window.COURSES);
           updatePreview();
+          renderStack();
         } catch (e) {
           console.error(e);
           setErr(e.message || 'Unable to load courses.');
         }
       });
 
-      // Add button
-      document.getElementById('btnAddCourseToTerm')?.addEventListener('click', () => {
+      // Clear stack automatically if modal closes without applying
+      modalEl?.addEventListener('hidden.bs.modal', () => {
+        window.PICK_STACK = [];
+        renderStack();
+        setErr('');
+      });
+
+      // ===== Stack buttons =====
+      btnAddToStack?.addEventListener('click', () => {
         setErr('');
         const courseId = Number(selCourse.value || 0);
-        if (!courseId) { setErr('Please select a course.'); return; }
+        if (!courseId) { setErr('Please select a course to add to stack.'); return; }
         const prereqId = selPrereq.value ? Number(selPrereq.value) : null;
-
-        const c = window.COURSES?.find(x => x.courseId === courseId) || null;
-        const p = prereqId ? window.COURSES?.find(x => x.courseId === prereqId) : null;
-        if (!c) { setErr('Selected course not found.'); return; }
-
-        const payload = {
-          year:  window.COURSE_PICK_TARGET.year,
-          term:  window.COURSE_PICK_TARGET.term,
-          courseId: c.courseId,
-          courseCode: c.courseCode,
-          title: c.description,
-          lec: c.lecUnits ?? 0,
-          lab: c.labUnits ?? 0,
-          prereqCourseId: prereqId,
-          prereqCode: p?.courseCode || null
-        };
-
-        if (typeof window.onCoursePicked !== 'function') {
-          setErr('onCoursePicked is not defined (include the Option C script).');
-          return;
-        }
-        const ok = window.onCoursePicked(payload);
-        if (ok === false) { setErr('Course already added to this term.'); return; }
-
-        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        if (window.PICK_STACK.some(x => x.courseId === courseId)) { setErr('Course already in stack.'); return; }
+        window.PICK_STACK.push({ courseId, prereqId });
+        renderStack();
       });
+
+      btnClearStack?.addEventListener('click', () => {
+        window.PICK_STACK = [];
+        renderStack();
+        setErr('');
+      });
+           btnClearStack?.addEventListener('click', () => {
+        window.PICK_STACK = [];
+        renderStack();
+        setErr('');
+      });
+
+      // ✅ Apply handler (final, correct)
+      btnApplyStack?.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        setErr('');
+        if (!Array.isArray(window.PICK_STACK) || window.PICK_STACK.length === 0) { setErr('Stack is empty. Add at least one course.'); return; }
+        const ctx = window.COURSE_PICK_TARGET;
+        if (!ctx || !ctx.year || !ctx.term) { setErr('No target term selected.'); return; }
+
+        // insert rows + update PROGRAM_DRAFT
+        window.PICK_STACK.forEach(item => {
+          const c = window.COURSES.find(x => x.courseId === item.courseId);
+          const p = item.prereqId ? window.COURSES.find(x => x.courseId === item.prereqId) : null;
+          if (!c) return;
+
+          appendRowToTerm(ctx, c, p);
+
+          let y = (window.PROGRAM_DRAFT.years || []).find(a => a.year === ctx.year);
+          if (!y) { y = { year: ctx.year, terms: [] }; (window.PROGRAM_DRAFT.years ||= []).push(y); }
+          let t = y.terms.find(a => a.term === ctx.term);
+          if (!t) { t = { term: ctx.term, courses: [] }; y.terms.push(t); }
+
+          if (!t.courses.some(cc => cc.courseId === c.courseId)) {
+            t.courses.push({
+              courseId: c.courseId,
+              prereqCourseId: item.prereqId ?? null,
+              code: c.courseCode,
+              title: c.description,
+              lec: c.lecUnits ?? 0,
+              lab: c.labUnits ?? 0,
+              prereqCode: p?.courseCode || null
+            });
+          }
+        });
+
+        // Clear stack and close child modal only
+        window.PICK_STACK = [];
+        renderStack();
+
+        const childEl  = document.getElementById('coursePickerModal');
+        const parentEl = document.getElementById('programProspectusModal');
+        const childMd  = bootstrap.Modal.getOrCreateInstance(childEl);
+        const parentMd = bootstrap.Modal.getOrCreateInstance(parentEl);
+
+        childMd.hide();
+
+        setTimeout(() => {
+          if (parentEl.classList.contains('show')) {
+            document.body.classList.add('modal-open');
+          } else {
+            parentMd.show();
+          }
+        }, 0);
+      });
+
     })();
 </script>
+
+
