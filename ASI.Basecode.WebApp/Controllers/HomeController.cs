@@ -33,11 +33,10 @@ namespace ASI.Basecode.WebApp.Controllers
         /// Returns Home View.
         /// </summary>
         /// <returns> Home View </returns>
-        public IActionResult Index()
-        {
-                // Not logged in → go to StudentLogin
-                return RedirectToAction("StudentLogin", "Login");
-        }
+       
+            [AllowAnonymous]
+            public IActionResult Index() => View();
+        
    
     }
 }
