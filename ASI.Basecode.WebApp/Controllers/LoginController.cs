@@ -12,10 +12,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using static ASI.Basecode.Resources.Constants.Enums;
-using System.Security.Claims;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -27,6 +28,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly TokenProviderOptionsFactory _tokenProviderOptionsFactory;
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
+        private readonly IEmailSender _email;
 
         private const string AuthScheme = "ASI_Basecode";
 
@@ -72,7 +74,8 @@ namespace ASI.Basecode.WebApp.Controllers
             IMapper mapper,
             IUserService userService,
             TokenValidationParametersFactory tokenValidationParametersFactory,
-            TokenProviderOptionsFactory tokenProviderOptionsFactory
+            TokenProviderOptionsFactory tokenProviderOptionsFactory,
+            IEmailSender emailSender
         ) : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             _sessionManager = new SessionManager(this._session);
@@ -81,6 +84,7 @@ namespace ASI.Basecode.WebApp.Controllers
             _tokenValidationParametersFactory = tokenValidationParametersFactory;
             _appConfiguration = configuration;
             _userService = userService;
+            _email = emailSender;
         }
 
         // =======================
@@ -219,5 +223,109 @@ namespace ASI.Basecode.WebApp.Controllers
             await HttpContext.SignOutAsync("ASI_Basecode");
             return RedirectToAction("AdminLogin", "Login");
         }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPasswordSend(string email)
+        {
+            try
+            {
+                var user = _userService.FindByEmail(email);
+                if (user == null)
+                {
+                    // privacy-safe: pretend success
+                    return Json(new { ok = true });
+                }
+
+                var token = _userService.CreatePasswordResetToken(user, TimeSpan.FromHours(2));
+
+                var resetUrl = Url.Action(
+                    "ResetPassword",
+                    "Login",
+                    new { token = token.Token },
+                    Request.Scheme);
+
+                var html = $@"
+            <p>Hello {user.FirstName},</p>
+            <p>Click the link below to reset your password:</p>
+            <p><a href=""{resetUrl}"">{resetUrl}</a></p>
+            <p>This link expires in 2 hours.</p>";
+
+                // 👇 use the injected field
+                await _email.SendAsync(user.Email, "Reset your password", html);
+
+                return Json(new { ok = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SMTP send failed for forgot password");
+                Response.StatusCode = 500;
+                return Json(new { ok = false, message = "SMTP_FAILED", detail = ex.Message });
+            }
+        }
+
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string token)
+        {
+            var user = _userService.ValidateResetToken(token);
+            if (user == null) return View("ResetPasswordInvalid");
+            return View("ResetPassword", new ResetPasswordViewModel { Token = token });
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public IActionResult ResetPassword(ResetPasswordViewModel vm)
+        {
+            if (!ModelState.IsValid) return View("ResetPassword", vm);
+
+            var user = _userService.ValidateResetToken(vm.Token);
+            if (user == null)
+            {
+                ModelState.AddModelError("", "This link is invalid or has expired.");
+                return View("ResetPassword", vm);
+            }
+
+            if (vm.NewPassword != vm.ConfirmPassword)
+            {
+                ModelState.AddModelError("", "Passwords do not match.");
+                return View("ResetPassword", vm);
+            }
+
+            if (_userService.ResetPassword(user.UserId, vm.NewPassword))
+            {
+                _userService.MarkResetTokenUsed(vm.Token);
+                TempData["SuccessMessage"] = "Password updated. You can now log in.";
+                return RedirectToAction("StudentLogin", "Login"); // pick landing page as you like
+            }
+
+            ModelState.AddModelError("", "Could not update password. Try again.");
+            return View("ResetPassword", vm);
+        }
+        
+        //testing ra arun sure mo send,pede ra delete
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestSmtp([FromServices] IEmailSender email)
+        {
+            try
+            {
+                await email.SendAsync(
+                    "denisealiahcabiso@gmail.com",               
+                    "MarkUP SMTP test",
+                    "<h3>SMTP test from MarkUP</h3><p>If you see this, SMTP works ✅</p>"
+                );
+                return Content("Sent. Check inbox (and Spam/Other).");
+            }
+            catch (Exception ex)
+            {
+                return Content("SEND FAILED:\n" + ex.ToString());
+            }
+        }
+
+
     }
 }

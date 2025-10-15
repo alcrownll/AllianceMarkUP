@@ -1,12 +1,19 @@
 ﻿using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.ServiceModels;
 using static ASI.Basecode.Resources.Constants.Enums;
+using System;
 
 namespace ASI.Basecode.Services.Interfaces
 {
     public interface IUserService
     {
         LoginResult AuthenticateUser(string userid, string password, ref User user);
-        //void AddUser(UserViewModel model);
+
+        // Forgot / reset password
+        User FindByEmail(string email);
+        PasswordResetToken CreatePasswordResetToken(User user, TimeSpan ttl);
+        User ValidateResetToken(string token);
+        bool ResetPassword(int userId, string newPassword);
+        void MarkResetTokenUsed(string token);
     }
 }

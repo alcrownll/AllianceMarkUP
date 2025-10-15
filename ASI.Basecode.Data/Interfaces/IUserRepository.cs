@@ -15,5 +15,11 @@ namespace ASI.Basecode.Data.Interfaces
         void AddUser(User user);
         void UpdateUser(User user);
         void DeleteUser(int userId);
+
+        // Password reset tokens
+        IQueryable<PasswordResetToken> PasswordResetTokens();          
+        void AddPasswordResetToken(PasswordResetToken token);          
+        void MarkPasswordResetTokenUsed(string token);                
+        void SaveChanges();                                            
     }
 }

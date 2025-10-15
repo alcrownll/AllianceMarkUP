@@ -27,10 +27,11 @@ namespace ASI.Basecode.Data
         public virtual DbSet<Program> Programs { get; set; }
         public virtual DbSet<YearTerm> YearTerms { get; set; }
         public virtual DbSet<ProgramCourse> ProgramCourses { get; set; }
-
-
         public virtual DbSet<Notification> Notifications { get; set; }
         public virtual DbSet<CalendarEvent> CalendarEvents { get; set; }
+
+        // NEW: password reset tokens
+        public virtual DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,8 +65,7 @@ namespace ASI.Basecode.Data
                 entity.HasKey(e => e.StudentId);
 
                 entity.Property(e => e.StudentId)
-          .UseIdentityByDefaultColumn();
-
+                      .UseIdentityByDefaultColumn();
 
                 entity.Property(e => e.AdmissionType).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Program).IsRequired().HasMaxLength(100);
@@ -81,13 +81,13 @@ namespace ASI.Basecode.Data
                       .HasConstraintName("FK_Students_Users_UserId");
             });
 
-            // TEACHER 
+            // TEACHER
             modelBuilder.Entity<Teacher>(entity =>
             {
                 entity.HasKey(e => e.TeacherId);
 
                 entity.Property(e => e.TeacherId)
-          .UseIdentityByDefaultColumn();
+                      .UseIdentityByDefaultColumn();
 
                 entity.Property(e => e.Position).IsRequired().HasMaxLength(50);
 
@@ -121,7 +121,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Citizenship).HasMaxLength(50);
             });
 
-            // COURSE 
+            // COURSE
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.HasKey(e => e.CourseId);
@@ -130,7 +130,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Description).IsRequired().HasMaxLength(255);
             });
 
-            // ASSIGNED COURSE 
+            // ASSIGNED COURSE
             modelBuilder.Entity<AssignedCourse>(entity =>
             {
                 entity.HasKey(e => e.AssignedCourseId);
@@ -153,9 +153,9 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(d => d.Program)
-                     .WithMany(p => p.AssignedCourses)
-                     .HasForeignKey(d => d.ProgramId)
-                     .OnDelete(DeleteBehavior.Cascade);
+                      .WithMany(p => p.AssignedCourses)
+                      .HasForeignKey(d => d.ProgramId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // CLASS SCHEDULE
@@ -198,17 +198,17 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
 
                 entity.HasOne(e => e.User)
-                      .WithMany(u => u.Notifications) // you'll need a `ICollection<Notification>` in User
+                      .WithMany(u => u.Notifications)
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // 🔹 CALENDAR EVENT (updated)
-
+            // UTC converter for DateTime (used below)
             var utcConv = new ValueConverter<DateTime, DateTime>(
-        v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
-        v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+                v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
+            // 🔹 CALENDAR EVENT
             modelBuilder.Entity<CalendarEvent>(entity =>
             {
                 entity.HasKey(e => e.CalendarEventId);
@@ -221,7 +221,6 @@ namespace ASI.Basecode.Data
                       .HasMaxLength(100)
                       .HasDefaultValue("Asia/Manila");
 
-                // Map and force UTC
                 entity.Property(e => e.StartUtc)
                       .HasColumnType("timestamptz")
                       .HasConversion(utcConv);
@@ -246,6 +245,7 @@ namespace ASI.Basecode.Data
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
             // PROGRAM
             modelBuilder.Entity<Program>(entity =>
             {
@@ -266,7 +266,7 @@ namespace ASI.Basecode.Data
                 entity.HasIndex(e => new { e.YearLevel, e.Term }).IsUnique();
 
                 // Seed Year 1..4 × Term 1..2
-                entity.HasData(
+                modelBuilder.Entity<YearTerm>().HasData(
                     new YearTerm { YearTermId = 1, YearLevel = 1, Term = 1 },
                     new YearTerm { YearTermId = 2, YearLevel = 1, Term = 2 },
                     new YearTerm { YearTermId = 3, YearLevel = 2, Term = 1 },
@@ -283,36 +283,66 @@ namespace ASI.Basecode.Data
             {
                 entity.HasKey(e => e.ProgramCourseId);
 
-                // Program → ProgramCourses 
                 entity.HasOne(e => e.Program)
                       .WithMany(p => p.ProgramCourses)
                       .HasForeignKey(e => e.ProgramId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // Course used by the term row (restrict)
                 entity.HasOne(e => e.Course)
                       .WithMany()
                       .HasForeignKey(e => e.CourseId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // YearTerm bucket (restrict)
                 entity.HasOne(e => e.YearTerm)
                       .WithMany(yt => yt.ProgramCourses)
                       .HasForeignKey(e => e.YearTermId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // Optional prerequisite (also points to Course) (restrict)
                 entity.HasOne(e => e.PrerequisiteCourse)
                       .WithMany()
                       .HasForeignKey(e => e.Prerequisite)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // 🔹 PASSWORD RESET TOKEN (NEW)
+            var utcConv2 = new ValueConverter<DateTime, DateTime>(
+                v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Token)
+                      .IsRequired()
+                      .HasMaxLength(200);
+
+                entity.HasIndex(e => e.Token).IsUnique();
+
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv2);
+
+                entity.Property(e => e.ExpiresAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv2);
+
+                entity.Property(e => e.UsedAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(
+                          v => v.HasValue
+                                ? (v.Value.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc))
+                                : v,
+                          v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+                entity.HasOne(e => e.User)
+                      .WithMany(u => u.PasswordResetTokens)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
             OnModelCreatingPartial(modelBuilder);
         }
-
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }

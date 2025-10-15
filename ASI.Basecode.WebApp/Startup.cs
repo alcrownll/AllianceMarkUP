@@ -116,6 +116,10 @@ namespace ASI.Basecode.WebApp
             services.AddScoped<IStudyLoadService, StudyLoadService>();
             services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 
+            // ✅✅ ADD THIS LINE (register the SMTP email sender)
+            services.AddTransient<IEmailSender, SmtpEmailSender>();
+
+
             // Authorization (Add Policy)
             this.ConfigureAuthorization();
 

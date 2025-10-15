@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MarkUP</title>
+
     <link rel="stylesheet" href="~/css/site.css" />
+
+    @* views define: @section styles { ... } *@
     @RenderSection("styles", required: false)
 </head>
 <body>
@@ -12,6 +15,98 @@
         @RenderBody()
     </div>
 
-    @RenderSection("scripts", required: false)
+    @* Render either Scripts (capital) or scripts (lower) if present *@
+    @RenderSection("Scripts", required: false)
+
+    <script>
+        // Global handler for the Forgot Password modal on login pages
+        (function () {
+          function $(sel, root) { return (root || document).querySelector(sel); }
+
+          function showModal() {
+            const modal = $('#fpModal');
+            if (!modal) return;
+            modal.hidden = false;                 // remove hidden attribute
+            modal.classList.add('is-open');       // CSS will display it (display:grid)
+            $('#fpEmail', modal)?.focus();
+          }
+
+          function hideModal() {
+            const modal = $('#fpModal');
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            setTimeout(() => { modal.hidden = true; resetUI(modal); }, 150);
+          }
+
+          function resetUI(modal) {
+            $('#fpForm', modal)?.reset();
+            const errEl = $('[data-err]', modal);
+            if (errEl) errEl.textContent = '';
+            const btn = $('#fpSubmit', modal);
+            const spinner = $('.yt-btn__spinner', modal);
+            const btnText = $('.yt-btn__text', modal);
+            if (btn) btn.disabled = false;
+            spinner?.classList.remove('is-on');
+            if (btnText) btnText.textContent = 'Send Reset Link';
+            const success = $('#fpSuccess', modal);
+            if (success) success.hidden = true;
+          }
+
+          // Open modal on click of any element with data-open="fpModal"
+          document.addEventListener('click', function (e) {
+            const opener = e.target.closest('[data-open="fpModal"]');
+            if (opener) { e.preventDefault(); showModal(); return; }
+
+            // Close buttons
+            if (e.target.closest('#fpModal [data-close]')) { hideModal(); return; }
+
+            // Click on backdrop closes
+            const modal = $('#fpModal');
+            if (modal && !modal.hidden && e.target === modal) { hideModal(); }
+          });
+
+          // ESC closes
+          document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+              const modal = document.getElementById('fpModal');
+              if (modal && !modal.hidden) hideModal();
+            }
+          });
+
+          // Submit handler (privacy-safe)
+          document.addEventListener('submit', async function (e) {
+            const form = e.target;
+            if (!(form instanceof HTMLFormElement) || form.id !== 'fpForm') return;
+
+            e.preventDefault();
+            const modal   = document.getElementById('fpModal');
+            const email   = document.getElementById('fpEmail');
+            const err     = modal?.querySelector('[data-err]');
+            const btn     = document.getElementById('fpSubmit');
+            const spinner = modal?.querySelector('.yt-btn__spinner');
+            const btnText = modal?.querySelector('.yt-btn__text');
+            const success = document.getElementById('fpSuccess');
+
+            if (!email?.value.trim()) { if (err) err.textContent = 'Please enter your email.'; email?.focus(); return; }
+
+            if (btn) btn.disabled = true;
+            spinner?.classList.add('is-on');
+            if (btnText) btnText.textContent = 'Sending...';
+
+            try {
+              await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'fetch' } });
+              if (success) success.hidden = false;
+              spinner?.classList.remove('is-on');
+              if (btnText) btnText.textContent = 'Sent';
+              setTimeout(hideModal, 1500);
+            } catch {
+              if (err) err.textContent = 'Network error. Please try again.';
+              if (btn) btn.disabled = false;
+              spinner?.classList.remove('is-on');
+              if (btnText) btnText.textContent = 'Send Reset Link';
+            }
+          });
+        })();
+    </script>
 </body>
 </html>

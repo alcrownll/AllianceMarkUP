@@ -54,7 +54,7 @@
                         <input asp-for="RememberMe" type="checkbox" />
                         <span>Remember Me</span>
                     </label>
-                    <a class="muted" href="#">Forgot Password?</a>
+                    <a class="muted" href="#" data-open="fpModal">Forgot Password?</a>
                 </div>
 
                 <button type="submit" class="btn-primary">
@@ -72,6 +72,9 @@
         </div>
     </div>
 </div>
+
+<!-- Reusable Forgot Password modal -->
+<partial name="Partials/_ForgotPasswordModal" />
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

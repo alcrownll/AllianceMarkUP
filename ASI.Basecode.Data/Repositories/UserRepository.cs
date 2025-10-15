@@ -2,10 +2,7 @@
 using ASI.Basecode.Data.Models;
 using Basecode.Data.Repositories;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
 {
@@ -13,6 +10,7 @@ namespace ASI.Basecode.Data.Repositories
     {
         public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork) { }
 
+        // ========= Users =========
         public IQueryable<User> GetUsers() => this.GetDbSet<User>();
 
         public User GetUserById(int userId) =>
@@ -42,5 +40,27 @@ namespace ASI.Basecode.Data.Repositories
                 UnitOfWork.SaveChanges();
             }
         }
+
+        // ========= Password Reset Tokens =========
+        public IQueryable<PasswordResetToken> PasswordResetTokens()
+            => this.GetDbSet<PasswordResetToken>();
+
+        public void AddPasswordResetToken(PasswordResetToken token)
+        {
+            this.GetDbSet<PasswordResetToken>().Add(token);
+            UnitOfWork.SaveChanges();
+        }
+
+        public void MarkPasswordResetTokenUsed(string token)
+        {
+            var prt = this.GetDbSet<PasswordResetToken>().FirstOrDefault(t => t.Token == token);
+            if (prt != null && prt.UsedAt == null)
+            {
+                prt.UsedAt = DateTime.UtcNow;
+                UnitOfWork.SaveChanges();
+            }
+        }
+
+        public void SaveChanges() => UnitOfWork.SaveChanges();
     }
 }
