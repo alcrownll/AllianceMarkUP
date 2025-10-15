@@ -47,6 +47,12 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- inline error -->
+                    <div id="addProgramError" class="text-danger small mt-2" style="display:none;"></div>
+
+                    <!-- store program id for step 2 -->
+                    <input type="hidden" id="ProgramId" />
                 </div>
 
                 <div class="modal-footer">
@@ -56,4 +62,56 @@
             </form>
         </div>
     </div>
-</div> 
+</div>
+
+<script>
+    // In-memory prospectus (Option C). If you already defined this elsewhere, keep one copy only.
+    window.prospectus = window.prospectus || {
+      code: "", name: "", notes: "",
+      years: [
+        { terms: [ { courses: [] }, { courses: [] } ] },
+        { terms: [ { courses: [] }, { courses: [] } ] },
+        { terms: [ { courses: [] }, { courses: [] } ] },
+        { terms: [ { courses: [] }, { courses: [] } ] }
+      ]
+    };
+
+    (function () {
+      const form   = document.getElementById('addProgramForm');
+      const btn    = document.getElementById('btnNextProgram');
+      const errEl  = document.getElementById('addProgramError');
+
+      function showErr(m){ errEl.textContent = m||""; errEl.style.display = m ? "block" : "none"; }
+
+      btn?.addEventListener('click', () => {
+        showErr('');
+
+        // HTML5 validation only
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+
+        // Copy fields into client-side state (NO server call here)
+        const fd = new FormData(form);
+        window.prospectus.code  = (fd.get('Code')  || '').toString().trim();
+        window.prospectus.name  = (fd.get('Name')  || '').toString().trim();
+        window.prospectus.notes = (fd.get('Notes') || '').toString();
+
+        // Fill Step 2 header summary
+        const sumCode = document.getElementById('sumCode');
+        const sumName = document.getElementById('sumName');
+        if (sumCode) sumCode.textContent = window.prospectus.code || '—';
+        if (sumName) sumName.textContent = window.prospectus.name || '—';
+
+        // Open Step 2
+        const m1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('addProgramModal'));
+        const m2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
+        m1.hide();
+        setTimeout(() => m2.show(), 150);
+
+        // If you have a render function for the term tables, call it
+        if (typeof renderAllTermTables === 'function') renderAllTermTables();
+      });
+    })();
+</script>

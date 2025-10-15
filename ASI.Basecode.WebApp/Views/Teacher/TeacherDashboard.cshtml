@@ -6,16 +6,22 @@
     ViewData["Title"] = "Teacher Dashboard";
     ViewData["PageHeader"] = "Teacher Dashboard";
 
+    // Create dynamic client data from the Programs list
+    var programs = Model.Programs ?? new List<ASI.Basecode.Services.ServiceModels.ProgramData>();
+    var programsData = programs.ToDictionary(
+        p => p.ProgramCode,
+        p => new { 
+            courses = p.Courses.Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
+            uniqueStudents = p.StudentsTotal  // Pass the unique student count per program
+        }
+    );
+    var summaryData = (Model.Summary ?? new List<ASI.Basecode.Services.ServiceModels.ProgramSummaryItem>())
+        .ToDictionary(s => s.ProgramCode, s => new { students = s.Students, courses = s.Courses });
+
     var clientData = new
     {
-        IT = (Model.IT?.Courses ?? new List<ASI.Basecode.Services.ServiceModels.CourseItem>())
-                .Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
-        CS = (Model.CS?.Courses ?? new List<ASI.Basecode.Services.ServiceModels.CourseItem>())
-                .Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
-        itStudents = Model.Summary?.IT_Students ?? 0,
-        csStudents = Model.Summary?.CS_Students ?? 0,
-        itCourses = Model.Summary?.IT_Courses ?? 0,
-        csCourses = Model.Summary?.CS_Courses ?? 0,
+        programs = programsData,
+        summary = summaryData,
         gradedPct = Model.GradedPct
     };
     var json = JsonSerializer.Serialize(clientData);
@@ -52,9 +58,26 @@
         <div class="panel-title-row">
             <div class="panel-title">Courses Handled</div>
             <div class="seg" role="tablist" aria-label="Program">
-                <!-- BSCS FIRST and ACTIVE by default -->
-                <button class="seg-btn active" id="segCS" aria-pressed="true" role="tab" aria-selected="true">BSCS</button>
-                <button class="seg-btn" id="segIT" aria-pressed="false" role="tab" aria-selected="false">BSIT</button>
+                @if (programs.Any())
+                {
+                    @for (int i = 0; i < programs.Count; i++)
+                    {
+                        var program = programs[i];
+                        var isFirst = i == 0;
+                        <button class="seg-btn @(isFirst ? "active" : "")" 
+                                id="seg@(program.ProgramCode)" 
+                                aria-pressed="@(isFirst ? "true" : "false")" 
+                                role="tab" 
+                                aria-selected="@(isFirst ? "true" : "false")">
+                            @program.ProgramCode
+                        </button>
+                    }
+                }
+                else
+                {
+                    <!-- Fallback for no programs -->
+                    <button class="seg-btn active" id="segNoPrograms" aria-pressed="true" role="tab" aria-selected="true">No Programs</button>
+                }
             </div>
         </div>
 
@@ -90,29 +113,35 @@
     <script>
         // ======= Data from server =======
         const server = @Html.Raw(json);
-        const programData = { IT: server.IT, CS: server.CS };
+        const programData = server.programs || {};
+        const summaryData = server.summary || {};
         const gradedPct = Number(server.gradedPct || 0);
+        const programKeys = Object.keys(programData);
 
         // Elements
-        const segIT = document.getElementById('segIT');
-        const segCS = document.getElementById('segCS');
         const coursesList = document.getElementById('coursesList');
         const kpiSubjectsValue = document.getElementById('kpiSubjectsValue');
         const kpiSubjectsMeta  = document.getElementById('kpiSubjectsMeta');
         const kpiStudentsValue = document.getElementById('kpiStudentsValue');
         const kpiStudentsMeta  = document.getElementById('kpiStudentsMeta');
 
-        // Display text mapping (UI shows BSCS/BSIT)
-        const displayName = (key) => key === 'CS' ? 'BSCS' : 'BSIT';
+        // Get all program buttons dynamically
+        const programButtons = {};
+        programKeys.forEach(key => {
+            programButtons[key] = document.getElementById(`seg${key}`);
+        });
+
+        // Display text mapping - show full program code
+        const displayName = (key) => key;
 
         function renderCourses(programKey) {
-          const list = programData[programKey] || [];
+          const programInfo = programData[programKey];
+          const list = programInfo?.courses || [];
+          const uniqueStudentsTotal = programInfo?.uniqueStudents || 0; // Use the unique count from server
+          
           coursesList.innerHTML = "";
-          let studentsTotal = 0;
 
           list.forEach(c => {
-            studentsTotal += (Number(c.students) || 0);
-
             const item  = document.createElement('div');
             item.className = 'item';
 
@@ -139,23 +168,47 @@
           // ✅ KPIs per selected tab (0 when empty)
           const subjectsCount = list.length;
           kpiSubjectsValue.textContent = subjectsCount;
-          kpiStudentsValue.textContent = studentsTotal;
+          kpiStudentsValue.textContent = uniqueStudentsTotal; // Use unique student count
           kpiSubjectsMeta.textContent  = `${displayName(programKey)} • ${subjectsCount} ${subjectsCount === 1 ? 'course' : 'courses'}`;
-          kpiStudentsMeta.textContent  = `${displayName(programKey)} • total students`;
+          kpiStudentsMeta.textContent  = `${displayName(programKey)} • students`;
 
-          // Toggle states
-          const on = (btn) => { btn.classList.add('active'); btn.setAttribute('aria-pressed','true'); btn.setAttribute('aria-selected','true'); };
-          const off = (btn) => { btn.classList.remove('active'); btn.setAttribute('aria-pressed','false'); btn.setAttribute('aria-selected','false'); };
-          if (programKey === 'CS') { on(segCS); off(segIT); } else { on(segIT); off(segCS); }
+          // Toggle states - update all buttons
+          Object.keys(programButtons).forEach(key => {
+            const btn = programButtons[key];
+            if (btn) {
+              if (key === programKey) {
+                btn.classList.add('active');
+                btn.setAttribute('aria-pressed','true');
+                btn.setAttribute('aria-selected','true');
+              } else {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-pressed','false');
+                btn.setAttribute('aria-selected','false');
+              }
+            }
+          });
         }
 
-        segCS.addEventListener('click', () => renderCourses('CS'));
-        segIT.addEventListener('click', () => renderCourses('IT'));
-        segCS.addEventListener('keydown', e => { if (['ArrowRight','Enter',' '].includes(e.key)) renderCourses('IT'); });
-        segIT.addEventListener('keydown', e => { if (['ArrowLeft','Enter',' '].includes(e.key)) renderCourses('CS'); });
+        // Add event listeners dynamically for all program buttons
+        Object.keys(programButtons).forEach(key => {
+          const btn = programButtons[key];
+          if (btn) {
+            btn.addEventListener('click', () => renderCourses(key));
+            btn.addEventListener('keydown', e => {
+              if (['Enter',' '].includes(e.key)) {
+                e.preventDefault();
+                renderCourses(key);
+              }
+            });
+          }
+        });
 
-        // ✅ Initial: BSCS first & active
-        renderCourses('CS');
+        // ✅ Initial: First program active (or fallback)
+        if (programKeys.length > 0) {
+          renderCourses(programKeys[0]);
+        } else {
+          coursesList.innerHTML = '<div class="item">No courses assigned</div>';
+        }
 
         // ======= Donut (unchanged) =======
         new Chart(document.getElementById('gradingRing'), {
@@ -185,19 +238,18 @@
         document.getElementById('gradedPctLabel').textContent = Math.round(gradedPct * 100) + '%';
         document.getElementById('remainingPctLabel').textContent = (100 - Math.round(gradedPct * 100)) + '%';
 
-        // ======= Bar (unchanged) =======
-        const itCourses = Number(server.itCourses || 0);
-        const csCourses = Number(server.csCourses || 0);
-        const itStudents = Number(server.itStudents || 0);
-        const csStudents = Number(server.csStudents || 0);
+        // ======= Bar (Dynamic) =======
+        const chartLabels = programKeys.length > 0 ? programKeys : ['No Programs'];
+        const studentsData = programKeys.map(key => Number(summaryData[key]?.students || 0));
+        const coursesData = programKeys.map(key => Number(summaryData[key]?.courses || 0));
 
         new Chart(document.getElementById('byProgramBar'), {
           type: 'bar',
           data: {
-            labels: ['IT', 'CS'],
+            labels: chartLabels,
             datasets: [
-              { label: 'Students', data: [itStudents, csStudents], borderWidth: 0, backgroundColor: '#2563eb' },
-              { label: 'Courses',  data: [itCourses,  csCourses],  borderWidth: 0, backgroundColor: '#22c55e' }
+              { label: 'Students', data: studentsData, borderWidth: 0, backgroundColor: '#2563eb' },
+              { label: 'Courses',  data: coursesData,  borderWidth: 0, backgroundColor: '#22c55e' }
             ]
           },
           options: {

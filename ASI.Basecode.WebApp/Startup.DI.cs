@@ -46,6 +46,8 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IRightSidebarService, RightSidebarService>();
             this._services.AddScoped<INotificationService, NotificationService>();
             this._services.AddScoped<ICalendarService, CalendarService>();
+            this._services.AddScoped<ICurriculumService, CurriculumService>();
+
 
             this._services.AddScoped<IWebRootPathAccessor, LocalWebRootPathAccessor>();
 
@@ -60,6 +62,9 @@ namespace ASI.Basecode.WebApp
             this._services.AddScoped<IGradeRepository, GradeRepository>();
             this._services.AddScoped<INotificationRepository, NotificationRepository>();
             this._services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+            this._services.AddScoped<IProgramRepository, ProgramRepository>();
+            this._services.AddScoped<IYearTermRepository, YearTermRepository>();
+            this._services.AddScoped<IProgramCourseRepository, ProgramCourseRepository>();
 
             // Manager Class
             this._services.AddScoped<SignInManager>();

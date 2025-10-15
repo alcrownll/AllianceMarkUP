@@ -1,8 +1,15 @@
 ﻿@{
-    var y = (int)ViewData["Year"];
-    var k1 = $"Y{y}T1"; // 1st sem key
-    var k2 = $"Y{y}T2"; // 2nd sem key
+    // Be defensive: handle null / string / long
+    int y = 0;
+    if (ViewData["Year"] is int yi) y = yi;
+    else if (ViewData["Year"] is long yl) y = (int)yl;
+    else if (ViewData["Year"] is string ys && int.TryParse(ys, out var yp)) y = yp;
+    else y = DateTime.Now.Year; // fallback
+
+    var k1 = $"Y{y}T1";
+    var k2 = $"Y{y}T2";
 }
+
 
 <div class="col-12 d-xl-flex gap-3">
     <!-- 1st Semester -->
@@ -12,11 +19,11 @@
                 <div><strong>1st Semester</strong></div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="small text-muted">Total Units: <span id="units-@k1">0</span></div>
-                    <button class="btn btn-sm btn-primary"
+                    <button type="button" class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
-                            data-bs-target="#addCourseModal"
+                            data-bs-target="#coursePickerModal"
                             data-year="@y" data-term="1" data-key="@k1">
-                        Add Subject
+                        Add Course
                     </button>
                 </div>
             </div>
@@ -51,11 +58,11 @@
                 <div><strong>2nd Semester</strong></div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="small text-muted">Total Units: <span id="units-@k2">0</span></div>
-                    <button class="btn btn-sm btn-primary"
+                    <button type="button" class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
-                            data-bs-target="#addCourseModal"
+                            data-bs-target="#coursePickerModal"
                             data-year="@y" data-term="2" data-key="@k2">
-                        Add Subject
+                        Add Course
                     </button>
                 </div>
             </div>
@@ -83,3 +90,109 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function(){
+      // Will store which semester key opened the picker
+      window.__currentTermCtx = null;
+
+      const pickerEl = document.getElementById('coursePickerModal');
+
+      // When the picker opens, capture the button that triggered it
+      pickerEl?.addEventListener('show.bs.modal', (e) => {
+        const btn = e.relatedTarget; // the Add Course button
+        if (!btn) return;
+        // Save year/term/key so the Add button knows where to insert
+        window.__currentTermCtx = {
+          year: parseInt(btn.dataset.year, 10),
+          term: parseInt(btn.dataset.term, 10),
+          key: btn.dataset.key // e.g., "Y2025T1"
+        };
+      });
+
+      // Util: update the "Total Units: X" per semester
+      function recalcUnits(termKey){
+        const tbody = document.getElementById(`tbl-${termKey}`);
+        const totalSpan = document.getElementById(`units-${termKey}`);
+        let total = 0;
+        if (tbody) {
+          tbody.querySelectorAll('tr').forEach(tr => {
+            const unitsCell = tr.querySelector('[data-col="units"]');
+            if (unitsCell) total += Number(unitsCell.textContent || 0);
+          });
+          // Show "No subjects yet." if empty
+          if (!tbody.querySelector('tr[data-row="course"]')) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>`;
+          }
+        }
+        if (totalSpan) totalSpan.textContent = total;
+      }
+
+      // Hook your existing "Add" button inside the Course Picker
+      document.getElementById('btnAddCourseToTerm')?.addEventListener('click', () => {
+        const ctx = window.__currentTermCtx;
+        if (!ctx || !ctx.key) return;
+
+        // These helpers are from your Course Picker script (already defined):
+        const selCourse = document.getElementById('selCourse');
+        const selPrereq = document.getElementById('selPrereq');
+
+        const courseId = parseInt(selCourse.value, 10);
+        if (!courseId) { alert('Please select a course.'); return; }
+
+        const code  = (window.lookupCourseCode  && window.lookupCourseCode(courseId))  || '';
+        const title = (window.lookupCourseTitle && window.lookupCourseTitle(courseId)) || '';
+        const lec   = (window.lookupCourseLec   && window.lookupCourseLec(courseId))  || 0;
+        const lab   = (window.lookupCourseLab   && window.lookupCourseLab(courseId))  || 0;
+        const units = (lec || 0) + (lab || 0);
+
+        const prereqId = selPrereq.value ? parseInt(selPrereq.value, 10) : null;
+        const prereqCode = prereqId ? (window.lookupCourseCode && window.lookupCourseCode(prereqId)) : '';
+
+        const tbody = document.getElementById(`tbl-${ctx.key}`);
+        if (!tbody) return;
+
+        // Remove placeholder row if present
+        const placeholder = tbody.querySelector('tr:not([data-row="course"])');
+        if (placeholder && tbody.children.length === 1) placeholder.remove();
+
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-row', 'course');
+        tr.innerHTML = `
+          <td>${code}</td>
+          <td>${title}</td>
+          <td class="text-center">${lec}</td>
+          <td class="text-center">${lab}</td>
+          <td class="text-center" data-col="units">${units}</td>
+          <td>${prereqId ? prereqCode : '—'}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); recalcUnits('${ctx.key}')">Remove</button>
+          </td>
+
+          <!-- Hidden fields for posting back (adjust names to your VM) -->
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][CourseId]" value="${courseId}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][PrerequisiteCourseId]" value="${prereqId ?? ''}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LecUnits]" value="${lec}">
+          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LabUnits]" value="${lab}">
+        `;
+        tbody.appendChild(tr);
+
+        recalcUnits(ctx.key);
+
+        // Close the picker
+        bootstrap.Modal.getOrCreateInstance(pickerEl).hide();
+      });
+
+      // Expose recalcUnits so the Remove button can call it inline
+      window.recalcUnits = recalcUnits;
+
+      // If the page renders with preloaded rows (e.g., editing), recalc now:
+      document.addEventListener('DOMContentLoaded', () => {
+        // Replace these with your actual keys, or loop programmatically
+        try { recalcUnits('@k1'); recalcUnits('@k2'); } catch {}
+      });
+    })();
+</script>
+
+
+

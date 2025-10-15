@@ -48,10 +48,6 @@ namespace ASI.Basecode.WebApp.Controllers
             // Build dynamic VM
             var vm = await _dashboardService.BuildAsync(idNumber);
 
-            // Defensive fallbacks for KPIs
-            vm.TotalCourses = vm.TotalCourses == 0 ? (vm.IT?.Courses?.Count ?? 0) + (vm.CS?.Courses?.Count ?? 0) : vm.TotalCourses;
-            vm.TotalStudents = vm.TotalStudents == 0 ? (vm.IT?.StudentsTotal ?? 0) + (vm.CS?.StudentsTotal ?? 0) : vm.TotalStudents;
-
             return View("TeacherDashboard", vm); // uses your existing Razor view
         }
 
@@ -344,112 +340,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction("TeacherLogin", "Login");
         }
 
-        // TEMPORARY SEED DATA METHOD - Remove after debugging
-        [Authorize(Roles = "Teacher")]
-        public async Task<IActionResult> SeedTestData()
-        {
-            try
-            {
-                var userId = _profileService.GetCurrentUserId();
-                
-                using (var scope = HttpContext.RequestServices.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
-                    // Check if teacher exists
-                    var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
-                    if (teacher == null)
-                    {
-                        // Create teacher record
-                        teacher = new ASI.Basecode.Data.Models.Teacher
-                        {
-                            UserId = userId,
-                            Position = "Faculty"
-                        };
-                        context.Teachers.Add(teacher);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    // Create sample course if none exists
-                    if (!context.Courses.Any())
-                    {
-                        var course = new ASI.Basecode.Data.Models.Course
-                        {
-                            CourseCode = "CS-101",
-                            Description = "Introduction to Computer Science",
-                            LecUnits = 3,
-                            LabUnits = 0,
-                            TotalUnits = 3
-                        };
-                        context.Courses.Add(course);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    // Create assigned course if none exists
-                    if (!context.AssignedCourses.Any(ac => ac.TeacherId == teacher.TeacherId))
-                    {
-                        var course = context.Courses.First();
-                        var assignedCourse = new ASI.Basecode.Data.Models.AssignedCourse
-                        {
-                            EDPCode = "12345",
-                            CourseId = course.CourseId,
-                            Type = "LEC",
-                            Units = 3,
-                            ProgramId = 1,
-                            TeacherId = teacher.TeacherId,
-                            Semester = "2024-2025-1"
-                        };
-                        context.AssignedCourses.Add(assignedCourse);
-                        await context.SaveChangesAsync();
-                    }
-                    
-                    return Json(new { Success = true, Message = "Test data created successfully!" });
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Success = false, Error = ex.Message });
-            }
-        }
-
-        // TEMPORARY DEBUG METHOD - Remove after debugging
-        [Authorize(Roles = "Teacher")]
-        public IActionResult DebugData()
-        {
-            try
-            {
-                var userId = _profileService.GetCurrentUserId();
-                var teacherId = GetCurrentTeacherId();
-                
-                using (var scope = HttpContext.RequestServices.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ASI.Basecode.Data.AsiBasecodeDBContext>();
-                    
-                    var teacher = context.Teachers.FirstOrDefault(t => t.UserId == userId);
-                    var assignedCourses = context.AssignedCourses.Where(ac => ac.TeacherId == teacherId).ToList();
-                    var allTeachers = context.Teachers.ToList();
-                    var allAssignedCourses = context.AssignedCourses.ToList();
-                    
-                    var debugInfo = new
-                    {
-                        UserId = userId,
-                        TeacherId = teacherId,
-                        TeacherExists = teacher != null,
-                        TeacherRecord = teacher,
-                        AssignedCoursesCount = assignedCourses.Count,
-                        AssignedCourses = assignedCourses,
-                        TotalTeachers = allTeachers.Count,
-                        TotalAssignedCourses = allAssignedCourses.Count
-                    };
-                    
-                    return Json(debugInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { Error = ex.Message, StackTrace = ex.StackTrace });
-            }
-        }
+        // REMOVED TEMPORARY SEED DATA METHOD, don't bring it back pls.
 
         #region Private Helper Methods
 
