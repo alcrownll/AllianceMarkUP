@@ -98,6 +98,22 @@
         window.prospectus.name  = (fd.get('Name')  || '').toString().trim();
         window.prospectus.notes = (fd.get('Notes') || '').toString();
 
+        // ---- BRIDGE: mirror into PROGRAM_DRAFT for Step 2 + Finish ----
+        window.PROGRAM_DRAFT = window.PROGRAM_DRAFT || { program: { code:'', name:'', notes:'', years: 4 }, years: [] };
+        if (!Array.isArray(window.PROGRAM_DRAFT.years) || window.PROGRAM_DRAFT.years.length === 0) {
+          window.PROGRAM_DRAFT.years = [
+            { year: 1, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
+            { year: 2, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
+            { year: 3, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
+            { year: 4, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] }
+          ];
+        }
+        window.PROGRAM_DRAFT.program.code  = window.prospectus.code;
+        window.PROGRAM_DRAFT.program.name  = window.prospectus.name;
+        window.PROGRAM_DRAFT.program.notes = window.prospectus.notes;
+        window.PROGRAM_DRAFT.program.years = 4; // adjust if you add a Years selector later
+        // ---------------------------------------------------------------
+
         // Fill Step 2 header summary
         const sumCode = document.getElementById('sumCode');
         const sumName = document.getElementById('sumName');
@@ -112,6 +128,11 @@
 
         // If you have a render function for the term tables, call it
         if (typeof renderAllTermTables === 'function') renderAllTermTables();
+
+        // (Optional) quick debug in console
+        // console.log('prospectus:', window.prospectus);
+        // console.log('PROGRAM_DRAFT.program:', window.PROGRAM_DRAFT.program);
       });
     })();
 </script>
+

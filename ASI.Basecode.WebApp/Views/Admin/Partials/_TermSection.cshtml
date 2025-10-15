@@ -1,23 +1,23 @@
 ﻿@{
-    // Be defensive: handle null / string / long
     int y = 0;
     if (ViewData["Year"] is int yi) y = yi;
     else if (ViewData["Year"] is long yl) y = (int)yl;
     else if (ViewData["Year"] is string ys && int.TryParse(ys, out var yp)) y = yp;
-    else y = DateTime.Now.Year; // fallback
+    else y = DateTime.Now.Year;
 
     var k1 = $"Y{y}T1";
     var k2 = $"Y{y}T2";
 }
 
+<div class="row g-3 align-items-stretch">
+    @* <-- row instead of single flex *@
 
-<div class="col-12 d-xl-flex gap-3">
     <!-- 1st Semester -->
-    <div class="flex-grow-1">
-        <div class="card h-100">
+    <div class="col-12 col-xl-6 d-flex">
+        <div class="card flex-fill shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div><strong>1st Semester</strong></div>
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 flex-nowrap">
                     <div class="small text-muted">Total Units: <span id="units-@k1">0</span></div>
                     <button type="button" class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
@@ -29,17 +29,17 @@
             </div>
 
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive prospectus-table">
                     <table class="table mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 18%">Course Code</th>
+                                <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
-                                <th style="width: 8%">Lec</th>
-                                <th style="width: 8%">Lab</th>
-                                <th style="width: 10%">Units</th>
-                                <th style="width: 18%">Pre-req</th>
-                                <th style="width: 10%"></th>
+                                <th style="width:8%">Lec</th>
+                                <th style="width:8%">Lab</th>
+                                <th style="width:10%">Units</th>
+                                <th style="width:18%">Pre-req</th>
+                                <th style="width:10%"></th>
                             </tr>
                         </thead>
                         <tbody id="tbl-@k1">
@@ -52,11 +52,11 @@
     </div>
 
     <!-- 2nd Semester -->
-    <div class="flex-grow-1 mt-3 mt-xl-0">
-        <div class="card h-100">
+    <div class="col-12 col-xl-6 d-flex">
+        <div class="card flex-fill shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div><strong>2nd Semester</strong></div>
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 flex-nowrap">
                     <div class="small text-muted">Total Units: <span id="units-@k2">0</span></div>
                     <button type="button" class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
@@ -68,17 +68,17 @@
             </div>
 
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive prospectus-table">
                     <table class="table mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 18%">Course Code</th>
+                                <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
-                                <th style="width: 8%">Lec</th>
-                                <th style="width: 8%">Lab</th>
-                                <th style="width: 10%">Units</th>
-                                <th style="width: 18%">Pre-req</th>
-                                <th style="width: 10%"></th>
+                                <th style="width:8%">Lec</th>
+                                <th style="width:8%">Lab</th>
+                                <th style="width:10%">Units</th>
+                                <th style="width:18%">Pre-req</th>
+                                <th style="width:10%"></th>
                             </tr>
                         </thead>
                         <tbody id="tbl-@k2">
@@ -89,7 +89,9 @@
             </div>
         </div>
     </div>
+
 </div>
+
 
 <script>
     (function(){

@@ -1,5 +1,5 @@
 ﻿@* Step 2: Prospectus / Curriculum Builder (UI-only) *@
-<div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true">
+<div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xxl">
         <div class="modal-content shadow">
             <div class="modal-header">
@@ -54,7 +54,6 @@
         </div>
     </div>
 </div>
-@await Html.PartialAsync("~/Views/Admin/Partials/_CoursePickerModal.cshtml")
 
 <script>
     // back to Step 1
@@ -75,5 +74,88 @@
     #programProspectusModal table td {
         white-space: nowrap;
     }
+    /* 1) Prevent “editable-looking” caret on the nav tabs */
+    #programProspectusModal .nav-tabs .nav-link {
+        user-select: none;
+        -webkit-user-select: none;
+        caret-color: transparent;
+    }
+
+    /* 2) Make the two term cards always the same height and keep tables neat */
+    #programProspectusModal .tab-pane > .col-12.d-xl-flex {
+        align-items: stretch; /* ensure both cards line up in height */
+    }
+
+    #programProspectusModal .card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #programProspectusModal .card-body {
+        flex: 1 1 auto; /* fill the available height */
+        min-height: 0; /* allow inner scrolling */
+    }
+
+    #programProspectusModal .table-responsive {
+        max-height: 48vh; /* keep big tables from pushing modal off-screen */
+        overflow: auto; /* scroll inside the table area */
+    }
+
+    /* 3) Keep the units + Add Course header tight on one line */
+    #programProspectusModal .card-header .d-flex {
+        gap: .75rem;
+        flex-wrap: nowrap;
+    }
+
+    #programProspectusModal .card-header .small.text-muted {
+        white-space: nowrap;
+    }
+
+    /* 4) Optional: avoid wrapping in the tabs row */
+    #programProspectusModal .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
 </style>
 
+<script>
+    (function () {
+      const parent = document.getElementById('programProspectusModal');
+      const child  = document.getElementById('coursePickerModal');
+      if (!parent || !child) return;
+
+      let childIsClosing = false;
+
+      // Fires right before Bootstrap starts the hide transition on the child
+      child.addEventListener('hide.bs.modal', () => {
+        childIsClosing = true;
+      });
+
+      // Block parent hide if child is open OR in the process of closing
+      parent.addEventListener('hide.bs.modal', (e) => {
+        if (childIsClosing || child.classList.contains('show')) {
+          e.preventDefault();
+        }
+      });
+
+      // Keep body scroll lock while child is visible
+      child.addEventListener('shown.bs.modal', () => {
+        document.body.classList.add('modal-open');
+      });
+
+      // Once child fully hidden, restore body lock and focus, clear the flag
+      child.addEventListener('hidden.bs.modal', () => {
+        childIsClosing = false;
+        if (parent.classList.contains('show')) {
+          document.body.classList.add('modal-open');
+          const lastTrigger = document.querySelector('[data-bs-target="#coursePickerModal"]');
+          (lastTrigger || parent).focus();
+        }
+      });
+    })();
+</script>
+
+
+@await Html.PartialAsync("~/Views/Admin/Partials/_CoursePickerModal.cshtml")
