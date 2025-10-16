@@ -1,0 +1,365 @@
+﻿@using ASI.Basecode.Data.Models
+@model AssignedCourse
+
+@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "View / Edit Assigned Course";
+    ViewData["PageHeader"] = "Assigned Course";
+
+    var courses = (IEnumerable<Course>)(ViewBag.Courses ?? Enumerable.Empty<Course>());
+    var programs = (IEnumerable<Program>)(ViewBag.Programs ?? Enumerable.Empty<Program>());
+    var teachers = (IEnumerable<Teacher>)(ViewBag.Teachers ?? Enumerable.Empty<Teacher>());
+    var enrolled = (IEnumerable<Student>)(ViewBag.EnrolledStudents ?? Enumerable.Empty<Student>());
+
+    bool canChangeStatus = (bool)(ViewBag.CanChangeStatus ?? false);
+    var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear) ? "2025-2026" : Model.SchoolYear;
+}
+
+<link rel="stylesheet" href="~/css/main-site.css" />
+
+<style>
+    /* ===== Pending additions UX ===== */
+    .pending-sep td {
+        border-top: 2px dashed #9eb7ff !important;
+        background: #f6f9ff;
+        color: #1e3a8a;
+        font-weight: 600;
+        letter-spacing: .02em;
+        font-size: .85rem;
+    }
+
+    .pending-add td {
+        background: rgba(37,99,235,.065);
+        border-top: 0 !important;
+    }
+
+    .chip-soft-primary {
+        display: inline-block;
+        padding: .2rem .5rem;
+        border-radius: 9999px;
+        background: #e8f0ff;
+        border: 1px solid #cfe0ff;
+        font-size: .75rem;
+        line-height: 1;
+    }
+
+    /* ===== “Marked for deletion” pills ===== */
+    #removeNames {
+        margin-top: .25rem;
+    }
+
+        #removeNames .pill {
+            display: inline-block;
+            padding: .25rem .55rem;
+            border-radius: 9999px;
+            background: #fff;
+            border: 1px solid #f3b2b2;
+            color: #7f1d1d;
+            font-size: .82rem;
+            margin: .15rem .25rem .15rem 0;
+            white-space: nowrap;
+        }
+
+    /* Roomier cell spacing */
+    table.table.table-sm.align-middle td,
+    table.table.table-sm.align-middle th {
+        padding-top: .6rem;
+        padding-bottom: .55rem;
+    }
+</style>
+
+<div class="container my-4">
+    <div class="profile-card">
+        @if (TempData["Ok"] != null)
+        {
+            <div class="alert alert-success mb-3">@TempData["Ok"]</div>
+        }
+        @if (TempData["Err"] != null)
+        {
+            <div class="alert alert-danger mb-3">@TempData["Err"]</div>
+        }
+
+        <form asp-controller="AdminAssign" asp-action="Update" method="post" autocomplete="off" id="editForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="AssignedCourseId" />
+
+            <!-- ===== COURSE INFORMATION ===== -->
+            <div class="section-title mt-1">Course Information</div>
+
+            <div class="row g-3 uniform-row">
+                <div class="col-md-4">
+                    <label class="form-label">Course Code</label>
+                    <select id="CourseId" class="form-select" asp-for="CourseId" required>
+                        <option value="">-- Select --</option>
+                        @foreach (var c in courses.OrderBy(c => c.CourseCode))
+                        {
+                            if (c.CourseId == Model.CourseId)
+                            {
+                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits" selected>@c.CourseCode</option>
+                            }
+                            else
+                            {
+                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits">@c.CourseCode</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Type</label>
+                    <select id="Type" class="form-select" asp-for="Type" required>
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Units</label>
+                    <input id="Units" class="form-control" asp-for="Units" readonly disabled />
+                </div>
+            </div>
+
+            <div class="row g-3 uniform-row mt-0">
+                <div class="col-md-4">
+                    <label class="form-label">Program</label>
+                    <select class="form-select" asp-for="ProgramId" required>
+                        <option value="">-- Select Program --</option>
+                        @foreach (var p in programs.OrderBy(p => p.ProgramCode))
+                        {
+                            if (p.ProgramId == Model.ProgramId)
+                            {
+                                <option value="@p.ProgramId" selected>@p.ProgramCode</option>
+                            }
+                            else
+                            {
+                                <option value="@p.ProgramId">@p.ProgramCode</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">School Year</label>
+                    <input class="form-control" value="@syValue" disabled readonly />
+                    <input type="hidden" asp-for="SchoolYear" value="@syValue" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Semester</label>
+                    <select class="form-select" asp-for="Semester" required>
+                        <option value="">-- Select --</option>
+                        @if (Model.Semester == "1st Semester")
+                        {
+                            <option selected>1st Semester</option>
+                            <option>2nd Semester</option>
+                            <option>Summer</option>
+                        }
+                        else if (Model.Semester == "2nd Semester")
+                        {
+                            <option>1st Semester</option>
+                            <option selected>2nd Semester</option>
+                            <option>Summer</option>
+                        }
+                        else if (Model.Semester == "Summer")
+                        {
+                            <option>1st Semester</option>
+                            <option>2nd Semester</option>
+                            <option selected>Summer</option>
+                        }
+                        else
+                        {
+                            <option>1st Semester</option>
+                            <option>2nd Semester</option>
+                            <option>Summer</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 uniform-row mt-0">
+                <div class="col-md-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>EDP Code</span>
+                    </label>
+                    <input class="form-control" asp-for="EDPCode" readonly disabled />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Status</span>
+                    </label>
+
+                    @if (canChangeStatus)
+                    {
+                        <select class="form-select" asp-for="Status">
+                            @if (Model.Status == "Inactive")
+                            {
+                                <option value="Inactive" selected>Inactive</option>
+                                <option value="Active">Active</option>
+                            }
+                            else if (Model.Status == "Active")
+                            {
+                                <option value="Inactive">Inactive</option>
+                                <option value="Active" selected>Active</option>
+                            }
+                            else
+                            {
+                                <option value="Inactive">Inactive</option>
+                                <option value="Active">Active</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <select class="form-select" disabled aria-disabled="true">
+                            @if (Model.Status == "Inactive")
+                            {
+                                <option value="Inactive" selected>Inactive</option>
+                                <option value="Active">Active</option>
+                            }
+                            else if (Model.Status == "Active")
+                            {
+                                <option value="Inactive">Inactive</option>
+                                <option value="Active" selected>Active</option>
+                            }
+                            else
+                            {
+                                <option value="Inactive">Inactive</option>
+                                <option value="Active">Active</option>
+                            }
+                        </select>
+                        <input type="hidden" name="Status" value="@Model.Status" />
+                        <small class="tiny-hint text-muted">
+                            Hint: will stay <strong>Inactive</strong> until a room is assigned.
+                        </small>
+                    }
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <!-- ===== TEACHER ===== -->
+            <div class="section-title">Teacher</div>
+            <div class="row g-3 uniform-row">
+                <div class="col-md-6">
+                    <label class="form-label">Name</label>
+                    <select class="form-select" asp-for="TeacherId" id="TeacherId" required>
+                        <option value="">-- Select --</option>
+                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t => t.User.FirstName))
+                        {
+                            if (t.TeacherId == Model.TeacherId)
+                            {
+                                <option value="@t.TeacherId" selected>@($"{t.User.LastName}, {t.User.FirstName}")</option>
+                            }
+                            else
+                            {
+                                <option value="@t.TeacherId">@($"{t.User.LastName}, {t.User.FirstName}")</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <!-- ===== STUDENTS ===== -->
+            <div class="section-title">Students</div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btnOpenAddStudents">
+                    + Add Students
+                </button>
+            </div>
+
+            <!-- Table order: [✓] | Name | Program | Year | Section | Status -->
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40px;">
+                                <input type="checkbox" id="chkRemoveAll" />
+                            </th>
+                            <th>Name</th>
+                            <th>Program</th>
+                            <th>Year</th>
+                            <th>Section</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="enrolledBody">
+                        @if (enrolled.Any())
+                        {
+                            foreach (var s in enrolled)
+                            {
+                                var fullName = s.User != null
+                                ? $"{(s.User.LastName ?? "").ToUpper()}, {s.User.FirstName}"
+                                : "(no user)";
+                                <tr data-student-id="@s.StudentId">
+                                    <td>
+                                        <input class="form-check-input remove-checkbox"
+                                               type="checkbox"
+                                               name="RemoveStudentIds"
+                                               value="@s.StudentId" />
+                                    </td>
+                                    <td>@fullName</td>
+                                    <td>@(s.Program ?? "")</td>
+                                    <td>@(s.YearLevel ?? "")</td>
+                                    <td>@(s.Section ?? "")</td>
+                                    <td>@(s.User?.AccountStatus ?? "")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">No students yet.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Removal summary -->
+            <div id="removeSummary" class="alert alert-danger py-2 d-none border border-danger bg-danger bg-opacity-10" role="status" aria-live="polite">
+                <div class="d-flex align-items-center gap-2">
+                    <strong>Marked for deletion</strong>
+                    <span class="badge bg-white text-danger border border-danger" id="removeCount">0</span>
+                </div>
+                <div class="small text-danger mt-1">
+                    Checked students will be removed from this course when you click <strong>Save</strong>.
+                </div>
+                <div id="removeNames" class="small"></div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <div class="mt-3 d-flex gap-2">
+                <!-- Hidden inputs for AddStudentIds populated by the modal -->
+                <div id="addStudentsContainer"></div>
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== Add Students Modal ===== -->
+<div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Students to Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="addStudentsBody">
+                    <div class="text-center py-5" id="addSpinner">Loading…</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnCommitAdd" type="button" class="btn btn-primary">Add Selected</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/admin-assign.js" asp-append-version="true"></script>

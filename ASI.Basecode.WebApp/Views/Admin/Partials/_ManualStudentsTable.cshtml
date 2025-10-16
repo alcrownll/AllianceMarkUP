@@ -1,0 +1,176 @@
+﻿@using ASI.Basecode.Data.Models
+@model IEnumerable<Student>
+
+@{
+    int page = (int)(ViewBag.Page ?? 1);
+    int pageSize = (int)(ViewBag.PageSize ?? 10);
+    int total = (int)(ViewBag.Total ?? 0);
+    int pages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+
+    var start = total == 0 ? 0 : ((page - 1) * pageSize) + 1;
+    var end = Math.Min(page * pageSize, total);
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-warning mb-2">No students found outside the selected block.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th style="width:36px;">
+                        <input id="selectAllStudents" type="checkbox" class="form-check-input" aria-label="Select all students" />
+                    </th>
+                    <th>Name</th>
+                    <th>Program</th>
+                    <th>Year</th>
+                    <th>Section</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    var full = (s.User != null)
+                    ? $"{(s.User.LastName ?? "").ToUpper()}, {s.User.FirstName}"
+                    : "(no user)";
+
+                    <tr>
+                        <td>
+                            <input type="checkbox"
+                                   class="form-check-input student-checkbox"
+                                   name="SelectedStudentIds"
+                                   value="@s.StudentId"
+                                   aria-label="Select @full" />
+                        </td>
+                        <td>@full</td>
+                        <td>@(s.Program ?? "")</td>
+                        <td>@(s.YearLevel ?? "")</td>
+                        <td>@(s.Section ?? "")</td>
+                        <td>@(s.User?.AccountStatus ?? "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted">
+            Showing @start–@end of @total
+        </div>
+
+        <nav aria-label="Manual students pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(page <= 1 ? "disabled" : "")">
+                    <a class="page-link js-page" href="#" data-page="@(Math.Max(1, page - 1))">Prev</a>
+                </li>
+
+                @for (var i = 1; i <= pages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link js-page" href="#" data-page="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(page >= pages ? "disabled" : "")">
+                    <a class="page-link js-page" href="#" data-page="@(Math.Min(pages, page + 1))">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <style>
+        /* Row highlight when a student is selected */
+        #manualTableHost tr:has(.student-checkbox:checked) {
+            background: rgba(37, 99, 235, .06);
+        }
+    </style>
+
+    <script>
+        (function () {
+            // Elements we need (from the parent page)
+            const host  = document.getElementById('manualTableHost');
+            const spin  = document.getElementById('manualTableSpinner');
+            const selYr = document.getElementById('BlockYearLevel');
+            const selPg = document.getElementById('BlockProgramId');
+            const selSc = document.getElementById('BlockSection');
+
+            function showSpinner(on) { if (spin) spin.classList.toggle('d-none', !on); }
+
+            // Rewire "Select all" after each render
+            function wireSelectAll() {
+                const selectAll = document.getElementById('selectAllStudents');
+                if (selectAll) {
+                    selectAll.addEventListener('change', function () {
+                        document.querySelectorAll('#manualTableHost .student-checkbox')
+                            .forEach(cb => cb.checked = selectAll.checked);
+                    });
+                }
+            }
+
+            // Pagination for the *reset* state (no filters)
+            function wirePaginationForReset() {
+                document.querySelectorAll('#manualTableHost a.js-page').forEach(a => {
+                    a.addEventListener('click', async function (e) {
+                        e.preventDefault();
+                        const page = parseInt(this.getAttribute('data-page') || '1', 10);
+                        if (isNaN(page)) return;
+
+                        const url = new URL('@Url.Action("ManualTable", "AdminAssign")', window.location.origin);
+                        url.searchParams.set('page', String(page));
+                        // Do not include block filters — this keeps the reset state
+                        showSpinner(true);
+                        try {
+                            const resp = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                            const html = await resp.text();
+                            if (host) host.innerHTML = html;
+                        } catch (err) {
+                            console.error('Pagination load failed:', err);
+                        } finally {
+                            showSpinner(false);
+                        }
+                    });
+                });
+            }
+
+            // Reset function: clears Block Program/Year/Section UI and reloads table with defaults
+            async function resetManualFilters() {
+                // Reset the dropdowns visually
+                if (selYr) selYr.value = '';
+                if (selPg) selPg.selectedIndex = 0; // first option
+                if (selSc) { selSc.value = ''; selSc.disabled = true; }
+
+                // Fetch ManualTable with NO block filters (controller defaults kick in)
+                const url = new URL('@Url.Action("ManualTable", "AdminAssign")', window.location.origin);
+                showSpinner(true);
+                try {
+                    const resp = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const html = await resp.text();
+                    if (host) host.innerHTML = html;
+                } catch (e) {
+                    console.error('Failed to reset manual table:', e);
+                } finally {
+                    showSpinner(false);
+                    wireSelectAll();
+                    wirePaginationForReset();
+                }
+            }
+
+            // When Block Section is set back to "Select Section" => reset everything
+            if (selSc) {
+                selSc.addEventListener('change', function () {
+                    if ((this.value || '').trim() === '') {
+                        resetManualFilters();
+                    }
+                });
+            }
+
+            // Initial wiring for the current render
+            wireSelectAll();
+            wirePaginationForReset(); // harmless if filters weren't reset yet
+        })();
+    </script>
+}

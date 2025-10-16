@@ -1,0 +1,298 @@
+﻿@using ASI.Basecode.Data.Models
+@model AssignedCourse
+
+@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Assign Course";
+    ViewData["PageHeader"] = "Assign Course";
+
+    var courses = (IEnumerable<Course>)(ViewBag.Courses ?? Enumerable.Empty<Course>());
+    var programs = (IEnumerable<Program>)(ViewBag.Programs ?? Enumerable.Empty<Program>());
+    var teachers = (IEnumerable<Teacher>)(ViewBag.Teachers ?? Enumerable.Empty<Teacher>());
+    var students = (IEnumerable<Student>)(ViewBag.Students ?? Enumerable.Empty<Student>());
+
+    int pageIndex = (int)(ViewBag.Page ?? 1);
+    int pageSize = 10;
+    int total = (int)(ViewBag.Total ?? students.Count());
+    int pageCount = (int)Math.Ceiling(total / (double)pageSize);
+
+    string mode = (string)(ViewBag.Mode ?? "block"); 
+    string blockProgram = (string)(ViewBag.BlockProgram ?? "");
+    string blockYear = (string)(ViewBag.BlockYear ?? "");
+    string blockSection = (string)(ViewBag.BlockSection ?? "");
+    string status = (string)(ViewBag.FilterStatus ?? "Active");
+}
+
+<link rel="stylesheet" href="~/css/main-site.css" />
+
+<div class="container my-4">
+    <div class="profile-card">
+        @if (TempData["ImportOk"] != null)
+        {
+            <div class="alert alert-success mb-3">@TempData["ImportOk"]</div>
+        }
+        @if (TempData["ImportErr"] != null)
+        {
+            <div class="alert alert-danger  mb-3">@TempData["ImportErr"]</div>
+        }
+
+        <form asp-controller="AdminAssign" asp-action="Assign" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <!-- ===== COURSE INFO ===== -->
+            <div class="section-title mt-1">Course Information</div>
+
+            <div class="row g-3 uniform-row">
+                <div class="col-md-4">
+                    <label class="form-label">Course Code</label>
+                    <select id="CourseId" class="form-select" asp-for="CourseId" required>
+                        <option value="">-- Select --</option>
+                        @foreach (var c in courses.OrderBy(c => c.CourseCode))
+                        {
+                            <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits">@c.CourseCode</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Type</label>
+                    <select id="Type" class="form-select" asp-for="Type" required>
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Units</label>
+                    <input id="Units" class="form-control" asp-for="Units" readonly disabled/>
+                </div>
+            </div>
+
+            <!-- Wrap Program / School Year / Semester in a row -->
+            <div class="row g-3 uniform-row mt-0">
+                <div class="col-md-4">
+                    <label class="form-label">Program</label>
+                    <select class="form-select" asp-for="ProgramId" required>
+                        <option value="">-- Select Program --</option>
+                        @foreach (var p in programs.OrderBy(p => p.ProgramCode))
+                        {
+                            <option value="@p.ProgramId">@p.ProgramCode</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">School Year</label>
+                    @{
+                        var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear)
+                        ? "2025-2026"
+                        : Model.SchoolYear;
+                    }
+                    <input class="form-control"
+                           value="@syValue"
+                           disabled
+                           readonly />
+                    <input type="hidden" asp-for="SchoolYear" value="@syValue" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Semester</label>
+                    <select class="form-select" asp-for="Semester" required>
+                        <option value="">-- Select --</option>
+                        <option>1st Semester</option>
+                        <option>2nd Semester</option>
+                        <option>Summer</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 uniform-row mt-0">
+                <div class="col-md-4"> 
+                    <label class="form-label d-flex justify-content-between"> 
+                        <span>EDP Code</span><span class="text-muted small">optional</span> 
+                        </label> <input class="form-control" asp-for="EDPCode" /> 
+                        <small class="tiny-hint">Auto-generates if left blank.</small> 
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Status</span><span class="text-muted small">auto</span>
+                    </label>
+                    @{
+                        bool isInactive = string.IsNullOrWhiteSpace(Model?.Status) || Model.Status == "Inactive";
+                        var postedStatus = isInactive ? "Inactive" : "Active";
+                    }
+
+                    <select class="form-select" disabled aria-disabled="true">
+                        @if (isInactive)
+                        {
+                            <option value="Inactive" selected>Inactive</option>
+                            <option value="Active">Active</option>
+                        }
+                        else
+                        {
+                            <option value="Inactive">Inactive</option>
+                            <option value="Active" selected>Active</option>
+                        }
+                    </select>
+
+                    <input type="hidden" asp-for="Status" value="@postedStatus" />
+
+                    <small class="tiny-hint">
+                        Defaults to <strong>Inactive</strong>. It will become <strong>Active</strong> once a room is assigned to this course.
+                    </small>
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <!-- ===== TEACHER ===== -->
+            <div class="section-title">Teacher</div>
+            <div class="row g-3 uniform-row">
+                <div class="col-md-6">
+                    <label class="form-label">Name</label>
+                    <select class="form-select" asp-for="TeacherId" id="TeacherId" required>
+                        <option value="">-- Select --</option>
+                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t => t.User.FirstName))
+                        {
+                            <option value="@t.TeacherId">@($"{t.User.LastName}, {t.User.FirstName}")</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <!-- ===== STUDENTS ===== -->
+            <div class="section-title">Students</div>
+
+            <!-- BLOCK SECTION CONTROLS -->
+            <div class="mt-2" id="blockFields">
+                <input type="hidden" id="ModeHidden" name="mode" value="@mode" />
+                <input type="hidden" name="page" value="@pageIndex" />
+                <input type="hidden" name="pageSize" value="10" />   <!-- ✅ FIXED: close the tag -->
+                <input type="hidden" name="status" value="@status" />
+
+                <div class="row g-3 uniform-row">
+                    <div class="col-md-4">
+                        <label class="form-label">Block Program</label>
+                        <select class="form-select" name="blockProgram" id="BlockProgramId">
+                            @if ((string.IsNullOrEmpty(blockProgram)) || (blockProgram == "BSCS"))
+                            {
+                                <option value="BSCS" selected>BSCS</option>
+                            }
+                            else
+                            {
+                                <option value="BSCS">BSCS</option>
+                            }
+
+                            @if (blockProgram == "BSIT")
+                            {
+                                <option value="BSIT" selected>BSIT</option>
+                            }
+                            else
+                            {
+                                <option value="BSIT">BSIT</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Block Year Level</label>
+                        <select class="form-select" name="blockYear" id="BlockYearLevel">
+                            <option value="">-- Select --</option>
+                            @if (blockYear == "1st Year")
+                            {
+                                <option value="1st Year" selected>1st Year</option>
+                            }
+                            else
+                            {
+                                <option value="1st Year">1st Year</option>
+                            }
+                            @if (blockYear == "2nd Year")
+                            {
+                                <option value="2nd Year" selected>2nd Year</option>
+                            }
+                            else
+                            {
+                                <option value="2nd Year">2nd Year</option>
+                            }
+                            @if (blockYear == "3rd Year")
+                            {
+                                <option value="3rd Year" selected>3rd Year</option>
+                            }
+                            else
+                            {
+                                <option value="3rd Year">3rd Year</option>
+                            }
+                            @if (blockYear == "4th Year")
+                            {
+                                <option value="4th Year" selected>4th Year</option>
+                            }
+                            else
+                            {
+                                <option value="4th Year">4th Year</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Block Section</label>
+                        <select class="form-select" name="blockSection" id="BlockSection" disabled>
+                            <option value="">Select Section</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" id="btnResetBlockFilters" class="btn btn-outline-secondary btn-sm">
+                        Reset block filters
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center gap-4 mt-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="extraOff" name="modeRadio" value="block" @(mode == "block" ? "checked" : "")>
+                        <label class="form-check-label" for="extraOff">Block only</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="extraOn" name="modeRadio" value="manual" @(mode == "manual" ? "checked" : "")>
+                        <label class="form-check-label" for="extraOn">Add more students not in block section</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student TABLE (AJAX-rendered) -->
+            <div id="manualFields" class="mt-3" style="display:@(mode == "manual" ? "block" : "none")">
+                <div class="alert alert-info py-2">
+                    <div class="small mb-0">
+                        This table shows <strong>only students NOT in the selected block.</strong>
+                    </div>
+                </div>
+
+                <div class="position-relative">
+                    <div id="manualTableSpinner" class="d-none" style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6);z-index:5;">
+                        <div class="spinner-border" role="status" aria-label="Loading manual table"></div>
+                    </div>
+
+                    <div id="manualTableHost">
+                        @await Html.PartialAsync("~/Views/Admin/Partials/_ManualStudentsTable.cshtml", students)
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <div class="mt-3 d-flex gap-2">
+                <input type="hidden" name="blockProgram" value="@blockProgram" />
+                <input type="hidden" name="blockYear" value="@blockYear" />
+                <input type="hidden" name="blockSection" value="@blockSection" />
+
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a class="btn btn-outline-secondary" asp-controller="AdminAssign" asp-action="Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="~/js/admin-assign.js" asp-append-version="true"></script>

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Interfaces
@@ -16,5 +17,8 @@ namespace ASI.Basecode.Data.Interfaces
         void AddAssignedCourse(AssignedCourse assignedCourse);
         void UpdateAssignedCourse(AssignedCourse assignedCourse);
         void DeleteAssignedCourse(int assignedCourseId);
+
+        void AddAssignedCourseNoSave(AssignedCourse assignedCourse);
+        Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

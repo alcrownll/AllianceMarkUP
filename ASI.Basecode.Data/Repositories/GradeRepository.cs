@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
@@ -58,5 +59,15 @@ namespace ASI.Basecode.Data.Repositories
                 UnitOfWork.SaveChanges();
             }
         }
+        public void AddGradesNoSave(IEnumerable<Grade> grades)
+        {
+            this.GetDbSet<Grade>().AddRange(grades);
+        }
+
+        public async Task SaveChangesAsync(CancellationToken ct = default)
+        {
+            await UnitOfWork.SaveChangesAsync(ct);
+        }
+
     }
 }
