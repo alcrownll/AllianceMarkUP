@@ -290,11 +290,7 @@ body {
     }
 }
 
-/* generic modal styles kept here as well */
-/* ... (keep your YT modal block if used elsewhere) */
-
-
-/* =================== YT-STYLE MODAL (generic) =================== */
+/* =================== SEND EMAIL RESET PASS MODAL =================== */
 .yt-modal[hidden] {
     display: none !important;
 }

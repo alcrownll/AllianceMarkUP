@@ -13,36 +13,34 @@
     <!-- RIGHT: Name -->
     <div class="col-md-9">
         <label class="form-label">Name</label>
-        <div class="row g-3 uniform-row">
-            <!-- LEFT COLUMN: Last Name + First Name -->
+
+        <div class="row g-3">
+            <!-- LEFT: Family Name (top) + First Name (bottom) -->
             <div class="col-md-6">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <input class="form-control" asp-for="LastName" />
-                        <div class="caption">(Family Name)</div>
-                    </div>
-                    <div class="col-md-6">
-                        <input class="form-control" asp-for="FirstName" />
-                        <div class="caption">(First Name)</div>
-                    </div>
+                <div class="mb-3">
+                    <input class="form-control" asp-for="LastName" />
+                    <div class="caption">(Family Name)</div>
+                </div>
+                <div>
+                    <input class="form-control" asp-for="FirstName" />
+                    <div class="caption">(First Name)</div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: Middle Name + Suffix -->
+            <!-- RIGHT: Middle Name (top) + Suffix (bottom) -->
             <div class="col-md-6">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <input class="form-control" asp-for="MiddleName" />
-                        <div class="caption">(Middle Name)</div>
-                    </div>
-                    <div class="col-md-6">
-                        <input class="form-control" asp-for="Suffix" />
-                        <div class="caption">(Suffix)</div>
-                    </div>
+                <div class="mb-3">
+                    <input class="form-control" asp-for="MiddleName" />
+                    <div class="caption">(Middle Name)</div>
+                </div>
+                <div>
+                    <input class="form-control" asp-for="Suffix" />
+                    <div class="caption">(Suffix)</div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <hr class="section-divider" />

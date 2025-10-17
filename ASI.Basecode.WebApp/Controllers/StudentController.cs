@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,6 +17,7 @@ using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = "Student")]
     public class StudentController : Controller
     {
         private readonly IGradeRepository _gradeRepository;
@@ -29,7 +29,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IHttpContextAccessor _httpContext;
         private readonly INotificationService _notificationService;
         private readonly IStudentDashboardService _studentDashboardService;
-        private readonly IStudyLoadService _studyLoadService;   
+        private readonly IStudyLoadService _studyLoadService;
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -41,7 +41,7 @@ namespace ASI.Basecode.WebApp.Controllers
             IHttpContextAccessor httpContext,
             INotificationService notificationService,
             IStudentDashboardService studentDashboardService,
-            IStudyLoadService studyLoadService)              
+            IStudyLoadService studyLoadService)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -52,13 +52,12 @@ namespace ASI.Basecode.WebApp.Controllers
             _httpContext = httpContext;
             _notificationService = notificationService;
             _studentDashboardService = studentDashboardService;
-            _studyLoadService = studyLoadService;             
+            _studyLoadService = studyLoadService;
         }
 
         // --------------------------------------------------------------------
         // DASHBOARD
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         public async Task<IActionResult> Dashboard()
         {
             ViewData["PageHeader"] = "Dashboard";
@@ -74,7 +73,6 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // PROFILE
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
@@ -88,7 +86,6 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Student")]
         public async Task<IActionResult> SaveProfile(StudentProfileViewModel vm)
         {
             if (!ModelState.IsValid)
@@ -101,9 +98,8 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --------------------------------------------------------------------
-        // STUDY LOAD  
+        // STUDY LOAD
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         [HttpGet]
         public async Task<IActionResult> StudyLoad(string term = null)
         {
@@ -128,7 +124,6 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // GRADES
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         public async Task<IActionResult> Grades(string schoolYear = null, string semester = null)
         {
             ViewData["PageHeader"] = "Grades";
@@ -259,19 +254,16 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // CALENDAR & NOTIFICATIONS
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         public IActionResult Calendar()
         {
             ViewData["PageHeader"] = "Calendar";
             return View("~/Views/Shared/Partials/Calendar.cshtml");
         }
 
-        [Authorize(Roles = "Student")]
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Student")]
         public IActionResult MarkNotificationRead(int id)
         {
             var userId = _profileService.GetCurrentUserId();
@@ -281,7 +273,6 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Student")]
         public IActionResult MarkAllNotificationsRead()
         {
             var userId = _profileService.GetCurrentUserId();
@@ -292,7 +283,6 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // PROSPECTUS DOWNLOAD (BSCS / BSIT)
         // --------------------------------------------------------------------
-        [Authorize(Roles = "Student")]
         [HttpGet("/Student/DownloadProspectus")]
         public async Task<IActionResult> DownloadProspectus([FromQuery] string program = null)
         {

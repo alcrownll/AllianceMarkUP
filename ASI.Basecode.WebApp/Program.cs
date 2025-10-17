@@ -1,9 +1,12 @@
-﻿using ASI.Basecode.Services.Interfaces;
+﻿using ASI.Basecode.Data.Models;
+using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.Manager;
 using ASI.Basecode.Services.Services;
 using ASI.Basecode.WebApp;
 using ASI.Basecode.WebApp.Extensions.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -29,6 +32,8 @@ builder.Logging
     .AddConsole()
     .AddDebug();
 
+PasswordManager.SetUp(builder.Configuration.GetSection("TokenAuthentication"));
+
 // Services via your StartupConfigurer (keeps your existing pattern)
 var configurer = new StartupConfigurer(builder.Configuration);
 configurer.ConfigureServices(builder.Services);
@@ -36,6 +41,7 @@ configurer.ConfigureServices(builder.Services);
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
 builder.Services.AddScoped<IStudyLoadService, StudyLoadService>();
 builder.Services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 
 // ✅ REQUIRED because TeacherController injects IHttpContextAccessor
 builder.Services.AddHttpContextAccessor();

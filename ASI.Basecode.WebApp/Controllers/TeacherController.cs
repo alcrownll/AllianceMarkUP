@@ -1,21 +1,19 @@
 ﻿using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
-using ASI.Basecode.Services.Services;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using ClosedXML.Excel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
+    [Authorize(Roles = "Teacher")]
     public class TeacherController : Controller
     {
         private readonly IProfileService _profileService;
@@ -35,7 +33,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _dashboardService = dashboardService;
         }
 
-        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Dashboard()
         {
             ViewData["PageHeader"] = "Teacher Dashboard";
@@ -51,7 +48,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("TeacherDashboard", vm); // uses your existing Razor view
         }
 
-        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
@@ -64,7 +60,6 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> SaveProfile(TeacherProfileViewModel vm)
         {
             if (!ModelState.IsValid)
@@ -78,7 +73,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Profile));
         }
 
-        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> AssignedCourses(string semester = null, string program = null,
             int? yearLevel = null, string searchName = null, string searchId = null)
         {
@@ -133,7 +127,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         [HttpGet]
         public async Task<IActionResult> GetStudentsForCourse(int assignedCourseId, string examType = "Prelim")
         {
@@ -152,9 +145,8 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         [HttpPost]
-        public async Task<IActionResult> UpdateGrades([FromBody] List<StudentGradeUpdateModel> grades)
+        public async Task<IActionResult> UpdateGrades([FromBody] System.Collections.Generic.List<StudentGradeUpdateModel> grades)
         {
             try
             {
@@ -175,7 +167,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         [HttpPost]
         public async Task<IActionResult> UploadExcelGrades(IFormFile excelFile, int assignedCourseId)
         {
@@ -231,7 +222,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         [HttpGet]
         public async Task<IActionResult> DownloadGradeTemplate(int assignedCourseId)
         {
@@ -302,7 +292,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         [HttpGet]
         public async Task<IActionResult> SearchStudents(string searchName = null, string searchId = null,
             string program = null, int? yearLevel = null)
@@ -322,25 +311,20 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        [Authorize(Roles = "Teacher")]
         public IActionResult Calendar()
         {
             return RedirectToAction("Index", "Calendar");
         }
 
-        [Authorize(Roles = "Teacher")]
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 
-        //Logout
-
+        // Logout
         [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync("ASI_Basecode");
             return RedirectToAction("TeacherLogin", "Login");
         }
-
-        // REMOVED TEMPORARY SEED DATA METHOD, don't bring it back pls.
 
         #region Private Helper Methods
 
