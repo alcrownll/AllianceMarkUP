@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
@@ -43,6 +44,16 @@ namespace ASI.Basecode.Data.Repositories
                 this.GetDbSet<AssignedCourse>().Remove(ac);
                 UnitOfWork.SaveChanges();
             }
+        }
+
+        public void AddAssignedCourseNoSave(AssignedCourse assignedCourse)
+        {
+            this.GetDbSet<AssignedCourse>().Add(assignedCourse);
+        }
+
+        public async Task SaveChangesAsync(CancellationToken ct = default)
+        {
+            await UnitOfWork.SaveChangesAsync(ct);
         }
     }
 }

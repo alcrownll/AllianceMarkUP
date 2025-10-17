@@ -117,7 +117,6 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
 
-        // ✅ Calendar (school events, deadlines)
         [Authorize(Roles = "Admin")]
         public IActionResult Calendar()
         {
