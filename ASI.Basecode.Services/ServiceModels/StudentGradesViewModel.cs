@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace ASI.Basecode.WebApp.Models
+namespace ASI.Basecode.Services.ServiceModels
 {
     public class StudentGradesViewModel
     {

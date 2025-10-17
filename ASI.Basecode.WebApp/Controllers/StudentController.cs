@@ -2,6 +2,7 @@
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using ASI.Basecode.Services.Services;
 using ASI.Basecode.WebApp.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
@@ -30,6 +32,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly INotificationService _notificationService;
         private readonly IStudentDashboardService _studentDashboardService;
         private readonly IStudyLoadService _studyLoadService;
+        private readonly IStudentGradesService _studentGradesService;
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -41,7 +44,8 @@ namespace ASI.Basecode.WebApp.Controllers
             IHttpContextAccessor httpContext,
             INotificationService notificationService,
             IStudentDashboardService studentDashboardService,
-            IStudyLoadService studyLoadService)
+            IStudyLoadService studyLoadService,
+            IStudentGradesService studentGradesService) // <-- inject)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -53,6 +57,7 @@ namespace ASI.Basecode.WebApp.Controllers
             _notificationService = notificationService;
             _studentDashboardService = studentDashboardService;
             _studyLoadService = studyLoadService;
+            _studentGradesService = studentGradesService; // <-- store
         }
 
         // --------------------------------------------------------------------
@@ -124,7 +129,7 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // GRADES
         // --------------------------------------------------------------------
-        public async Task<IActionResult> Grades(string schoolYear = null, string semester = null)
+        public async Task<IActionResult> Grades(string schoolYear = null, string semester = null, CancellationToken ct = default)
         {
             ViewData["PageHeader"] = "Grades";
 
@@ -134,121 +139,13 @@ namespace ASI.Basecode.WebApp.Controllers
 
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
-
-            var defaultSchoolYear = GetCurrentSchoolYear();
-            var viewModel = new StudentGradesViewModel
-            {
-                StudentName = user != null ? $"{user.FirstName} {user.LastName}" : "Student",
-                SchoolYear = defaultSchoolYear
-            };
+                .FirstOrDefaultAsync(u => u.IdNumber == idNumber, ct);
 
             if (user == null)
-                return View(viewModel);
+                return View(new StudentGradesViewModel { StudentName = "Student", SchoolYear = GetCurrentSchoolYear() });
 
-            var student = await _studentRepository.GetStudents()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.UserId == user.UserId);
-
-            if (student == null)
-                return View(viewModel);
-
-            viewModel.Program = student.Program;
-            viewModel.Department = student.Department;
-            viewModel.YearLevel = FormatYearLevel(student.YearLevel);
-
-            var grades = await _gradeRepository.GetGrades()
-                .Where(g => g.StudentId == student.StudentId)
-                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Course)
-                .Include(g => g.AssignedCourse).ThenInclude(ac => ac.Teacher).ThenInclude(t => t.User)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var gradeRows = grades.Select(g =>
-            {
-                var assignedCourse = g.AssignedCourse;
-                var course = assignedCourse?.Course;
-                var teacherUser = assignedCourse?.Teacher?.User;
-                var rowSemester = assignedCourse?.Semester ?? "N/A"; // e.g., "1st Semester"
-                var rowSchoolYear = assignedCourse?.SchoolYear ?? defaultSchoolYear; // e.g., "2025-2026"
-                var remarks = CalculateRemarksFromGrades(g.Prelims, g.Midterm, g.SemiFinal, g.Final);
-                return new StudentGradeRowViewModel
-                {
-                    SubjectCode = assignedCourse?.EDPCode,
-                    Description = course?.Description,
-                    Instructor = teacherUser != null ? $"{teacherUser.FirstName} {teacherUser.LastName}" : "N/A",
-                    Type = assignedCourse?.Type,
-                    Units = course?.TotalUnits ?? assignedCourse?.Units ?? 0,
-                    Prelims = g.Prelims,
-                    Midterm = g.Midterm,
-                    SemiFinal = g.SemiFinal,
-                    Final = g.Final,
-                    Remarks = remarks,
-                    Semester = rowSemester,
-                    SchoolYear = rowSchoolYear
-                };
-            }).ToList();
-
-            if (!gradeRows.Any())
-                return View(viewModel);
-
-            var availableSchoolYears = gradeRows
-                .Select(r => r.SchoolYear)
-                .Where(sy => !string.IsNullOrWhiteSpace(sy))
-                .Distinct()
-                .OrderBy(sy => sy)
-                .ToList();
-
-            if (!availableSchoolYears.Any())
-                availableSchoolYears.Add(defaultSchoolYear);
-
-            var selectedSchoolYear = availableSchoolYears
-                .FirstOrDefault(sy => string.Equals(sy, schoolYear, StringComparison.OrdinalIgnoreCase))
-                ?? availableSchoolYears.FirstOrDefault();
-
-            var availableSemesters = gradeRows
-                .Where(r => string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase))
-                .Select(r => r.Semester)
-                .Where(se => !string.IsNullOrWhiteSpace(se))
-                .Distinct()
-                .OrderBy(se => se)
-                .ToList();
-
-            if (!availableSemesters.Any())
-            {
-                availableSemesters = gradeRows
-                    .Select(r => r.Semester)
-                    .Where(se => !string.IsNullOrWhiteSpace(se))
-                    .Distinct()
-                    .OrderBy(se => se)
-                    .ToList();
-            }
-
-            var selectedSemester = availableSemesters
-                .FirstOrDefault(se => string.Equals(se, semester, StringComparison.OrdinalIgnoreCase))
-                ?? availableSemesters.FirstOrDefault();
-
-            var filteredGrades = gradeRows
-                .Where(r =>
-                    (string.IsNullOrWhiteSpace(selectedSchoolYear) || string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase)) &&
-                    (string.IsNullOrWhiteSpace(selectedSemester) || string.Equals(r.Semester, selectedSemester, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
-
-            var finals = filteredGrades
-                .Where(r => r.Final.HasValue)
-                .Select(r => r.Final.Value)
-                .ToList();
-
-            viewModel.AvailableSchoolYears = availableSchoolYears;
-            viewModel.AvailableSemesters = availableSemesters;
-            viewModel.SelectedSchoolYear = selectedSchoolYear;
-            viewModel.SelectedSemester = selectedSemester;
-            viewModel.SchoolYear = selectedSchoolYear ?? defaultSchoolYear;
-            viewModel.Semester = selectedSemester ?? viewModel.Semester;
-            viewModel.Grades = filteredGrades;
-            viewModel.Gpa = finals.Any() ? decimal.Round(finals.Average(), 2) : (decimal?)null;
-
-            return View(viewModel);
+            var vm = await _studentGradesService.BuildAsync(user.UserId, schoolYear, semester, ct);
+            return View(vm);
         }
 
         // --------------------------------------------------------------------
