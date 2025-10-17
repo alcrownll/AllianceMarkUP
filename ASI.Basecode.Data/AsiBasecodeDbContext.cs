@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data
 {
@@ -258,13 +260,12 @@ namespace ASI.Basecode.Data
             // YEARTERM
             modelBuilder.Entity<YearTerm>(entity =>
             {
+                entity.ToTable("YearTerm");                 // <-- add this line
                 entity.HasKey(e => e.YearTermId);
                 entity.Property(e => e.YearLevel).IsRequired();
                 entity.Property(e => e.TermNumber).IsRequired();
-
                 entity.HasIndex(e => new { e.YearLevel, e.TermNumber }).IsUnique();
 
-                // Seed Year 1..4 × Term 1..2
                 entity.HasData(
                     new YearTerm { YearTermId = 1, YearLevel = 1, TermNumber = 1 },
                     new YearTerm { YearTermId = 2, YearLevel = 1, TermNumber = 2 },
@@ -344,5 +345,22 @@ namespace ASI.Basecode.Data
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries<User>())
+            {
+                if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                {
+                    if (entry.Entity.CreatedAt.Kind == DateTimeKind.Utc)
+                        entry.Entity.CreatedAt = DateTime.SpecifyKind(entry.Entity.CreatedAt, DateTimeKind.Unspecified);
+
+                    if (entry.Entity.UpdatedAt.Kind == DateTimeKind.Utc)
+                        entry.Entity.UpdatedAt = DateTime.SpecifyKind(entry.Entity.UpdatedAt, DateTimeKind.Unspecified);
+                }
+            }
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
     }
 }

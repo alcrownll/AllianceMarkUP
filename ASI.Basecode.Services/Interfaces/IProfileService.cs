@@ -17,5 +17,6 @@ namespace ASI.Basecode.Services.Interfaces
         Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input);
         Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId);
         Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input);
+
     }
 }

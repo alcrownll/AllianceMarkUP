@@ -4,7 +4,11 @@
     ViewData["Title"] = "Profile";
     ViewData["PageHeader"] = "Profile";
 }
-<link rel="stylesheet" href="~/css/user-profile.css" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/user-profile.css" />
+    <link rel="stylesheet" href="~/css/user-profile-modal.css" />
+}
+
 
 <div class="container my-4">
     <div class="profile-card">
@@ -60,12 +64,13 @@
                     <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
                     <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
                 </div>
->
-                <a asp-controller="Account"
-                   asp-action="ChangePassword"
-                   class="btn btn-primary ms-auto">
+
+                <button type="button"
+                        class="btn btn-primary ms-auto"
+                        data-bs-toggle="modal"
+                        data-bs-target="#changePasswordModal">
                     Change Password
-                </a>
+                </button>
             </div>
         </form>
     </div>
@@ -79,12 +84,10 @@
             const btnSave = document.getElementById('btnSave');
             const btnCancel = document.getElementById('btnCancel');
 
-            // Avatar elems (from the shared partial)
             const avatarInput = document.getElementById('avatarInput');
             const avatarPreview = document.getElementById('avatarPreview');
 
             function setFormEditable(isEditable) {
-                // Enable/disable all editable fields except those explicitly static/locked
                 const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
                 fields.forEach(el => {
                     const isHidden = el.type === 'hidden';
@@ -96,7 +99,6 @@
                     else el.setAttribute('aria-disabled', 'true');
                 });
 
-                // Buttons
                 btnEdit.classList.toggle('d-none', isEditable);
                 btnSave.classList.toggle('d-none', !isEditable);
                 btnCancel.classList.toggle('d-none', !isEditable);
@@ -106,7 +108,6 @@
 
             function resetToInitial() {
                 form.reset();
-                // Restore avatar preview if model had an existing picture
                 if (avatarPreview) {
                     const existing = '@(Model.ProfilePictureUrl ?? "")';
                     if (existing) {
@@ -119,13 +120,11 @@
                 }
             }
 
-            // Initial: read-only (match Student behavior)
             setFormEditable(false);
 
             btnEdit.addEventListener('click', () => setFormEditable(true));
             btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
 
-            // Avatar keyboard interaction + live preview (only when enabled)
             if (avatarInput && avatarPreview) {
                 avatarPreview.addEventListener('keydown', function(e){
                     if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
@@ -143,7 +142,6 @@
                     reader.readAsDataURL(file);
                 });
 
-                // Initial preview if picture exists
                 var url = '@(Model.ProfilePictureUrl ?? "")';
                 if (url) {
                     avatarPreview.style.backgroundImage = `url('${url}')`;
@@ -152,4 +150,8 @@
             }
         })();
     </script>
+}
+
+@section Modals {
+    @await Html.PartialAsync("~/Views/Shared/Partials/_ChangePasswordModal.cshtml")
 }

@@ -1,5 +1,4 @@
-﻿<!-- _MainLayout.cshtml -->
-@using static ASI.Basecode.Resources.Views.Screen
+﻿@using static ASI.Basecode.Resources.Views.Screen
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -118,7 +117,7 @@
     <!-- Floating cursor-follow label (global) -->
     <div id="hoverLabel" role="status" aria-live="polite" aria-hidden="true"></div>
 
+    @await RenderSectionAsync("Modals", required: false)   <!-- ⬅ added -->
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>

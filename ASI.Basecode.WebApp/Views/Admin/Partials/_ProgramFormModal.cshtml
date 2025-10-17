@@ -1,63 +1,49 @@
-﻿@* Step 1: Program Basic Details *@
+﻿@* ADD PROGRAM MODAL *@
 <div class="modal fade" id="addProgramModal" tabindex="-1" aria-labelledby="addProgramLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content shadow">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addProgramLabel">Add Program — Basic Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content shadow-sm border-0 rounded-3">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-semibold" id="addProgramLabel">
+                    <i class="bi bi-journal-plus me-2"></i> Add Program
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form id="addProgramForm" novalidate>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        Step 1 of 2: Enter the program code and name before proceeding to build the curriculum.
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">
+                        Fill in the program’s basic details. Once added, you can assign courses to it.
                     </p>
 
                     <div class="row g-3">
                         <!-- Program Code -->
                         <div class="col-sm-5">
-                            <label class="form-label">Code <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium">Program Code <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="Code" placeholder="BSCS" maxlength="20" required>
                             <div class="invalid-feedback">Program code is required.</div>
                         </div>
 
                         <!-- Program Name -->
                         <div class="col-sm-7">
-                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium">Program Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="Name"
                                    placeholder="Bachelor of Science in Computer Science"
                                    maxlength="150" required>
                             <div class="invalid-feedback">Program name is required.</div>
                         </div>
-
-                        <!-- Notes -->
-                        <div class="col-12">
-                            <label class="form-label">Description / Notes</label>
-                            <textarea class="form-control" name="Notes" rows="2"
-                                      placeholder="Brief description or internal notes"></textarea>
-                        </div>
-
-                        <!-- Status -->
-                        <div class="col-12 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="IsActive" name="IsActive" disabled>
-                                <label class="form-check-label" for="IsActive">
-                                    Active (will be set after curriculum is completed)
-                                </label>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- inline error -->
-                    <div id="addProgramError" class="text-danger small mt-2" style="display:none;"></div>
-
-                    <!-- store program id for step 2 -->
-                    <input type="hidden" id="ProgramId" />
+                    <!-- Inline error message -->
+                    <div id="addProgramError" class="text-danger small mt-3" style="display:none;"></div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="btnNextProgram">Next</button>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnAddProgram">
+                        <i class="bi bi-plus-lg me-1"></i> Add Program
+                    </button>
                 </div>
             </form>
         </div>
@@ -65,74 +51,60 @@
 </div>
 
 <script>
-    // In-memory prospectus (Option C). If you already defined this elsewhere, keep one copy only.
-    window.prospectus = window.prospectus || {
-      code: "", name: "", notes: "",
-      years: [
-        { terms: [ { courses: [] }, { courses: [] } ] },
-        { terms: [ { courses: [] }, { courses: [] } ] },
-        { terms: [ { courses: [] }, { courses: [] } ] },
-        { terms: [ { courses: [] }, { courses: [] } ] }
-      ]
-    };
-
     (function () {
-      const form   = document.getElementById('addProgramForm');
-      const btn    = document.getElementById('btnNextProgram');
-      const errEl  = document.getElementById('addProgramError');
+        const form  = document.getElementById('addProgramForm');
+        const errEl = document.getElementById('addProgramError');
+        const btn   = document.getElementById('btnAddProgram');
+        const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
 
-      function showErr(m){ errEl.textContent = m||""; errEl.style.display = m ? "block" : "none"; }
+        form.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            showErr('');
+            form.classList.remove('was-validated');
 
-      btn?.addEventListener('click', () => {
-        showErr('');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
 
-        // HTML5 validation only
-        if (!form.checkValidity()) {
-          form.classList.add('was-validated');
-          return;
-        }
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
-        // Copy fields into client-side state (NO server call here)
-        const fd = new FormData(form);
-        window.prospectus.code  = (fd.get('Code')  || '').toString().trim();
-        window.prospectus.name  = (fd.get('Name')  || '').toString().trim();
-        window.prospectus.notes = (fd.get('Notes') || '').toString();
+            try {
+                const fd = new FormData();
+                fd.append('code', (form.querySelector('[name="Code"]').value || '').trim());
+                fd.append('name', (form.querySelector('[name="Name"]').value || '').trim());
+                fd.append('notes', ''); // optional, backend accepts it
 
-        // ---- BRIDGE: mirror into PROGRAM_DRAFT for Step 2 + Finish ----
-        window.PROGRAM_DRAFT = window.PROGRAM_DRAFT || { program: { code:'', name:'', notes:'', years: 4 }, years: [] };
-        if (!Array.isArray(window.PROGRAM_DRAFT.years) || window.PROGRAM_DRAFT.years.length === 0) {
-          window.PROGRAM_DRAFT.years = [
-            { year: 1, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
-            { year: 2, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
-            { year: 3, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] },
-            { year: 4, terms: [ { term: 1, courses: [] }, { term: 2, courses: [] } ] }
-          ];
-        }
-        window.PROGRAM_DRAFT.program.code  = window.prospectus.code;
-        window.PROGRAM_DRAFT.program.name  = window.prospectus.name;
-        window.PROGRAM_DRAFT.program.notes = window.prospectus.notes;
-        window.PROGRAM_DRAFT.program.years = 4; // adjust if you add a Years selector later
-        // ---------------------------------------------------------------
+                // Direct endpoint, matches [Route("admin/programs")] + [HttpPost("create")]
+                const res = await fetch('/admin/programs/create', {
+                    method: 'POST',
+                    body: fd
+                });
 
-        // Fill Step 2 header summary
-        const sumCode = document.getElementById('sumCode');
-        const sumName = document.getElementById('sumName');
-        if (sumCode) sumCode.textContent = window.prospectus.code || '—';
-        if (sumName) sumName.textContent = window.prospectus.name || '—';
+                if (!res.ok) throw new Error(`Server returned ${res.status}`);
 
-        // Open Step 2
-        const m1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('addProgramModal'));
-        const m2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
-        m1.hide();
-        setTimeout(() => m2.show(), 150);
+                const data = await res.json();
 
-        // If you have a render function for the term tables, call it
-        if (typeof renderAllTermTables === 'function') renderAllTermTables();
+                if (data.ok) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addProgramModal'));
+                    modal.hide();
+                    form.reset();
 
-        // (Optional) quick debug in console
-        // console.log('prospectus:', window.prospectus);
-        // console.log('PROGRAM_DRAFT.program:', window.PROGRAM_DRAFT.program);
-      });
+                    // Refresh program list if a loader exists
+                    if (typeof loadProgramTable === 'function') loadProgramTable();
+                } else {
+                    showErr(data.message || 'Failed to add program.');
+                }
+            }
+            catch (err) {
+                console.error(err);
+                showErr('An unexpected error occurred. Please try again.');
+            }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add Program';
+            }
+        });
     })();
 </script>
-

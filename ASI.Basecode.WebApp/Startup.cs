@@ -114,6 +114,7 @@ namespace ASI.Basecode.WebApp
             this.ConfigureOtherServices();
 
             services.AddScoped<IStudyLoadService, StudyLoadService>();
+            services.AddScoped<IStudentGradesService, StudentGradesService>();
             services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 
             // ✅✅ ADD THIS LINE (register the SMTP email sender)

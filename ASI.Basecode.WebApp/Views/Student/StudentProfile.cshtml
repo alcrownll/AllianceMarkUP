@@ -4,7 +4,11 @@
     ViewData["Title"] = "Profile";
     ViewData["PageHeader"] = "Profile";
 }
-<link rel="stylesheet" href="~/css/user-profile.css" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/user-profile.css" />
+    <link rel="stylesheet" href="~/css/user-profile-modal.css" />
+}
+
 
 <div class="container my-4">
     <div class="profile-card">
@@ -29,56 +33,29 @@
                 <div class="row g-3 uniform-row">
                     <div class="col-md-3">
                         <label class="form-label">Admission Type</label>
-                        <input type="text"
-                               class="form-control"
-                               value="@Model.AdmissionType"
-                               disabled
-                               aria-disabled="true"
-                               tabindex="-1"
-                               data-locked="true" />
+                        <input class="form-control" value="@Model.AdmissionType" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="AdmissionType" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Department</label>
-                        <input type="text"
-                               class="form-control"
-                               value="@Model.Department"
-                               disabled
-                               aria-disabled="true"
-                               tabindex="-1"
-                               data-locked="true" />
+                        <input class="form-control" value="@Model.Department" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="Department" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Program</label>
-                        <input type="text"
-                               class="form-control"
-                               value="@Model.Program"
-                               disabled
-                               aria-disabled="true"
-                               tabindex="-1"
-                               data-locked="true" />
+                        <input class="form-control" value="@Model.Program" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="Program" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Year Level</label>
-                        <input type="text"
-                               class="form-control"
-                               value="@Model.YearLevel"
-                               disabled
-                               aria-disabled="true"
-                               tabindex="-1"
-                               data-locked="true" />
+                        <input class="form-control" value="@Model.YearLevel" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="YearLevel" data-locked="true" />
                     </div>
                 </div>
             </div>
-
-
-
 
             @* Shared profile fields (name, email, address, DateOfBirth, avatar, etc.) *@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
@@ -90,11 +67,12 @@
                     <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
                 </div>
 
-                <a asp-controller="Account"
-                   asp-action="ChangePassword"
-                   class="btn btn-primary ms-auto">
+                <button type="button"
+                        class="btn btn-primary ms-auto"
+                        data-bs-toggle="modal"
+                        data-bs-target="#changePasswordModal">
                     Change Password
-                </a>
+                </button>
             </div>
         </form>
     </div>
@@ -108,32 +86,27 @@
             const btnSave = document.getElementById('btnSave');
             const btnCancel = document.getElementById('btnCancel');
 
-            // Avatar elems (likely inside the partial)
             const avatarInput = document.getElementById('avatarInput');
             const avatarPreview = document.getElementById('avatarPreview');
 
             function setFormEditable(isEditable) {
-                // Enable/disable all editable fields except those explicitly locked or static
                 const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
                 fields.forEach(el => {
                     const isHidden = el.type === 'hidden';
                     const isStatic = el.getAttribute('data-static') === 'true';
-                    const isLocked = el.getAttribute('data-locked') === 'true'; // our four student fields
+                    const isLocked = el.getAttribute('data-locked') === 'true';
                     if (isHidden || isStatic || isLocked) return;
                     el.disabled = !isEditable;
                 });
 
-                // Buttons
                 btnEdit.classList.toggle('d-none', isEditable);
                 btnSave.classList.toggle('d-none', !isEditable);
                 btnCancel.classList.toggle('d-none', !isEditable);
-
                 form.classList.toggle('is-readonly', !isEditable);
             }
 
             function resetToInitial() {
                 form.reset();
-                // Restore avatar preview if model had an existing picture
                 if (avatarPreview) {
                     const existing = '@(Model.ProfilePictureUrl ?? "")';
                     if (existing) {
@@ -146,13 +119,11 @@
                 }
             }
 
-            // Initial: read-only
             setFormEditable(false);
 
             btnEdit.addEventListener('click', () => setFormEditable(true));
             btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
 
-            // Avatar preview interaction (only responds while enabled)
             if (avatarInput && avatarPreview) {
                 avatarPreview.addEventListener('keydown', function(e){
                     if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
@@ -170,7 +141,6 @@
                     reader.readAsDataURL(file);
                 });
 
-                // Initial preview
                 var url = '@(Model.ProfilePictureUrl ?? "")';
                 if (url) {
                     avatarPreview.style.backgroundImage = `url('${url}')`;
@@ -179,4 +149,8 @@
             }
         })();
     </script>
+}
+
+@section Modals {
+    @await Html.PartialAsync("~/Views/Shared/Partials/_ChangePasswordModal.cshtml")
 }
