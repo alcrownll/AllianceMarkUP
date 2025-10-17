@@ -64,6 +64,33 @@
     });
 </script>
 
+<script>
+    (function () {
+      const m2El = document.getElementById('programProspectusModal');
+      if (!m2El) return;
+
+      function paintHeader() {
+        const code =
+          (window.PROGRAM_DRAFT && window.PROGRAM_DRAFT.program && window.PROGRAM_DRAFT.program.code) || '—';
+        const name =
+          (window.PROGRAM_DRAFT && window.PROGRAM_DRAFT.program && window.PROGRAM_DRAFT.program.name) || '—';
+
+        const sumCode = m2El.querySelector('#sumCode') || document.getElementById('sumCode');
+        const sumName = m2El.querySelector('#sumName') || document.getElementById('sumName');
+        if (sumCode) sumCode.textContent = code || '—';
+        if (sumName) sumName.textContent = name || '—';
+      }
+
+      // Paint when the modal is about to show and after it’s shown
+      m2El.addEventListener('show.bs.modal', paintHeader);
+      m2El.addEventListener('shown.bs.modal', paintHeader);
+
+      // If the DOM already has values (e.g., dev reload with modal visible), try once
+      document.addEventListener('DOMContentLoaded', paintHeader);
+    })();
+</script>
+
+
 <style>
     /* Prospectus modal: wider + keep headers on one line */
     #programProspectusModal .modal-dialog {
@@ -94,28 +121,6 @@
     #programProspectusModal .card-body {
         flex: 1 1 auto; /* fill the available height */
         min-height: 0; /* allow inner scrolling */
-    }
-
-    #programProspectusModal .table-responsive {
-        max-height: 48vh; /* keep big tables from pushing modal off-screen */
-        overflow: auto; /* scroll inside the table area */
-    }
-
-    /* 3) Keep the units + Add Course header tight on one line */
-    #programProspectusModal .card-header .d-flex {
-        gap: .75rem;
-        flex-wrap: nowrap;
-    }
-
-    #programProspectusModal .card-header .small.text-muted {
-        white-space: nowrap;
-    }
-
-    /* 4) Optional: avoid wrapping in the tabs row */
-    #programProspectusModal .nav-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
     }
 
 </style>
@@ -156,6 +161,183 @@
       });
     })();
 </script>
+
+<script>
+    (function () {
+      const finishBtn = document.getElementById('btnFinishProspectus');
+
+      function setErr(m) {
+        let el = document.getElementById('finishErr');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'finishErr';
+          el.className = 'text-danger small me-auto';
+          document.querySelector('#programProspectusModal .modal-footer')?.prepend(el);
+        }
+        el.innerHTML = m || '';
+        el.style.display = m ? 'block' : 'none';
+      }
+      function clearErr(){ setErr(''); }
+
+      function buildPayload() {
+        const draft = window.PROGRAM_DRAFT || window.prospectus || {};
+        const p = draft.program || draft;
+
+        const code  = (p.code  || '').trim();
+        const name  = (p.name  || '').trim();
+        const notes = (p.notes || '').toString();
+
+        const yearsDraft = Array.isArray(draft.years) ? draft.years : [];
+        const years = yearsDraft
+          .map(y => ({
+            year: Number(y.year ?? y.Year ?? 0),
+            terms: (y.terms || []).map(t => ({
+              term: Number(t.term ?? t.Term ?? 0),
+              courses: (t.courses || [])
+                .map(c => ({
+                  courseId: Number(c.courseId ?? c.CourseId ?? 0),
+                  prereqCourseId: Number((c.prereqCourseId ?? c.PrerequisiteCourseId ?? 0) || 0)
+                }))
+                .filter(c => c.courseId > 0)
+            }))
+            .filter(t => t.term >= 1 && t.term <= 2 && t.courses.length > 0)
+          }))
+          .filter(y => y.year >= 1 && y.year <= 4 && y.terms.length > 0);
+
+        return { code, name, notes, years };
+      }
+
+      async function onFinishClick() {
+        clearErr();
+
+        const payload = buildPayload();
+        if (!payload.code || !payload.name) {
+          setErr('Program Code and Name are required.');
+          return;
+        }
+        const hasAnyCourse = payload.years.some(y => y.terms.some(t => t.courses.length > 0));
+        if (!hasAnyCourse) {
+          setErr('Add at least one course before finishing.');
+          return;
+        }
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+        const oldHtml = finishBtn.innerHTML;
+        finishBtn.disabled = true;
+        finishBtn.innerHTML = 'Saving…';
+
+        try {
+          const res = await fetch('/admin/programs/compose', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'RequestVerificationToken': token } : {})
+            },
+            body: JSON.stringify(payload)
+          });
+
+          // Try to parse JSON, but also keep the raw text for debugging
+          const rawText = await res.text();
+          let data = {};
+          try { data = rawText ? JSON.parse(rawText) : {}; } catch { /* ignore */ }
+
+          // Debug to console to help us if anything still fails
+          console.debug('compose response:', { status: res.status, data, rawText });
+
+          if (!res.ok || data.ok === false) {
+               const parts = [];
+                if (data?.message) parts.push(data.message);
+                if (data?.error)   parts.push(data.error);
+                if (Array.isArray(data?.errors) && data.errors.length) {
+                  parts.push(data.errors.join('<br>'));
+                }
+                if (!parts.length) parts.push(`Server error (${res.status})`);
+                setErr(parts.join('<br>'));
+
+            finishBtn.disabled = false;
+            finishBtn.innerHTML = oldHtml;
+            return;
+          }
+
+          // SUCCESS UI
+          window.PROGRAM_DRAFT = { program: { code:'', name:'', notes:'', years: 4 }, years: [] };
+
+          const savedModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('programSavedModal'));
+          // Update the line under the checkmark with the program code/name
+          const txt = document.getElementById('programSavedText');
+          if (txt) txt.textContent = `${data.code || payload.code} — ${data.name || payload.name}`;
+
+          savedModal.show();
+
+          // After 2.5s: hide success, hide prospectus, reload
+          setTimeout(() => {
+            try { savedModal.hide(); } catch {}
+            const prospectus = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
+            try { prospectus.hide(); } catch {}
+            // full page refresh to reflect new program list
+            window.location.reload();
+          }, 2500);
+
+        } catch (e) {
+          setErr(e.message || 'Failed to save program.');
+          finishBtn.disabled = false;
+          finishBtn.innerHTML = oldHtml;
+        }
+      }
+
+      finishBtn?.addEventListener('click', onFinishClick);
+    })();
+</script>
+
+<script>
+    // Show "saved" modal for 3s, then close Prospectus (and optionally refresh)
+    function showProgramSavedAndExit({ code = "", name = "", programId = null, after = null } = {}) {
+      const parentEl  = document.getElementById('programProspectusModal');
+      const savedEl   = document.getElementById('programSavedModal');
+      const sub       = document.getElementById('programSavedSubtext');
+      if (!parentEl || !savedEl) return;
+
+      // Subtext like: BSCS — Computer Science (ID: 12)
+      const parts = [];
+      if (code) parts.push(code);
+      if (name) parts.push(name);
+      if (programId) parts.push(`ID: ${programId}`);
+      if (sub) sub.textContent = parts.join(' — ');
+
+      const saved  = bootstrap.Modal.getOrCreateInstance(savedEl);
+      const parent = bootstrap.Modal.getOrCreateInstance(parentEl);
+
+      // keep parent open while child is visible
+      const preventParentHide = (e) => {
+        if (savedEl.classList.contains('show')) e.preventDefault();
+      };
+      parentEl.addEventListener('hide.bs.modal', preventParentHide);
+
+      savedEl.addEventListener('shown.bs.modal', () => {
+        document.body.classList.add('modal-open');
+      });
+      savedEl.addEventListener('hidden.bs.modal', () => {
+        parentEl.removeEventListener('hide.bs.modal', preventParentHide);
+        if (parentEl.classList.contains('show')) {
+          document.body.classList.add('modal-open');
+        }
+      });
+
+      saved.show();
+
+      // After 3s: hide confirmation, then hide parent; then optional callback
+      setTimeout(() => {
+        saved.hide();
+        setTimeout(() => {
+          parent.hide();
+          if (typeof after === 'function') after();
+        }, 150);
+      }, 3000);
+    }
+</script>
+@await Html.PartialAsync("~/Views/Admin/Partials/_ProgramSavedModal.cshtml")
+
 
 
 @await Html.PartialAsync("~/Views/Admin/Partials/_CoursePickerModal.cshtml")

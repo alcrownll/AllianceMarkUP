@@ -29,17 +29,17 @@ namespace ASI.Basecode.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "YearTerms",
+                name: "YearTerm",
                 columns: table => new
                 {
                     YearTermId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     YearLevel = table.Column<int>(type: "integer", nullable: false),
-                    Term = table.Column<int>(type: "integer", nullable: false)
+                    TermNumber = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_YearTerms", x => x.YearTermId);
+                    table.PrimaryKey("PK_YearTerm", x => x.YearTermId);
                 });
 
             migrationBuilder.CreateTable(
@@ -75,16 +75,16 @@ namespace ASI.Basecode.Data.Migrations
                         principalColumn: "ProgramId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProgramCourses_YearTerms_YearTermId",
+                        name: "FK_ProgramCourses_YearTerm_YearTermId",
                         column: x => x.YearTermId,
-                        principalTable: "YearTerms",
+                        principalTable: "YearTerm",
                         principalColumn: "YearTermId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.InsertData(
-                table: "YearTerms",
-                columns: new[] { "YearTermId", "Term", "YearLevel" },
+                table: "YearTerm",
+                columns: new[] { "YearTermId", "TermNumber", "YearLevel" },
                 values: new object[,]
                 {
                     { 1, 1, 1 },
@@ -124,9 +124,9 @@ namespace ASI.Basecode.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_YearTerms_YearLevel_Term",
-                table: "YearTerms",
-                columns: new[] { "YearLevel", "Term" },
+                name: "IX_YearTerm_YearLevel_Term",
+                table: "YearTerm",
+                columns: new[] { "YearLevel", "TermNumber" },
                 unique: true);
         }
 
@@ -140,7 +140,7 @@ namespace ASI.Basecode.Data.Migrations
                 name: "Programs");
 
             migrationBuilder.DropTable(
-                name: "YearTerms");
+                name: "YearTerm");
         }
     }
 }

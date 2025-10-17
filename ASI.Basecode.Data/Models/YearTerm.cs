@@ -15,10 +15,6 @@ namespace ASI.Basecode.Data.Models
         [Column("TermNumber")]
         public int TermNumber { get; set; }            // 1..2
 
-        // DB-computed stored column (we'll configure in DbContext)
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public int Sequence { get; private set; } // 1..8
-
         public ICollection<ProgramCourse> ProgramCourses { get; set; }
     }
 }

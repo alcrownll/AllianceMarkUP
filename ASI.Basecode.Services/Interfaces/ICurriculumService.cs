@@ -1,20 +1,20 @@
 ﻿using ASI.Basecode.Data.Models;
-using ASI.Basecode.Services.ServiceModels;
 using System.Collections.Generic;
 
 namespace ASI.Basecode.Services.Interfaces
 {
     public interface ICurriculumService
     {
+        // Programs
         Program CreateProgram(string code, string name, string notes);
-        Program ActivateProgram(int programId); // optional
+        IEnumerable<Program> ListPrograms(string q = null);
+        Program ActivateProgram(int programId);         // optional if you use IsActive toggle elsewhere
+        void DiscardProgram(int programId);
+        bool HasAnyCourses(int programId);
+
+        // ProgramCourses
         ProgramCourse AddCourseToTerm(int programId, int year, int term, int courseId, int prereqCourseId);
         IEnumerable<ProgramCourse> GetTerm(int programId, int year, int term);
-        void RemoveProgramCourse(int programCourseId); // optional
-
-        bool HasAnyCourses(int programId);
-        void DiscardProgram(int programId);
-
-        Program CreateProgramWithCurriculum(ComposeProgramDto dto);
+        void RemoveProgramCourse(int programCourseId);
     }
 }
