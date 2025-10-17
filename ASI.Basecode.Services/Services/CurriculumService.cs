@@ -2,6 +2,7 @@
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Transactions;
@@ -81,9 +82,13 @@ namespace ASI.Basecode.Services.Services
         }
 
 
+        // Services/CurriculumService.cs  (same file you showed)
         public Program CreateProgramWithCurriculum(ComposeProgramDto dto)
         {
-            // Ambient transaction so all repo/service calls commit together
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.Code)) throw new ArgumentException("Program code is required.");
+            if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Program name is required.");
+
             using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
             var program = CreateProgram(dto.Code.Trim(), dto.Name.Trim(), dto.Notes);
@@ -92,8 +97,15 @@ namespace ASI.Basecode.Services.Services
             {
                 foreach (var t in y.Terms ?? Enumerable.Empty<ComposeTermDto>())
                 {
+                    if (t.Term is < 1 or > 2) throw new ArgumentException($"Invalid term number {t.Term} for year {y.Year}.");
+
                     foreach (var c in t.Courses ?? Enumerable.Empty<ComposeCourseDto>())
                     {
+                        // YearTerm is FIXED lookup. Fail if missing.
+                        var yt = _yearTerms.GetYearTerm(y.Year, t.Term);
+                        if (yt == null)
+                            throw new InvalidOperationException($"YearTerm not found for Year={y.Year}, Term={t.Term}. Seed your lookup table.");
+
                         AddCourseToTerm(program.ProgramId, y.Year, t.Term, c.CourseId, c.PrereqCourseId);
                     }
                 }
@@ -102,6 +114,19 @@ namespace ASI.Basecode.Services.Services
             scope.Complete();
             return program;
         }
+        public IEnumerable<Program> ListPrograms(string q = null)
+        {
+            // Replace with your real repo calls; this is just a safe default.
+            var all = _programs.GetPrograms(); // or GetAll(), or IQueryable<Program>
+            if (string.IsNullOrWhiteSpace(q)) return all;
+
+            q = q.Trim().ToLowerInvariant();
+            return all.Where(p =>
+                (p.ProgramCode ?? "").ToLower().Contains(q) ||
+                (p.ProgramName ?? "").ToLower().Contains(q));
+        }
+
+
 
 
     }

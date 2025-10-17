@@ -261,13 +261,12 @@ namespace ASI.Basecode.Data
             // YEARTERM
             modelBuilder.Entity<YearTerm>(entity =>
             {
+                entity.ToTable("YearTerm");                 // <-- add this line
                 entity.HasKey(e => e.YearTermId);
                 entity.Property(e => e.YearLevel).IsRequired();
                 entity.Property(e => e.TermNumber).IsRequired();
-
                 entity.HasIndex(e => new { e.YearLevel, e.TermNumber }).IsUnique();
 
-                // Seed Year 1..4 × Term 1..2
                 entity.HasData(
                     new YearTerm { YearTermId = 1, YearLevel = 1, TermNumber = 1 },
                     new YearTerm { YearTermId = 2, YearLevel = 1, TermNumber = 2 },
