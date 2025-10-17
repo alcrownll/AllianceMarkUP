@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Interfaces
@@ -14,5 +15,6 @@ namespace ASI.Basecode.Data.Interfaces
         void AddClassSchedule(ClassSchedule schedule);
         void UpdateClassSchedule(ClassSchedule schedule);
         void DeleteClassSchedule(int classScheduleId);
+        Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

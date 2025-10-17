@@ -95,7 +95,6 @@
                                 <th class="text-center" style="width:160px;">Course Code</th>
                                 <th class="text-center" style="width:140px;">Type</th>
                                 <th class="text-start">Teacher</th>
-                                <th class="text-center" style="width:140px;">Status</th>
                                 <th class="text-end" style="width:210px;"></th>
                             </tr>
                         </thead>
@@ -111,16 +110,6 @@
                                         <td class="text-center">@ac.Course?.CourseCode</td>
                                         <td class="text-center">@ac.Type</td>
                                         <td class="text-start">@teacherName</td>
-                                        <td class="text-center">
-                                            @if (string.Equals(ac.Status, "Active", System.StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <span class="badge bg-success">Active</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">@ac.Status</span>
-                                            }
-                                        </td>
                                         <td class="text-end">
                                             <div class="row-actions">
                                                 <a class="btn btn-primary btn-sm rounded-pill"
@@ -142,7 +131,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="6" class="empty-row">No assigned courses found.</td>
+                                    <td colspan="5" class="empty-row">No assigned courses found.</td>
                                 </tr>
                             }
                         </tbody>

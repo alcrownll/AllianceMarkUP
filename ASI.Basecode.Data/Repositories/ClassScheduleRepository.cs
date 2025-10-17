@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
@@ -37,5 +38,7 @@ namespace ASI.Basecode.Data.Repositories
                 UnitOfWork.SaveChanges();
             }
         }
+        public Task SaveChangesAsync(CancellationToken ct = default) =>
+            UnitOfWork.SaveChangesAsync(ct);
     }
 }

@@ -6,21 +6,21 @@
     ViewData["Title"] = "Assign Course";
     ViewData["PageHeader"] = "Assign Course";
 
-    var courses = (IEnumerable<Course>)(ViewBag.Courses ?? Enumerable.Empty<Course>());
+    var courses  = (IEnumerable<Course>)(ViewBag.Courses  ?? Enumerable.Empty<Course>());
     var programs = (IEnumerable<Program>)(ViewBag.Programs ?? Enumerable.Empty<Program>());
     var teachers = (IEnumerable<Teacher>)(ViewBag.Teachers ?? Enumerable.Empty<Teacher>());
     var students = (IEnumerable<Student>)(ViewBag.Students ?? Enumerable.Empty<Student>());
 
-    int pageIndex = (int)(ViewBag.Page ?? 1);
-    int pageSize = 10;
-    int total = (int)(ViewBag.Total ?? students.Count());
+    int pageIndex = (int)(ViewData["Page"] ?? ViewBag.Page ?? 1);
+    int pageSize  = 10;
+    int total     = (int)(ViewBag.Total ?? students.Count());
     int pageCount = (int)Math.Ceiling(total / (double)pageSize);
 
-    string mode = (string)(ViewBag.Mode ?? "block"); 
+    string mode         = (string)(ViewBag.Mode ?? "block");
     string blockProgram = (string)(ViewBag.BlockProgram ?? "");
-    string blockYear = (string)(ViewBag.BlockYear ?? "");
+    string blockYear    = (string)(ViewBag.BlockYear ?? "");
     string blockSection = (string)(ViewBag.BlockSection ?? "");
-    string status = (string)(ViewBag.FilterStatus ?? "Active");
+    string status       = (string)(ViewBag.FilterStatus ?? "Active");
 }
 
 <link rel="stylesheet" href="~/css/main-site.css" />
@@ -64,11 +64,10 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Units</label>
-                    <input id="Units" class="form-control" asp-for="Units" readonly disabled/>
+                    <input id="Units" class="form-control" asp-for="Units" readonly disabled />
                 </div>
             </div>
 
-            <!-- Wrap Program / School Year / Semester in a row -->
             <div class="row g-3 uniform-row mt-0">
                 <div class="col-md-4">
                     <label class="form-label">Program</label>
@@ -84,14 +83,9 @@
                 <div class="col-md-4">
                     <label class="form-label">School Year</label>
                     @{
-                        var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear)
-                        ? "2025-2026"
-                        : Model.SchoolYear;
+                        var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear) ? "2025-2026" : Model.SchoolYear;
                     }
-                    <input class="form-control"
-                           value="@syValue"
-                           disabled
-                           readonly />
+                    <input class="form-control" value="@syValue" disabled readonly />
                     <input type="hidden" asp-for="SchoolYear" value="@syValue" />
                 </div>
 
@@ -107,40 +101,12 @@
             </div>
 
             <div class="row g-3 uniform-row mt-0">
-                <div class="col-md-4"> 
-                    <label class="form-label d-flex justify-content-between"> 
-                        <span>EDP Code</span><span class="text-muted small">optional</span> 
-                        </label> <input class="form-control" asp-for="EDPCode" /> 
-                        <small class="tiny-hint">Auto-generates if left blank.</small> 
-                </div>
-
                 <div class="col-md-4">
                     <label class="form-label d-flex justify-content-between">
-                        <span>Status</span><span class="text-muted small">auto</span>
+                        <span>EDP Code</span><span class="text-muted small">optional</span>
                     </label>
-                    @{
-                        bool isInactive = string.IsNullOrWhiteSpace(Model?.Status) || Model.Status == "Inactive";
-                        var postedStatus = isInactive ? "Inactive" : "Active";
-                    }
-
-                    <select class="form-select" disabled aria-disabled="true">
-                        @if (isInactive)
-                        {
-                            <option value="Inactive" selected>Inactive</option>
-                            <option value="Active">Active</option>
-                        }
-                        else
-                        {
-                            <option value="Inactive">Inactive</option>
-                            <option value="Active" selected>Active</option>
-                        }
-                    </select>
-
-                    <input type="hidden" asp-for="Status" value="@postedStatus" />
-
-                    <small class="tiny-hint">
-                        Defaults to <strong>Inactive</strong>. It will become <strong>Active</strong> once a room is assigned to this course.
-                    </small>
+                    <input class="form-control" asp-for="EDPCode" />
+                    <small class="tiny-hint">Auto-generates if left blank.</small>
                 </div>
             </div>
 
@@ -163,14 +129,52 @@
 
             <hr class="section-divider" />
 
-            <!-- ===== STUDENTS ===== -->
+            <!-- ===== ROOM & SCHEDULE ===== -->
+            <div class="section-title">Room &amp; Schedule</div>
+
+            <div class="row g-3 uniform-row">
+                <div class="col-md-4">
+                    <label class="form-label">Room</label>
+                    <select id="RoomSelect" name="ScheduleRoom" class="form-select" disabled>
+                        <option value="">-- Select Room --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Start Time</label>
+                    <input id="StartTime" name="ScheduleStart" type="time"
+                           class="form-control" min="07:30" max="21:30" step="900" />
+                    <small class="tiny-hint text-muted">Earliest Start Time: 7:30 AM</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Time</label>
+                    <input id="EndTime" name="ScheduleEnd" type="time"
+                           class="form-control" min="07:30" max="21:30" step="900" />
+                    <small class="tiny-hint text-muted">Latest End Time: 9:30 PM</small>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <label class="form-label d-block">Day</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Monday">Monday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Tuesday">Tuesday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Wednesday">Wednesday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Thursday">Thursday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Friday">Friday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Saturday">Saturday</button>
+                </div>
+                <small id="DayLiveText" class="text-muted d-block mt-2"></small>
+            </div>
+
+            <input type="hidden" id="ScheduleDaysCsv" name="ScheduleDaysCsv" />
+
+            <!-- ===== STUDENTS / BLOCK FILTERS ===== -->
             <div class="section-title">Students</div>
 
-            <!-- BLOCK SECTION CONTROLS -->
             <div class="mt-2" id="blockFields">
                 <input type="hidden" id="ModeHidden" name="mode" value="@mode" />
                 <input type="hidden" name="page" value="@pageIndex" />
-                <input type="hidden" name="pageSize" value="10" />   <!-- ✅ FIXED: close the tag -->
+                <input type="hidden" name="pageSize" value="10" />
                 <input type="hidden" name="status" value="@status" />
 
                 <div class="row g-3 uniform-row">
@@ -185,7 +189,6 @@
                             {
                                 <option value="BSCS">BSCS</option>
                             }
-
                             @if (blockProgram == "BSIT")
                             {
                                 <option value="BSIT" selected>BSIT</option>
@@ -238,16 +241,15 @@
 
                     <div class="col-md-4">
                         <label class="form-label">Block Section</label>
-                        <select class="form-select" name="blockSection" id="BlockSection" disabled>
+                        <!-- NOTE: no default 'disabled' so it can be focused after year pick -->
+                        <select class="form-select" name="blockSection" id="BlockSection">
                             <option value="">Select Section</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="d-flex gap-2 mt-2">
-                    <button type="button" id="btnResetBlockFilters" class="btn btn-outline-secondary btn-sm">
-                        Reset block filters
-                    </button>
+                    <button type="button" id="btnResetBlockFilters" class="btn btn-outline-secondary btn-sm">Reset block filters</button>
                 </div>
 
                 <div class="d-flex align-items-center gap-4 mt-4">
@@ -262,19 +264,13 @@
                 </div>
             </div>
 
-            <!-- Student TABLE (AJAX-rendered) -->
             <div id="manualFields" class="mt-3" style="display:@(mode == "manual" ? "block" : "none")">
-                <div class="alert alert-info py-2">
-                    <div class="small mb-0">
-                        This table shows <strong>only students NOT in the selected block.</strong>
-                    </div>
-                </div>
+                <div class="alert alert-info py-2"><div class="small mb-0">This table shows <strong>only students NOT in the selected block.</strong></div></div>
 
                 <div class="position-relative">
                     <div id="manualTableSpinner" class="d-none" style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6);z-index:5;">
                         <div class="spinner-border" role="status" aria-label="Loading manual table"></div>
                     </div>
-
                     <div id="manualTableHost">
                         @await Html.PartialAsync("~/Views/Admin/Partials/_ManualStudentsTable.cshtml", students)
                     </div>

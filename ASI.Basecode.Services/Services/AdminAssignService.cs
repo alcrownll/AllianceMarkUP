@@ -67,30 +67,19 @@ namespace ASI.Basecode.Services.Services
                 .ThenBy(a => a.Course.CourseCode)
                 .ToListAsync();
         }
-        public async Task<IReadOnlyList<Course>> GetCoursesAsync()
-        {
-            return await _courses.GetCourses()
-                .AsNoTracking()
-                .OrderBy(c => c.CourseCode)
-                .ToListAsync();
-        }
 
-        public async Task<IReadOnlyList<Program>> GetProgramsAsync()
-        {
-            return await _programs.GetPrograms()
-                .AsNoTracking()
-                .OrderBy(p => p.ProgramCode)
-                .ToListAsync();
-        }
+        public async Task<IReadOnlyList<Course>> GetCoursesAsync() =>
+            await _courses.GetCourses().AsNoTracking().OrderBy(c => c.CourseCode).ToListAsync();
 
-        public async Task<IReadOnlyList<Teacher>> GetTeachersWithUsersAsync()
-        {
-            return await _teachers.GetTeachers()
+        public async Task<IReadOnlyList<Program>> GetProgramsAsync() =>
+            await _programs.GetPrograms().AsNoTracking().OrderBy(p => p.ProgramCode).ToListAsync();
+
+        public async Task<IReadOnlyList<Teacher>> GetTeachersWithUsersAsync() =>
+            await _teachers.GetTeachers()
                 .AsNoTracking()
                 .Include(t => t.User)
                 .OrderBy(t => t.User.LastName).ThenBy(t => t.User.FirstName)
                 .ToListAsync();
-        }
 
         public async Task<PagedResultModel<Student>> GetStudentsForAssignAsync(
             string program, string yearLevel, string section, string status,
@@ -157,9 +146,6 @@ namespace ASI.Basecode.Services.Services
             return fallback.ToString();
         }
 
-        // ======================================
-        // Existing: Create Assigned Course (Phase 2)
-        // ======================================
         public async Task<int> CreateAssignedCourseAsync(
             AssignedCourse form,
             string blockProgram,
@@ -170,17 +156,16 @@ namespace ASI.Basecode.Services.Services
         {
             var ac = new AssignedCourse
             {
-                EDPCode = string.IsNullOrWhiteSpace(form.EDPCode)
-                              ? await GenerateEdpCodeAsync(form.CourseId, form.Semester, form.SchoolYear, ct)
-                              : form.EDPCode.Trim(),
-                CourseId = form.CourseId,
-                Type = form.Type,
-                Units = form.Units,
+                EDPCode   = string.IsNullOrWhiteSpace(form.EDPCode)
+                                ? await GenerateEdpCodeAsync(form.CourseId, form.Semester, form.SchoolYear, ct)
+                                : form.EDPCode.Trim(),
+                CourseId  = form.CourseId,
+                Type      = form.Type,
+                Units     = form.Units,
                 ProgramId = form.ProgramId,
                 TeacherId = form.TeacherId,
-                Semester = form.Semester,
-                SchoolYear = form.SchoolYear,
-                Status = "Inactive" 
+                Semester  = form.Semester,
+                SchoolYear= form.SchoolYear,
             };
 
             _assigned.AddAssignedCourseNoSave(ac);
@@ -254,12 +239,108 @@ namespace ASI.Basecode.Services.Services
                 .ToListAsync(ct);
         }
 
-        public async Task<bool> CanChangeStatusAsync(int assignedCourseId, CancellationToken ct)
+        public async Task<IReadOnlyList<ClassSchedule>> GetSchedulesAsync(int assignedCourseId, CancellationToken ct)
         {
-            // Only allow changing Status if there's at least one ClassSchedule row
             return await _classSchedules.GetClassSchedules()
                 .AsNoTracking()
-                .AnyAsync(cs => cs.AssignedCourseId == assignedCourseId, ct);
+                .Where(s => s.AssignedCourseId == assignedCourseId)
+                .OrderBy(s => s.Day)
+                .ToListAsync(ct);
+        }
+
+        private static TimeSpan ParseTimeOrThrow(string hhmm, string label)
+        {
+            if (string.IsNullOrWhiteSpace(hhmm) || !TimeSpan.TryParse(hhmm, out var ts))
+                throw new InvalidOperationException($"{label} is invalid.");
+            return ts;
+        }
+
+        private static void ValidateTimeWindow(TimeSpan start, TimeSpan end)
+        {
+            var min = new TimeSpan(7, 30, 0);  // 7:30 AM
+            var max = new TimeSpan(21, 30, 0); // 9:30 PM
+            if (start < min || start > max) throw new InvalidOperationException("Start time must be between 07:30 and 21:30.");
+            if (end < min || end > max) throw new InvalidOperationException("End time must be between 07:30 and 21:30.");
+            if (end <= start) throw new InvalidOperationException("End time must be later than start time.");
+        }
+
+        public async Task CreateSchedulesAsync(
+            int assignedCourseId,
+            string room,
+            string startTimeHHmm,
+            string endTimeHHmm,
+            IEnumerable<int> days,
+            CancellationToken ct)
+        {
+            var daySet = new HashSet<int>((days ?? Array.Empty<int>()).Where(d => d >= 1 && d <= 6));
+            if (daySet.Count == 0) return;
+
+            var start = ParseTimeOrThrow(startTimeHHmm, "Start time");
+            var end = ParseTimeOrThrow(endTimeHHmm, "End time");
+            ValidateTimeWindow(start, end);
+            if (string.IsNullOrWhiteSpace(room)) throw new InvalidOperationException("Room is required when selecting days.");
+
+            foreach (var d in daySet)
+            {
+                _classSchedules.AddClassSchedule(new ClassSchedule
+                {
+                    AssignedCourseId = assignedCourseId,
+                    Day = (DayOfWeek)d, // Mon=1..Sat=6
+                    StartTime = start,
+                    EndTime = end,
+                    Room = room.Trim()
+                });
+            }
+            await _classSchedules.SaveChangesAsync(ct);
+        }
+
+        public async Task UpsertSchedulesAsync(
+            int assignedCourseId,
+            string room,
+            string startTimeHHmm,
+            string endTimeHHmm,
+            IEnumerable<int> days,
+            CancellationToken ct)
+        {
+            var existing = await _classSchedules.GetClassSchedules()
+                .Where(s => s.AssignedCourseId == assignedCourseId)
+                .ToListAsync(ct);
+
+            var want = new HashSet<int>((days ?? Array.Empty<int>()).Where(d => d >= 1 && d <= 6));
+
+            TimeSpan start = default, end = default;
+            if (want.Count > 0)
+            {
+                start = ParseTimeOrThrow(startTimeHHmm, "Start time");
+                end = ParseTimeOrThrow(endTimeHHmm, "End time");
+                ValidateTimeWindow(start, end);
+                if (string.IsNullOrWhiteSpace(room)) throw new InvalidOperationException("Room is required when selecting days.");
+
+                foreach (var row in existing.Where(r => want.Contains((int)r.Day)))
+                {
+                    row.Room = room.Trim();
+                    row.StartTime = start;
+                    row.EndTime = end;
+                    _classSchedules.UpdateClassSchedule(row);
+                }
+
+                var have = existing.Select(e => (int)e.Day).ToHashSet();
+                foreach (var d in want.Except(have))
+                {
+                    _classSchedules.AddClassSchedule(new ClassSchedule
+                    {
+                        AssignedCourseId = assignedCourseId,
+                        Day = (DayOfWeek)d,
+                        StartTime = start,
+                        EndTime = end,
+                        Room = room.Trim()
+                    });
+                }
+            }
+            foreach (var del in existing.Where(r => !want.Contains((int)r.Day)).ToList())
+                _classSchedules.DeleteClassSchedule(del.ClassScheduleId);
+
+            await _classSchedules.SaveChangesAsync(ct);
         }
 
         public async Task<(IReadOnlyList<Student> Items, int Total)> GetAddableStudentsPageAsync(
@@ -320,22 +401,16 @@ namespace ASI.Basecode.Services.Services
 
             if (ac == null) throw new InvalidOperationException("Assigned course not found.");
 
-            ac.EDPCode = posted.EDPCode?.Trim();
-            ac.CourseId = posted.CourseId;
-            ac.Type = posted.Type;
-            ac.Units = posted.Units;
+            ac.EDPCode   = posted.EDPCode?.Trim();
+            ac.CourseId  = posted.CourseId;
+            ac.Type      = posted.Type;
+            ac.Units     = posted.Units;
             ac.ProgramId = posted.ProgramId;
             ac.TeacherId = posted.TeacherId;
-            ac.Semester = posted.Semester;
-            ac.SchoolYear = posted.SchoolYear;
+            ac.Semester  = posted.Semester;
+            ac.SchoolYear= posted.SchoolYear;
 
-            var canChangeStatus = await CanChangeStatusAsync(ac.AssignedCourseId, ct);
-            if (canChangeStatus)
-            {
-                ac.Status = posted.Status;
-            }
-
-            _assigned.UpdateAssignedCourse(ac); 
+            _assigned.UpdateAssignedCourse(ac);
 
             if (removeStudentIds != null)
             {
@@ -343,10 +418,7 @@ namespace ASI.Basecode.Services.Services
                     .Where(g => g.AssignedCourseId == ac.AssignedCourseId && removeStudentIds.Contains(g.StudentId))
                     .ToListAsync(ct);
 
-                foreach (var g in toRemove)
-                {
-                    _grades.DeleteGrade(g.GradeId); 
-                }
+                foreach (var g in toRemove) _grades.DeleteGrade(g.GradeId);
             }
 
             if (addStudentIds != null)
@@ -406,6 +478,5 @@ namespace ASI.Basecode.Services.Services
 
             return (true, $"{friendly} was successfully deleted.");
         }
-
     }
 }
