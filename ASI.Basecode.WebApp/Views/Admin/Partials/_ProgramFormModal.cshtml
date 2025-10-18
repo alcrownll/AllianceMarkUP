@@ -1,47 +1,58 @@
-﻿@* ADD PROGRAM MODAL *@
-<div class="modal fade" id="addProgramModal" tabindex="-1" aria-labelledby="addProgramLabel" aria-hidden="true">
+﻿@* Views/Admin/Partials/_ProgramFormModal.cshtml *@
+<div class="modal fade" id="programFormModal" tabindex="-1" aria-labelledby="programFormLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content shadow-sm border-0 rounded-3">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-semibold" id="addProgramLabel">
-                    <i class="bi bi-journal-plus me-2"></i> Add Program
+                <h5 class="modal-title fw-semibold" id="programFormLabel">
+                    <i class="bi bi-journal-plus me-2"></i> <span id="pfTitle">Add Program</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="addProgramForm" novalidate>
+            <form id="programForm" novalidate>
                 <div class="modal-body p-4">
-                    <p class="text-muted small mb-4">
+                    <p class="text-muted small mb-4" id="pfHelp">
                         Fill in the program’s basic details. Once added, you can assign courses to it.
                     </p>
+
+                    <input type="hidden" id="pfProgramId" />
 
                     <div class="row g-3">
                         <!-- Program Code -->
                         <div class="col-sm-5">
                             <label class="form-label fw-medium">Program Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="Code" placeholder="BSCS" maxlength="20" required>
+                            <input type="text" class="form-control" id="pfCode" placeholder="BSCS" maxlength="20" required>
                             <div class="invalid-feedback">Program code is required.</div>
                         </div>
 
                         <!-- Program Name -->
                         <div class="col-sm-7">
                             <label class="form-label fw-medium">Program Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="Name"
+                            <input type="text" class="form-control" id="pfName"
                                    placeholder="Bachelor of Science in Computer Science"
                                    maxlength="150" required>
                             <div class="invalid-feedback">Program name is required.</div>
                         </div>
+
+                        <!-- Active (disabled in Add mode; enabled in Edit mode) -->
+                        <div class="col-12">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="pfActive">
+                                <label class="form-check-label" for="pfActive">Active</label>
+                            </div>
+                            <div class="form-text" id="pfActiveHint"></div>
+                        </div>
                     </div>
 
                     <!-- Inline error message -->
-                    <div id="addProgramError" class="text-danger small mt-3" style="display:none;"></div>
+                    <div id="programFormError" class="text-danger small mt-3" style="display:none;"></div>
                 </div>
 
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnAddProgram">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="pfPrimaryBtn">
                         <i class="bi bi-plus-lg me-1"></i> Add Program
                     </button>
                 </div>
@@ -52,59 +63,153 @@
 
 <script>
     (function () {
-        const form  = document.getElementById('addProgramForm');
-        const errEl = document.getElementById('addProgramError');
-        const btn   = document.getElementById('btnAddProgram');
-        const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
+      const modalEl   = document.getElementById('programFormModal');
+      const form      = document.getElementById('programForm');
+      const errEl     = document.getElementById('programFormError');
+      const titleEl   = document.getElementById('pfTitle');
+      const helpEl    = document.getElementById('pfHelp');
+      const codeEl    = document.getElementById('pfCode');
+      const nameEl    = document.getElementById('pfName');
+      const idEl      = document.getElementById('pfProgramId');
+      const activeEl  = document.getElementById('pfActive');
+      const activeHint= document.getElementById('pfActiveHint');
+      const primary   = document.getElementById('pfPrimaryBtn');
 
-        form.addEventListener('submit', async (ev) => {
-            ev.preventDefault();
-            showErr('');
-            form.classList.remove('was-validated');
+      // local state
+      let MODE = 'add'; // 'add' | 'edit'
+      const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
 
-            if (!form.checkValidity()) {
-                form.classList.add('was-validated');
-                return;
-            }
+      // Public helpers (optional)
+      window.openAddProgramModal = function () {
+        MODE = 'add';
+        idEl.value = '';
+        titleEl.textContent = 'Add Program';
+        helpEl.textContent = 'Fill in the program’s basic details. Once added, you can assign courses to it.';
+        primary.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add Program';
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        // fields
+        codeEl.value = '';
+        nameEl.value = '';
+        codeEl.readOnly = false;
+        nameEl.readOnly = false;
 
-            try {
-                const fd = new FormData();
-                fd.append('code', (form.querySelector('[name="Code"]').value || '').trim());
-                fd.append('name', (form.querySelector('[name="Name"]').value || '').trim());
-                fd.append('notes', ''); // optional, backend accepts it
+        // Active is disabled in Add mode; default false
+        activeEl.checked = false;
+        activeEl.disabled = true;
+        activeHint.textContent = 'Status is set after the program is created.';
 
-                // Direct endpoint, matches [Route("admin/programs")] + [HttpPost("create")]
-                const res = await fetch('/admin/programs/create', {
-                    method: 'POST',
-                    body: fd
-                });
+        showErr('');
+        form.classList.remove('was-validated');
 
-                if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      };
 
-                const data = await res.json();
+      window.openEditProgramModal = function (prog) {
+        MODE = 'edit';
+        idEl.value = prog.id;
+        titleEl.textContent = 'Edit Program';
+        helpEl.textContent = 'Update status, then save your changes.';
+        primary.innerHTML = 'Save Changes';
 
-                if (data.ok) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addProgramModal'));
-                    modal.hide();
-                    form.reset();
+        // Fill; keep Code/Name read-only (since only IsActive changes now)
+        codeEl.value = prog.code || '';
+        nameEl.value = prog.name || '';
+        codeEl.readOnly = true;
+        nameEl.readOnly = true;
 
-                    // Refresh program list if a loader exists
-                    if (typeof loadProgramTable === 'function') loadProgramTable();
-                } else {
-                    showErr(data.message || 'Failed to add program.');
-                }
-            }
-            catch (err) {
-                console.error(err);
-                showErr('An unexpected error occurred. Please try again.');
-            }
-            finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add Program';
-            }
-        });
+        // Active enabled in Edit mode
+        activeEl.checked = !!prog.isActive;
+        activeEl.disabled = false;
+        activeHint.textContent = 'Toggle the program’s active status.';
+
+        showErr('');
+        form.classList.remove('was-validated');
+
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      };
+
+      // Hook up openers:
+      //  - "Add Program" button should have: data-action="program-add"
+      //  - "Edit" buttons in table should have: data-action="program-edit" + data attributes
+      document.addEventListener('click', (e) => {
+        const addBtn = e.target.closest('[data-action="program-add"]');
+        if (addBtn) { e.preventDefault(); window.openAddProgramModal(); return; }
+
+        const editBtn = e.target.closest('[data-action="program-edit"]');
+        if (editBtn) {
+          e.preventDefault();
+          window.openEditProgramModal({
+            id:      editBtn.getAttribute('data-program-id'),
+            code:    editBtn.getAttribute('data-program-code'),
+            name:    editBtn.getAttribute('data-program-name'),
+            isActive: (editBtn.getAttribute('data-program-active') === 'true')
+          });
+        }
+      });
+
+      // Submit handler
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        showErr('');
+        form.classList.remove('was-validated');
+
+        if (!codeEl.value.trim() || !nameEl.value.trim()) {
+          form.classList.add('was-validated');
+          return;
+        }
+
+        primary.disabled = true;
+        const origHtml = primary.innerHTML;
+        primary.innerHTML = (MODE === 'add')
+          ? '<span class="spinner-border spinner-border-sm me-2"></span>Saving...'
+          : '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+        try {
+          const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+          if (MODE === 'add') {
+            // Create
+            const fd = new FormData();
+            fd.append('code', codeEl.value.trim());
+            fd.append('name', nameEl.value.trim());
+            fd.append('notes', '');
+
+            const res = await fetch('/admin/programs/create', { method: 'POST', body: fd });
+            if (!res.ok) throw new Error('Create failed');
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.message || 'Create failed');
+
+            // Refresh list
+            if (typeof loadProgramTable === 'function') loadProgramTable();
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+          } else {
+            // Edit: only toggle IsActive (code/name are read-only)
+            const body = new URLSearchParams();
+            body.set('isActive', String(activeEl.checked));
+            if (token) body.set('__RequestVerificationToken', token);
+
+            const id = idEl.value;
+            const res = await fetch(`/admin/programs/${id}/active`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: body.toString()
+            });
+            const data = await res.json();
+            if (!data.ok) throw new Error('Save failed');
+
+            // Refresh list
+            if (typeof loadProgramTable === 'function') loadProgramTable();
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+          }
+        } catch (err) {
+          console.error(err);
+          showErr(err.message || 'An unexpected error occurred. Please try again.');
+        } finally {
+          primary.disabled = false;
+          primary.innerHTML = origHtml;
+        }
+      });
     })();
 </script>

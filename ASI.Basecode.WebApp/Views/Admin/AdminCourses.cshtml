@@ -9,6 +9,17 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-courses.css" />
+    <style>
+        /* Stacked modal tuning: only the child (Course Picker) uses these */
+        /* Backdrop under the child (Course Picker) but above the parent (Prospectus) */
+        .modal-backdrop.stacked {
+            z-index: 1060 !important;
+        }
+        /* Child modal above that backdrop */
+        #coursePickerModal {
+            z-index: 1065 !important;
+        }
+    </style>
 }
 
 <div class="admin-courses-container">
@@ -42,20 +53,21 @@
                 <div class="tab-pane fade" id="programs" role="tabpanel">
                     <div class="mt-3 d-flex justify-content-end">
                         <button class="btn btn-primary rounded-pill px-4"
-                                data-bs-toggle="modal" data-bs-target="#addProgramModal">
+                                type="button"
+                                data-action="program-add">
                             <span class="me-2">+</span> Add Program
                         </button>
+
                         @* Add Program modal *@
-                        @await Html.PartialAsync("~/Views/Admin/Partials/_ProgramFormModal.cshtml")
                     </div>
 
-                    <!-- Host div (no server-side partial render here) -->
+                    <!-- Host div -->
                     <div id="programsTableHost" class="mt-3">
                         <div class="text-muted text-center py-4">Loading programs…</div>
                     </div>
                 </div>
 
-                <!-- COURSES TAB (unchanged) -->
+                <!-- COURSES TAB -->
                 <div class="tab-pane fade show active" id="courses" role="tabpanel">
                     <div class="table-responsive">
                         <div class="mt-3 d-flex justify-content-end">
@@ -63,7 +75,6 @@
                                     data-bs-toggle="modal" data-bs-target="#addCourseModal">
                                 <span class="me-2">+</span> Add Course
                             </button>
-                            @await Html.PartialAsync("~/Views/Admin/Partials/_CourseFormModal.cshtml")
                         </div>
 
                         @if (Model == null || !Model.Any())
@@ -82,9 +93,17 @@
     </div>
 </div>
 
+@* IMPORTANT: include these ONCE only (siblings under <body>) *@
+@await Html.PartialAsync("~/Views/Admin/Partials/_CourseFormModal.cshtml")
+@await Html.PartialAsync("~/Views/Admin/Partials/_ProgramFormModal.cshtml")
+@await Html.PartialAsync("~/Views/Admin/Partials/_ProgramProspectusModal.cshtml")
+
+@* 🔽 Render the Course Picker exactly once — as a sibling, NOT inside the Prospectus *@
+@await Html.PartialAsync("~/Views/Admin/Partials/_CoursePickerModal.cshtml")
+
 @section Scripts {
     <script>
-        // Load Programs table (READ-ONLY) from /admin/programs/list
+        // --- Programs table loader (AJAX) ---
         async function loadProgramTable(q) {
           const host = document.getElementById('programsTableHost');
           const url = '/admin/programs/list' + (q ? ('?q=' + encodeURIComponent(q)) : '');
@@ -98,71 +117,109 @@
 
         // Load when the Programs tab becomes active
         document.addEventListener('shown.bs.tab', (e) => {
-          if (e.target?.getAttribute('data-bs-target') === '#programs') {
-            loadProgramTable();
+          if (e.target?.getAttribute('data-bs-target') === '#programs') loadProgramTable();
+        });
+
+        // --- Open Prospectus and preload existing courses quickly ---
+        document.addEventListener('click', async (e) => {
+          const btn = e.target.closest('[data-action="manage-courses"]');
+          if (!btn) return;
+
+          const programId   = btn.dataset.programId;
+          const programCode = btn.dataset.programCode || '—';
+          const programName = btn.dataset.programName || '—';
+
+          const modal = document.getElementById('programProspectusModal');
+          // Set metadata for child modal to read
+          modal.dataset.programId = programId;
+          modal.querySelector('#sumCode').textContent = programCode;
+          modal.querySelector('#sumName').textContent = programName;
+
+          // Show lightweight "Loading…" placeholders
+          document.querySelectorAll('tbody[data-term-table]').forEach(tbody => {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>';
+          });
+
+          // Fetch all 8 term lists in parallel and paint
+          const jobs = [];
+          for (let y=1; y<=4; y++) for (let t=1; t<=2; t++) {
+            jobs.push(
+              fetch(`/admin/programs/${programId}/term?year=${y}&term=${t}`)
+                .then(r => r.json())
+                .then(d => {
+                  const host = document.querySelector(`tbody[data-term-table][data-year="${y}"][data-term="${t}"]`);
+                  if (!host) return;
+                  host.innerHTML = '';
+                  (d.items || []).forEach(it => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.id = it.id;
+                    tr.dataset.courseCode = it.code || ''; // <-- needed for filtering in picker
+                    tr.setAttribute('data-row', 'course');
+                    tr.innerHTML = `
+                      <td>${it.code ?? ''}</td>
+                      <td>${it.title ?? ''}</td>
+                      <td class="text-center">${it.lec ?? 0}</td>
+                      <td class="text-center">${it.lab ?? 0}</td>
+                      <td class="text-center" data-col="units">${(it.units ?? 0)}</td>
+                      <td>${it.prereq ?? '—'}</td>
+                      <td class="text-end">
+                        <button class="btn btn-sm btn-outline-danger" data-remove>Remove</button>
+                      </td>`;
+                    host.appendChild(tr);
+                  });
+                  if (!host.children.length) {
+                    host.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>';
+                  }
+                  if (window.recalcUnits) {
+                    const key = `Y${y}T${t}`;
+                    window.recalcUnits(key);
+                  }
+                })
+                .catch(() => {
+                  const host = document.querySelector(`tbody[data-term-table][data-year="${y}"][data-term="${t}"]`);
+                  if (host) host.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load.</td></tr>';
+                })
+            );
           }
+          await Promise.all(jobs);
+
+          bootstrap.Modal.getOrCreateInstance(modal).show();
         });
 
-        // If Programs tab is active on first load (optional)
-        document.addEventListener('DOMContentLoaded', () => {
-          const active = document.querySelector('.nav-link.active')?.getAttribute('data-bs-target');
-          if (active === '#programs') loadProgramTable();
-        });
-    </script>
-
-    <script>
-        // ADD PROGRAM modal -> POST as FormData to /admin/programs/create
+        // --- Nested modal glue: parent stays open; picker close only hides picker ---
         (function () {
-          const form  = document.getElementById('addProgramForm');
-          const errEl = document.getElementById('addProgramError');
-          const btn   = document.getElementById('btnAddProgram');
-          const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
+          const parentEl = document.getElementById('programProspectusModal');
+          const childEl  = document.getElementById('coursePickerModal');
+          if (!parentEl || !childEl) return;
 
-          if (!form) return;
+          // Prevent closing parent while child is open
+          parentEl.addEventListener('hide.bs.modal', (e) => {
+            if (childEl.classList.contains('show')) e.preventDefault();
+          });
 
-          form.addEventListener('submit', async (ev) => {
-            ev.preventDefault();
-            showErr('');
-            form.classList.remove('was-validated');
+          // Keep scroll lock when child opens/closes
+          childEl.addEventListener('shown.bs.modal', () => {
+            const bds = document.querySelectorAll('.modal-backdrop');
+            bds[bds.length - 1]?.classList.add('stacked');
+            document.body.classList.add('modal-open');
+          });
 
-            if (!form.checkValidity()) {
-              form.classList.add('was-validated');
-              return;
+          childEl.addEventListener('hidden.bs.modal', () => {
+            if (parentEl.classList.contains('show')) {
+              document.body.classList.add('modal-open');
+              const lastTrigger = parentEl.querySelector('[data-bs-target="#coursePickerModal"]');
+              (lastTrigger || parentEl).focus();
             }
+          });
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-            try {
-              const fd = new FormData();
-              fd.append('code', (form.querySelector('[name="Code"]').value || '').trim());
-              fd.append('name', (form.querySelector('[name="Name"]').value || '').trim());
-              fd.append('notes', ''); // backend accepts it even if DB ignores it
-
-              const res = await fetch('/admin/programs/create', { method: 'POST', body: fd });
-              if (!res.ok) throw new Error(`Server returned ${res.status}`);
-
-              const data = await res.json();
-              if (data.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('addProgramModal')).hide();
-                form.reset();
-
-                // If Programs tab is visible, refresh it
-                const isProgramsActive = document.querySelector('.nav-link.active')?.getAttribute('data-bs-target') === '#programs';
-                if (isProgramsActive) loadProgramTable();
-              } else {
-                showErr(data.message || 'Failed to add program.');
-              }
-            } catch (err) {
-              console.error(err);
-              showErr('An unexpected error occurred. Please try again.');
-            } finally {
-              btn.disabled = false;
-              btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Add Program';
-            }
+          // Ensure the child close button only hides the child
+          childEl.querySelector('.btn-close')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            bootstrap.Modal.getOrCreateInstance(childEl).hide();
           });
         })();
     </script>
 
-    <!-- Your existing course modal script remains below (unchanged) -->
+    @* Course Picker logic is inline inside the partial; DO NOT include external js to avoid duplicates *@
+    @* <script src="~/js/course-picker.js"></script> *@
 }

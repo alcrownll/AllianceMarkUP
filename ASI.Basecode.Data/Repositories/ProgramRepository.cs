@@ -1,6 +1,8 @@
-﻿using System.Linq;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Repositories
 {
@@ -35,6 +37,18 @@ namespace ASI.Basecode.Data.Repositories
             if (entity == null) return;
             _ctx.Programs.Remove(entity);
             _ctx.SaveChanges();
+        }
+
+        public async Task<bool> SetActiveAsync(int programId, bool isActive)
+        {
+            var stub = new Program { ProgramId = programId };
+
+            _ctx.Attach(stub);
+            _ctx.Entry(stub).Property(p => p.IsActive).CurrentValue = isActive;
+            _ctx.Entry(stub).Property(p => p.IsActive).IsModified = true;
+
+            await _ctx.SaveChangesAsync();
+            return true;
         }
     }
 }

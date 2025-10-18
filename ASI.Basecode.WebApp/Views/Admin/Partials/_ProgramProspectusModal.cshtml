@@ -1,5 +1,6 @@
-﻿@* Step 2: Prospectus / Curriculum Builder (UI-only) *@
-<div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+﻿@* Views/Admin/Partials/_ProgramProspectusModal.cshtml *@
+<div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xxl">
         <div class="modal-content shadow">
             <div class="modal-header">
@@ -21,96 +22,49 @@
                 </ul>
 
                 <div class="tab-content pt-3">
-                    @* ---------- YEAR 1 ---------- *@
                     <div class="tab-pane fade show active" id="year1" role="tabpanel">
                         <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
                                  view-data='new ViewDataDictionary(ViewData) { { "Year", 1 } }' />
                     </div>
-
-                    @* ---------- YEAR 2 ---------- *@
                     <div class="tab-pane fade" id="year2" role="tabpanel">
                         <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
                                  view-data='new ViewDataDictionary(ViewData) { { "Year", 2 } }' />
                     </div>
-
-                    @* ---------- YEAR 3 ---------- *@
                     <div class="tab-pane fade" id="year3" role="tabpanel">
                         <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
                                  view-data='new ViewDataDictionary(ViewData) { { "Year", 3 } }' />
                     </div>
-
-                    @* ---------- YEAR 4 ---------- *@
                     <div class="tab-pane fade" id="year4" role="tabpanel">
                         <partial name="~/Views/Admin/Partials/_TermSection.cshtml"
                                  view-data='new ViewDataDictionary(ViewData) { { "Year", 4 } }' />
                     </div>
-                </div> <!-- /tab-content -->
+                </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" id="btnBackToProgram">Back</button>
+                <div id="finishErr" class="text-danger small me-auto" style="display:none;"></div>
                 <button type="button" class="btn btn-primary" id="btnFinishProspectus">Finish</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    // back to Step 1
-    document.getElementById('btnBackToProgram')?.addEventListener('click', function () {
-      const m2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
-      const m1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('addProgramModal'));
-      m2.hide(); setTimeout(() => m1.show(), 150);
-    });
-</script>
-
-<script>
-    (function () {
-      const m2El = document.getElementById('programProspectusModal');
-      if (!m2El) return;
-
-      function paintHeader() {
-        const code =
-          (window.PROGRAM_DRAFT && window.PROGRAM_DRAFT.program && window.PROGRAM_DRAFT.program.code) || '—';
-        const name =
-          (window.PROGRAM_DRAFT && window.PROGRAM_DRAFT.program && window.PROGRAM_DRAFT.program.name) || '—';
-
-        const sumCode = m2El.querySelector('#sumCode') || document.getElementById('sumCode');
-        const sumName = m2El.querySelector('#sumName') || document.getElementById('sumName');
-        if (sumCode) sumCode.textContent = code || '—';
-        if (sumName) sumName.textContent = name || '—';
-      }
-
-      // Paint when the modal is about to show and after it’s shown
-      m2El.addEventListener('show.bs.modal', paintHeader);
-      m2El.addEventListener('shown.bs.modal', paintHeader);
-
-      // If the DOM already has values (e.g., dev reload with modal visible), try once
-      document.addEventListener('DOMContentLoaded', paintHeader);
-    })();
-</script>
-
-
 <style>
-    /* Prospectus modal: wider + keep headers on one line */
     #programProspectusModal .modal-dialog {
         max-width: 80vw;
     }
 
-    #programProspectusModal table th,
-    #programProspectusModal table td {
+    #programProspectusModal table th, #programProspectusModal table td {
         white-space: nowrap;
     }
-    /* 1) Prevent “editable-looking” caret on the nav tabs */
+
     #programProspectusModal .nav-tabs .nav-link {
         user-select: none;
-        -webkit-user-select: none;
         caret-color: transparent;
     }
 
-    /* 2) Make the two term cards always the same height and keep tables neat */
     #programProspectusModal .tab-pane > .col-12.d-xl-flex {
-        align-items: stretch; /* ensure both cards line up in height */
+        align-items: stretch;
     }
 
     #programProspectusModal .card {
@@ -119,225 +73,111 @@
     }
 
     #programProspectusModal .card-body {
-        flex: 1 1 auto; /* fill the available height */
-        min-height: 0; /* allow inner scrolling */
+        flex: 1 1 auto;
+        min-height: 0;
     }
 
+    /* Stacked modal z-indexes for nested Course Picker */
+    .modal-backdrop.stacked {
+        z-index: 1060 !important;
+    }
+    /* backdrop between parent & child */
+    #coursePickerModal {
+        z-index: 1065 !important;
+    }
+    /* child above that backdrop */
 </style>
 
 <script>
     (function () {
+      if (window.__prospectusInitBound) return;
+      window.__prospectusInitBound = true;
+
       const parent = document.getElementById('programProspectusModal');
-      const child  = document.getElementById('coursePickerModal');
-      if (!parent || !child) return;
 
-      let childIsClosing = false;
+      // Expose for child modal (Course Picker) to read ProgramId
+      window.getCurrentProgramId = function () { return parent?.dataset.programId || ''; };
 
-      // Fires right before Bootstrap starts the hide transition on the child
-      child.addEventListener('hide.bs.modal', () => {
-        childIsClosing = true;
-      });
-
-      // Block parent hide if child is open OR in the process of closing
-      parent.addEventListener('hide.bs.modal', (e) => {
-        if (childIsClosing || child.classList.contains('show')) {
-          e.preventDefault();
-        }
-      });
-
-      // Keep body scroll lock while child is visible
-      child.addEventListener('shown.bs.modal', () => {
-        document.body.classList.add('modal-open');
-      });
-
-      // Once child fully hidden, restore body lock and focus, clear the flag
-      child.addEventListener('hidden.bs.modal', () => {
-        childIsClosing = false;
-        if (parent.classList.contains('show')) {
-          document.body.classList.add('modal-open');
-          const lastTrigger = document.querySelector('[data-bs-target="#coursePickerModal"]');
-          (lastTrigger || parent).focus();
-        }
-      });
-    })();
-</script>
-
-<script>
-    (function () {
-      const finishBtn = document.getElementById('btnFinishProspectus');
-
-      function setErr(m) {
-        let el = document.getElementById('finishErr');
-        if (!el) {
-          el = document.createElement('div');
-          el.id = 'finishErr';
-          el.className = 'text-danger small me-auto';
-          document.querySelector('#programProspectusModal .modal-footer')?.prepend(el);
-        }
-        el.innerHTML = m || '';
-        el.style.display = m ? 'block' : 'none';
+      function setErr(msg) {
+        const el = document.getElementById('finishErr');
+        if (!el) return;
+        el.innerHTML = msg || '';
+        el.style.display = msg ? 'block' : 'none';
       }
-      function clearErr(){ setErr(''); }
+      const clearErr = () => setErr('');
 
-      function buildPayload() {
-        const draft = window.PROGRAM_DRAFT || window.prospectus || {};
-        const p = draft.program || draft;
-
-        const code  = (p.code  || '').trim();
-        const name  = (p.name  || '').trim();
-        const notes = (p.notes || '').toString();
-
-        const yearsDraft = Array.isArray(draft.years) ? draft.years : [];
-        const years = yearsDraft
-          .map(y => ({
-            year: Number(y.year ?? y.Year ?? 0),
-            terms: (y.terms || []).map(t => ({
-              term: Number(t.term ?? t.Term ?? 0),
-              courses: (t.courses || [])
-                .map(c => ({
-                  courseId: Number(c.courseId ?? c.CourseId ?? 0),
-                  prereqCourseId: Number((c.prereqCourseId ?? c.PrerequisiteCourseId ?? 0) || 0)
-                }))
-                .filter(c => c.courseId > 0)
-            }))
-            .filter(t => t.term >= 1 && t.term <= 2 && t.courses.length > 0)
-          }))
-          .filter(y => y.year >= 1 && y.year <= 4 && y.terms.length > 0);
-
-        return { code, name, notes, years };
-      }
-
-      async function onFinishClick() {
-        clearErr();
-
-        const payload = buildPayload();
-        if (!payload.code || !payload.name) {
-          setErr('Program Code and Name are required.');
-          return;
-        }
-        const hasAnyCourse = payload.years.some(y => y.terms.some(t => t.courses.length > 0));
-        if (!hasAnyCourse) {
-          setErr('Add at least one course before finishing.');
-          return;
-        }
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-        const oldHtml = finishBtn.innerHTML;
-        finishBtn.disabled = true;
-        finishBtn.innerHTML = 'Saving…';
+      async function loadOneTerm(programId, y, t) {
+        const host = document.querySelector(`tbody[data-term-table][data-year="${y}"][data-term="${t}"]`);
+        if (!host) return;
+        host.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>';
 
         try {
-          const res = await fetch('/admin/programs/compose', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { 'RequestVerificationToken': token } : {})
-            },
-            body: JSON.stringify(payload)
+          const r = await fetch(`/admin/programs/${programId}/term?year=${y}&term=${t}`);
+          const d = await r.json();
+          host.innerHTML = '';
+          (d.items || []).forEach(it => {
+            const tr = document.createElement('tr');
+            tr.dataset.id = it.id;                 // ProgramCourseId
+            tr.dataset.courseCode = it.code || ''; // used by CoursePicker filtering
+            tr.setAttribute('data-row', 'course');
+            tr.innerHTML = `
+              <td>${it.code ?? ''}</td>
+              <td>${it.title ?? ''}</td>
+              <td class="text-center">${it.lec ?? 0}</td>
+              <td class="text-center">${it.lab ?? 0}</td>
+              <td class="text-center" data-col="units">${(it.units ?? 0)}</td>
+              <td>${it.prereq ?? '—'}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" data-remove>Remove</button>
+              </td>`;
+            host.appendChild(tr);
           });
-
-          // Try to parse JSON, but also keep the raw text for debugging
-          const rawText = await res.text();
-          let data = {};
-          try { data = rawText ? JSON.parse(rawText) : {}; } catch { /* ignore */ }
-
-          // Debug to console to help us if anything still fails
-          console.debug('compose response:', { status: res.status, data, rawText });
-
-          if (!res.ok || data.ok === false) {
-               const parts = [];
-                if (data?.message) parts.push(data.message);
-                if (data?.error)   parts.push(data.error);
-                if (Array.isArray(data?.errors) && data.errors.length) {
-                  parts.push(data.errors.join('<br>'));
-                }
-                if (!parts.length) parts.push(`Server error (${res.status})`);
-                setErr(parts.join('<br>'));
-
-            finishBtn.disabled = false;
-            finishBtn.innerHTML = oldHtml;
-            return;
+          if (!host.children.length) {
+            host.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>';
           }
-
-          // SUCCESS UI
-          window.PROGRAM_DRAFT = { program: { code:'', name:'', notes:'', years: 4 }, years: [] };
-
-          const savedModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('programSavedModal'));
-          // Update the line under the checkmark with the program code/name
-          const txt = document.getElementById('programSavedText');
-          if (txt) txt.textContent = `${data.code || payload.code} — ${data.name || payload.name}`;
-
-          savedModal.show();
-
-          // After 2.5s: hide success, hide prospectus, reload
-          setTimeout(() => {
-            try { savedModal.hide(); } catch {}
-            const prospectus = bootstrap.Modal.getOrCreateInstance(document.getElementById('programProspectusModal'));
-            try { prospectus.hide(); } catch {}
-            // full page refresh to reflect new program list
-            window.location.reload();
-          }, 2500);
-
-        } catch (e) {
-          setErr(e.message || 'Failed to save program.');
-          finishBtn.disabled = false;
-          finishBtn.innerHTML = oldHtml;
+          if (window.recalcUnits) window.recalcUnits(`Y${y}T${t}`);
+        } catch {
+          host.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Failed to load.</td></tr>';
         }
       }
 
-      finishBtn?.addEventListener('click', onFinishClick);
+      async function loadAllTerms(programId) {
+        // show placeholders
+        document.querySelectorAll('tbody[data-term-table]').forEach(tbody => {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>';
+        });
+        const jobs = [];
+        for (let y = 1; y <= 4; y++) for (let t = 1; t <= 2; t++) jobs.push(loadOneTerm(programId, y, t));
+        await Promise.all(jobs);
+      }
+
+      // When Prospectus opens, set Program metadata and load terms
+      parent.addEventListener('show.bs.modal', async (e) => {
+        const btn  = e.relatedTarget;
+        const pid  = btn?.getAttribute('data-program-id')   ?? '';
+        const code = btn?.getAttribute('data-program-code') ?? '—';
+        const name = btn?.getAttribute('data-program-name') ?? '—';
+
+        parent.dataset.programId = pid;
+        const sumCode = document.getElementById('sumCode');
+        const sumName = document.getElementById('sumName');
+        if (sumCode) sumCode.textContent = code;
+        if (sumName) sumName.textContent = name;
+
+        clearErr();
+        if (pid) await loadAllTerms(pid);
+      });
+
+      parent.addEventListener('hidden.bs.modal', () => {
+        if (!document.querySelector('.modal.show')) document.body.classList.remove('modal-open');
+        clearErr();
+      });
+
+      // Finish button (placeholder success toast)
+      document.getElementById('btnFinishProspectus')?.addEventListener('click', () => {
+        clearErr();
+        setErr('Saved.');
+        setTimeout(() => setErr(''), 1200);
+      });
     })();
 </script>
-
-<script>
-    // Show "saved" modal for 3s, then close Prospectus (and optionally refresh)
-    function showProgramSavedAndExit({ code = "", name = "", programId = null, after = null } = {}) {
-      const parentEl  = document.getElementById('programProspectusModal');
-      const savedEl   = document.getElementById('programSavedModal');
-      const sub       = document.getElementById('programSavedSubtext');
-      if (!parentEl || !savedEl) return;
-
-      // Subtext like: BSCS — Computer Science (ID: 12)
-      const parts = [];
-      if (code) parts.push(code);
-      if (name) parts.push(name);
-      if (programId) parts.push(`ID: ${programId}`);
-      if (sub) sub.textContent = parts.join(' — ');
-
-      const saved  = bootstrap.Modal.getOrCreateInstance(savedEl);
-      const parent = bootstrap.Modal.getOrCreateInstance(parentEl);
-
-      // keep parent open while child is visible
-      const preventParentHide = (e) => {
-        if (savedEl.classList.contains('show')) e.preventDefault();
-      };
-      parentEl.addEventListener('hide.bs.modal', preventParentHide);
-
-      savedEl.addEventListener('shown.bs.modal', () => {
-        document.body.classList.add('modal-open');
-      });
-      savedEl.addEventListener('hidden.bs.modal', () => {
-        parentEl.removeEventListener('hide.bs.modal', preventParentHide);
-        if (parentEl.classList.contains('show')) {
-          document.body.classList.add('modal-open');
-        }
-      });
-
-      saved.show();
-
-      // After 3s: hide confirmation, then hide parent; then optional callback
-      setTimeout(() => {
-        saved.hide();
-        setTimeout(() => {
-          parent.hide();
-          if (typeof after === 'function') after();
-        }, 150);
-      }, 3000);
-    }
-</script>
-@await Html.PartialAsync("~/Views/Admin/Partials/_ProgramSavedModal.cshtml")
-
-
-
-@await Html.PartialAsync("~/Views/Admin/Partials/_CoursePickerModal.cshtml")

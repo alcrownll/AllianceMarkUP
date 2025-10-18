@@ -1,123 +1,78 @@
 ﻿@using ASI.Basecode.Data.Models
 @model IEnumerable<Program>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 16rem;">Code</th>
-                        <th>Description</th>
-                        <th class="text-center" style="width: 8rem;">Status</th>
-                        <th class="text-end" style="width: 18rem;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var p in Model.OrderBy(x => x.ProgramCode))
-                        {
-                            var totalCourses = p.ProgramCourses?.Count ?? 0;
-
-                            <tr>
-                                <!-- Code -->
-                                <td class="fw-semibold">
-                                    <span class="text-uppercase">@p.ProgramCode</span>
-                                </td>
-
-                                <!-- Name + Course Count -->
-                                <td>
-                                    <div class="fw-medium">@p.ProgramName</div>
-                                    @if (totalCourses > 0)
-                                    {
-                                        <div class="small text-muted mt-1">Courses: @totalCourses</div>
-                                    }
-                                </td>
-
-                                <!-- IsActive -->
-                                <td class="text-center">
-                                    @if (p.IsActive)
-                                    {
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactive</span>
-                                    }
-                                </td>
-
-                                <!-- Actions -->
-                                <td class="text-end">
-                                    <div class="btn-group" role="group" aria-label="Program actions">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-primary"
-                                                data-action="manage"
-                                                data-program-id="@p.ProgramId">
-                                            Manage Courses
-                                        </button>
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-secondary"
-                                                data-action="edit"
-                                                data-program-id="@p.ProgramId">
-                                            Edit
-                                        </button>
-                                        <button type="button"
-                                                class="btn btn-sm @(p.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                                data-action="toggle"
-                                                data-program-id="@p.ProgramId">
-                                            @(p.IsActive ? "Deactivate" : "Activate")
-                                        </button>
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
-                                                data-action="delete"
-                                                data-program-id="@p.ProgramId">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
-                                No programs found. Click <span class="fw-semibold">Add Program</span> to create one.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        /* Hooks only (no behavior yet) — wire these up later */
-        document.addEventListener('click', function (e) {
-            const btn = e.target.closest('button[data-action]');
-            if (!btn) return;
-
-            const id = +btn.getAttribute('data-program-id');
-            const action = btn.getAttribute('data-action');
-
-            switch (action) {
-                case 'manage':
-                    // Navigate to curriculum builder or management page
-                    // window.location.href = `/AdminProgram/Curriculum?id=${id}`;
-                    break;
-                case 'edit':
-                    // Open edit modal (to be implemented)
-                    break;
-                case 'toggle':
-                    // Activate/deactivate (to be implemented)
-                    break;
-                case 'delete':
-                    // Confirm + delete (to be implemented)
-                    break;
+<div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th style="width:16rem;">Code</th>
+                <th>Description</th>
+                <th class="text-center" style="width:10rem;">Status</th>
+                <th class="text-end" style="width:22rem;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model == null || !Model.Any())
+            {
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No programs found.</td>
+                </tr>
             }
-        });
-    </script>
-}
+            else
+            {
+                foreach (var p in Model.OrderBy(x => x.ProgramCode))
+                {
+                    <tr>
+                        <td class="fw-semibold text-uppercase">@p.ProgramCode</td>
+                        <td>@p.ProgramName</td>
+                        <td class="text-center">
+                            @if (p.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <!-- Manage Courses (opens prospectus) -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        data-action="manage-courses"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#programProspectusModal"
+                                        data-program-id="@p.ProgramId"
+                                        data-program-code="@p.ProgramCode"
+                                        data-program-name="@p.ProgramName">
+                                    Manage Courses
+                                </button>
+
+                                <!-- Edit Program (kept as a link) -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        data-action="program-edit"
+                                        data-program-id="@p.ProgramId"
+                                        data-program-code="@p.ProgramCode"
+                                        data-program-name="@p.ProgramName"
+                                        data-program-active="@p.IsActive.ToString().ToLower()">
+                                    Edit
+                                </button>
+
+
+                                <!-- Delete -->
+                                <form action="/admin/programs/@p.ProgramId/delete"
+                                      method="post"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Delete this program?');">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
