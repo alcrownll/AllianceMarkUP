@@ -21,4 +21,12 @@ namespace ASI.Basecode.Services.ServiceModels
         public List<NotificationListItemVm> Items { get; set; } = new();
         public int UnreadCount { get; set; }
     }
+
+    public class ActivityItemVm
+    {
+        public string Title { get; set; } = "";
+        public string? Description { get; set; }
+        public string When { get; set; } = ""; // or DateTime if you prefer
+        public string? ActionType { get; set; } // for icon routing (optional)
+    }
 }

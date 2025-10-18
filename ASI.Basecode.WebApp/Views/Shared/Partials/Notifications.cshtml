@@ -1,76 +1,241 @@
 ﻿@model ASI.Basecode.Services.ServiceModels.NotificationPageVm
+
 @{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+
+    // Use the correct item type of your VM property
+    var items = (Model?.Items ?? new List<ASI.Basecode.Services.ServiceModels.NotificationListItemVm>()).ToList();
+    var unread = items.Where(i => !i.IsRead).ToList();
+    var history = items; // all
 }
+
 
 @section Styles {
     <link rel="stylesheet" href="~/css/notifications.css" />
+    <style>
+        /* small tab tweaks that build on your existing .n-* styles */
+        .n-tabs {
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: .25rem;
+        }
+
+            .n-tabs .nav-link {
+                border: 0;
+                border-bottom: 2px solid transparent;
+                color: #6c757d;
+            }
+
+                .n-tabs .nav-link.active {
+                    color: #0d6efd;
+                    border-bottom-color: #0d6efd;
+                    background: transparent;
+                }
+
+        .n-badge {
+            font-size: .75rem;
+            padding: .15rem .4rem;
+            border-radius: 999px;
+            background: #eef2ff;
+        }
+
+        .n-empty {
+            padding: 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .n-actions .n-btn {
+            white-space: nowrap;
+        }
+    </style>
 }
 
 <div class="notifications-page">
     <div class="n-card">
         <div class="n-header">
-            <h3 class="n-title"><i class="fa-solid fa-bell me-2"></i>@ViewData["PageHeader"]</h3>
+            <h3 class="n-title">
+                <i class="fa-solid fa-bell me-2"></i>@(ViewData["PageHeader"] ?? "Notifications")
+            </h3>
             <div class="n-actions">
-                @if (Model.UnreadCount > 0)
+                @* This container is duplicated for Unread tab only via JS toggling; we keep it in DOM once for simplicity *@
+                @if (unread.Count > 0)
                 {
-                    <form id="formAll" method="post" action="/Notifications/MarkAllRead" class="m-0 p-0">
+                    <form id="formAll" method="post" action="/Notifications/MarkAllRead" class="m-0 p-0 d-none" data-show-on="unread">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="n-btn" id="btnMarkAll">
-                            <i class="fa-solid fa-check-double me-1"></i>Mark all as read (@Model.UnreadCount)
+                            <i class="fa-solid fa-check-double me-1"></i>
+                            Mark all as read (@unread.Count)
                         </button>
                     </form>
                 }
             </div>
         </div>
 
-        @if (Model.Items != null && Model.Items.Any())
-        {
-            <ul class="n-list" id="notifList">
-                @foreach (var item in Model.Items)
-                {
-                    var icon = item.Title?.ToLowerInvariant() switch
-                    {
-                        var t when t.Contains("grade") => "fa-book-open-reader",
-                        var t when t.Contains("profile") => "fa-user-pen",
-                        var t when t.Contains("schedule") => "fa-calendar-days",
-                        _ => "fa-bell"
-                    };
+        <!-- Tabs -->
+        <ul class="nav n-tabs" id="notifTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-unread" data-bs-toggle="tab" data-bs-target="#pane-unread"
+                        type="button" role="tab" aria-controls="pane-unread" aria-selected="true">
+                    Unread <span class="n-badge ms-2">@unread.Count</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-history" data-bs-toggle="tab" data-bs-target="#pane-history"
+                        type="button" role="tab" aria-controls="pane-history" aria-selected="false">
+                    History (All) <span class="n-badge ms-2">@items.Count</span>
+                </button>
+            </li>
+        </ul>
 
-                    <li class="n-item @(item.IsRead ? "" : "unread")" data-id="@item.Id">
-                        <div class="n-main">
-                            <div class="n-icon"><i class="fa-solid @icon"></i></div>
-                            <div class="n-content">
-                                <div class="n-row">
-                                    <div class="n-title-sm">@item.Title</div>
-                                    <div class="n-when">@item.When</div>
-                                </div>
-                                @if (!string.IsNullOrWhiteSpace(item.Message))
-                                {
-                                    <div class="n-sub">@item.Message</div>
-                                }
-                            </div>
-                        </div>
-                        @if (!item.IsRead)
+        <div class="tab-content mt-3">
+            <!-- Unread Pane -->
+            <div class="tab-pane fade show active" id="pane-unread" role="tabpanel" aria-labelledby="tab-unread" tabindex="0">
+                @if (unread.Any())
+                {
+                    <ul class="n-list" id="notifListUnread">
+                        @foreach (var item in unread)
                         {
-                            <form method="post" action="/Notifications/MarkRead" class="m-0 p-0 n-action">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="n-btn-small">
-                                    <i class="fa-solid fa-circle-check me-1"></i>Mark Read
-                                </button>
-                            </form>
+                            var icon = item.Title?.ToLowerInvariant() switch
+                            {
+                                var t when t.Contains("grade") => "fa-book-open-reader",
+                                var t when t.Contains("profile") => "fa-user-pen",
+                                var t when t.Contains("schedule") => "fa-calendar-days",
+                                _ => "fa-bell"
+                            };
+
+                            <li class="n-item unread" data-id="@item.Id">
+                                <div class="n-main">
+                                    <div class="n-icon"><i class="fa-solid @icon"></i></div>
+                                    <div class="n-content">
+                                        <div class="n-row">
+                                            <div class="n-title-sm">@item.Title</div>
+                                            <div class="n-when">@item.When</div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(item.Message))
+                                        {
+                                            <div class="n-sub">@item.Message</div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <form method="post" action="/Notifications/MarkRead" class="m-0 p-0 n-action">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="n-btn-small">
+                                        <i class="fa-solid fa-circle-check me-1"></i>Mark Read
+                                    </button>
+                                </form>
+                            </li>
                         }
-                    </li>
+                    </ul>
                 }
-            </ul>
-        }
-        else
-        {
-            <div class="n-empty">
-                <i class="fa-regular fa-bell-slash fa-2x mb-2"></i>
-                <p>You have no notifications yet.</p>
+                else
+                {
+                    <div class="n-empty">
+                        <i class="fa-regular fa-bell-slash fa-2x mb-2"></i>
+                        <p>Nice! You’re all caught up—no unread notifications.</p>
+                    </div>
+                }
             </div>
-        }
+
+            <!-- History Pane -->
+            <div class="tab-pane fade" id="pane-history" role="tabpanel" aria-labelledby="tab-history" tabindex="0">
+                @if (history.Any())
+                {
+                    <ul class="n-list" id="notifListHistory">
+                        @foreach (var item in history)
+                        {
+                            var icon = item.Title?.ToLowerInvariant() switch
+                            {
+                                var t when t.Contains("grade") => "fa-book-open-reader",
+                                var t when t.Contains("profile") => "fa-user-pen",
+                                var t when t.Contains("schedule") => "fa-calendar-days",
+                                _ => "fa-bell"
+                            };
+
+                            <li class="n-item @(item.IsRead ? "" : "unread")" data-id="@item.Id">
+                                <div class="n-main">
+                                    <div class="n-icon"><i class="fa-solid @icon"></i></div>
+                                    <div class="n-content">
+                                        <div class="n-row">
+                                            <div class="n-title-sm">@item.Title</div>
+                                            <div class="n-when">@item.When</div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(item.Message))
+                                        {
+                                            <div class="n-sub">@item.Message</div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (!item.IsRead)
+                                {
+                                    <form method="post" action="/Notifications/MarkRead" class="m-0 p-0 n-action">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="n-btn-small">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Mark Read
+                                        </button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="n-empty">
+                        <i class="fa-regular fa-bell-slash fa-2x mb-2"></i>
+                        <p>You have no notifications yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Helper: read URL param or hash
+            function getInitialTab() {
+                const url = new URL(window.location.href);
+                const qp = (url.searchParams.get('tab') || '').toLowerCase();
+                const hash = (url.hash || '').replace('#', '').toLowerCase();
+                const saved = localStorage.getItem('notifTab');
+
+                return qp || hash || saved || 'unread';
+            }
+
+            function showMarkAllFor(activeId) {
+                const formAll = document.querySelector('#formAll');
+                if (!formAll) return;
+                const target = formAll.getAttribute('data-show-on') || 'unread';
+                formAll.classList.toggle('d-none', activeId !== target);
+            }
+
+            // Activate initial tab
+            const initial = getInitialTab();
+            const targetBtn = document.querySelector(
+                initial === 'history' ? '#tab-history' : '#tab-unread'
+            );
+            if (targetBtn) {
+                const t = new bootstrap.Tab(targetBtn);
+                t.show();
+                showMarkAllFor(initial === 'history' ? 'history' : 'unread');
+            }
+
+            // Listen for tab changes
+            document.querySelectorAll('#notifTabs .nav-link').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', (e) => {
+                    const id = e.target.id === 'tab-history' ? 'history' : 'unread';
+                    // Persist preference and update URL hash (no reload)
+                    localStorage.setItem('notifTab', id);
+                    history.replaceState(null, '', '#' + id);
+                    showMarkAllFor(id);
+                });
+            });
+        })();
+    </script>
+}
