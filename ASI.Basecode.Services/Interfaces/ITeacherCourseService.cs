@@ -21,6 +21,9 @@ namespace ASI.Basecode.Services.Interfaces
         Task<List<int>> GetTeacherYearLevelsAsync(int teacherId);
         Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchName = null, string searchId = null, string program = null, int? yearLevel = null);
         
+        // For semester functionality
+        string GetCurrentSemesterName();
+        
         // For Excel upload functionality
         Task<ExcelUploadResultModel> ProcessExcelGradeUploadAsync(int assignedCourseId, List<ExcelGradeUploadModel> excelGrades);
         ExcelUploadResultModel ParseExcelFile(byte[] fileBytes);

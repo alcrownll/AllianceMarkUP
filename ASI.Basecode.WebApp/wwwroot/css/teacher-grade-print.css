@@ -79,11 +79,24 @@
     /* ---------- Header ---------- */
     .sheet-header {
         display: grid;
-        grid-template-columns: 84px 1fr 96px;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
         align-items: center;
         gap: 16px;
         margin-bottom: 8px;
     }
+
+        .sheet-header .logo-container {
+            text-align: center;
+        }
+
+        .sheet-header .logo-center {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
 
         .sheet-header .logo-left {
             width: 170px;

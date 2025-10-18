@@ -86,6 +86,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (teacherId == 0)
                 {
                     TempData["Error"] = $"Unable to identify teacher. UserId: {userId}, TeacherId: {teacherId}. Please check if you have a Teacher record.";
+                    ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
+                    ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                     return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
                 }
 
@@ -117,12 +119,16 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.FilteredStudents = filteredStudents;
                 ViewBag.HasFilters = hasFilters;
                 ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
+                ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
 
                 return View("TeacherCourses", classSchedules);
             }
             catch (Exception ex)
             {
                 TempData["Error"] = $"An error occurred while loading courses: {ex.Message}";
+                // Set ViewBag values even in error case for proper view rendering
+                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
+                ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                 return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
             }
         }
