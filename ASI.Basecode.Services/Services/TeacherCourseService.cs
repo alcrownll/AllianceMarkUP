@@ -45,7 +45,7 @@ namespace ASI.Basecode.Services.Services
 
             var assignedCourses = await _assignedCourseRepository.GetAssignedCourses()
                 .Where(ac => ac.TeacherId == teacherId)
-                .Where(ac => string.IsNullOrEmpty(semester) || ac.Semester == currentSemester)
+                .Where(ac => string.IsNullOrEmpty(currentSemester) || ac.Semester == currentSemester)
                 .Include(ac => ac.Course)
                 .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
@@ -112,7 +112,7 @@ namespace ASI.Basecode.Services.Services
 
             var assignedCourses = await _assignedCourseRepository.GetAssignedCourses()
                 .Where(ac => ac.TeacherId == teacherId)
-                .Where(ac => string.IsNullOrEmpty(semester) || ac.Semester == currentSemester)
+                .Where(ac => string.IsNullOrEmpty(currentSemester) || ac.Semester == currentSemester)
                 .Include(ac => ac.Course)
                 .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
@@ -343,6 +343,11 @@ namespace ASI.Basecode.Services.Services
             return result.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList();
         }
 
+        public string GetCurrentSemesterName()
+        {
+            return GetCurrentSemester();
+        }
+
 
 
         #region Private Helper Methods
@@ -407,9 +412,13 @@ namespace ASI.Basecode.Services.Services
 
         private string GetCurrentSemester()
         {
-            var now = DateTime.UtcNow;
-            int syStart = now.Month >= 6 ? now.Year : now.Year - 1;
-            return $"{syStart}-{syStart + 1}-1"; // Default to First Semester
+            // Retrieve semester from AssignedCourses table
+            var semester = _assignedCourseRepository.GetAssignedCourses()
+                .Select(ac => ac.Semester)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .FirstOrDefault();
+            
+            return semester ?? "--"; // Default fallback if no semester found
         }
 
         private string FormatSchedule(List<ClassSchedule> schedules)
