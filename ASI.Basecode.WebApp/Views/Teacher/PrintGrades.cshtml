@@ -1,0 +1,161 @@
+@model List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel>
+@{
+    Layout = null; // No layout for print view
+    ViewData["Title"] = "Print Grades";
+
+    // Helper function to calculate remarks (same logic as JavaScript)
+    string CalculateRemarks(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+    {
+        var scores = new[] { prelims, midterm, semiFinal, final };
+        var weights = new[] { 0.3m, 0.3m, 0.2m, 0.2m };
+        
+        decimal weightedTotal = 0;
+        decimal weightSum = 0;
+        
+        for (int i = 0; i < scores.Length; i++)
+        {
+            if (scores[i].HasValue)
+            {
+                weightedTotal += scores[i].Value * weights[i];
+                weightSum += weights[i];
+            }
+        }
+        
+        if (weightSum <= 0) return "INCOMPLETE";
+        
+        decimal gpa = Math.Round(weightedTotal / weightSum, 2);
+        return gpa <= 3.0m ? "PASSED" : "FAILED";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    
+    <!-- Print-specific CSS -->
+    <link rel="stylesheet" href="~/css/teacher-grade-print.css" />
+    
+    <style>
+        /* Hide everything except print content */
+        body * {
+            visibility: hidden;
+        }
+        
+        .print-sheet, .print-sheet * {
+            visibility: visible;
+        }
+        
+        .print-sheet {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        
+        /* Auto-trigger print when page loads */
+        @@media screen {
+            body {
+                background: #f5f5f5;
+                font-family: Arial, sans-serif;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-sheet">
+        <div class="sheet-header">
+            <div class="logo-container">
+                <img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-center" />
+            </div>
+            <div class="header-text">
+                <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
+                <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
+                <div>Website: uclm.edu.ph</div>
+                <div>Email: lm@uc.edu.ph</div>
+            </div>
+        </div>
+
+        <div class="title">STUDENT GRADES REPORT</div>
+        <div class="sub-title">@ViewBag.CurrentSemester, S.Y. @ViewBag.CurrentSchoolYear</div>
+
+        <div class="info-grid">
+            <div class="lbl">Instructor</div><div class="val">: @User.Identity.Name</div>
+            <div class="lbl">EDP Code</div><div class="val">: @ViewBag.EDPCode</div>
+            <div class="lbl">Subject</div><div class="val">: @ViewBag.Subject</div>
+            <div class="lbl">Schedule</div><div class="val">: @ViewBag.Schedule</div>
+        </div>
+
+        <hr class="sep" />
+
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>ID Number</th>
+                    <th>Last Name</th>
+                    <th>First Name</th>
+                    <th>Course/Year</th>
+                    <th>Prelim</th>
+                    <th>Midterm</th>
+                    <th>Semi-Final</th>
+                    <th>Final</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int counter = 1;
+                    @foreach (var student in Model)
+                    {
+                        string remarks = CalculateRemarks(student.Prelims, student.Midterm, student.SemiFinal, student.Final);
+                        <tr>
+                            <td>@counter</td>
+                            <td>@(student.IdNumber ?? "—")</td>
+                            <td>@(student.LastName ?? "—")</td>
+                            <td>@(student.FirstName ?? "—")</td>
+                            <td>@(student.CourseYear ?? "—")</td>
+                            <td>@(student.Prelims?.ToString("F1") ?? "—")</td>
+                            <td>@(student.Midterm?.ToString("F1") ?? "—")</td>
+                            <td>@(student.SemiFinal?.ToString("F1") ?? "—")</td>
+                            <td>@(student.Final?.ToString("F1") ?? "—")</td>
+                            <td>@remarks</td>
+                        </tr>
+                        counter++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="no-rows">No students found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="footer-row">
+            <span><strong>Total Students:</strong> @ViewBag.TotalStudents</span>
+        </div>
+
+        <div class="watermark">OFFICIAL</div>
+    </div>
+
+    <script>
+        // Auto-trigger print dialog when page loads (like student version)
+        window.addEventListener('load', function() {
+            // Small delay to ensure content is fully rendered
+            setTimeout(function() {
+                window.print();
+                
+                // Close window after printing (optional)
+                window.addEventListener('afterprint', function() {
+                    window.close();
+                });
+            }, 500);
+        });
+    </script>
+</body>
+</html>

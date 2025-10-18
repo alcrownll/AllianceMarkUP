@@ -68,21 +68,22 @@
     /* ---------- Header ---------- */
     .sheet-header {
         display: grid;
-        grid-template-columns: 120px 1fr 120px !important;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 6px !important;
+        gap: 8px;
+        margin-bottom: 4px;
     }
-
-        .sheet-header .logo-left, .sheet-header .logo-right {
-            width: 150px !important;
-            height: 150px !important;
-            object-fit: contain !important;
-            display: block !important;
+        .sheet-header .logo-container {
+            text-align: center;
         }
 
-        .sheet-header .logo-right {
-            justify-self: end;
+        .sheet-header .logo-center {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
         }
 
         .sheet-header .header-text {
@@ -95,7 +96,7 @@
             font-weight: 700;
             font-size: 18px;
             letter-spacing: .3px;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
             text-transform: uppercase;
         }
 
@@ -104,7 +105,7 @@
         text-align: center;
         font-weight: 700;
         font-size: 18px;
-        margin-top: 60px !important;
+        margin-top: 20px !important;
     }
 
     .sub-title, .dept, .prog {
@@ -113,27 +114,27 @@
     }
 
     .sub-title {
-        margin-top: 2px;
+        margin-top: 1px;
         font-weight: 600;
     }
 
     .dept {
-        margin-top: 8px;
+        margin-top: 4px;
     }
 
     .prog {
-        margin-top: 2px;
-        margin-bottom: 12px;
+        margin-top: 1px;
+        margin-bottom: 8px;
     }
 
     /* ---------- Info Grid ---------- */
     .info-grid {
         display: grid;
         grid-template-columns: 120px 1fr;
-        row-gap: 4px;
+        row-gap: 3px;
         column-gap: 6px;
-        margin-top: 60px !important;
-        margin-bottom: 20px;
+        margin-top: 16px !important;
+        margin-bottom: 12px;
         color: #111;
     }
 
@@ -144,10 +145,10 @@
     .sep {
         border: none;
         border-top: 1px solid #bbb;
-        margin: 10px 0 8px;
+        margin: 6px 0 6px;
     }
 
-    /* ---------- Table (full width, percentage columns) ---------- */
+    /* ---------- Table ---------- */
     table.grid {
         border-collapse: collapse;
         table-layout: fixed;
@@ -158,20 +159,26 @@
     }
 
         table.grid thead th {
-            border: 1px solid #bbb;
+            border: 1px solid #bbb !important;
             padding: 5px 4px !important;
             text-align: center;
             font-weight: 600;
             vertical-align: middle;
             white-space: nowrap;
+            background-color: #bbb !important;
         }
 
         table.grid tbody td {
-            border: 1px solid #ddd;
+            border: 1px solid #bbb !important;
             padding: 3px 4px !important;
             vertical-align: middle;
             overflow: hidden;
             word-wrap: break-word;
+        }
+
+        table.grid .no-rows {
+            text-align: center;
+            color: #bbb !important;
         }
 
         /* Column widths (sum 100%) */

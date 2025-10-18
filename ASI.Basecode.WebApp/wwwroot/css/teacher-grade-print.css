@@ -8,7 +8,6 @@
 }
 
 /* Ensure print sheet is completely hidden on screen */
-/* changed */
 .print-sheet {
     display: none !important;
 }
@@ -17,7 +16,7 @@
     /* Use full page and neutralize site chrome */
     @page {
         size: A4 portrait;
-        margin: 14mm 14mm;
+        margin: 12mm 14mm;
     }
 
     /* Chrome-specific print fixes */
@@ -82,8 +81,8 @@
         grid-template-columns: 1fr;
         grid-template-rows: auto auto;
         align-items: center;
-        gap: 16px;
-        margin-bottom: 8px;
+        gap: 8px;
+        margin-bottom: 4px;
     }
 
         .sheet-header .logo-container {
@@ -98,19 +97,6 @@
             margin: 0 auto;
         }
 
-        .sheet-header .logo-left {
-            width: 170px;
-            height: 170px;
-            object-fit: contain;
-        }
-
-        .sheet-header .logo-right {
-            width: 170px;
-            height: 170px;
-            object-fit: contain;
-            justify-self: end;
-        }
-
         .sheet-header .header-text {
             text-align: center;
             font-size: 11.5px;
@@ -120,7 +106,7 @@
             font-weight: 700;
             font-size: 15px;
             letter-spacing: .3px;
-            margin-bottom: 4px;
+            margin-bottom: 1px;
             text-transform: uppercase;
         }
 
@@ -129,7 +115,7 @@
         text-align: center;
         font-weight: 700;
         font-size: 16px;
-        margin-top: 6px;
+        margin-top: 20px;
     }
 
     .sub-title, .dept, .prog {
@@ -138,27 +124,27 @@
     }
 
     .sub-title {
-        margin-top: 2px;
+        margin-top: 1px;
         font-weight: 600;
     }
 
     .dept {
-        margin-top: 8px;
+        margin-top: 4px;
     }
 
     .prog {
-        margin-top: 2px;
-        margin-bottom: 12px;
+        margin-top: 1px;
+        margin-bottom: 8px;
     }
 
     /* ---------- Teacher/Course info block ---------- */
     .info-grid {
         display: grid;
         grid-template-columns: 120px 1fr;
-        row-gap: 4px;
+        row-gap: 3px;
         column-gap: 6px;
-        margin-top: 6px;
-        margin-bottom: 8px;
+        margin-top: 16px;
+        margin-bottom: 12px;
         color: #111;
     }
 
@@ -173,7 +159,7 @@
     .sep {
         border: none;
         border-top: 1px solid #bbb;
-        margin: 10px 0 8px;
+        margin: 6px 0 6px;
     }
 
     /* ---------- Table ---------- */
@@ -181,9 +167,9 @@
         border-collapse: collapse !important;
         table-layout: fixed !important;
         font-size: 12px;
-        width: 700px !important; /* Fixed width for Chrome consistency */
-        max-width: 700px !important;
-        margin: 0 auto; /* Center the table */
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
         /* Chrome-specific table fixes */
         -webkit-border-horizontal-spacing: 0;
         -webkit-border-vertical-spacing: 0;
@@ -191,13 +177,13 @@
     }
 
         .grid thead th {
-            border: 1px solid #e9f1ff !important;
+            border: 1px solid #bbb !important;
             padding: 8px 6px;
             text-align: center;
             font-weight: 600;
             vertical-align: middle;
             font-size: 11px;
-            background-color: #e9f1ff !important;
+            background-color: #bbb !important;
             margin: 0;
             /* Chrome-specific fixes */
             box-sizing: border-box !important;
@@ -206,7 +192,7 @@
         }
 
         .grid tbody td {
-            border: 1px solid #e9f1ff !important;
+            border: 1px solid #bbb !important;
             padding: 6px;
             vertical-align: middle;
             word-wrap: break-word;
@@ -241,20 +227,20 @@
 
         .grid .no-rows {
             text-align: center;
-            color: #e9f1ff !important;
+            color: #bbb !important;
         }
 
-        /* Column widths using simple percentages */
-        .grid th:nth-child(1), .grid td:nth-child(1) { width: 30px !important; } /* No. */
-        .grid th:nth-child(2), .grid td:nth-child(2) { width: 90px !important; } /* ID Number */
-        .grid th:nth-child(3), .grid td:nth-child(3) { width: 100px !important; } /* Last Name */
-        .grid th:nth-child(4), .grid td:nth-child(4) { width: 100px !important; } /* First Name */
-        .grid th:nth-child(5), .grid td:nth-child(5) { width: 85px !important; } /* Course/Year */
-        .grid th:nth-child(6), .grid td:nth-child(6) { width: 50px !important; } /* Prelim */
-        .grid th:nth-child(7), .grid td:nth-child(7) { width: 55px !important; } /* Midterm */
-        .grid th:nth-child(8), .grid td:nth-child(8) { width: 60px !important; } /* Semi-Final */
-        .grid th:nth-child(9), .grid td:nth-child(9) { width: 50px !important; } /* Final */
-        .grid th:nth-child(10), .grid td:nth-child(10) { width: 80px !important; } /* Remarks */
+        /* Column widths using percentages for full width */
+        .grid th:nth-child(1), .grid td:nth-child(1) { width: 5% !important; } /* No. */
+        .grid th:nth-child(2), .grid td:nth-child(2) { width: 15% !important; } /* ID Number */
+        .grid th:nth-child(3), .grid td:nth-child(3) { width: 16% !important; } /* Last Name */
+        .grid th:nth-child(4), .grid td:nth-child(4) { width: 16% !important; } /* First Name */
+        .grid th:nth-child(5), .grid td:nth-child(5) { width: 14% !important; } /* Course/Year */
+        .grid th:nth-child(6), .grid td:nth-child(6) { width: 8% !important; } /* Prelim */
+        .grid th:nth-child(7), .grid td:nth-child(7) { width: 8% !important; } /* Midterm */
+        .grid th:nth-child(8), .grid td:nth-child(8) { width: 9% !important; } /* Semi-Final */
+        .grid th:nth-child(9), .grid td:nth-child(9) { width: 8% !important; } /* Final */
+        .grid th:nth-child(10), .grid td:nth-child(10) { width: 11% !important; } /* Remarks */
 
     /* ---------- Footer row ---------- */
     .footer-row {

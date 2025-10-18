@@ -317,6 +317,40 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> PrintGrades(int assignedCourseId, string edpCode = "", string subject = "", string schedule = "")
+        {
+            try
+            {
+                var teacherId = GetCurrentTeacherId();
+                if (teacherId == 0)
+                    return BadRequest("Teacher not found");
+
+                // Get the course details and students with grades
+                var students = await _teacherCourseService.GetStudentGradesForClassAsync(assignedCourseId);
+                var courses = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId);
+                var course = courses.FirstOrDefault(c => c.AssignedCourseId == assignedCourseId);
+
+                if (course == null)
+                    return NotFound("Course not found");
+
+                // Prepare ViewBag data for the print view
+                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
+                ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
+                ViewBag.EDPCode = course.EDPCode;
+                ViewBag.Subject = course.Subject;
+                ViewBag.Schedule = course.DateTime;
+                ViewBag.Students = students;
+                ViewBag.TotalStudents = students.Count;
+
+                return View("PrintGrades", students);
+            }
+            catch (Exception)
+            {
+                return BadRequest("Error loading grades for printing");
+            }
+        }
+
         public IActionResult Calendar()
         {
             return RedirectToAction("Index", "Calendar");

@@ -7,7 +7,6 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/teacher-course.css" />
-    <link rel="stylesheet" href="~/css/teacher-grade-print.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 }
 
@@ -138,56 +137,7 @@
     </div>
 </div>
 
-<!-- ===================== PRINT-ONLY SHEET ===================== -->
-<div class="print-sheet only-print">
-    <div class="sheet-header">
-        <div class="logo-container"><img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-center" /></div>
-        <div class="header-text">
-            <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
-            <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
-            <div>Website: uclm.edu.ph</div>
-            <div>Email: lm@uc.edu.ph</div>
-        </div>
-    </div>
-
-    <div class="title">STUDENT GRADES REPORT</div>
-    <div class="sub-title" id="printSubTitle">@ViewBag.CurrentSemester, S.Y. @ViewBag.CurrentSchoolYear</div>
-
-    <div class="info-grid">
-        <div class="lbl">Instructor</div><div class="val">: @User.Identity.Name</div>
-        <div class="lbl">EDP Code</div><div class="val">: <span id="printEDPCode"></span></div>
-        <div class="lbl">Subject</div><div class="val">: <span id="printSubject"></span></div>
-        <div class="lbl">Schedule</div><div class="val">: <span id="printSchedule"></span></div>
-    </div>
-
-    <hr class="sep" />
-
-    <table class="grid">
-        <thead>
-            <tr>
-                <th>No.</th>
-                <th>ID Number</th>
-                <th>Last Name</th>
-                <th>First Name</th>
-                <th>Course/Year</th>
-                <th>Prelim</th>
-                <th>Midterm</th>
-                <th>Semi-Final</th>
-                <th>Final</th>
-                <th>Remarks</th>
-            </tr>
-        </thead>
-        <tbody id="printTableBody">
-            <!-- Will be populated by JavaScript -->
-        </tbody>
-    </table>
-
-    <div class="footer-row">
-        <span><strong>Total Students:</strong> <span id="printTotalStudents">0</span></span>
-    </div>
-
-    <div class="watermark">OFFICIAL</div>
-</div>
+<!-- Print functionality now handled by separate PrintGrades.cshtml view (server-side) -->
 
 <!-- Excel Upload Modal -->
 <div class="modal fade" id="excelUploadModal" tabindex="-1" aria-labelledby="excelUploadModalLabel" aria-hidden="true">
