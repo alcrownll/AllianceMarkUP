@@ -1,4 +1,6 @@
-﻿@{
+﻿@using System
+
+@{
     int y = 0;
     if (ViewData["Year"] is int yi) y = yi;
     else if (ViewData["Year"] is long yl) y = (int)yl;
@@ -9,9 +11,18 @@
     var k2 = $"Y{y}T2";
 }
 
-<div class="row g-3 align-items-stretch">
-    @* <-- row instead of single flex *@
+<style>
+    /* Stacked child modal */
+    .modal-backdrop.stacked {
+        z-index: 1060 !important;
+    }
 
+    #coursePickerModal {
+        z-index: 1065 !important;
+    }
+</style>
+
+<div class="row g-3 align-items-stretch">
     <!-- 1st Semester -->
     <div class="col-12 col-xl-6 d-flex">
         <div class="card flex-fill shadow-sm">
@@ -19,7 +30,8 @@
                 <div><strong>1st Semester</strong></div>
                 <div class="d-flex align-items-center gap-3 flex-nowrap">
                     <div class="small text-muted">Total Units: <span id="units-@k1">0</span></div>
-                    <button type="button" class="btn btn-sm btn-primary"
+                    <button type="button"
+                            class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
                             data-bs-target="#coursePickerModal"
                             data-year="@y" data-term="1" data-key="@k1">
@@ -35,14 +47,14 @@
                             <tr>
                                 <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
-                                <th style="width:8%">Lec</th>
-                                <th style="width:8%">Lab</th>
-                                <th style="width:10%">Units</th>
+                                <th style="width:8%" class="text-center">Lec</th>
+                                <th style="width:8%" class="text-center">Lab</th>
+                                <th style="width:10%" class="text-center">Units</th>
                                 <th style="width:18%">Pre-req</th>
                                 <th style="width:10%"></th>
                             </tr>
                         </thead>
-                        <tbody id="tbl-@k1">
+                        <tbody id="tbl-@k1" data-term-table data-year="@y" data-term="1">
                             <tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>
                         </tbody>
                     </table>
@@ -58,7 +70,8 @@
                 <div><strong>2nd Semester</strong></div>
                 <div class="d-flex align-items-center gap-3 flex-nowrap">
                     <div class="small text-muted">Total Units: <span id="units-@k2">0</span></div>
-                    <button type="button" class="btn btn-sm btn-primary"
+                    <button type="button"
+                            class="btn btn-sm btn-primary"
                             data-bs-toggle="modal"
                             data-bs-target="#coursePickerModal"
                             data-year="@y" data-term="2" data-key="@k2">
@@ -74,14 +87,14 @@
                             <tr>
                                 <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
-                                <th style="width:8%">Lec</th>
-                                <th style="width:8%">Lab</th>
-                                <th style="width:10%">Units</th>
+                                <th style="width:8%" class="text-center">Lec</th>
+                                <th style="width:8%" class="text-center">Lab</th>
+                                <th style="width:10%" class="text-center">Units</th>
                                 <th style="width:18%">Pre-req</th>
                                 <th style="width:10%"></th>
                             </tr>
                         </thead>
-                        <tbody id="tbl-@k2">
+                        <tbody id="tbl-@k2" data-term-table data-year="@y" data-term="2">
                             <tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>
                         </tbody>
                     </table>
@@ -89,112 +102,101 @@
             </div>
         </div>
     </div>
-
 </div>
 
-
 <script>
-    (function(){
-      // Will store which semester key opened the picker
-      window.__currentTermCtx = null;
-
-      const pickerEl = document.getElementById('coursePickerModal');
-
-      // When the picker opens, capture the button that triggered it
-      pickerEl?.addEventListener('show.bs.modal', (e) => {
-        const btn = e.relatedTarget; // the Add Course button
-        if (!btn) return;
-        // Save year/term/key so the Add button knows where to insert
-        window.__currentTermCtx = {
-          year: parseInt(btn.dataset.year, 10),
-          term: parseInt(btn.dataset.term, 10),
-          key: btn.dataset.key // e.g., "Y2025T1"
-        };
-      });
-
-      // Util: update the "Total Units: X" per semester
-      function recalcUnits(termKey){
-        const tbody = document.getElementById(`tbl-${termKey}`);
-        const totalSpan = document.getElementById(`units-${termKey}`);
-        let total = 0;
-        if (tbody) {
-          tbody.querySelectorAll('tr').forEach(tr => {
-            const unitsCell = tr.querySelector('[data-col="units"]');
-            if (unitsCell) total += Number(unitsCell.textContent || 0);
-          });
-          // Show "No subjects yet." if empty
-          if (!tbody.querySelector('tr[data-row="course"]')) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>`;
-          }
-        }
-        if (totalSpan) totalSpan.textContent = total;
+    (function () {
+      // Prevent duplicate binding if this partial re-renders
+      if (window.__termSectionBoundOnce) {
+        try { window.recalcUnits?.('@k1'); window.recalcUnits?.('@k2'); } catch {}
+        return;
       }
+      window.__termSectionBoundOnce = true;
 
-      // Hook your existing "Add" button inside the Course Picker
-      document.getElementById('btnAddCourseToTerm')?.addEventListener('click', () => {
-        const ctx = window.__currentTermCtx;
-        if (!ctx || !ctx.key) return;
+      try { window.recalcUnits?.('@k1'); window.recalcUnits?.('@k2'); } catch {}
 
-        // These helpers are from your Course Picker script (already defined):
-        const selCourse = document.getElementById('selCourse');
-        const selPrereq = document.getElementById('selPrereq');
+      // Remove-row handler (server POST + UI update)
+      document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button[data-remove]');
+        if (!btn) return;
 
-        const courseId = parseInt(selCourse.value, 10);
-        if (!courseId) { alert('Please select a course.'); return; }
+        if (btn.disabled) return;
+        btn.disabled = true;
 
-        const code  = (window.lookupCourseCode  && window.lookupCourseCode(courseId))  || '';
-        const title = (window.lookupCourseTitle && window.lookupCourseTitle(courseId)) || '';
-        const lec   = (window.lookupCourseLec   && window.lookupCourseLec(courseId))  || 0;
-        const lab   = (window.lookupCourseLab   && window.lookupCourseLab(courseId))  || 0;
-        const units = (lec || 0) + (lab || 0);
+        const tr = btn.closest('tr[data-row="course"]');
+        const tbody = btn.closest('tbody[data-term-table]');
+        if (!tr || !tbody) { btn.disabled = false; return; }
 
-        const prereqId = selPrereq.value ? parseInt(selPrereq.value, 10) : null;
-        const prereqCode = prereqId ? (window.lookupCourseCode && window.lookupCourseCode(prereqId)) : '';
+        const id = tr.dataset.id;
+        const year = Number(tbody.dataset.year || 0);
+        const term = Number(tbody.dataset.term || 0);
+        const key = `Y${year}T${term}`;
+        const pid = (typeof getCurrentProgramId === 'function') ? getCurrentProgramId() : '';
 
-        const tbody = document.getElementById(`tbl-${ctx.key}`);
-        if (!tbody) return;
+        if (!id || !pid) {
+          tr.remove();
+          window.recalcUnits?.(key);
+          btn.disabled = false;
+          return;
+        }
 
-        // Remove placeholder row if present
-        const placeholder = tbody.querySelector('tr:not([data-row="course"])');
-        if (placeholder && tbody.children.length === 1) placeholder.remove();
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const form = new URLSearchParams();
+        if (token) form.set('__RequestVerificationToken', token);
 
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-row', 'course');
-        tr.innerHTML = `
-          <td>${code}</td>
-          <td>${title}</td>
-          <td class="text-center">${lec}</td>
-          <td class="text-center">${lab}</td>
-          <td class="text-center" data-col="units">${units}</td>
-          <td>${prereqId ? prereqCode : '—'}</td>
-          <td class="text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove(); recalcUnits('${ctx.key}')">Remove</button>
-          </td>
+        try {
+          const res = await fetch(`/admin/programs/${pid}/term/item/${id}/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: form.toString()
+          });
 
-          <!-- Hidden fields for posting back (adjust names to your VM) -->
-          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][CourseId]" value="${courseId}">
-          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][PrerequisiteCourseId]" value="${prereqId ?? ''}">
-          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LecUnits]" value="${lec}">
-          <input type="hidden" name="Prospectus[${ctx.year}][${ctx.term}][][LabUnits]" value="${lab}">
-        `;
-        tbody.appendChild(tr);
+          if (!res.ok) {
+            const msg = (await res.text()) || `Failed to remove (HTTP ${res.status}).`;
+            alert(msg);
+            if (res.status === 404) {
+              tr.remove();
+              window.recalcUnits?.(key);
+            }
+            return;
+          }
 
-        recalcUnits(ctx.key);
-
-        // Close the picker
-        bootstrap.Modal.getOrCreateInstance(pickerEl).hide();
+          tr.remove();
+          window.recalcUnits?.(key);
+        } catch (err) {
+          alert(err?.message || 'Network error while removing item.');
+        } finally {
+          btn.disabled = false;
+        }
       });
 
-      // Expose recalcUnits so the Remove button can call it inline
-      window.recalcUnits = recalcUnits;
+      // Keep only target-setting + stacking tweaks here.
+      const pickerEl = document.getElementById('coursePickerModal');
+      if (pickerEl) {
+        pickerEl.addEventListener('show.bs.modal', (e) => {
+          const btn = e.relatedTarget; // the Add Course button
+          window.COURSE_PICK_TARGET = {
+            year: Number(btn?.getAttribute('data-year') || 1),
+            term: Number(btn?.getAttribute('data-term') || 1)
+          };
 
-      // If the page renders with preloaded rows (e.g., editing), recalc now:
-      document.addEventListener('DOMContentLoaded', () => {
-        // Replace these with your actual keys, or loop programmatically
-        try { recalcUnits('@k1'); recalcUnits('@k2'); } catch {}
-      });
+          const tgt = document.getElementById('stackTermTarget');
+          if (tgt) {
+            tgt.textContent = `Year ${window.COURSE_PICK_TARGET.year} — ` +
+              (window.COURSE_PICK_TARGET.term === 2 ? '2nd Sem' : '1st Sem');
+          }
+        });
+
+        pickerEl.addEventListener('shown.bs.modal', () => {
+          const bds = document.querySelectorAll('.modal-backdrop');
+          bds[bds.length - 1]?.classList.add('stacked');
+          document.body.classList.add('modal-open');
+        });
+
+        pickerEl.addEventListener('hidden.bs.modal', () => {
+          if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
+        });
+      }
     })();
 </script>
-
-
-

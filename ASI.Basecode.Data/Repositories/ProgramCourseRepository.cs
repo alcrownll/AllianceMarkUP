@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ASI.Basecode.Data.Repositories
 {
@@ -48,13 +48,22 @@ namespace ASI.Basecode.Data.Repositories
             _ctx.SaveChanges();
         }
 
+        // Idempotent delete: treat "already deleted / not found" as success.
         public void DeleteProgramCourse(int programCourseId)
         {
-            var entity = _ctx.ProgramCourses.Find(programCourseId);
-            if (entity == null) return;
-            _ctx.ProgramCourses.Remove(entity);
-            _ctx.SaveChanges();
-        }
+            // Attach a stub to avoid a read, then delete.
+            var stub = new ProgramCourse { ProgramCourseId = programCourseId };
+            _ctx.Entry(stub).State = EntityState.Deleted;
 
+            try
+            {
+                _ctx.SaveChanges(); // If 0 rows affected, EF may throw DbUpdateConcurrencyException
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // The row was already removed (or never existed). That's fine for idempotent deletes.
+                // Optional: log at Information level.
+            }
+        }
     }
 }

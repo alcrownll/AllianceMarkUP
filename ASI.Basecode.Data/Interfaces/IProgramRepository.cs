@@ -1,5 +1,7 @@
 ﻿using ASI.Basecode.Data.Models;
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.Data.Interfaces
 {
@@ -12,5 +14,6 @@ namespace ASI.Basecode.Data.Interfaces
         void AddProgram(Program program);
         void UpdateProgram(Program program);
         void DeleteProgram(int programId);
+        Task<bool> SetActiveAsync(int programId, bool isActive);
     }
 }

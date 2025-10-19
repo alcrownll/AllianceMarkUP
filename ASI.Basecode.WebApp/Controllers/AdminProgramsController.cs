@@ -1,8 +1,12 @@
-﻿using ASI.Basecode.Services.Interfaces;
-using ASI.Basecode.Services.ServiceModels; // <— keep if other endpoints need service models; safe to remove if unused
-using ASI.Basecode.Data.Models;           // Program, ProgramCourse
+﻿using ASI.Basecode.Data.Models;            // Program, ProgramCourse
+// ✅ add the repo interface namespace (adjust if yours differs)
+// e.g., IProgramRepository namespace
+using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.ServiceModels;  // if other endpoints need service models
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -13,7 +17,6 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly ICurriculumService _svc;
         public AdminProgramsController(ICurriculumService svc) => _svc = svc;
 
-        // ========== READ-ONLY Programs table partial ==========
         // GET /admin/programs/list
         [HttpGet("list")]
         public IActionResult List([FromQuery] string q = null)
@@ -22,16 +25,14 @@ namespace ASI.Basecode.WebApp.Controllers
             return PartialView("~/Views/Admin/Partials/_ProgramsTable.cshtml", items);
         }
 
-        // ========== Add Program (used by the modal) ==========
         // POST /admin/programs/create
         [HttpPost("create")]
         public IActionResult Create([FromForm] string code, [FromForm] string name, [FromForm] string notes)
         {
-            var p = _svc.CreateProgram(code, name, notes); // notes can be ignored in your service if not in DB
+            var p = _svc.CreateProgram(code, name, notes);
             return Json(new { ok = true, programId = p.ProgramId, code = p.ProgramCode, name = p.ProgramName });
         }
 
-        // ========== Manage ProgramCourses (step-by-step) ==========
         // POST /admin/programs/add-course
         [HttpPost("add-course")]
         public IActionResult AddCourse([FromForm] int programId, [FromForm] int year, [FromForm] int term,
@@ -47,6 +48,7 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             var items = _svc.GetTerm(programId, year, term).Select(pc => new
             {
+                id = pc.ProgramCourseId,
                 code = pc.Course?.CourseCode,
                 title = pc.Course?.Description,
                 lec = pc.Course?.LecUnits ?? 0,
@@ -57,9 +59,18 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { ok = true, items });
         }
 
-        // POST /admin/programs/remove-course
+        // (legacy) POST /admin/programs/remove-course
         [HttpPost("remove-course")]
         public IActionResult RemoveCourse([FromForm] int programCourseId)
+        {
+            _svc.RemoveProgramCourse(programCourseId);
+            return Json(new { ok = true });
+        }
+
+        // POST /admin/programs/{programId}/term/item/{programCourseId}/remove
+        [ValidateAntiForgeryToken]
+        [HttpPost("{programId:int}/term/item/{programCourseId:int}/remove")]
+        public IActionResult RemoveTermItem(int programId, int programCourseId)
         {
             _svc.RemoveProgramCourse(programCourseId);
             return Json(new { ok = true });
@@ -81,5 +92,42 @@ namespace ASI.Basecode.WebApp.Controllers
             svc.DiscardProgram(programId);
             return Json(new { ok = true, deleted = true });
         }
+
+        // POST /admin/programs/{programId}/term/bulk-add
+        [ValidateAntiForgeryToken]
+        [HttpPost("{programId:int}/term/bulk-add")]
+        public IActionResult BulkAddToTerm(
+            int programId,
+            [FromForm] int year,
+            [FromForm] int term,
+            [FromForm] int[] courseIds,
+            [FromForm] int[] prereqIds)
+        {
+            if (programId <= 0 || year is < 1 or > 4 || term is < 1 or > 2 || courseIds == null)
+                return BadRequest(new { ok = false, message = "Invalid payload." });
+
+            _svc.AddCoursesToTermBulk(programId, year, term, courseIds, prereqIds ?? Array.Empty<int>());
+
+            var items = _svc.GetTerm(programId, year, term).Select(pc => new
+            {
+                id = pc.ProgramCourseId,
+                code = pc.Course?.CourseCode,
+                title = pc.Course?.Description,
+                lec = pc.Course?.LecUnits ?? 0,
+                lab = pc.Course?.LabUnits ?? 0,
+                units = (pc.Course?.LecUnits ?? 0) + (pc.Course?.LabUnits ?? 0),
+                prereq = pc.PrerequisiteCourse?.CourseCode ?? "—"
+            });
+            return Json(new { ok = true, items });
+        }
+
+        [HttpPost("{id:int}/active")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetActive(int id, [FromForm] bool isActive)
+        {
+            var ok = await _svc.SetProgramActiveAsync(id, isActive);
+            return Json(new { ok });
+        }
+
     }
 }

@@ -2,36 +2,6 @@
 // Global variables for UI state management
 let currentAssignedCourseId = 0;
 
-// Helper function to calculate weighted GPA and determine remarks
-function calculateRemarksFromGrades(prelims, midterm, semiFinal, final) {
-    // Calculate weighted average using same weights as backend (30%, 30%, 20%, 20%)
-    const components = [
-        { score: prelims, weight: 0.3 },     // 30%
-        { score: midterm, weight: 0.3 },     // 30%
-        { score: semiFinal, weight: 0.2 },   // 20%
-        { score: final, weight: 0.2 }        // 20%
-    ];
-
-    let weightedTotal = 0;
-    let weightSum = 0;
-
-    components.forEach(component => {
-        if (component.score && !isNaN(component.score)) {
-            weightedTotal += component.score * component.weight;
-            weightSum += component.weight;
-        }
-    });
-
-    if (weightSum <= 0) {
-        return 'INCOMPLETE';
-    }
-
-    const gpa = Math.round((weightedTotal / weightSum) * 100) / 100; // Round to 2 decimal places
-    
-    // Determine pass/fail based on GPA (3.0 is passing grade)
-    return gpa <= 3.0 ? 'PASSED' : 'FAILED';
-}
-
 // UI-only functions for panel management
 function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
     currentAssignedCourseId = assignedCourseId;
@@ -207,73 +177,18 @@ function showErrorMessage(message) {
     alert(message);
 }
 
-// Print to PDF - StudyLoad pattern
+// Print to PDF - Server-side approach
 function printGrades(edpCode, subject, schedule, assignedCourseId) {
-    console.log('Prepare print function called:', edpCode, subject, schedule, assignedCourseId);
+    console.log('Opening print page for:', edpCode, subject, schedule, assignedCourseId);
     
-    // Set course info in print area
-    document.getElementById('printEDPCode').textContent = edpCode;
-    document.getElementById('printSubject').textContent = subject;
-    document.getElementById('printSchedule').textContent = schedule;
+    // Build URL with parameters for the server-side print action
+    const printUrl = `/Teacher/PrintGrades?assignedCourseId=${assignedCourseId}&edpCode=${encodeURIComponent(edpCode)}&subject=${encodeURIComponent(subject)}&schedule=${encodeURIComponent(schedule)}`;
     
-    // Load students and populate print table
-    fetch(`/Teacher/GetStudentsForCourse?assignedCourseId=${assignedCourseId}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Student data received:', data);
-            if (data.success && data.students) {
-                populatePrintTable(data.students);
-                
-                // Trigger print after a short delay to ensure DOM is updated
-                setTimeout(() => {
-                    console.log('Triggering print dialog...');
-                    window.print();
-                }, 100);
-            } else {
-                alert('Error: No student data found');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading students for printing');
-        });
+    // Open in new window/tab
+    window.open(printUrl, '_blank');
 }
 
-// Populate the print table - StudyLoad pattern
-function populatePrintTable(students) {
-    const tbody = document.getElementById('printTableBody');
-    tbody.innerHTML = '';
-    
-    if (!students || students.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="10" class="no-rows">No students found.</td>';
-        tbody.appendChild(row);
-        document.getElementById('printTotalStudents').textContent = '0';
-        return;
-    }
-    
-    students.forEach((student, index) => {
-        const remarks = calculateRemarksFromGrades(student.prelims, student.midterm, student.semiFinal, student.final);
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${student.idNumber || '—'}</td>
-            <td>${student.lastName || '—'}</td>
-            <td>${student.firstName || '—'}</td>
-            <td>${student.courseYear || '—'}</td>
-            <td>${student.prelims ? student.prelims.toFixed(1) : '—'}</td>
-            <td>${student.midterm ? student.midterm.toFixed(1) : '—'}</td>
-            <td>${student.semiFinal ? student.semiFinal.toFixed(1) : '—'}</td>
-            <td>${student.final ? student.final.toFixed(1) : '—'}</td>
-            <td>${remarks}</td>
-        `;
-        tbody.appendChild(row);
-    });
-    
-    document.getElementById('printTotalStudents').textContent = students.length;
-    console.log('Print table populated with', students.length, 'students');
-}
+// Note: populatePrintTable function removed - now using server-side rendering like student version
 
 // Excel Upload Functions
 let currentUploadAssignedCourseId = 0;
