@@ -1,505 +1,659 @@
 (function () {
-  'use strict';
+  "use strict";
 
   // ---------- tiny helpers ----------
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const $  = (sel, root = document) => root.querySelector(sel);
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
-  function readInput(name, root=document){ return (root.querySelector(`input[name="${name}"]`)?.value ?? '').trim(); }
-  function toInt(x, def=0){ const n=parseInt(x,10); return Number.isFinite(n)?n:def; }
-  function buildUrl(path, params={}){
+  function debounce(fn, ms) {
+    let t;
+    return (...a) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...a), ms);
+    };
+  }
+  function readInput(name, root = document) {
+    return (root.querySelector(`input[name="${name}"]`)?.value ?? "").trim();
+  }
+  function toInt(x, def = 0) {
+    const n = parseInt(x, 10);
+    return Number.isFinite(n) ? n : def;
+  }
+  function buildUrl(path, params = {}) {
     const u = new URL(path, window.location.origin);
-    Object.entries(params).forEach(([k,v])=>{ if(v!==undefined && v!==null && String(v).length) u.searchParams.set(k,v); });
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && String(v).length)
+        u.searchParams.set(k, v);
+    });
     return u.toString();
   }
 
   // ---------- Course -> Type -> Units ----------
-  function attachCourseTypeUnits({ courseSel, typeSel, unitsInput, initialType }){
+  function attachCourseTypeUnits({
+    courseSel,
+    typeSel,
+    unitsInput,
+    initialType,
+  }) {
     const selCourse = $(courseSel);
-    const selType   = $(typeSel);
-    const unitsBox  = $(unitsInput);
+    const selType = $(typeSel);
+    const unitsBox = $(unitsInput);
 
-    const initRaw  = (initialType || selType?.dataset?.initialType || selType?.value || '').trim();
-    const initNorm = initRaw.toLowerCase().replace(/^lec$/,'lecture').replace(/^lab$/,'laboratory');
+    const initRaw = (
+      initialType ||
+      selType?.dataset?.initialType ||
+      selType?.value ||
+      ""
+    ).trim();
+    const initNorm = initRaw
+      .toLowerCase()
+      .replace(/^lec$/, "lecture")
+      .replace(/^lab$/, "laboratory");
 
-    function syncUnitsFromType(){
-      const u = selType?.options?.[selType.selectedIndex]?.getAttribute('data-units');
-      if (unitsBox) unitsBox.value = u || '';
+    function syncUnitsFromType() {
+      const u =
+        selType?.options?.[selType.selectedIndex]?.getAttribute("data-units");
+      if (unitsBox) unitsBox.value = u || "";
     }
 
-    function rebuildTypeOptions(preserve=true){
-      if (unitsBox) unitsBox.value = '';
+    function rebuildTypeOptions(preserve = true) {
+      if (unitsBox) unitsBox.value = "";
       const opt = selCourse?.options?.[selCourse.selectedIndex];
-      if (!opt || !opt.value){
-        if (selType){ selType.innerHTML = '<option value="">-- Select --</option>'; selType.disabled = true; }
+      if (!opt || !opt.value) {
+        if (selType) {
+          selType.innerHTML = '<option value="">-- Select --</option>';
+          selType.disabled = true;
+        }
         return;
       }
-      const lec = toInt(opt.getAttribute('data-lec'), 0);
-      const lab = toInt(opt.getAttribute('data-lab'), 0);
+      const lec = toInt(opt.getAttribute("data-lec"), 0);
+      const lab = toInt(opt.getAttribute("data-lab"), 0);
 
-      const prevRaw = preserve ? (selType?.value || '') : '';
+      const prevRaw = preserve ? selType?.value || "" : "";
       const options = [];
-      if (lec > 0) options.push({ text:'Lecture',    value:'Lecture',    units:lec });
-      if (lab > 0) options.push({ text:'Laboratory', value:'Laboratory', units:lab });
+      if (lec > 0)
+        options.push({ text: "Lecture", value: "Lecture", units: lec });
+      if (lab > 0)
+        options.push({ text: "Laboratory", value: "Laboratory", units: lab });
 
-      if (selType){
-        selType.innerHTML = '<option value="">-- Select --</option>' + options.map(o=>`<option value="${o.value}" data-units="${o.units}">${o.text}</option>`).join('');
+      if (selType) {
+        selType.innerHTML =
+          '<option value="">-- Select --</option>' +
+          options
+            .map(
+              (o) =>
+                `<option value="${o.value}" data-units="${o.units}">${o.text}</option>`
+            )
+            .join("");
         selType.disabled = options.length === 0;
 
-        let chosen = '';
-        if (options.some(o=>o.value===prevRaw)) {
+        let chosen = "";
+        if (options.some((o) => o.value === prevRaw)) {
           chosen = prevRaw;
         } else {
-          const fromInitRaw = options.find(o=>o.value.toLowerCase()===initRaw.toLowerCase())?.value;
-          const fromNorm    = options.find(o=>o.value.toLowerCase()===initNorm)?.value;
-          chosen = fromInitRaw || fromNorm || '';
+          const fromInitRaw = options.find(
+            (o) => o.value.toLowerCase() === initRaw.toLowerCase()
+          )?.value;
+          const fromNorm = options.find(
+            (o) => o.value.toLowerCase() === initNorm
+          )?.value;
+          chosen = fromInitRaw || fromNorm || "";
         }
         selType.value = chosen;
         syncUnitsFromType();
       }
     }
 
-    selCourse && selCourse.addEventListener('change', ()=>rebuildTypeOptions(true));
-    selType   && selType.addEventListener('change', syncUnitsFromType);
+    selCourse &&
+      selCourse.addEventListener("change", () => rebuildTypeOptions(true));
+    selType && selType.addEventListener("change", syncUnitsFromType);
     rebuildTypeOptions(true);
   }
 
   // ---------- Room & Schedule UI ----------
-  function initRoomScheduleUI(){
-    const typeSel   = document.querySelector('#Type');
-    const roomSel   = document.querySelector('#RoomSelect');
-    const startTime = document.querySelector('#StartTime');
-    const endTime   = document.querySelector('#EndTime');
-    const dayBtns   = Array.from(document.querySelectorAll('.day-btn'));
-    const dayLive   = document.querySelector('#DayLiveText');
+  function initRoomScheduleUI() {
+    const typeSel = document.querySelector("#Type");
+    const roomSel = document.querySelector("#RoomSelect");
+    const startTime = document.querySelector("#StartTime");
+    const endTime = document.querySelector("#EndTime");
+    const dayBtns = Array.from(document.querySelectorAll(".day-btn"));
+    const dayLive = document.querySelector("#DayLiveText");
+    const csvHidden = document.querySelector("#ScheduleDaysCsv");
 
     if (!typeSel || !roomSel) return;
 
     const ROOM_SET = {
-      Lecture:    ['A2-401','A2-402','A2-403','A2-404','211','212','M1','A31','A32'],
-      Laboratory: ['C1','C2','C4','CISCO','A35','AInnovation Lab']
+      Lecture: [
+        "A2-401",
+        "A2-402",
+        "A2-403",
+        "A2-404",
+        "211",
+        "212",
+        "M1",
+        "A31",
+        "A32",
+      ],
+      Laboratory: ["C1", "C2", "C4", "CISCO", "A35", "AInnovation Lab"],
     };
 
-    function fillRoomsFor(typeVal){
+    function fillRoomsFor(typeVal) {
       const list = ROOM_SET[typeVal] || [];
-      roomSel.innerHTML = '<option value="">-- Select Room --</option>' + list.map(r=>`<option value="${r}">${r}</option>`).join('');
-      roomSel.disabled = list.length === 0;
+      const current = roomSel.value;
+      roomSel.innerHTML =
+        '<option value="">-- Select Room --</option>' +
+        list.map((r) => `<option value="${r}">${r}</option>`).join("");
+
+      if (list.includes(current)) {
+        roomSel.value = current;
+      }
+      roomSel.removeAttribute("disabled");
     }
 
-    [startTime, endTime].forEach(el=>{
+    [startTime, endTime].forEach((el) => {
       if (!el) return;
-      el.setAttribute('min','07:30');
-      el.setAttribute('max','21:30');
-      el.setAttribute('step','900');
+      el.setAttribute("min", "07:30");
+      el.setAttribute("max", "21:30");
+      el.setAttribute("step", "900");
     });
 
-    function clampTime(el){
+    function clampTime(el) {
       if (!el) return;
       const v = el.value;
       if (!v) return;
-      if (v < '07:30') el.value = '07:30';
-      if (v > '21:30') el.value = '21:30';
+      if (v < "07:30") el.value = "07:30";
+      if (v > "21:30") el.value = "21:30";
     }
 
-    function syncDayLive(){
-      const picked = dayBtns.filter(b=>b.classList.contains('active')).map(b=>b.dataset.day);
-      dayLive.textContent = picked.length ? picked.join(', ') : '';
+    const dayMap = {
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+
+    function syncDayLiveAndCsv() {
+      const pickedLabels = dayBtns
+        .filter((b) => b.classList.contains("active"))
+        .map((b) => b.dataset.day);
+      const pickedNums = pickedLabels.map((lbl) => dayMap[lbl]).filter(Boolean);
+
+      if (dayLive)
+        dayLive.textContent = pickedLabels.length
+          ? pickedLabels.join(", ")
+          : "";
+      if (csvHidden) csvHidden.value = pickedNums.join(",");
     }
 
-    typeSel.addEventListener('change', ()=>fillRoomsFor(typeSel.value));
+    typeSel.addEventListener("change", () => fillRoomsFor(typeSel.value));
     fillRoomsFor(typeSel.value);
 
-    startTime && startTime.addEventListener('change', ()=>{
-      clampTime(startTime);
-      if (endTime && startTime.value && (!endTime.value || endTime.value < startTime.value)){
-        endTime.value = startTime.value;
-      }
-    });
+    startTime &&
+      startTime.addEventListener("change", () => {
+        clampTime(startTime);
+        if (
+          endTime &&
+          startTime.value &&
+          (!endTime.value || endTime.value < startTime.value)
+        ) {
+          endTime.value = startTime.value;
+        }
+      });
 
-    endTime && endTime.addEventListener('change', ()=>{
-      clampTime(endTime);
-      if (startTime && endTime.value && startTime.value > endTime.value){
-        startTime.value = endTime.value;
-      }
-    });
+    endTime &&
+      endTime.addEventListener("change", () => {
+        clampTime(endTime);
+        if (startTime && endTime.value && startTime.value > endTime.value) {
+          startTime.value = endTime.value;
+        }
+      });
 
-    dayBtns.forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        btn.classList.toggle('active');
-        btn.classList.toggle('btn-primary');
-        btn.classList.toggle('btn-outline-secondary');
-        syncDayLive();
+    dayBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        btn.classList.toggle("btn-primary");
+        btn.classList.toggle("btn-outline-secondary");
+        syncDayLiveAndCsv();
       });
     });
-    syncDayLive();
+    syncDayLiveAndCsv();
   }
 
-  // ---------- Schedule guard (both Assign and Edit forms) ----------
-  function wireScheduleSubmitGuard(formSel){
+  function wireScheduleSubmitGuard(formSel) {
     const form = $(formSel);
     if (!form) return;
 
-    function parseHHMM(v){ if(!v || !/^\d{2}:\d{2}$/.test(v)) return null; const [h,m]=v.split(':').map(Number); return h*60+m; }
-    function withinWindow(hhmm, min, max){ const m=parseHHMM(hhmm); return m!==null && m>=min && m<=max; }
-    function getPickedDays(){
-      return $$('.day-btn.active')
-        .map(b=>b.dataset.day)
-        .map(n=>({Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6}[n]))
+    function parseHHMM(v) {
+      if (!v || !/^\d{2}:\d{2}$/.test(v)) return null;
+      const [h, m] = v.split(":").map(Number);
+      return h * 60 + m;
+    }
+    function withinWindow(hhmm, min, max) {
+      const m = parseHHMM(hhmm);
+      return m !== null && m >= min && m <= max;
+    }
+    function getPickedDays() {
+      return $$(".day-btn.active")
+        .map((b) => b.dataset.day)
+        .map(
+          (n) =>
+            ({
+              Monday: 1,
+              Tuesday: 2,
+              Wednesday: 3,
+              Thursday: 4,
+              Friday: 5,
+              Saturday: 6,
+            }[n])
+        )
         .filter(Boolean);
     }
 
-    form.addEventListener('submit',(e)=>{
+    form.addEventListener("submit", (e) => {
       const days = getPickedDays();
-      const csv  = $('#ScheduleDaysCsv');
-      if (csv) csv.value = days.join(',');
+      const csv = $("#ScheduleDaysCsv");
+      if (csv) csv.value = days.join(",");
 
-      if (days.length === 0) return; // schedule is optional
+      if (days.length === 0) return;
 
-      const start = $('#StartTime')?.value || '';
-      const end   = $('#EndTime')?.value   || '';
-      const room  = $('#RoomSelect')?.value|| '';
+      const start = $("#StartTime")?.value || "";
+      const end = $("#EndTime")?.value || "";
+      const room = $("#RoomSelect")?.value || "";
 
-      if (!withinWindow(start, 450, 1290) || !withinWindow(end, 450, 1290)){
-        e.preventDefault(); alert('Time must be within 07:30 to 21:30.'); return;
+      if (!withinWindow(start, 450, 1290) || !withinWindow(end, 450, 1290)) {
+        e.preventDefault();
+        alert("Time must be within 07:30 to 21:30.");
+        return;
       }
-      if (parseHHMM(end) <= parseHHMM(start)){
-        e.preventDefault(); alert('End time must be later than start time.'); return;
+      if (parseHHMM(end) <= parseHHMM(start)) {
+        e.preventDefault();
+        alert("End time must be later than start time.");
+        return;
       }
-      if (!room){
-        e.preventDefault(); alert('Room is required when picking any day.');
+      if (!room) {
+        e.preventDefault();
+        alert("Room is required when picking any day.");
       }
     });
   }
 
   // ---------- Index page (toasts) ----------
-  function initAdminAssignIndex(){
-    $$('.js-auto-toast').forEach(el=>{
-      try{ new bootstrap.Toast(el).show(); } catch(e){ console.warn('Toast init failed:', e); }
+  function initAdminAssignIndex() {
+    $$(".js-auto-toast").forEach((el) => {
+      try {
+        new bootstrap.Toast(el).show();
+      } catch (e) {
+        console.warn("Toast init failed:", e);
+      }
     });
   }
 
-  // ---------- Assign page (Block filters + AJAX table) ----------
-  function initAdminAssignPhase2(){
-    if (!$('#CourseId') || !$('#Type') || !$('#Units')) return;
-    if (!$('#ModeHidden') || !$('#blockFields')) return;
+  // ---------- Students Section ----------
+  function initAdminAssignPhase2() {
+    if (!$("#CourseId") || !$("#Type") || !$("#Units")) return;
+    if (!$("#ModeHidden") || !$("#blockFields")) return;
 
-    attachCourseTypeUnits({ courseSel:'#CourseId', typeSel:'#Type', unitsInput:'#Units' });
+    attachCourseTypeUnits({
+      courseSel: "#CourseId",
+      typeSel: "#Type",
+      unitsInput: "#Units",
+    });
     initRoomScheduleUI();
     wireScheduleSubmitGuard('form[asp-action="Assign"]');
 
     const sectionSets = {
-      '1st Year': ['1A','1B','1C','1D','1E'],
-      '2nd Year': ['2A','2B','2C','2D','2E'],
-      '3rd Year': ['3A','3B','3C','3D','3E'],
-      '4th Year': ['4A','4B','4C','4D','4E']
+      "1st Year": ["1A", "1B", "1C", "1D", "1E"],
+      "2nd Year": ["2A", "2B", "2C", "2D", "2E"],
+      "3rd Year": ["3A", "3B", "3C", "3D", "3E"],
+      "4th Year": ["4A", "4B", "4C", "4D", "4E"],
     };
 
-    const blockProgramSel = $('#BlockProgramId');
-    const blockYearSel    = $('#BlockYearLevel');
-    const blockSectionSel = $('#BlockSection');
+    const blockProgramSel = $("#BlockProgramId");
+    const blockYearSel = $("#BlockYearLevel");
+    const blockSectionSel = $("#BlockSection");
 
-    blockSectionSel && blockSectionSel.removeAttribute('disabled');
+    blockSectionSel && blockSectionSel.removeAttribute("disabled");
 
-    const serverSelectedSection = readInput('blockSection') || '';
+    const serverSelectedSection = readInput("blockSection") || "";
 
-    function populateBlockSections(preserveSelected){
+    function populateBlockSections(preserveSelected) {
       if (!blockYearSel || !blockSectionSel) return;
-      const yr   = blockYearSel.value;
+      const yr = blockYearSel.value;
       const list = sectionSets[yr] || [];
-      const current = preserveSelected ? serverSelectedSection : '';
+      const current = preserveSelected ? serverSelectedSection : "";
       blockSectionSel.innerHTML =
         '<option value="">Select Section</option>' +
-        list.map(s=>`<option value="${s}">${s}</option>`).join('');
-      blockSectionSel.value = (current && list.includes(current)) ? current : '';
+        list.map((s) => `<option value="${s}">${s}</option>`).join("");
+      blockSectionSel.value = current && list.includes(current) ? current : "";
     }
 
-    function syncBlockSectionState(){
+    function syncBlockSectionState() {
       if (!blockSectionSel) return;
-      const hasYear = (blockYearSel?.value || '').trim() !== '';
-      if (hasYear){
+      const hasYear = (blockYearSel?.value || "").trim() !== "";
+      if (hasYear) {
         blockSectionSel.disabled = false;
-        blockSectionSel.removeAttribute('disabled');
+        blockSectionSel.removeAttribute("disabled");
       } else {
         blockSectionSel.disabled = true;
-        blockSectionSel.setAttribute('disabled','disabled');
-        blockSectionSel.value = '';
+        blockSectionSel.setAttribute("disabled", "disabled");
+        blockSectionSel.value = "";
         blockSectionSel.innerHTML = '<option value="">Select Section</option>';
       }
     }
 
-    blockYearSel && blockYearSel.addEventListener('change', ()=>{
-      populateBlockSections(false);
-      syncBlockSectionState();
-      if (!blockSectionSel.disabled) blockSectionSel.focus();
-    });
+    blockYearSel &&
+      blockYearSel.addEventListener("change", () => {
+        populateBlockSections(false);
+        syncBlockSectionState();
+        if (!blockSectionSel.disabled) blockSectionSel.focus();
+      });
 
     populateBlockSections(true);
     syncBlockSectionState();
 
     // mode UI
-    const radioBlock  = $('#extraOff');
-    const radioManual = $('#extraOn');
-    const manualWrap  = $('#manualFields');
-    const modeHidden  = $('#ModeHidden');
+    const radioBlock = $("#extraOff");
+    const radioManual = $("#extraOn");
+    const manualWrap = $("#manualFields");
+    const modeHidden = $("#ModeHidden");
 
-    function currentMode(){ return (radioManual?.checked ? 'manual' : 'block') || 'block'; }
-    function syncModeUI(){
-      const isManual = currentMode()==='manual';
-      if (manualWrap) manualWrap.style.display = isManual ? 'block' : 'none';
-      if (modeHidden) modeHidden.value = isManual ? 'manual' : 'block';
-      if (isManual && (blockSectionSel?.value || '').trim() !== '') fetchManualTable(1);
+    function currentMode() {
+      return (radioManual?.checked ? "manual" : "block") || "block";
     }
-    radioBlock  && radioBlock.addEventListener('change', syncModeUI);
-    radioManual && radioManual.addEventListener('change', syncModeUI);
+    function syncModeUI() {
+      const isManual = currentMode() === "manual";
+      if (manualWrap) manualWrap.style.display = isManual ? "block" : "none";
+      if (modeHidden) modeHidden.value = isManual ? "manual" : "block";
+      if (isManual && (blockSectionSel?.value || "").trim() !== "")
+        fetchManualTable(1);
+    }
+    radioBlock && radioBlock.addEventListener("change", syncModeUI);
+    radioManual && radioManual.addEventListener("change", syncModeUI);
     syncModeUI();
 
-    // AJAX manual table (filters by STUDENT AccountStatus — not AssignedCourse)
-    const host        = $('#manualTableHost');
-    const spin        = $('#manualTableSpinner');
-    const statusVal   = readInput('status')   || 'Active'; // student filter from server
-    const pageSizeVal = readInput('pageSize') || '10';
+    // AJAX manual table
+    const host = $("#manualTableHost");
+    const spin = $("#manualTableSpinner");
+    const statusVal = readInput("status") || "Active";
+    const pageSizeVal = readInput("pageSize") || "10";
 
-    function showSpinner(on){ if (spin) spin.classList.toggle('d-none', !on); }
+    function showSpinner(on) {
+      if (spin) spin.classList.toggle("d-none", !on);
+    }
 
-    async function fetchManualTable(page){
-      if (currentMode() !== 'manual') return;
+    async function fetchManualTable(page) {
+      if (currentMode() !== "manual") return;
 
-      const p = blockProgramSel?.value || '';
-      const y = blockYearSel?.value    || '';
-      const s = blockSectionSel?.value || '';
+      const p = blockProgramSel?.value || "";
+      const y = blockYearSel?.value || "";
+      const s = blockSectionSel?.value || "";
 
-      const url = buildUrl('/AdminAssign/ManualTable', {
-        blockProgram:p, blockYear:y, blockSection:s,
-        status:statusVal, page:String(page||1), pageSize:String(pageSizeVal||10)
+      const url = buildUrl("/AdminAssign/ManualTable", {
+        blockProgram: p,
+        blockYear: y,
+        blockSection: s,
+        status: statusVal,
+        page: String(page || 1),
+        pageSize: String(pageSizeVal || 10),
       });
 
       showSpinner(true);
-      try{
-        const resp = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'} });
+      try {
+        const resp = await fetch(url, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
         const html = await resp.text();
         if (host) host.innerHTML = html;
         wireSelectAll();
         wirePagination();
-      }catch(e){
-        console.error('Failed to load manual table:', e);
-      }finally{
+      } catch (e) {
+        console.error("Failed to load manual table:", e);
+      } finally {
         showSpinner(false);
       }
     }
-    const debouncedFetch = debounce((page)=>fetchManualTable(page), 200);
+    const debouncedFetch = debounce((page) => fetchManualTable(page), 200);
 
-    function wireSelectAll(){
-      const selectAll = $('#selectAllStudents', host || document);
-      if (selectAll){
-        selectAll.addEventListener('change', function(){
-          $$('#manualTableHost .student-checkbox').forEach(cb=>cb.checked = selectAll.checked);
+    function wireSelectAll() {
+      const selectAll = $("#selectAllStudents", host || document);
+      if (selectAll) {
+        selectAll.addEventListener("change", function () {
+          $$("#manualTableHost .student-checkbox").forEach(
+            (cb) => (cb.checked = selectAll.checked)
+          );
         });
       }
     }
 
-    function wirePagination(){
-      $$('#manualTableHost a.js-page').forEach(a=>{
-        a.addEventListener('click', function(e){
+    function wirePagination() {
+      $$("#manualTableHost a.js-page").forEach((a) => {
+        a.addEventListener("click", function (e) {
           e.preventDefault();
-          const p = toInt(this.getAttribute('data-page'), 1);
+          const p = toInt(this.getAttribute("data-page"), 1);
           if (p) fetchManualTable(p);
         });
       });
     }
 
-    blockSectionSel && blockSectionSel.addEventListener('change', ()=>debouncedFetch(1));
+    blockSectionSel &&
+      blockSectionSel.addEventListener("change", () => debouncedFetch(1));
 
-    const btnReset = $('#btnResetBlockFilters');
+    const btnReset = $("#btnResetBlockFilters");
 
-    async function fetchManualTableReset(page){
-      const url = buildUrl('/AdminAssign/ManualTable', {
-        status:statusVal, page:String(page||1), pageSize:String(pageSizeVal||10)
+    async function fetchManualTableReset(page) {
+      const url = buildUrl("/AdminAssign/ManualTable", {
+        status: statusVal,
+        page: String(page || 1),
+        pageSize: String(pageSizeVal || 10),
       });
       showSpinner(true);
-      try{
-        const resp = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'} });
+      try {
+        const resp = await fetch(url, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
         const html = await resp.text();
         if (host) host.innerHTML = html;
         wireSelectAll();
         wirePagination();
-      }catch(e){
-        console.error('Failed to reset manual table:', e);
-      }finally{
+      } catch (e) {
+        console.error("Failed to reset manual table:", e);
+      } finally {
         showSpinner(false);
       }
     }
 
-    function resetBlockUI(){
+    function resetBlockUI() {
       if (blockProgramSel) blockProgramSel.selectedIndex = 0;
-      if (blockYearSel)    blockYearSel.value = '';
-      if (blockSectionSel){
-        blockSectionSel.value = '';
-        blockSectionSel.setAttribute('disabled','disabled');
+      if (blockYearSel) blockYearSel.value = "";
+      if (blockSectionSel) {
+        blockSectionSel.value = "";
+        blockSectionSel.setAttribute("disabled", "disabled");
         blockSectionSel.innerHTML = '<option value="">Select Section</option>';
       }
     }
 
-    window.resetBlockFilters = function(){
+    window.resetBlockFilters = function () {
       resetBlockUI();
-      const isManual = $('#extraOn')?.checked;
+      const isManual = $("#extraOn")?.checked;
       if (isManual) fetchManualTableReset(1);
     };
 
-    btnReset?.addEventListener('click', ()=>window.resetBlockFilters());
-    blockSectionSel && blockSectionSel.addEventListener('change', ()=>{
-      if ((blockSectionSel.value || '').trim() === ''){
-        window.resetBlockFilters();
-      }
-    });
+    btnReset?.addEventListener("click", () => window.resetBlockFilters());
+    blockSectionSel &&
+      blockSectionSel.addEventListener("change", () => {
+        if ((blockSectionSel.value || "").trim() === "") {
+          window.resetBlockFilters();
+        }
+      });
 
     wireSelectAll();
     wirePagination();
   }
 
   // ---------- View/Edit page (add/remove students modal etc.) ----------
-  function initAdminAssignView(){
-    if (!$('#addStudentsModal')) return;
+  function initAdminAssignView() {
+    if (!$("#addStudentsModal")) return;
 
     attachCourseTypeUnits({
-      courseSel:'#CourseId',
-      typeSel:'#Type',
-      unitsInput:'#Units',
-      initialType: ($('#Type')?.dataset?.initialType || $('#Type')?.value || '')
+      courseSel: "#CourseId",
+      typeSel: "#Type",
+      unitsInput: "#Units",
+      initialType: $("#Type")?.dataset?.initialType || $("#Type")?.value || "",
     });
 
     initRoomScheduleUI();
     hydrateScheduleFromServer();
-    wireScheduleSubmitGuard('#editForm');
+    wireScheduleSubmitGuard("#editForm");
 
-    const tbody = $('#enrolledBody');
-    const chkAll = $('#chkRemoveAll');
-    const getRowBoxes = () => $$('#enrolledBody .remove-checkbox');
+    const tbody = $("#enrolledBody");
+    const chkAll = $("#chkRemoveAll");
+    const getRowBoxes = () => $$("#enrolledBody .remove-checkbox");
 
-    function refreshRemoveSummary(){
-      const picked = getRowBoxes().filter(x=>x.checked);
-      const wrap = $('#removeSummary');
-      const cEl = $('#removeCount');
-      const nEl = $('#removeNames');
+    function refreshRemoveSummary() {
+      const picked = getRowBoxes().filter((x) => x.checked);
+      const wrap = $("#removeSummary");
+      const cEl = $("#removeCount");
+      const nEl = $("#removeNames");
       if (!wrap || !cEl || !nEl) return;
 
-      if (picked.length > 0){
-        const pills = picked.map(cb=>{
-          const tr = cb.closest('tr');
-          const name = tr?.children?.[1]?.textContent?.trim() || '';
-          return `<span class="pill">${name}</span>`;
-        }).join('');
-        wrap.classList.remove('d-none');
+      if (picked.length > 0) {
+        const pills = picked
+          .map((cb) => {
+            const tr = cb.closest("tr");
+            const name = tr?.children?.[1]?.textContent?.trim() || "";
+            return `<span class="pill">${name}</span>`;
+          })
+          .join("");
+        wrap.classList.remove("d-none");
         cEl.textContent = String(picked.length);
         nEl.innerHTML = pills;
       } else {
-        wrap.classList.add('d-none');
-        cEl.textContent = '0';
-        nEl.innerHTML = '';
+        wrap.classList.add("d-none");
+        cEl.textContent = "0";
+        nEl.innerHTML = "";
       }
     }
 
-    function syncHeaderCheckbox(){
+    function syncHeaderCheckbox() {
       const boxes = getRowBoxes();
       if (!chkAll || boxes.length === 0) return;
-      const checkedCount = boxes.filter(b=>b.checked).length;
+      const checkedCount = boxes.filter((b) => b.checked).length;
       chkAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
-      chkAll.checked       = checkedCount === boxes.length;
+      chkAll.checked = checkedCount === boxes.length;
     }
 
-    tbody?.addEventListener('change', e=>{
-      if (e.target.classList.contains('remove-checkbox')){
+    tbody?.addEventListener("change", (e) => {
+      if (e.target.classList.contains("remove-checkbox")) {
         refreshRemoveSummary();
         syncHeaderCheckbox();
       }
     });
 
-    chkAll?.addEventListener('change', ()=>{
+    chkAll?.addEventListener("change", () => {
       const on = !!chkAll.checked;
-      getRowBoxes().forEach(cb=>{ cb.checked = on; });
+      getRowBoxes().forEach((cb) => {
+        cb.checked = on;
+      });
       refreshRemoveSummary();
       syncHeaderCheckbox();
     });
 
     syncHeaderCheckbox();
 
-    const btnOpen   = $('#btnOpenAddStudents');
-    const modalEl   = $('#addStudentsModal');
-    const bsModal   = modalEl ? new bootstrap.Modal(modalEl) : null;
-    const host      = $('#addStudentsBody');
-    const spinner   = $('#addSpinner');
-    const addBucket = $('#addStudentsContainer');
+    const btnOpen = $("#btnOpenAddStudents");
+    const modalEl = $("#addStudentsModal");
+    const bsModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+    const host = $("#addStudentsBody");
+    const spinner = $("#addSpinner");
+    const addBucket = $("#addStudentsContainer");
 
     const assignedCourseId =
-      readInput('AssignedCourseId') || $('#editForm input[name="AssignedCourseId"]')?.value || '';
+      readInput("AssignedCourseId") ||
+      $('#editForm input[name="AssignedCourseId"]')?.value ||
+      "";
 
-    async function loadAddTable(page){
+    async function loadAddTable(page) {
       if (!host) return;
-      spinner && spinner.classList.remove('d-none');
-      try{
-        const url = buildUrl('/AdminAssign/AddStudentsTable', {
-          id:assignedCourseId, status:'Active', page:String(page||1), pageSize:'10'
+      spinner && spinner.classList.remove("d-none");
+      try {
+        const url = buildUrl("/AdminAssign/AddStudentsTable", {
+          id: assignedCourseId,
+          status: "Active",
+          page: String(page || 1),
+          pageSize: "10",
         });
-        const resp = await fetch(url, { headers:{ 'X-Requested-With':'XMLHttpRequest' } });
+        const resp = await fetch(url, {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
         const html = await resp.text();
         host.innerHTML = html;
-        spinner && spinner.classList.add('d-none');
+        spinner && spinner.classList.add("d-none");
         wireAddTable();
-      }catch(e){
-        host.innerHTML = '<div class="alert alert-danger">Failed to load student list.</div>';
+      } catch (e) {
+        host.innerHTML =
+          '<div class="alert alert-danger">Failed to load student list.</div>';
         console.error(e);
       }
     }
 
-    function wireAddTable(){
-      const selectAll = $('#selectAllStudents', host);
-      if (selectAll){
-        selectAll.addEventListener('change', function(){
-          const toToggle = $$('.student-add-checkbox, .student-checkbox', host);
-          toToggle.forEach(cb=>{ cb.checked = selectAll.checked; });
+    function wireAddTable() {
+      const selectAll = $("#selectAllStudents", host);
+      if (selectAll) {
+        selectAll.addEventListener("change", function () {
+          const toToggle = $$(".student-add-checkbox, .student-checkbox", host);
+          toToggle.forEach((cb) => {
+            cb.checked = selectAll.checked;
+          });
         });
       }
-      $$('#addStudentsBody a.js-page').forEach(a=>{
-        a.addEventListener('click', function(e){
+      $$("#addStudentsBody a.js-page").forEach((a) => {
+        a.addEventListener("click", function (e) {
           e.preventDefault();
-          const p = toInt(this.getAttribute('data-page'), 1);
+          const p = toInt(this.getAttribute("data-page"), 1);
           if (p) loadAddTable(p);
         });
       });
     }
 
-    function ensurePendingSeparator(){
-      const firstPending = $('#enrolledBody tr.pending-add');
-      const hasSep = !!$('#enrolledBody tr.pending-sep');
-      if (firstPending && !hasSep){
-        const sep = document.createElement('tr');
-        sep.className = 'pending-sep';
+    function ensurePendingSeparator() {
+      const firstPending = $("#enrolledBody tr.pending-add");
+      const hasSep = !!$("#enrolledBody tr.pending-sep");
+      if (firstPending && !hasSep) {
+        const sep = document.createElement("tr");
+        sep.className = "pending-sep";
         sep.innerHTML = `<td colspan="6">Pending additions</td>`;
         firstPending.parentNode.insertBefore(sep, firstPending);
       }
-      if (!firstPending && hasSep){
-        $('#enrolledBody tr.pending-sep')?.remove();
+      if (!firstPending && hasSep) {
+        $("#enrolledBody tr.pending-sep")?.remove();
       }
     }
 
-    function buildPreviewRowFromModalCheckbox(cb){
-      const tr = cb.closest('tr');
+    function buildPreviewRowFromModalCheckbox(cb) {
+      const tr = cb.closest("tr");
       if (!tr) return null;
 
-      const name       = tr.children?.[1]?.textContent?.trim() || '';
-      const prog       = tr.children?.[2]?.textContent?.trim() || '';
-      const year       = tr.children?.[3]?.textContent?.trim() || '';
-      const sec        = tr.children?.[4]?.textContent?.trim() || '';
-      const studStatus = tr.children?.[5]?.textContent?.trim() || 'Active'; // STUDENT status only
+      const name = tr.children?.[1]?.textContent?.trim() || "";
+      const prog = tr.children?.[2]?.textContent?.trim() || "";
+      const year = tr.children?.[3]?.textContent?.trim() || "";
+      const sec = tr.children?.[4]?.textContent?.trim() || "";
+      const studStatus = tr.children?.[5]?.textContent?.trim() || "Active";
 
       const studentId = toInt(cb.value, NaN);
       if (!Number.isFinite(studentId)) return null;
 
-      if (document.querySelector(`#enrolledBody tr[data-student-id="${studentId}"]`)) return null;
+      if (
+        document.querySelector(
+          `#enrolledBody tr[data-student-id="${studentId}"]`
+        )
+      )
+        return null;
 
-      const row = document.createElement('tr');
-      row.setAttribute('data-student-id', String(studentId));
-      row.classList.add('pending-add');
+      const row = document.createElement("tr");
+      row.setAttribute("data-student-id", String(studentId));
+      row.classList.add("pending-add");
 
       row.innerHTML = `
         <td><!-- no delete checkbox for pending adds --></td>
@@ -515,21 +669,29 @@
       return row;
     }
 
-    $('#btnCommitAdd')?.addEventListener('click', ()=>{
-      const picks = $$('.student-add-checkbox:checked, .student-checkbox:checked', host || document);
-      if (picks.length === 0){ bsModal?.hide(); return; }
+    $("#btnCommitAdd")?.addEventListener("click", () => {
+      const picks = $$(
+        ".student-add-checkbox:checked, .student-checkbox:checked",
+        host || document
+      );
+      if (picks.length === 0) {
+        bsModal?.hide();
+        return;
+      }
 
       const existingHidden = new Set(
-        $$('#addStudentsContainer input[name="AddStudentIds"]').map(i=>toInt(i.value, NaN))
+        $$('#addStudentsContainer input[name="AddStudentIds"]').map((i) =>
+          toInt(i.value, NaN)
+        )
       );
 
-      const body = $('#enrolledBody');
-      picks.forEach(cb=>{
+      const body = $("#enrolledBody");
+      picks.forEach((cb) => {
         const sid = toInt(cb.value, NaN);
-        if (Number.isFinite(sid) && !existingHidden.has(sid)){
-          const h = document.createElement('input');
-          h.type  = 'hidden';
-          h.name  = 'AddStudentIds';
+        if (Number.isFinite(sid) && !existingHidden.has(sid)) {
+          const h = document.createElement("input");
+          h.type = "hidden";
+          h.name = "AddStudentIds";
           h.value = String(sid);
           addBucket?.appendChild(h);
 
@@ -542,65 +704,100 @@
       bsModal?.hide();
     });
 
-    btnOpen?.addEventListener('click', ()=>{
+    btnOpen?.addEventListener("click", () => {
       bsModal?.show();
       loadAddTable(1);
     });
 
     // ----------- schedule hydrate for edit -----------
-    function setPickedDays(days){
-      const map = { 1:'Monday', 2:'Tuesday', 3:'Wednesday', 4:'Thursday', 5:'Friday', 6:'Saturday' };
-      days.forEach(d=>{
+    function setPickedDays(days) {
+      const map = {
+        1: "Monday",
+        2: "Tuesday",
+        3: "Wednesday",
+        4: "Thursday",
+        5: "Friday",
+        6: "Saturday",
+      };
+      days.forEach((d) => {
         const btn = document.querySelector(`.day-btn[data-day="${map[d]}"]`);
-        if (btn && !btn.classList.contains('active')){
-          btn.classList.add('active','btn-primary'); btn.classList.remove('btn-outline-secondary');
+        if (btn && !btn.classList.contains("active")) {
+          btn.classList.add("active", "btn-primary");
+          btn.classList.remove("btn-outline-secondary");
         }
       });
-      const live = $('#DayLiveText');
-      if (live){ live.textContent = days.map(d => ({1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'}[d])).join(', '); }
+      const live = $("#DayLiveText");
+      if (live) {
+        live.textContent = days
+          .map(
+            (d) =>
+              ({
+                1: "Monday",
+                2: "Tuesday",
+                3: "Wednesday",
+                4: "Thursday",
+                5: "Friday",
+                6: "Saturday",
+              }[d])
+          )
+          .join(", ");
+      }
+      const csvHidden = document.querySelector("#ScheduleDaysCsv");
+      if (csvHidden) csvHidden.value = days.join(",");
     }
 
-    function hydrateScheduleFromServer(){
-      const host = document.querySelector('#ScheduleData');
+    function hydrateScheduleFromServer() {
+      const host = document.querySelector("#ScheduleData");
       if (!host) return;
 
-      const roomSel = document.querySelector('#RoomSelect');
-      const startEl = document.querySelector('#StartTime');
-      const endEl   = document.querySelector('#EndTime');
+      const roomSel = document.querySelector("#RoomSelect");
+      const startEl = document.querySelector("#StartTime");
+      const endEl = document.querySelector("#EndTime");
 
-      const csv   = (host.dataset.existingDays || '').trim();
-      const room  = (host.dataset.room || '').trim();
-      const start = (host.dataset.start || '').trim();
-      const end   = (host.dataset.end || '').trim();
+      const csv = (host.dataset.existingDays || "").trim();
+      const room = (host.dataset.room || "").trim();
+      const start = (host.dataset.start || "").trim();
+      const end = (host.dataset.end || "").trim();
 
-      if (csv){
-        const ints = csv.split(',').map(s=>parseInt(s,10)).filter(n=>n>=1 && n<=6);
+      if (csv) {
+        const ints = csv
+          .split(",")
+          .map((s) => parseInt(s, 10))
+          .filter((n) => n >= 1 && n <= 6);
         setPickedDays(ints);
       }
       if (start && startEl) startEl.value = start;
-      if (end   && endEl  ) endEl.value   = end;
+      if (end && endEl) endEl.value = end;
 
-      if (room && roomSel){
-        const hasOption = Array.from(roomSel.options).some(o=>o.value===room);
-        if (!hasOption){
-          const opt = document.createElement('option');
-          opt.value = room; opt.textContent = room;
+      if (room && roomSel) {
+        const hasOption = Array.from(roomSel.options).some(
+          (o) => o.value === room
+        );
+        if (!hasOption) {
+          const opt = document.createElement("option");
+          opt.value = room;
+          opt.textContent = room;
           roomSel.appendChild(opt);
         }
         roomSel.value = room;
-        if (roomSel.options.length > 1) roomSel.disabled = false;
+        // never disable the select; it must post
+        roomSel.removeAttribute("disabled");
       }
     }
   }
 
   // ---------- DOM Ready wiring ----------
-  document.addEventListener('DOMContentLoaded', ()=>{
-    if ($('.admin-accounts-container')) initAdminAssignIndex();
-    if ($('#blockFields'))              initAdminAssignPhase2();
-    if ($('#addStudentsModal'))         initAdminAssignView();
+  document.addEventListener("DOMContentLoaded", () => {
+    if ($(".admin-accounts-container")) initAdminAssignIndex();
+    if ($("#blockFields")) initAdminAssignPhase2();
+    if ($("#addStudentsModal")) initAdminAssignView();
 
-    if ($('#CourseId') && $('#Type') && $('#Units')){
-      attachCourseTypeUnits({ courseSel:'#CourseId', typeSel:'#Type', unitsInput:'#Units' });
+    if ($("#CourseId") && $("#Type") && $("#Units")) {
+      attachCourseTypeUnits({
+        courseSel: "#CourseId",
+        typeSel: "#Type",
+        unitsInput: "#Units",
+      });
     }
   });
 })();

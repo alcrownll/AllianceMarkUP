@@ -100,6 +100,7 @@ namespace ASI.Basecode.Services.Services
 
             if (hasProg || hasYear || hasSec)
             {
+                // NOTE: this filter shows all NOT in the selected block (based on your previous code)
                 q = q.Where(s =>
                     !((!hasProg || s.Program == program) &&
                       (!hasYear || s.YearLevel == yearLevel) &&
@@ -113,11 +114,10 @@ namespace ASI.Basecode.Services.Services
                  .ThenBy(s => s.User.UserId);
 
             var total = await q.CountAsync(ct);
-            var items = await q
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Include(s => s.User)
-                .ToListAsync(ct);
+            var items = await q.Skip((page - 1) * pageSize)
+                               .Take(pageSize)
+                               .Include(s => s.User)
+                               .ToListAsync(ct);
 
             return new PagedResultModel<Student>
             {
@@ -146,31 +146,163 @@ namespace ASI.Basecode.Services.Services
             return fallback.ToString();
         }
 
-        public async Task<int> CreateAssignedCourseAsync(
-            AssignedCourse form,
-            string blockProgram,
-            string blockYear,
-            string blockSection,
-            IEnumerable<int> extraStudentIds,
-            CancellationToken ct = default)
+        // helpers
+
+        private static bool TryParseTime(string hhmm, out TimeSpan ts)
         {
-            var ac = new AssignedCourse
+            ts = default;
+            if (string.IsNullOrWhiteSpace(hhmm))
+                return false;
+
+            return TimeSpan.TryParse(hhmm, out ts);
+        }
+
+        private static void ValidateTimeWindow(TimeSpan start, TimeSpan end)
+        {
+            var min = new TimeSpan(7, 30, 0);   // 07:30 AM
+            var max = new TimeSpan(21, 30, 0);  // 9:30 PM
+            if (start < min || start > max) throw new InvalidOperationException("Start time must be between 07:30 and 21:30.");
+            if (end < min || end > max) throw new InvalidOperationException("End time must be between 07:30 and 21:30.");
+            if (end <= start) throw new InvalidOperationException("End time must be later than start time.");
+        }
+
+        private static HashSet<int> ParseDaysCsv(string csv)
+        {
+            if (string.IsNullOrWhiteSpace(csv)) return new();
+            return csv.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                      .Select(s => int.TryParse(s, out var d) ? d : -1)
+                      .Where(d => d >= 1 && d <= 6)
+                      .ToHashSet();
+        }
+
+        /// <summary>
+        /// Lenient schedule creation: only writes when room + start + end + at least one day are provided.
+        /// Returns false if it no-ops; true if it wrote schedules.
+        /// </summary>
+        private async Task<bool> TryCreateSchedulesLenientAsync(
+            int assignedCourseId,
+            string room,
+            string startHHmm,
+            string endHHmm,
+            string daysCsv,
+            CancellationToken ct)
+        {
+            var daySet = ParseDaysCsv(daysCsv);
+            if (daySet.Count == 0) return false;
+            if (string.IsNullOrWhiteSpace(room)) return false;
+            if (!TryParseTime(startHHmm, out var start)) return false;
+            if (!TryParseTime(endHHmm, out var end)) return false;
+
+            ValidateTimeWindow(start, end);
+            var trimmedRoom = room.Trim();
+
+            foreach (var d in daySet)
             {
-                EDPCode   = string.IsNullOrWhiteSpace(form.EDPCode)
-                                ? await GenerateEdpCodeAsync(form.CourseId, form.Semester, form.SchoolYear, ct)
-                                : form.EDPCode.Trim(),
-                CourseId  = form.CourseId,
-                Type      = form.Type,
-                Units     = form.Units,
-                ProgramId = form.ProgramId,
-                TeacherId = form.TeacherId,
-                Semester  = form.Semester,
-                SchoolYear= form.SchoolYear,
-            };
+                _classSchedules.AddClassSchedule(new ClassSchedule
+                {
+                    AssignedCourseId = assignedCourseId,
+                    Day = (DayOfWeek)d, // Mon=1..Sat=6
+                    StartTime = start,
+                    EndTime = end,
+                    Room = trimmedRoom
+                });
+            }
+            await _classSchedules.SaveChangesAsync(ct);
+            return true;
+        }
 
-            _assigned.AddAssignedCourseNoSave(ac);
-            await _assigned.SaveChangesAsync(ct);
+        /// <summary>
+        /// Lenient upsert: 
+        /// - If inputs are incomplete OR no days => delete existing schedules for this course (reflects empty selection) and no-op insert.
+        /// - Otherwise upsert all specified days and delete the rest.
+        /// </summary>
+        private async Task UpsertSchedulesLenientAsync(
+            int assignedCourseId,
+            string room,
+            string startHHmm,
+            string endHHmm,
+            string daysCsv,
+            CancellationToken ct)
+        {
+            var want = ParseDaysCsv(daysCsv);
 
+            // Incomplete => remove all schedules (treat as user cleared the selection)
+            if (want.Count == 0 ||
+                string.IsNullOrWhiteSpace(room) ||
+                !TryParseTime(startHHmm, out var start) ||
+                !TryParseTime(endHHmm, out var end))
+            {
+                var existingAll = await _classSchedules.GetClassSchedules()
+                    .Where(s => s.AssignedCourseId == assignedCourseId)
+                    .ToListAsync(ct);
+
+                foreach (var del in existingAll)
+                    _classSchedules.DeleteClassSchedule(del.ClassScheduleId);
+
+                await _classSchedules.SaveChangesAsync(ct);
+                return;
+            }
+
+            ValidateTimeWindow(start, end);
+            var trimmedRoom = room.Trim();
+
+            var existing = await _classSchedules.GetClassSchedules()
+                .Where(s => s.AssignedCourseId == assignedCourseId)
+                .ToListAsync(ct);
+
+            // Update overlapping days
+            foreach (var row in existing.Where(r => want.Contains((int)r.Day)))
+            {
+                row.Room = trimmedRoom;
+                row.StartTime = start;
+                row.EndTime = end;
+                _classSchedules.UpdateClassSchedule(row);
+            }
+
+            // Insert missing days
+            var have = existing.Select(e => (int)e.Day).ToHashSet();
+            foreach (var d in want.Except(have))
+            {
+                _classSchedules.AddClassSchedule(new ClassSchedule
+                {
+                    AssignedCourseId = assignedCourseId,
+                    Day = (DayOfWeek)d,
+                    StartTime = start,
+                    EndTime = end,
+                    Room = trimmedRoom
+                });
+            }
+
+            // Delete removed days
+            foreach (var del in existing.Where(r => !want.Contains((int)r.Day)).ToList())
+                _classSchedules.DeleteClassSchedule(del.ClassScheduleId);
+
+            await _classSchedules.SaveChangesAsync(ct);
+        }
+
+        private async Task SeedGradesForTargetsAsync(int assignedCourseId, IEnumerable<int> targetStudentIds, CancellationToken ct)
+        {
+            var set = (targetStudentIds ?? Enumerable.Empty<int>()).Where(i => i > 0).ToHashSet();
+            if (set.Count == 0) return;
+
+            var gradeRows = set.Select(sid => new Grade
+            {
+                StudentId = sid,
+                AssignedCourseId = assignedCourseId,
+                Prelims = null,
+                Midterm = null,
+                SemiFinal = null,
+                Final = null
+            }).ToList();
+
+            _grades.AddGradesNoSave(gradeRows);
+            await _grades.SaveChangesAsync(ct);
+        }
+
+        private async Task<HashSet<int>> CollectTargetStudentIdsAsync(
+            string blockProgram, string blockYear, string blockSection,
+            IEnumerable<int> extraStudentIds, CancellationToken ct)
+        {
             var targetIds = new HashSet<int>();
 
             bool hasBlock = !string.IsNullOrWhiteSpace(blockProgram)
@@ -187,8 +319,7 @@ namespace ASI.Basecode.Services.Services
                     .Select(s => s.StudentId)
                     .ToListAsync(ct);
 
-                foreach (var id in inBlock)
-                    targetIds.Add(id);
+                foreach (var id in inBlock) targetIds.Add(id);
             }
 
             if (extraStudentIds != null)
@@ -197,24 +328,52 @@ namespace ASI.Basecode.Services.Services
                     targetIds.Add(id);
             }
 
-            if (targetIds.Count > 0)
-            {
-                var gradeRows = targetIds.Select(sid => new Grade
-                {
-                    StudentId = sid,
-                    AssignedCourseId = ac.AssignedCourseId,
-                    Prelims = null,
-                    Midterm = null,
-                    SemiFinal = null,
-                    Final = null
-                }).ToList();
+            return targetIds;
+        }
 
-                _grades.AddGradesNoSave(gradeRows);
-                await _grades.SaveChangesAsync(ct);
-            }
+        // ===================== Create (Assigned + optional Schedules + optional Grades) =====================
+
+        public async Task<int> CreateAssignedCourseAsync(
+            AssignedCourse form,
+            string blockProgram,
+            string blockYear,
+            string blockSection,
+            IEnumerable<int> extraStudentIds,
+            string scheduleRoom,
+            string scheduleStartHHmm,
+            string scheduleEndHHmm,
+            string scheduleDaysCsv,
+            CancellationToken ct = default)
+        {
+            // Assigned course base creation
+            var ac = new AssignedCourse
+            {
+                EDPCode = string.IsNullOrWhiteSpace(form.EDPCode)
+                                ? await GenerateEdpCodeAsync(form.CourseId, form.Semester, form.SchoolYear, ct)
+                                : form.EDPCode.Trim(),
+                CourseId = form.CourseId,
+                Type = form.Type,
+                Units = form.Units,
+                ProgramId = form.ProgramId,
+                TeacherId = form.TeacherId,
+                Semester = form.Semester,
+                SchoolYear = form.SchoolYear,
+            };
+
+            _assigned.AddAssignedCourseNoSave(ac);
+            await _assigned.SaveChangesAsync(ct);
+
+            // Seed grades like your working flow (no error if 0 students)
+            var targets = await CollectTargetStudentIdsAsync(blockProgram, blockYear, blockSection, extraStudentIds, ct);
+            await SeedGradesForTargetsAsync(ac.AssignedCourseId, targets, ct);
+
+            // Try schedules (lenient): only writes when complete; silent no-op otherwise
+            await TryCreateSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
 
             return ac.AssignedCourseId;
         }
+
+        // ===================== Reads =====================
 
         public async Task<AssignedCourse> GetAssignedCourseAsync(int id, CancellationToken ct)
         {
@@ -246,101 +405,6 @@ namespace ASI.Basecode.Services.Services
                 .Where(s => s.AssignedCourseId == assignedCourseId)
                 .OrderBy(s => s.Day)
                 .ToListAsync(ct);
-        }
-
-        private static TimeSpan ParseTimeOrThrow(string hhmm, string label)
-        {
-            if (string.IsNullOrWhiteSpace(hhmm) || !TimeSpan.TryParse(hhmm, out var ts))
-                throw new InvalidOperationException($"{label} is invalid.");
-            return ts;
-        }
-
-        private static void ValidateTimeWindow(TimeSpan start, TimeSpan end)
-        {
-            var min = new TimeSpan(7, 30, 0);  // 7:30 AM
-            var max = new TimeSpan(21, 30, 0); // 9:30 PM
-            if (start < min || start > max) throw new InvalidOperationException("Start time must be between 07:30 and 21:30.");
-            if (end < min || end > max) throw new InvalidOperationException("End time must be between 07:30 and 21:30.");
-            if (end <= start) throw new InvalidOperationException("End time must be later than start time.");
-        }
-
-        public async Task CreateSchedulesAsync(
-            int assignedCourseId,
-            string room,
-            string startTimeHHmm,
-            string endTimeHHmm,
-            IEnumerable<int> days,
-            CancellationToken ct)
-        {
-            var daySet = new HashSet<int>((days ?? Array.Empty<int>()).Where(d => d >= 1 && d <= 6));
-            if (daySet.Count == 0) return;
-
-            var start = ParseTimeOrThrow(startTimeHHmm, "Start time");
-            var end = ParseTimeOrThrow(endTimeHHmm, "End time");
-            ValidateTimeWindow(start, end);
-            if (string.IsNullOrWhiteSpace(room)) throw new InvalidOperationException("Room is required when selecting days.");
-
-            foreach (var d in daySet)
-            {
-                _classSchedules.AddClassSchedule(new ClassSchedule
-                {
-                    AssignedCourseId = assignedCourseId,
-                    Day = (DayOfWeek)d, // Mon=1..Sat=6
-                    StartTime = start,
-                    EndTime = end,
-                    Room = room.Trim()
-                });
-            }
-            await _classSchedules.SaveChangesAsync(ct);
-        }
-
-        public async Task UpsertSchedulesAsync(
-            int assignedCourseId,
-            string room,
-            string startTimeHHmm,
-            string endTimeHHmm,
-            IEnumerable<int> days,
-            CancellationToken ct)
-        {
-            var existing = await _classSchedules.GetClassSchedules()
-                .Where(s => s.AssignedCourseId == assignedCourseId)
-                .ToListAsync(ct);
-
-            var want = new HashSet<int>((days ?? Array.Empty<int>()).Where(d => d >= 1 && d <= 6));
-
-            TimeSpan start = default, end = default;
-            if (want.Count > 0)
-            {
-                start = ParseTimeOrThrow(startTimeHHmm, "Start time");
-                end = ParseTimeOrThrow(endTimeHHmm, "End time");
-                ValidateTimeWindow(start, end);
-                if (string.IsNullOrWhiteSpace(room)) throw new InvalidOperationException("Room is required when selecting days.");
-
-                foreach (var row in existing.Where(r => want.Contains((int)r.Day)))
-                {
-                    row.Room = room.Trim();
-                    row.StartTime = start;
-                    row.EndTime = end;
-                    _classSchedules.UpdateClassSchedule(row);
-                }
-
-                var have = existing.Select(e => (int)e.Day).ToHashSet();
-                foreach (var d in want.Except(have))
-                {
-                    _classSchedules.AddClassSchedule(new ClassSchedule
-                    {
-                        AssignedCourseId = assignedCourseId,
-                        Day = (DayOfWeek)d,
-                        StartTime = start,
-                        EndTime = end,
-                        Room = room.Trim()
-                    });
-                }
-            }
-            foreach (var del in existing.Where(r => !want.Contains((int)r.Day)).ToList())
-                _classSchedules.DeleteClassSchedule(del.ClassScheduleId);
-
-            await _classSchedules.SaveChangesAsync(ct);
         }
 
         public async Task<(IReadOnlyList<Student> Items, int Total)> GetAddableStudentsPageAsync(
@@ -390,10 +454,16 @@ namespace ASI.Basecode.Services.Services
             return (items, total);
         }
 
+        // ===================== Update (Assigned + Students + Schedules) =====================
+
         public async Task UpdateAssignedCourseAsync(
             AssignedCourse posted,
             IEnumerable<int> removeStudentIds,
             IEnumerable<int> addStudentIds,
+            string scheduleRoom,
+            string scheduleStartHHmm,
+            string scheduleEndHHmm,
+            string scheduleDaysCsv,
             CancellationToken ct)
         {
             var ac = await _assigned.GetAssignedCourses()
@@ -401,17 +471,18 @@ namespace ASI.Basecode.Services.Services
 
             if (ac == null) throw new InvalidOperationException("Assigned course not found.");
 
-            ac.EDPCode   = posted.EDPCode?.Trim();
-            ac.CourseId  = posted.CourseId;
-            ac.Type      = posted.Type;
-            ac.Units     = posted.Units;
+            ac.EDPCode = posted.EDPCode?.Trim();
+            ac.CourseId = posted.CourseId;
+            ac.Type = posted.Type;
+            ac.Units = posted.Units;
             ac.ProgramId = posted.ProgramId;
             ac.TeacherId = posted.TeacherId;
-            ac.Semester  = posted.Semester;
-            ac.SchoolYear= posted.SchoolYear;
+            ac.Semester = posted.Semester;
+            ac.SchoolYear = posted.SchoolYear;
 
             _assigned.UpdateAssignedCourse(ac);
 
+            // Remove students
             if (removeStudentIds != null)
             {
                 var toRemove = await _grades.GetGrades()
@@ -419,8 +490,11 @@ namespace ASI.Basecode.Services.Services
                     .ToListAsync(ct);
 
                 foreach (var g in toRemove) _grades.DeleteGrade(g.GradeId);
+                if (toRemove.Count > 0)
+                    await _grades.SaveChangesAsync(ct);
             }
 
+            // Add students (avoid dupes)
             if (addStudentIds != null)
             {
                 var existing = await _grades.GetGrades()
@@ -441,12 +515,16 @@ namespace ASI.Basecode.Services.Services
                         SemiFinal = null,
                         Final = null
                     });
-
                     _grades.AddGradesNoSave(rows);
                     await _grades.SaveChangesAsync(ct);
                 }
             }
+
+            // Upsert schedules (lenient)
+            await UpsertSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
         }
+
+        // ===================== Delete =====================
 
         public async Task<(bool ok, string message)> DeleteAssignedCourseAsync(int assignedCourseId, CancellationToken ct)
         {

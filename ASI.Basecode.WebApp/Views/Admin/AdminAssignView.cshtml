@@ -15,7 +15,8 @@
     var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear) ? "2025-2026" : Model.SchoolYear;
 
     // Schedules from service (for blue-day highlight and prefill)
-    var scheds = (IEnumerable<ASI.Basecode.Data.Models.ClassSchedule>)(ViewBag.Schedules ?? Enumerable.Empty<ASI.Basecode.Data.Models.ClassSchedule>());
+    var scheds = (IEnumerable<ASI.Basecode.Data.Models.ClassSchedule>)(ViewBag.Schedules ??
+    Enumerable.Empty<ASI.Basecode.Data.Models.ClassSchedule>());
     var existingDaysCsv = string.Join(",", scheds.Select(s => ((int)s.Day)));
     var first = scheds.FirstOrDefault();
     var firstRoom = first?.Room ?? "";
@@ -36,7 +37,7 @@
     }
 
     .pending-add td {
-        background: rgba(37,99,235,.065);
+        background: rgba(37, 99, 235, .065);
         border-top: 0 !important;
     }
 
@@ -50,7 +51,10 @@
         line-height: 1;
     }
 
-    #removeNames { margin-top: .25rem; }
+    #removeNames {
+        margin-top: .25rem;
+    }
+
     #removeNames .pill {
         display: inline-block;
         padding: .25rem .55rem;
@@ -63,13 +67,19 @@
         white-space: nowrap;
     }
 
-    table.table.table-sm.align-middle td, table.table.table-sm.align-middle th {
+    table.table.table-sm.align-middle td,
+    table.table.table-sm.align-middle th {
         padding-top: .6rem;
         padding-bottom: .55rem;
     }
 
-    .day-btn { min-width: 110px; }
-    .day-btn.active { color: #fff !important; }
+    .day-btn {
+        min-width: 110px;
+    }
+
+    .day-btn.active {
+        color: #fff !important;
+    }
 </style>
 
 <div class="container my-4">
@@ -99,7 +109,8 @@
                         {
                             if (c.CourseId == Model.CourseId)
                             {
-                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits" selected>@c.CourseCode</option>
+                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits" selected>@c.CourseCode
+                                </option>
                             }
                             else
                             {
@@ -195,7 +206,8 @@
                     <label class="form-label">Name</label>
                     <select class="form-select" asp-for="TeacherId" id="TeacherId" required>
                         <option value="">-- Select --</option>
-                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t => t.User.FirstName))
+                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t =>
+                                                t.User.FirstName))
                         {
                             if (t.TeacherId == Model.TeacherId)
                             {
@@ -216,11 +228,8 @@
             <div class="section-title">Room &amp; Schedule</div>
 
             <!-- Expose current schedule to JS for hydration (days blue + room/time prefill) -->
-            <div id="ScheduleData"
-                 data-existing-days="@existingDaysCsv"
-                 data-room="@firstRoom"
-                 data-start="@firstStart"
-                 data-end="@firstEnd"></div>
+            <div id="ScheduleData" data-existing-days="@existingDaysCsv" data-room="@firstRoom" data-start="@firstStart"
+                data-end="@firstEnd"></div>
 
             <div class="row g-3 uniform-row">
                 <div class="col-md-4">
@@ -231,14 +240,14 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Start Time</label>
-                    <input id="StartTime" name="ScheduleStart" type="time" class="form-control"
-                           min="07:30" max="21:30" step="900" placeholder="07:30" />
+                    <input id="StartTime" name="ScheduleStart" type="time" class="form-control" min="07:30" max="21:30"
+                        step="900" placeholder="07:30" />
                     <small class="tiny-hint text-muted">Earliest Start Time:7:30 AM</small>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">End Time</label>
-                    <input id="EndTime" name="ScheduleEnd" type="time" class="form-control"
-                           min="07:30" max="21:30" step="900" placeholder="09:30" />
+                    <input id="EndTime" name="ScheduleEnd" type="time" class="form-control" min="07:30" max="21:30"
+                        step="900" placeholder="09:30" />
                     <small class="tiny-hint text-muted">Latest End Time: 9:30 PM</small>
                 </div>
             </div>
@@ -248,10 +257,13 @@
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Monday">Monday</button>
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Tuesday">Tuesday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Wednesday">Wednesday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Thursday">Thursday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Wednesday">Wednesday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Thursday">Thursday</button>
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Friday">Friday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Saturday">Saturday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Saturday">Saturday</button>
                 </div>
                 <small id="DayLiveText" class="text-muted d-block mt-2"></small>
             </div>
@@ -287,9 +299,11 @@
                         {
                             foreach (var s in enrolled)
                             {
-                                var fullName = s.User != null ? $"{(s.User.LastName ?? "").ToUpper()}, {s.User.FirstName}" : "(no user)";
+                                var fullName = s.User != null ? $"{(s.User.LastName ?? "").ToUpper()}, {s.User.FirstName}" :
+                                "(no user)";
                                 <tr data-student-id="@s.StudentId">
-                                    <td><input class="form-check-input remove-checkbox" type="checkbox" name="RemoveStudentIds" value="@s.StudentId" /></td>
+                                    <td><input class="form-check-input remove-checkbox" type="checkbox" name="RemoveStudentIds"
+                                            value="@s.StudentId" /></td>
                                     <td>@fullName</td>
                                     <td>@(s.Program ?? "")</td>
                                     <td>@(s.YearLevel ?? "")</td>
@@ -300,19 +314,25 @@
                         }
                         else
                         {
-                            <tr><td colspan="6" class="text-center text-muted">No students yet.</td></tr>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No students yet.</td>
+                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
 
             <!-- Removal summary -->
-            <div id="removeSummary" class="alert alert-danger py-2 d-none border border-danger bg-danger bg-opacity-10" role="status" aria-live="polite">
+            <div id="removeSummary" class="alert alert-danger py-2 d-none border border-danger bg-danger bg-opacity-10"
+                role="status" aria-live="polite">
                 <div class="d-flex align-items-center gap-2">
                     <strong>Marked for deletion</strong>
                     <span class="badge bg-white text-danger border border-danger" id="removeCount">0</span>
                 </div>
-                <div class="small text-danger mt-1">Checked students will be removed from this course when you click <strong>Save</strong>.</div>
+                <div class="small text-danger mt-1">Checked students will be removed from this course when you click
+                    <strong>Save</strong>.
+                
+                </div>
                 <div id="removeNames" class="small"></div>
             </div>
 
@@ -328,7 +348,8 @@
 </div>
 
 <!-- ===== Add Students Modal ===== -->
-<div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+    data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content shadow">
             <div class="modal-header">
