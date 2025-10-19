@@ -129,5 +129,60 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { ok });
         }
 
+        // ===========================
+        // NEW: POST /admin/programs/{id}/delete
+        // Safe delete with guard + AJAX/Non-AJAX responses.
+        // ===========================
+        [HttpPost("{id:int}/delete")]
+        [ValidateAntiForgeryToken]
+        public IActionResult Delete(int id, [FromForm] bool force = false)
+        {
+            if (id <= 0)
+                return BadRequest(new { ok = false, message = "Invalid program id." });
+
+            // Safety guard: block if program still has courses unless force is explicitly true.
+            var hasCourses = _svc.HasAnyCourses(id);
+            if (hasCourses && !force)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return StatusCode(409, new { ok = false, reason = "has_courses", message = "Program still has courses. Remove them first or force delete." });
+
+                TempData["Programs.Error"] = "Cannot delete: program still has courses. Remove them first.";
+                return Redirect(Request.Headers["Referer"].ToString() ?? "/admin/programs");
+            }
+
+            _svc.DiscardProgram(id);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { ok = true, deleted = true, id });
+
+            TempData["Programs.Ok"] = "Program deleted.";
+            return Redirect(Request.Headers["Referer"].ToString() ?? "/admin/programs");
+        }
+
+        [HttpPost("{id:int}/update")]
+        [ValidateAntiForgeryToken]
+        public IActionResult Update(
+       [FromRoute] int id,
+       [FromForm] string ProgramCode,
+       [FromForm] string ProgramName,
+       [FromForm] bool IsActive)
+        {
+            try
+            {
+                var ok = _svc.UpdateProgram(id, ProgramCode, ProgramName, IsActive);
+                if (!ok) return NotFound(new { message = "Program not found." });
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // e.g., validation or duplicate code
+                return StatusCode(409, new { message = ex.Message });
+            }
+            catch
+            {
+                return StatusCode(500, new { message = "Unexpected server error." });
+            }
+        }
     }
 }
