@@ -7,14 +7,12 @@
 
     const state = {
         dashboard: window.AdminReportsInitial || null,
-        selectedSchoolYear: null,
-        selectedTermKey: '',
         selectedTeacherId: null,
         selectedStudentId: null,
-        teacherSearch: '',
-        teacherProgram: '',
         teacherDirectory: [],
-        studentBaseOptions: []
+        studentOptions: [],
+        selectedSchoolYear: null,
+        selectedTermKey: null
     };
 
     const chartRegistry = new Map();
@@ -22,27 +20,10 @@
     const els = {
         tabs: Array.from(root.querySelectorAll('.reports-tab')),
         panels: Array.from(root.querySelectorAll('.tab-panel')),
-        schoolYear: root.querySelector('[data-selector="school-year"]'),
-        term: root.querySelector('[data-selector="term"]'),
         studentSelector: root.querySelector('[data-selector="student"]'),
-        teacherSearch: root.querySelector('[data-filter="teacher-search"]'),
-        teacherProgram: root.querySelector('[data-filter="teacher-department"]'),
-        teacherTableBody: root.querySelector('[data-table="teacher-directory"] tbody'),
         teacherAssignmentsBody: root.querySelector('[data-table="teacher-assignments"] tbody'),
         teacherSubmissionList: root.querySelector('[data-list="teacher-submissions"]'),
-        teacherPrint: root.querySelector('[data-action="print-teacher"]'),
-        programLeaderboard: (() => {
-            const node = root.querySelector('[data-list="program-leaderboard"]');
-            if (!node) {
-                return null;
-            }
-            return node.tagName === 'UL' ? node : node.querySelector('ul');
-        })(),
-        courseFailure: root.querySelector('[data-list="course-failure"]'),
-        courseSuccess: root.querySelector('[data-list="course-success"]'),
-        riskList: root.querySelector('[data-list="risk-indicators"]'),
-        strengthContainer: root.querySelector('.chip-list.strength'),
-        riskContainer: root.querySelector('.chip-list.risk'),
+        teacherSelector: root.querySelector('[data-selector="teacher"]'),
         studentGradesBody: root.querySelector('[data-table="student-grades"] tbody')
     };
 
@@ -50,6 +31,67 @@
     const percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
     const field = (name) => root.querySelector(`[data-field="${name}"]`);
+
+    const readProp = (source, key) => {
+        if (!source || !key) {
+            return undefined;
+        }
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+            return source[key];
+        }
+        const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+        return source[camelKey];
+    };
+
+    const toNumber = (value, fallback = 0) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : fallback;
+    };
+
+    const calculateVolatilityScore = (row) => {
+        if (!row) {
+            return null;
+        }
+        const componentKeys = ['Prelim', 'Midterm', 'Prefinal', 'Final'];
+        const values = componentKeys
+            .map(key => readProp(row, key))
+            .map(value => value != null ? toNumber(value, NaN) : NaN)
+            .filter(value => Number.isFinite(value));
+
+        if (values.length <= 1) {
+            return 0;
+        }
+
+        const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+        const variance = values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / values.length;
+        return Math.round(Math.sqrt(variance) * 100) / 100;
+    };
+
+    const mapVolatilityToLabel = (score) => {
+        if (score == null || Number.isNaN(score)) {
+            return 'No Data';
+        }
+        if (score <= 1) {
+            return 'Excellent';
+        }
+        if (score <= 3) {
+            return 'Great';
+        }
+        return 'Needs Attention';
+    };
+
+    const mapVolatilityToBadgeClass = (label) => {
+        switch (label) {
+            case 'Excellent':
+                return 'badge bg-success';
+            case 'Great':
+                return 'badge bg-primary';
+            case 'Needs Attention':
+                return 'badge bg-danger';
+            default:
+                return 'badge bg-secondary';
+        }
+    };
 
     async function fetchJson(url, params) {
         const query = params && Object.keys(params).length
@@ -73,12 +115,12 @@
     }
 
     function formatNumber(value) {
-        const numeric = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+        const numeric = toNumber(value, 0);
         return numberFormatter.format(numeric);
     }
 
     function formatPercent(value, opts = {}) {
-        const numeric = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+        const numeric = toNumber(value, 0);
         const prefix = opts.showSign && numeric > 0 ? '+' : '';
         return `${prefix}${percentFormatter.format(numeric)}%`;
     }
@@ -143,70 +185,6 @@
         }
     }
 
-    async function refreshDashboard(options = {}) {
-        const activateTabId = options.activateTabId;
-
-        try {
-            setLoading(true);
-            const data = await fetchJson('/Admin/ReportsDashboard', {
-                schoolYear: state.selectedSchoolYear,
-                termKey: state.selectedTermKey
-            });
-            renderDashboard(data);
-            if (activateTabId) {
-                activateTab(activateTabId);
-            }
-        } catch (error) {
-            console.error('Failed to refresh reports data', error);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    function renderList(container, nodes, emptyMarkup) {
-        if (!container) {
-            return;
-        }
-        container.innerHTML = '';
-
-        if (!nodes || !nodes.length) {
-            container.innerHTML = emptyMarkup || '';
-            return;
-        }
-
-        nodes.forEach(node => container.appendChild(node));
-    }
-
-    function renderChipList(container, values) {
-        if (!container) {
-            return;
-        }
-        container.innerHTML = '';
-        if (!values || !values.length) {
-            const emptyText = container.dataset.emptyText || 'No data available.';
-            const chip = document.createElement('span');
-            chip.className = 'chip chip-empty';
-            chip.dataset.empty = 'true';
-            chip.textContent = emptyText;
-            container.appendChild(chip);
-            return;
-        }
-
-        values.forEach(value => {
-            const chip = document.createElement('span');
-            chip.className = 'chip';
-            chip.textContent = value;
-            container.appendChild(chip);
-        });
-    }
-
-    function setInvalid(select, isInvalid) {
-        if (!select) {
-            return;
-        }
-        select.classList.toggle('field-invalid', Boolean(isInvalid));
-    }
-
     function bindTabEvents() {
         if (!els.tabs.length) {
             return;
@@ -223,25 +201,8 @@
         });
     }
 
-    function bindFilterEvents() {
-        if (els.teacherProgram) {
-            els.teacherProgram.addEventListener('change', () => {
-                state.teacherProgram = els.teacherProgram.value || '';
-                renderTeacherDirectory(state.teacherDirectory);
-            });
-        }
-
-        if (els.teacherSearch) {
-            els.teacherSearch.addEventListener('input', () => {
-                state.teacherSearch = els.teacherSearch.value?.toLowerCase().trim() || '';
-                renderTeacherDirectory(state.teacherDirectory);
-            });
-        }
-    }
-
     function bindEvents() {
         bindTabEvents();
-        bindFilterEvents();
     }
 
     function ensureChart(id, type, labels, datasets, options, customizer) {
@@ -256,6 +217,14 @@
                 ...ds,
                 data: Array.isArray(ds.data) && ds.data.length
                     ? ds.data.map(value => {
+                        if (Array.isArray(value)) {
+                            return value;
+                        }
+
+                        if (value && typeof value === 'object') {
+                            return value;
+                        }
+
                         const numeric = Number(value);
                         return Number.isFinite(numeric) ? numeric : 0;
                     })
@@ -305,181 +274,118 @@
         chart.update();
     }
 
-    function renderOverall(overall) {
-        const summary = overall?.Summary || {};
-        setField('overall-total', formatNumber(summary.TotalEnrolled));
-        setField('overall-growth', formatPercent(summary.GrowthPercent, { showSign: true }));
-        setField('overall-gwa', Number.isFinite(summary.AverageGwa) ? summary.AverageGwa.toFixed(2) : '0.00');
-        setField('overall-pass', formatPercent(summary.PassRatePercent));
-        setField('overall-retention', formatPercent(summary.RetentionPercent));
+    function renderStudentConsistency(label, score) {
+        const node = root.querySelector('[data-field="student-consistency"]');
+        if (!node) {
+            return;
+        }
+        if (!label || label === 'Select a student.') {
+            node.innerHTML = 'Select a student.';
+            return;
+        }
 
-        const trend = Array.isArray(overall?.EnrollmentTrend) ? overall.EnrollmentTrend : [];
-        ensureChart('overallTrendChart', 'line', trend.map(item => item.Label || item.TermKey), [
-            {
-                label: 'Enrollment',
-                data: trend.map(item => item?.Value ?? 0),
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                tension: 0.35,
-                pointRadius: 3
-            }
-        ], {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { display: false } },
-                y: { grid: { color: 'rgba(15, 23, 42, 0.08)' } }
-            }
-        });
-
-        const genders = Array.isArray(overall?.Demographics?.GenderSplit) ? overall.Demographics.GenderSplit : [];
-        ensureChart('demoGenderChart', 'doughnut', genders.map(item => item.Name || '--'), [
-            {
-                data: genders.map(item => item.Value ?? 0),
-                backgroundColor: ['#2563eb', '#22c55e', '#f97316', '#6366f1'],
-                borderWidth: 0
-            }
-        ], {
-            plugins: { legend: { position: 'bottom' } }
-        });
-
-        const ageBands = Array.isArray(overall?.Demographics?.AgeBands) ? overall.Demographics.AgeBands : [];
-        ensureChart('demoAgeChart', 'bar', ageBands.map(item => item.Name || '--'), [
-            {
-                label: 'Students',
-                data: ageBands.map(item => item.Value ?? 0),
-                backgroundColor: 'rgba(37, 99, 235, 0.75)',
-                borderRadius: 8
-            }
-        ], {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { display: false } },
-                y: { grid: { color: 'rgba(15, 23, 42, 0.08)' } }
-            }
-        });
-
-        const statuses = Array.isArray(overall?.Demographics?.Statuses) ? overall.Demographics.Statuses : [];
-        ensureChart('demoStatusChart', 'doughnut', statuses.map(item => item.Name || '--'), [
-            {
-                data: statuses.map(item => item.Value ?? 0),
-                backgroundColor: ['#22c55e', '#f97316', '#6366f1', '#0ea5e9'],
-                borderWidth: 0
-            }
-        ], {
-            plugins: { legend: { position: 'bottom' } }
-        });
-
-        const leaderboardNodes = (overall?.ProgramLeaderboard || []).map(item => {
-            const li = document.createElement('li');
-            const growth = formatPercent(item.GrowthPercent, { showSign: true });
-            const growthClass = (item.GrowthPercent ?? 0) >= 0 ? 'up' : 'down';
-            li.innerHTML = `<span>${item.Program || '--'}</span><strong>${formatNumber(item.Enrollment)}</strong><small class="${growthClass}">${growth}</small>`;
-            return li;
-        });
-        renderList(els.programLeaderboard, leaderboardNodes, '<li data-empty="true"><span>--</span><strong>0</strong><small>0%</small></li>');
-
-        const failureNodes = (overall?.CourseOutcomes?.HighestFailureRates || []).map(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.CourseCode || '--'} `;
-            const span = document.createElement('span');
-            span.textContent = `${formatPercent(item.MetricValue)} fail`;
-            li.appendChild(span);
-            return li;
-        });
-        renderList(els.courseFailure, failureNodes, '<li data-empty="true">No data</li>');
-
-        const successNodes = (overall?.CourseOutcomes?.BestPerforming || []).map(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.CourseCode || '--'} `;
-            const span = document.createElement('span');
-            span.textContent = `${formatPercent(item.MetricValue)} pass`;
-            li.appendChild(span);
-            return li;
-        });
-        renderList(els.courseSuccess, successNodes, '<li data-empty="true">No data</li>');
-
-        const riskNodes = (overall?.RiskIndicators || []).map(item => {
-            const div = document.createElement('div');
-            div.className = 'risk-chip';
-            div.textContent = `${formatNumber(item.Count)} ${item.Label}`;
-            return div;
-        });
-        renderList(els.riskList, riskNodes, '<div class="risk-chip" data-empty="true">No risk indicators.</div>');
-
-        const capacity = overall?.Capacity || {};
-        setField('capacity-sections', formatNumber(capacity.SectionsNearCapacity));
-        setField('capacity-faculty', formatNumber(capacity.FacultyHighLoad));
-        setField('capacity-average', formatNumber(capacity.AverageClassSize));
+        const badgeClass = mapVolatilityToBadgeClass(label);
+        const scoreText = Number.isFinite(score) ? ` (${score.toFixed(2)})` : '';
+        node.innerHTML = `<span class="${badgeClass}">${label}</span>${scoreText}`;
     }
 
-    function renderTeacherDirectory(directory) {
-        state.teacherDirectory = Array.isArray(directory) ? directory : [];
-
-        const programs = Array.from(new Set(state.teacherDirectory.map(item => item.Department).filter(Boolean))).sort();
-        renderOptions(els.teacherProgram, programs.map(program => ({ value: program, label: program })), state.teacherProgram, 'All Programs');
-
-        if (!els.teacherTableBody) {
+    function renderStudentVolatilityList(gradeBreakdown) {
+        const container = root.querySelector('[data-list="student-consistency-list"]');
+        if (!container) {
             return;
         }
 
-        const filtered = state.teacherDirectory.filter(item => {
-            const matchesProgram = !state.teacherProgram || item.Department === state.teacherProgram;
-            const matchesSearch = !state.teacherSearch || `${item.Name} ${item.Department}`.toLowerCase().includes(state.teacherSearch);
-            return matchesProgram && matchesSearch;
+        container.innerHTML = '';
+        const rows = Array.isArray(gradeBreakdown) ? gradeBreakdown : [];
+        if (!rows.length) {
+            container.innerHTML = '<p class="text-muted mb-0">Select a student.</p>';
+            return;
+        }
+
+        rows.forEach(row => {
+            const course = readProp(row, 'Subject') || readProp(row, 'EdpCode') || '--';
+            const volatilityScore = calculateVolatilityScore(row);
+            const volatilityLabel = mapVolatilityToLabel(volatilityScore);
+            const badgeClass = mapVolatilityToBadgeClass(volatilityLabel);
+            const scoreText = Number.isFinite(volatilityScore) ? ` (${volatilityScore.toFixed(2)})` : '';
+            const item = document.createElement('div');
+            item.className = 'consistency-item d-flex justify-content-between align-items-center mb-2';
+            item.innerHTML = `
+                <span>${course}</span>
+                <span class="${badgeClass}" title="Volatility score: ${volatilityScore ?? 0}">${volatilityLabel}${scoreText}</span>`;
+            container.appendChild(item);
         });
+    }
 
-        els.teacherTableBody.innerHTML = '';
-
-        if (!filtered.length) {
-            els.teacherTableBody.innerHTML = '<tr data-empty="true"><td colspan="6" class="text-center">No teachers found.</td></tr>';
+    function renderStudentComparative(highlights) {
+        const container = root.querySelector('[data-list="student-comparative"]');
+        if (!container) {
             return;
         }
 
-        filtered.forEach(item => {
-            const row = document.createElement('tr');
-            row.dataset.id = String(item.TeacherId);
-            row.classList.toggle('active', item.TeacherId === state.selectedTeacherId);
-            row.innerHTML = `
-                <td>${item.Name || '--'}</td>
-                <td>${item.Department || '--'}</td>
-                <td>${item.Email || '--'}</td>
-                <td>${item.Rank || '--'}</td>
-                <td>${formatNumber(item.LoadUnits)} units</td>
-                <td>${formatNumber(item.Sections)}</td>`;
-            row.addEventListener('click', () => updateTeacherSelection(item.TeacherId));
-            els.teacherTableBody.appendChild(row);
+        container.innerHTML = '';
+        const items = Array.isArray(highlights) ? highlights : [];
+        if (!items.length) {
+            container.innerHTML = '<p class="text-muted mb-0">No comparative data.</p>';
+            return;
+        }
+
+        items.forEach(item => {
+            const card = document.createElement('div');
+            const course = readProp(item, 'Course') || 'Course';
+            const period = readProp(item, 'PeriodLabel') || 'N/A';
+            const gradeValue = readProp(item, 'Grade');
+            const grade = Number.isFinite(toNumber(gradeValue, NaN)) ? `${toNumber(gradeValue).toFixed(2)}%` : '--';
+            card.className = 'analysis-item';
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong>${course}</strong>
+                    <span class="badge bg-warning text-dark">🏆 Personal Best</span>
+                </div>
+                <div>Your best: ${grade} in ${period}</div>`;
+            container.appendChild(card);
         });
     }
 
     function renderTeacherDetail(detail) {
-        const assignments = Array.isArray(detail?.Assignments) ? detail.Assignments : [];
-        const submissionStatuses = Array.isArray(detail?.SubmissionStatuses) ? detail.SubmissionStatuses : [];
+        const hasDetail = detail && detail.TeacherId;
+        const assignments = hasDetail && Array.isArray(detail.Assignments) ? detail.Assignments : [];
+        const submissionStatuses = hasDetail && Array.isArray(detail.SubmissionStatuses) ? detail.SubmissionStatuses : [];
+        const coursePassRates = hasDetail && Array.isArray(detail.CoursePassRates) ? detail.CoursePassRates : [];
 
-        setField('teacher-name', detail?.Name || 'Select a teacher');
-        setField('teacher-meta', detail?.TeacherId ? `${detail.Rank || '--'} · ${detail.Department || '--'}` : '--');
-        setField('teacher-load', `${formatNumber(detail?.TeachingLoadUnits)} units`);
-        setField('teacher-sections', formatNumber(detail?.SectionCount));
-        setField('teacher-pass', formatPercent(detail?.PassRatePercent));
-        setField('teacher-submissions', formatPercent(detail?.SubmissionCompletionPercent));
+        setField('teacher-name', hasDetail ? (detail.Name || 'Select a teacher') : 'Select a teacher');
+        setField('teacher-meta', hasDetail ? `${detail.Rank || '--'} · ${detail.Department || '--'}` : '--');
+
+        const teachingLoadCount = hasDetail ? toNumber(detail.TeachingLoadCount, 0) : 0;
+        const passRatePercent = hasDetail ? toNumber(detail.PassRatePercent, 0) : 0;
+        const completedCourses = submissionStatuses.filter(item => item?.IsComplete).length;
+        const totalAssignments = assignments.length;
+
+        setField('teacher-load', `${formatNumber(teachingLoadCount)} courses`);
+        setField('teacher-pass', `${passRatePercent.toFixed(1)}%`);
+        setField('teacher-submissions', totalAssignments ? `${formatNumber(completedCourses)}/${formatNumber(totalAssignments)}` : '0/0');
 
         if (els.teacherAssignmentsBody) {
             els.teacherAssignmentsBody.innerHTML = '';
             if (!assignments.length) {
-                els.teacherAssignmentsBody.innerHTML = '<tr data-empty="true"><td colspan="5" class="text-center">Select a teacher to load assignments.</td></tr>';
+                els.teacherAssignmentsBody.innerHTML = '<tr data-empty="true"><td colspan="6" class="text-center">Select a teacher to load assignments.</td></tr>';
             } else {
                 assignments.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.CourseCode || '--'}</td>
-                        <td>${item.Section || '--'}</td>
-                        <td>${item.Schedule || '--'}</td>
-                        <td>${formatNumber(item.Units)}</td>
-                        <td>${formatNumber(item.Enrolled)}</td>`;
-                    els.teacherAssignmentsBody.appendChild(row);
+                    const finalGradeValue = item?.FinalGrade;
+                    const finalGrade = Number.isFinite(toNumber(finalGradeValue, NaN))
+                        ? toNumber(finalGradeValue).toFixed(2)
+                        : '--';
+                    const status = (item?.Status || '--').toLowerCase();
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item?.SubjectName || item?.CourseCode || '--'}</td>
+                        <td>${item?.Schedule || '--'}</td>
+                        <td>${formatNumber(item?.Units)}</td>
+                        <td>${formatNumber(item?.Enrolled)}</td>
+                        <td>${finalGrade}</td>
+                        <td class="status-${status}">${item?.Status || '--'}</td>`;
+                    els.teacherAssignmentsBody.appendChild(tr);
                 });
             }
         }
@@ -487,147 +393,145 @@
         if (els.teacherSubmissionList) {
             els.teacherSubmissionList.innerHTML = '';
             if (!submissionStatuses.length) {
-                const message = detail?.TeacherId ? 'No submission records.' : 'Select a teacher to load submission statuses.';
+                const message = hasDetail ? 'No submission records.' : 'Select a teacher to load submission statuses.';
                 els.teacherSubmissionList.innerHTML = `<li data-empty="true" class="pending">${message}</li>`;
             } else {
                 submissionStatuses.forEach(item => {
+                    const isComplete = Boolean(item?.IsComplete);
                     const li = document.createElement('li');
-                    li.className = item.IsComplete ? 'complete' : 'pending';
-                    li.textContent = `${item.CourseCode || '--'} · ${item.Status || '--'}`;
+                    li.className = isComplete ? 'status-chip status-complete' : 'status-chip status-incomplete';
+                    li.textContent = `${item?.SubjectName || item?.CourseCode || '--'} · ${item?.Status || '--'}`;
                     els.teacherSubmissionList.appendChild(li);
                 });
             }
         }
 
-        const submissionSummaryRaw = Array.isArray(detail?.SubmissionSummary) ? detail.SubmissionSummary : [];
-        const submissionSummary = submissionSummaryRaw.length ? submissionSummaryRaw : [
-            { Name: 'All grades submitted', Value: 0 },
-            { Name: 'Some grades are ungraded', Value: 0 }
-        ];
-        const submissionTotal = submissionSummary.reduce((sum, item) => sum + (Number(item?.Value) || 0), 0);
-        const submissionLabels = submissionSummary.map(item => item?.Name || '--');
-        const submissionData = submissionSummary.map(item => Number(item?.Value) || 0);
+        const passRateLabels = coursePassRates.map(item => item?.SubjectName || item?.CourseCode || '--');
+        const passRateData = coursePassRates.map(item => toNumber(item?.PassRatePercent, 0));
 
-        ensureChart('teacherSubmissionChart', 'doughnut', submissionLabels, [
-            {
-                data: submissionData,
-                borderWidth: 0,
-                hoverOffset: 12
-            }
-        ], {
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label(context) {
-                            const value = context.parsed || 0;
-                            const percent = submissionTotal > 0 ? (value / submissionTotal) * 100 : 0;
-                            return `${context.label}: ${value.toLocaleString()} (${percent.toFixed(1)}%)`;
-                        }
-                    }
-                }
-            },
-            animation: {
-                animateScale: true,
-                animateRotate: true
-            }
-        }, (config) => {
-            const palette = [
-                'rgba(37, 99, 235, 0.85)',
-                'rgba(249, 115, 22, 0.85)',
-                'rgba(14, 165, 233, 0.85)'
-            ];
-            const faded = [
-                'rgba(37, 99, 235, 0.25)',
-                'rgba(249, 115, 22, 0.25)',
-                'rgba(14, 165, 233, 0.25)'
-            ];
-
-            const dataset = config.data?.datasets?.[0];
-            if (!dataset || !Array.isArray(dataset.data) || !dataset.data.length) {
-                return;
-            }
-
-            const colorForIndex = (idx, source) => source[idx % source.length];
-            const applyColors = (colors) => {
-                dataset.backgroundColor = dataset.data.map((_, idx) => colorForIndex(idx, colors));
-                dataset.hoverBackgroundColor = dataset.data.map((_, idx) => colorForIndex(idx, palette));
-            };
-
-            applyColors(palette);
-
-            config.options = config.options || {};
-            config.options.onHover = (event, elements, chart) => {
-                chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
-                if (!elements.length) {
-                    applyColors(palette);
-                    chart.update('none');
-                    return;
-                }
-
-                const activeIndex = elements[0].index;
-                dataset.backgroundColor = dataset.data.map((_, idx) => idx === activeIndex ? colorForIndex(idx, palette) : colorForIndex(idx, faded));
-                chart.update('none');
-            };
-
-            config.options.onLeave = (event, elements, chart) => {
-                chart.canvas.style.cursor = 'default';
-                applyColors(palette);
-                chart.update('none');
-            };
-        });
-
-        const passRates = Array.isArray(detail?.CoursePassRates) ? detail.CoursePassRates : [];
-        ensureChart('teacherPassChart', 'bar', passRates.map(item => item.CourseCode || '--'), [
+        ensureChart('teacherPassChart', 'bar', passRateLabels, [
             {
                 label: 'Pass %',
-                data: passRates.map(item => item.PassRatePercent || 0),
-                backgroundColor: ['#2563eb', '#22c55e', '#f97316', '#a855f7'],
-                borderRadius: 6
+                data: passRateData,
+                backgroundColor: 'rgba(37, 99, 235, 0.65)',
+                borderRadius: 6,
+                barThickness: 28,
+                maxBarThickness: 32,
+                categoryPercentage: 0.6,
+                barPercentage: 0.85
             }
         ], {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, max: 100 }
+                y: { beginAtZero: true, max: 100 },
+                x: {
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 0,
+                        minRotation: 0
+                    }
+                }
             }
         });
     }
 
     function renderStudent(analytics) {
-        const gradeBreakdown = Array.isArray(analytics?.GradeBreakdown) ? analytics.GradeBreakdown : [];
+        const gradeBreakdownRaw = readProp(analytics, 'GradeBreakdown');
+        const gradeBreakdown = Array.isArray(gradeBreakdownRaw) ? gradeBreakdownRaw : [];
+        const normalizedBreakdown = gradeBreakdown.map(row => {
+            const normalizedRow = { ...row };
+            const prelim = readProp(row, 'Prelim');
+            const midterm = readProp(row, 'Midterm');
+            const prefinal = readProp(row, 'Prefinal');
+            const finalExam = readProp(row, 'Final');
+            const components = [prelim, midterm, prefinal, finalExam];
+            const hasAllComponents = components.every(value => value != null && value !== '');
+            const finalGradeRaw = readProp(row, 'FinalGrade');
+            const finalGradeValue = hasAllComponents && finalGradeRaw != null && finalGradeRaw !== '' && Number.isFinite(toNumber(finalGradeRaw, NaN))
+                ? toNumber(finalGradeRaw)
+                : null;
+            const computedStatus = !hasAllComponents || finalGradeValue == null
+                ? 'Incomplete'
+                : (finalGradeValue < 3 ? 'Pass' : 'Fail');
+
+            normalizedRow.FinalGrade = finalGradeValue;
+            normalizedRow.finalGrade = finalGradeValue;
+            normalizedRow.Status = computedStatus;
+            normalizedRow.status = computedStatus;
+
+            return normalizedRow;
+        });
+
+        const volatilityScores = normalizedBreakdown
+            .map(row => calculateVolatilityScore(row))
+            .filter(score => score != null);
+        const overallVolatilityScore = volatilityScores.length
+            ? Math.round((volatilityScores.reduce((sum, score) => sum + score, 0) / volatilityScores.length) * 100) / 100
+            : null;
+        const overallVolatilityLabel = volatilityScores.length
+            ? mapVolatilityToLabel(overallVolatilityScore)
+            : 'No Data';
+
+        renderStudentConsistency(overallVolatilityLabel, overallVolatilityScore);
+        renderStudentVolatilityList(normalizedBreakdown);
+        renderStudentComparative(readProp(analytics, 'ComparativeHighlights'));
 
         if (els.studentGradesBody) {
             els.studentGradesBody.innerHTML = '';
-            if (!gradeBreakdown.length) {
+            if (!normalizedBreakdown.length) {
                 els.studentGradesBody.innerHTML = '<tr data-empty="true"><td colspan="8" class="text-center">Select a student.</td></tr>';
             } else {
-                gradeBreakdown.forEach(row => {
+                normalizedBreakdown.forEach(row => {
                     const tr = document.createElement('tr');
-                    const formatGwa = (value) => (value != null ? value.toFixed(2) : '--');
+                    const formatGwa = (value) => (value != null ? toNumber(value).toFixed(2) : '--');
+                    const edpCode = readProp(row, 'EdpCode') || '--';
+                    const subject = readProp(row, 'Subject') || '--';
+                    const prelim = readProp(row, 'Prelim');
+                    const midterm = readProp(row, 'Midterm');
+                    const prefinal = readProp(row, 'Prefinal');
+                    const finalExam = readProp(row, 'Final');
+                    const finalGrade = readProp(row, 'FinalGrade');
+                    const status = readProp(row, 'Status') || '--';
                     tr.innerHTML = `
-                        <td>${row.EdpCode || '--'}</td>
-                        <td>${row.Subject || '--'}</td>
-                        <td>${formatGwa(row.Prelim)}</td>
-                        <td>${formatGwa(row.Midterm)}</td>
-                        <td>${formatGwa(row.Prefinal)}</td>
-                        <td>${formatGwa(row.Final)}</td>
-                        <td>${formatGwa(row.FinalGrade)}</td>
-                        <td class="status-${(row.Status || '').toLowerCase()}">${row.Status || '--'}</td>`;
+                        <td>${edpCode}</td>
+                        <td>${subject}</td>
+                        <td>${formatGwa(prelim)}</td>
+                        <td>${formatGwa(midterm)}</td>
+                        <td>${formatGwa(prefinal)}</td>
+                        <td>${formatGwa(finalExam)}</td>
+                        <td>${formatGwa(finalGrade)}</td>
+                        <td class="status-${status.toLowerCase()}">${status}</td>`;
                     els.studentGradesBody.appendChild(tr);
                 });
             }
         }
 
-        const courseGrades = Array.isArray(analytics?.CourseGrades) ? analytics.CourseGrades : [];
-        ensureChart('studentCourseChart', 'bar', courseGrades.map(item => item.CourseCode || '--'), [
+        const courseGradesRaw = readProp(analytics, 'CourseGrades');
+        const courseGrades = Array.isArray(courseGradesRaw) ? courseGradesRaw : [];
+        const courseLabels = courseGrades.map(item => readProp(item, 'CourseCode') || '--');
+        const courseGradeData = courseGrades.map(item => {
+            const gradeValue = toNumber(readProp(item, 'Grade'), NaN);
+            if (!Number.isFinite(gradeValue)) {
+                return [5, 5];
+            }
+
+            const clampedGrade = Math.min(Math.max(gradeValue, 1), 5);
+            return [clampedGrade, 5];
+        });
+
+        ensureChart('studentCourseChart', 'bar', courseLabels, [
             {
                 label: 'Grade',
-                data: courseGrades.map(item => item.Grade || 0),
-                backgroundColor: 'rgba(14, 165, 233, 0.65)',
-                borderRadius: 6,
-                hoverBackgroundColor: '#0284c7'
+                data: courseGradeData,
+                backgroundColor: '#60a5fa',
+                hoverBackgroundColor: '#3b82f6',
+                borderWidth: 0,
+                barThickness: 48,
+                maxBarThickness: 56,
+                categoryPercentage: 0.5,
+                barPercentage: 0.9
             }
         ], {
             responsive: true,
@@ -637,13 +541,43 @@
                 tooltip: {
                     callbacks: {
                         label(context) {
-                            return `Grade: ${(context.parsed.y ?? 0).toFixed(2)}`;
+                            const rawValue = context.raw;
+                            let grade = context.parsed?.y;
+
+                            if (Array.isArray(rawValue)) {
+                                grade = rawValue[0];
+                            }
+
+                            const numericGrade = toNumber(grade, 0);
+                            return `Grade: ${numericGrade.toFixed(2)}`;
                         }
                     }
                 }
             },
             scales: {
-                y: { reverse: true, min: 1, max: 5 }
+                y: {
+                    reverse: true,
+                    min: 1,
+                    max: 5,
+                    ticks: {
+                        stepSize: 0.5,
+                        callback(value) {
+                            return Number(value).toFixed(1);
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(59, 130, 246, 0.15)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 0,
+                        minRotation: 0
+                    },
+                    grid: { display: false }
+                }
             },
             hover: {
                 mode: 'nearest',
@@ -651,11 +585,24 @@
             }
         });
 
-        const statusMix = Array.isArray(analytics?.StatusMix) ? analytics.StatusMix : [];
-        const passFailIncompleteData = statusMix.filter(item => ['pass', 'fail', 'incomplete'].includes((item.Name || '').toLowerCase()));
-        ensureChart('studentStatusChart', 'doughnut', passFailIncompleteData.map(item => item.Name || '--'), [
+        const statusTotals = normalizedBreakdown.reduce((totals, row) => {
+            const status = (readProp(row, 'Status') || 'Incomplete').toLowerCase();
+            if (status === 'pass') {
+                totals.pass += 1;
+            } else if (status === 'fail') {
+                totals.fail += 1;
+            } else {
+                totals.incomplete += 1;
+            }
+            return totals;
+        }, { pass: 0, fail: 0, incomplete: 0 });
+
+        const doughnutLabels = ['Passed', 'Failed', 'Incomplete'];
+        const doughnutData = [statusTotals.pass, statusTotals.fail, statusTotals.incomplete];
+
+        ensureChart('studentStatusChart', 'doughnut', doughnutLabels, [
             {
-                data: passFailIncompleteData.map(item => item.Value || 0),
+                data: doughnutData,
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.55)',
                     'rgba(239, 68, 68, 0.55)',
@@ -671,8 +618,8 @@
                 tooltip: {
                     callbacks: {
                         label(context) {
-                            const total = context.dataset.data.reduce((sum, value) => sum + value, 0) || 1;
-                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((sum, value) => sum + toNumber(value, 0), 0) || 1;
+                            const value = toNumber(context.parsed, 0);
                             const percent = (value / total) * 100;
                             return `${context.label}: ${value.toLocaleString()} (${percent.toFixed(1)}%)`;
                         }
@@ -684,77 +631,22 @@
                 animateRotate: true
             }
         });
-
-        renderChipList(els.strengthContainer, Array.isArray(analytics?.Strengths) ? analytics.Strengths : []);
-        renderChipList(els.riskContainer, Array.isArray(analytics?.Risks) ? analytics.Risks : []);
     }
 
-    function filterStudents() {
-        const base = Array.isArray(state.studentBaseOptions) ? state.studentBaseOptions : [];
-        return base;
-    }
-
-    function applyStudentFilters(opts = {}) {
-        const filtered = filterStudents();
-
-        renderOptions(els.studentSelector, filtered.map(option => ({
-            value: option.StudentId,
-            label: `${option.Name || 'Unknown'}${option.Program ? ` (${option.Program})` : ''}`
-        })), state.selectedStudentId ?? '', 'Select Student');
-
-        if (els.studentSelector) {
-            els.studentSelector.disabled = !filtered.length;
-        }
-
-        const hasSelection = filtered.some(option => option.StudentId === state.selectedStudentId);
-
-        if (!hasSelection) {
-            state.selectedStudentId = null;
-            if (els.studentSelector) {
-                els.studentSelector.value = '';
-            }
-            if (opts.clearView) {
-                renderStudent(null);
-            }
-        }
-
-        if (opts.reloadAnalytics && hasSelection && state.selectedStudentId) {
-            loadStudentAnalytics();
-        }
-    }
-    
-    function renderDashboard(dashboard) {
+    function renderDropdowns(dashboard) {
         state.dashboard = dashboard || {};
-        const schoolYears = Array.isArray(dashboard?.AvailableSchoolYears) ? dashboard.AvailableSchoolYears : [];
-        const incomingSchoolYear = dashboard?.SchoolYear || '';
-        if (incomingSchoolYear) {
-            state.selectedSchoolYear = incomingSchoolYear;
-        } else if (!state.selectedSchoolYear && schoolYears.length) {
-            state.selectedSchoolYear = schoolYears[schoolYears.length - 1];
-        }
-
-        const incomingTermKey = dashboard?.TermKey ?? '';
-        if (incomingTermKey || state.selectedTermKey == null) {
-            state.selectedTermKey = incomingTermKey;
-        }
-        state.selectedTeacherId = dashboard?.Teacher?.SelectedTeacher?.TeacherId ?? state.selectedTeacherId ?? null;
-        state.selectedStudentId = dashboard?.Student?.SelectedStudentId ?? state.selectedStudentId ?? null;
-
-        renderOptions(els.schoolYear, schoolYears, state.selectedSchoolYear, schoolYears.length ? null : '--');
-
-        const termOptions = Array.isArray(dashboard?.TermOptions) ? dashboard.TermOptions : [];
-        renderOptions(els.term, termOptions.map(option => ({
-            value: option.TermKey ?? '',
-            label: option.Label ?? option.TermKey ?? ''
-        })), state.selectedTermKey ?? '', termOptions.length ? null : 'Whole Year');
-
-        state.studentBaseOptions = Array.isArray(dashboard?.Student?.Students) ? dashboard.Student.Students : [];
+        state.studentOptions = Array.isArray(dashboard?.Student?.Students) ? dashboard.Student.Students : [];
         state.teacherDirectory = Array.isArray(dashboard?.Teacher?.Directory) ? dashboard.Teacher.Directory : [];
 
-        applyStudentFilters({ clearView: true });
+        renderOptions(els.studentSelector, state.studentOptions.map(option => ({
+            value: option.StudentId,
+            label: option.Name || 'Unknown'
+        })), state.selectedStudentId ?? '', 'Select Student');
 
-        renderOverall(dashboard.Overall);
-        renderTeacherDirectory(state.teacherDirectory);
+        renderOptions(els.teacherSelector, state.teacherDirectory.map(option => ({
+            value: option.TeacherId,
+            label: option.Name || 'Unknown'
+        })), state.selectedTeacherId ?? '', 'Select Teacher');
 
         let teacherDetail = dashboard?.Teacher?.SelectedTeacher;
         let teacherRendered = false;
@@ -773,8 +665,6 @@
         if (!state.selectedTeacherId && state.teacherDirectory.length) {
             state.selectedTeacherId = state.teacherDirectory[0].TeacherId;
         }
-
-        syncTeacherRowSelection();
 
         if (!teacherRendered) {
             if (state.selectedTeacherId) {
@@ -797,11 +687,11 @@
             }
         }
 
-        if (!state.selectedStudentId && state.studentBaseOptions.length) {
-            const initialStudent = state.studentBaseOptions[0];
-            state.selectedStudentId = initialStudent.StudentId;
+        if (!state.selectedStudentId && state.studentOptions.length) {
+            const firstStudent = state.studentOptions[0];
+            state.selectedStudentId = firstStudent.StudentId;
             if (els.studentSelector) {
-                els.studentSelector.value = String(initialStudent.StudentId);
+                els.studentSelector.value = String(firstStudent.StudentId);
             }
         }
 
@@ -850,14 +740,15 @@
         });
     }
 
-    function syncTeacherRowSelection() {
-        if (!els.teacherTableBody) {
-            return;
-        }
-
-        Array.from(els.teacherTableBody.querySelectorAll('tr')).forEach(row => {
-            const id = Number(row.dataset?.id);
-            row.classList.toggle('active', id === state.selectedTeacherId);
+    if (els.teacherSelector) {
+        els.teacherSelector.addEventListener('change', () => {
+            const value = els.teacherSelector.value;
+            const teacherId = value ? Number(value) : null;
+            if (teacherId) {
+                updateTeacherSelection(teacherId);
+            } else {
+                renderTeacherDetail(null);
+            }
         });
     }
 
@@ -867,14 +758,11 @@
         }
 
         state.selectedTeacherId = teacherId;
-        syncTeacherRowSelection();
 
         try {
             setLoading(true);
             const detail = await fetchJson('/Admin/ReportsTeacherDetail', {
                 teacherId,
-                schoolYear: state.selectedSchoolYear,
-                termKey: state.selectedTermKey
             });
             renderTeacherDetail(detail);
         } catch (error) {
@@ -884,35 +772,18 @@
         }
     }
 
-    function bindTeacherPrint() {
-        if (!els.teacherPrint) {
-            return;
-        }
-
-        els.teacherPrint.addEventListener('click', () => {
-            if (!state.selectedTeacherId) {
-                window.alert('Select a teacher first to print their teaching assignments.');
-                return;
-            }
-
-            window.print();
-        });
-    }
-
     function initialize() {
         bindEvents();
-        bindTeacherPrint();
         if (state.dashboard) {
-            renderDashboard(state.dashboard);
+            renderDropdowns(state.dashboard);
+            if (state.selectedStudentId) {
+                loadStudentAnalytics();
+            }
+            if (state.selectedTeacherId) {
+                updateTeacherSelection(state.selectedTeacherId);
+            }
         }
-        activateTab('overall');
-        refreshDashboard({ activateTabId: 'overall' });
-        const reportNav = document.querySelector('.sidebar a[data-label="Reports"], .sidebar [data-label="Reports"]');
-        if (reportNav) {
-            reportNav.addEventListener('click', async () => {
-                refreshDashboard({ activateTabId: 'overall' });
-            });
-        }
+        activateTab('student');
     }
 
     initialize();
