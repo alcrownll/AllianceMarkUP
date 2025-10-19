@@ -76,11 +76,23 @@
     /* ---------- HEADER ---------- */
     .sheet-header {
         display: grid;
-        grid-template-columns: 120px 1fr 120px !important; /* smaller, fits one page */
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 6px !important;
+        gap: 8px;
+        margin-bottom: 4px !important;
     }
+        .sheet-header .logo-container {
+            text-align: center;
+        }
+
+        .sheet-header .logo-center {
+            width: 120px !important;
+            height: 120px !important;
+            object-fit: contain !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
 
         .sheet-header .logo-left,
         .sheet-header .logo-right {
@@ -112,8 +124,8 @@
     .title {
         text-align: center;
         font-weight: 700;
-        font-size: 18px;
-        margin-top: 60px !important; /* extra space above STUDY LOAD */
+        font-size: 16px;
+        margin-top: 20px !important; /* extra space above STUDY LOAD */
     }
 
     .sub-title, .dept, .prog {
@@ -127,12 +139,12 @@
     }
 
     .dept {
-        margin-top: 8px;
+        margin-top: 4px;
     }
 
     .prog {
         margin-top: 2px;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     /* ---------- INFO GRID ---------- */
@@ -141,8 +153,8 @@
         grid-template-columns: 120px 1fr;
         row-gap: 4px;
         column-gap: 6px;
-        margin-top: 60px !important; /* extra space above Name */
-        margin-bottom: 20px;
+        margin-top: 16px !important; /* extra space above Name */
+        margin-bottom: 12px;
         color: #111;
     }
 
@@ -158,7 +170,7 @@
     .sep {
         border: none;
         border-top: 1px solid #bbb;
-        margin: 10px 0 8px;
+        margin: 6px 0 6px;
     }
 
     /* ---------- TABLE ---------- */
@@ -166,8 +178,12 @@
         border-collapse: collapse;
         table-layout: fixed;
         font-size: 10px !important; /* slightly smaller to fit one page */
-        width: 760px;
+        width: 100% !important;
         margin: 0 auto;
+        /* Chrome-specific table fixes */
+        -webkit-border-horizontal-spacing: 0;
+        -webkit-border-vertical-spacing: 0;
+        border-spacing: 0 !important;
     }
 
         .grid thead th {
@@ -177,6 +193,7 @@
             font-weight: 600;
             vertical-align: middle;
             white-space: nowrap;
+            background-color: #bbb !important;
         }
 
         .grid tbody td {
