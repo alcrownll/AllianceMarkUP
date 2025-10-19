@@ -1,115 +1,134 @@
 ﻿@model ASI.Basecode.Services.ServiceModels.RightSidebarViewModel
 
-<div class="right-sidebar-content">
+<div class="rs">
 
-    <!-- Profile Section -->
-    <div class="profile-card mb-3 p-3 border rounded d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-            @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl))
-            {
-                <img src="@Model.ProfilePictureUrl"
-                     alt="Profile photo"
-                     class="miniavatar-img"
-                     style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />
-            }
-            else
-            {
-                <div class="miniavatar d-grid place-items-center"
-                     style="width:40px;height:40px;border-radius:8px;background:#e8eef9;overflow:hidden;">
-                    <i class="fa-solid fa-user text-primary"></i>
-                </div>
-            }
+  <!-- Profile -->
+  <section class="rs-card rs-profile">
+    <div class="rs-profile-main">
+      <div class="rs-avatar">
+        @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl)) {
+          <img src="@Model.ProfilePictureUrl" alt="Profile photo" />
+        } else {
+          <div class="rs-avatar-fallback" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+        }
+      </div>
 
-            <div>
-                <div class="fw-semibold">@Model.LastName</div>
-                <div class="text-muted small">@Model.Role</div>
+      <div class="rs-id">
+        <div class="rs-name">@Model.LastName</div>
+        <div class="rs-role">@Model.Role</div>
+      </div>
+
+      <a href="@Url.Action("Index","Notifications")" class="rs-icon-btn" aria-label="Notifications">
+        <i class="fa-solid fa-bell"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Mini Calendar -->
+  <section class="rs-card rs-calendar">
+    <div class="rs-cal-wrap">
+      <input id="miniCalendar" type="text" aria-label="Mini calendar" />
+    </div>
+
+    <div class="rs-legend">
+      <span class="legend-item"><span class="dot today"></span>Today</span>
+      <span class="legend-item"><span class="dot event"></span>Has event</span>
+    </div>
+  </section>
+
+  <!-- Upcoming Events (MATCHES Recent Activities format) -->
+  <section class="rs-card">
+    <div class="rs-head">
+      <h6>Upcoming Events</h6>
+      <a class="rs-link" href="@Url.Action("Calendar","Student")">View All</a>
+    </div>
+
+    @if (Model.UpcomingEvents?.Any() == true) {
+      <ul class="rs-list">
+        @foreach (var e in Model.UpcomingEvents) {
+          <li class="rs-item rs-item--event">
+            <!-- Date upper-right -->
+            <div class="rs-when">@e.When</div>
+
+            <div class="rs-item-l">
+              <div class="rs-icon-pill"><i class="fa-solid fa-location-dot"></i></div>
+              <div class="rs-item-text">
+                <div class="rs-item-title" title="@e.Title">@e.Title</div>
+
+                <!-- Same layout as Recent Activities: Details under title -->
+                <a class="rs-details"
+                   href="@Url.Action("Calendar","Student")"
+                   aria-label="View details in Upcoming Events">
+                  Details
+                  <span class="rs-details-arrow"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
+                </a>
+              </div>
             </div>
-        </div>
-        <a href="@Url.Action("Index", "Notifications")" class="notif-icon text-decoration-none">
-            <i class="fa-solid fa-bell"></i>
-        </a>
+          </li>
+        }
+      </ul>
+    } else {
+      <div class="rs-empty">No upcoming events.</div>
+    }
+  </section>
+
+  <!-- Recent Activities -->
+  <section class="rs-card">
+    <div class="rs-head">
+      <h6>Recent Activities</h6>
+      <a class="rs-link" href="@Url.Action("Index","Notifications")">View All</a>
     </div>
 
-    <!-- Calendar -->
-    <div class="calendar-widget mb-3">
-        <input id="miniCalendar" type="text" aria-label="Mini calendar" />
-    </div>
+    @if (Model.Notifications?.Any() == true) {
+      <ul class="rs-list">
+        @foreach (var n in Model.Notifications) {
+          var t = (n.Title ?? string.Empty).ToLowerInvariant();
+          var icon = t.Contains("grade") ? "fa-book-open"
+                   : t.Contains("profile") ? "fa-user-pen"
+                   : t.Contains("schedule") ? "fa-calendar-days"
+                   : "fa-bell";
 
-    <!-- Upcoming Events -->
-    <div class="events-widget mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">Upcoming Events</h6>
-            @* Adjust the link per role/routes in your app *@
-            <a href="@Url.Action("Calendar", "Student")" class="small text-decoration-none">View All</a>
-        </div>
+          <li class="rs-item rs-item--notif">
+            <!-- Date upper-right -->
+            <div class="rs-when">@n.When</div>
 
-        @if (Model.UpcomingEvents != null && Model.UpcomingEvents.Any())
-        {
-            <div class="event-list">
-                @foreach (var e in Model.UpcomingEvents)
-                {
-                    <div class="event-card p-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fa-solid fa-calendar-days text-primary"></i>
-                                <span class="fw-semibold">@e.Title</span>
-                            </div>
-                            <span class="small text-muted">@e.When</span>
-                        </div>
+            <div class="rs-item-l">
+              <div class="rs-icon-pill"><i class="fa-solid @icon"></i></div>
+              <div class="rs-item-text">
+                <div class="rs-item-title" title="@n.Title">@n.Title</div>
 
-                        @if (!string.IsNullOrWhiteSpace(e.Location))
-                        {
-                            <div class="mt-1 small text-muted">
-                                <i class="fa-solid fa-location-dot me-1"></i>@e.Location
-                            </div>
-                        }
-                    </div>
-                }
+                <!-- Details under title -->
+                <a class="rs-details"
+                   href="@Url.Action("Index","Notifications")"
+                   aria-label="View details in Recent Activities">
+                  Details
+                  <span class="rs-details-arrow"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
+                </a>
+              </div>
             </div>
+          </li>
         }
-        else
-        {
-            <div class="text-muted small">No upcoming events.</div>
-        }
-    </div>
-
-    <!-- Notifications -->
-    <div class="notif-widget mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0">Recent Activities</h6>
-            <a href="@Url.Action("Index", "Notifications")" class="small text-decoration-none">View All</a>
-        </div>
-
-        @if (Model.Notifications != null && Model.Notifications.Any())
-        {
-            <div class="notif-list">
-                @foreach (var n in Model.Notifications)
-                {
-                    var title = (n.Title ?? string.Empty).ToLowerInvariant();
-                    var icon = title.Contains("grade") ? "fa-book-open"
-                    : title.Contains("profile") ? "fa-user-pen"
-                    : title.Contains("schedule") ? "fa-calendar-days"
-                    : "fa-bell";
-
-                    <div class="notif-card p-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fa-solid @icon text-primary"></i>
-                                <span class="fw-semibold">@n.Title</span>
-                            </div>
-                            <span class="small text-muted">@n.When</span>
-                        </div>
-                        <div class="mt-1 d-flex justify-content-between align-items-center">
-                            <a href="#" class="small fw-semibold text-primary">Details &gt;</a>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="text-muted small">No notifications.</div>
-        }
-    </div>
+      </ul>
+    } else {
+      <div class="rs-empty">No notifications.</div>
+    }
+  </section>
 
 </div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.flatpickr) return;
+  flatpickr('#miniCalendar', {
+    inline: true,
+    dateFormat: 'Y-m-d',
+    defaultDate: new Date(),
+    weekNumbers: false,
+    locale: { weekdays: { shorthand: ['SU','MO','TU','WE','TH','FR','SA'] } },
+    prevArrow: '‹',
+    nextArrow: '›'
+  });
+});
+</script>
+}

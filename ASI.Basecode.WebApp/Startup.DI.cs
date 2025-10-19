@@ -51,6 +51,7 @@ namespace ASI.Basecode.WebApp
 
 
             this._services.AddScoped<IWebRootPathAccessor, LocalWebRootPathAccessor>();
+            this._services.AddScoped<IEmailSender, SmtpEmailSender>();
 
             // Repositories
             this._services.AddScoped<IUserRepository, UserRepository>();

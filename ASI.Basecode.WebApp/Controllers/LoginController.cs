@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using static ASI.Basecode.Resources.Constants.Enums;
@@ -28,7 +29,6 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly TokenProviderOptionsFactory _tokenProviderOptionsFactory;
         private readonly IConfiguration _appConfiguration;
         private readonly IUserService _userService;
-        private readonly IEmailSender _email;
 
         private const string AuthScheme = "ASI_Basecode";
 
@@ -59,7 +59,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 AllowRefresh = true
             });
 
-            // Keep your existing session values if other parts of the app still read them
             _session.SetString("IdNumber", user.IdNumber);
             _session.SetString("FullName", $"{user.FirstName} {user.LastName}");
             _session.SetString("Role", user.Role);
@@ -74,8 +73,7 @@ namespace ASI.Basecode.WebApp.Controllers
             IMapper mapper,
             IUserService userService,
             TokenValidationParametersFactory tokenValidationParametersFactory,
-            TokenProviderOptionsFactory tokenProviderOptionsFactory,
-            IEmailSender emailSender
+            TokenProviderOptionsFactory tokenProviderOptionsFactory
         ) : base(httpContextAccessor, loggerFactory, configuration, mapper)
         {
             _sessionManager = new SessionManager(this._session);
@@ -84,7 +82,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _tokenValidationParametersFactory = tokenValidationParametersFactory;
             _appConfiguration = configuration;
             _userService = userService;
-            _email = emailSender;
         }
 
         // =======================
@@ -227,42 +224,34 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPasswordSend(string email)
+        public async Task<IActionResult> ForgotPasswordSend(ResetPasswordRequestViewModel model)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                var user = _userService.FindByEmail(email);
-                if (user == null)
-                {
-                    // privacy-safe: pretend success
-                    return Json(new { ok = true });
-                }
-
-                var token = _userService.CreatePasswordResetToken(user, TimeSpan.FromHours(2));
-
-                var resetUrl = Url.Action(
-                    "ResetPassword",
-                    "Login",
-                    new { token = token.Token },
-                    Request.Scheme);
-
-                var html = $@"
-            <p>Hello {user.FirstName},</p>
-            <p>Click the link below to reset your password:</p>
-            <p><a href=""{resetUrl}"">{resetUrl}</a></p>
-            <p>This link expires in 2 hours.</p>";
-
-                // 👇 use the injected field
-                await _email.SendAsync(user.Email, "Reset your password", html);
-
-                return Json(new { ok = true });
+                var msg = ModelState.Values.SelectMany(v => v.Errors)
+                                           .FirstOrDefault()?.ErrorMessage ?? "Invalid input.";
+                return Json(new { ok = false, message = msg });
             }
-            catch (Exception ex)
+
+            string LinkFactory(string token) => Url.Action(
+                "ResetPassword",
+                "Login",
+                new { token = Uri.EscapeDataString(token) },   // encode token
+                Request.Scheme                                 // preserve scheme/host/pathbase
+            );
+
+            var result = await _userService.RequestPasswordResetAsync(
+                model.Email,
+                TimeSpan.FromMinutes(30),
+                LinkFactory);
+
+            return result switch
             {
-                _logger.LogError(ex, "SMTP send failed for forgot password");
-                Response.StatusCode = 500;
-                return Json(new { ok = false, message = "SMTP_FAILED", detail = ex.Message });
-            }
+                ForgotPasswordResult.Success => Json(new { ok = true, message = "If the email exists, a reset link has been sent." }),
+                ForgotPasswordResult.NotFound => Json(new { ok = false, message = "Email must be associated with a registered account." }),
+                ForgotPasswordResult.RateLimited => Json(new { ok = false, message = "Too many attempts. Try again later." }),
+                _ => Json(new { ok = false, message = "An unexpected error occurred." })
+            };
         }
 
 
@@ -299,32 +288,14 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 _userService.MarkResetTokenUsed(vm.Token);
                 TempData["SuccessMessage"] = "Password updated. You can now log in.";
-                return RedirectToAction("StudentLogin", "Login"); // pick landing page as you like
+                return RedirectToAction("StudentLogin", "Login");
             }
 
             ModelState.AddModelError("", "Could not update password. Try again.");
             return View("ResetPassword", vm);
         }
         
-        //testing ra arun sure mo send,pede ra delete
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> TestSmtp([FromServices] IEmailSender email)
-        {
-            try
-            {
-                await email.SendAsync(
-                    "denisealiahcabiso@gmail.com",               
-                    "MarkUP SMTP test",
-                    "<h3>SMTP test from MarkUP</h3><p>If you see this, SMTP works ✅</p>"
-                );
-                return Content("Sent. Check inbox (and Spam/Other).");
-            }
-            catch (Exception ex)
-            {
-                return Content("SEND FAILED:\n" + ex.ToString());
-            }
-        }
+     
 
 
     }

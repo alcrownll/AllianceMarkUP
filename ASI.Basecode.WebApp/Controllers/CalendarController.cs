@@ -12,11 +12,26 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly ICalendarService _calendarService;
+        private readonly IRightSidebarService _rightSidebar; // ✅ inject
 
-        public CalendarController(IProfileService profileService, ICalendarService calendarService)
+        public CalendarController(
+            IProfileService profileService,
+            ICalendarService calendarService,
+            IRightSidebarService rightSidebar) // ✅ inject
         {
             _profileService = profileService;
             _calendarService = calendarService;
+            _rightSidebar = rightSidebar;
+        }
+
+        // small helper so we don’t forget to SSR the sidebar
+        private async Task SetRightSidebarAsync()
+        {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                ViewData["RightSidebar"] =
+                    await _rightSidebar.BuildAsync(User, takeNotifications: 5, takeEvents: 5);
+            }
         }
 
         // --------------------------------------------------------------------
@@ -44,6 +59,9 @@ namespace ASI.Basecode.WebApp.Controllers
         private async Task<IActionResult> BuildCalendarViewAsync(DateTime? from, DateTime? to)
         {
             ViewData["PageHeader"] = "Calendar";
+
+            // ✅ SSR the right sidebar for this page, too
+            await SetRightSidebarAsync();
 
             // Default range = ±30 days
             var start = from ?? DateTime.UtcNow.AddDays(-30);
@@ -106,9 +124,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToRoleCalendar();
         }
 
-        // --------------------------------------------------------------------
-        // Helper: redirect user to their own role-scoped calendar URL
-        // --------------------------------------------------------------------
         private IActionResult RedirectToRoleCalendar()
         {
             if (User.IsInRole("Admin")) return RedirectToRoute("AdminCalendar");

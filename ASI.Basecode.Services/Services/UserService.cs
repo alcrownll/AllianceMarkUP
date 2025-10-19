@@ -4,6 +4,7 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.Manager;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using System;
 using System.Linq;
 using System.Security.Cryptography;
@@ -15,11 +16,13 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly IUserRepository _repository;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _email;
 
-        public UserService(IUserRepository repository, IMapper mapper)
+        public UserService(IUserRepository repository, IMapper mapper, IEmailSender email)
         {
             _mapper = mapper;
             _repository = repository;
+            _email = email;
         }
 
         // ===========================
@@ -109,6 +112,27 @@ namespace ASI.Basecode.Services.Services
         {
             if (string.IsNullOrWhiteSpace(token)) return;
             _repository.MarkPasswordResetTokenUsed(token);
+        }
+
+        public async Task<ForgotPasswordResult> RequestPasswordResetAsync(
+    string email,
+    TimeSpan ttl,
+    Func<string, string> linkFactory)   // <-- add this
+        {
+            var user = FindByEmail(email);
+            if (user == null) return ForgotPasswordResult.NotFound;
+
+            var token = CreatePasswordResetToken(user, ttl);
+
+            // Build the exact URL using the controller’s factory
+            var link = linkFactory(token.Token);  // IMPORTANT: factory should URL-encode
+
+            var html = $@"
+        <p>Use the link below to reset your password. It expires in {(int)ttl.TotalMinutes} minutes.</p>
+        <p><a href=""{link}"">{link}</a></p>";
+
+            await _email.SendAsync(user.Email, "Password Reset", html);
+            return ForgotPasswordResult.Success;
         }
     }
 }

@@ -26,13 +26,14 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IStudentRepository _studentRepository;
         private readonly IUserRepository _userRepository;
         private readonly IClassScheduleRepository _classScheduleRepository;
-        private readonly IWebHostEnvironment _env; // for serving prospectus pdfs
+        private readonly IWebHostEnvironment _env; 
         private readonly IProfileService _profileService;
         private readonly IHttpContextAccessor _httpContext;
         private readonly INotificationService _notificationService;
         private readonly IStudentDashboardService _studentDashboardService;
         private readonly IStudyLoadService _studyLoadService;
         private readonly IStudentGradesService _studentGradesService;
+        private readonly IRightSidebarService _rightSidebar; 
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -45,7 +46,8 @@ namespace ASI.Basecode.WebApp.Controllers
             INotificationService notificationService,
             IStudentDashboardService studentDashboardService,
             IStudyLoadService studyLoadService,
-            IStudentGradesService studentGradesService) // <-- inject)
+            IStudentGradesService studentGradesService,
+            IRightSidebarService rightSidebar)
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -57,7 +59,16 @@ namespace ASI.Basecode.WebApp.Controllers
             _notificationService = notificationService;
             _studentDashboardService = studentDashboardService;
             _studyLoadService = studyLoadService;
-            _studentGradesService = studentGradesService; // <-- store
+            _studentGradesService = studentGradesService;
+            _rightSidebar = rightSidebar;
+        }
+
+        private async Task SetRightSidebarAsync()
+        {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                ViewData["RightSidebar"] = await _rightSidebar.BuildAsync(User, takeNotifications: 5, takeEvents: 5);
+            }
         }
 
         // --------------------------------------------------------------------
@@ -71,6 +82,8 @@ namespace ASI.Basecode.WebApp.Controllers
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
+            await SetRightSidebarAsync();
+
             var vm = await _studentDashboardService.BuildAsync(idNumber);
             return View("StudentDashboard", vm);
         }
@@ -81,6 +94,8 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
+
+            await SetRightSidebarAsync(); // ✅ SSR sidebar
 
             int userId = _profileService.GetCurrentUserId();
             var vm = await _profileService.GetStudentProfileAsync(userId);
@@ -94,7 +109,10 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> SaveProfile(StudentProfileViewModel vm)
         {
             if (!ModelState.IsValid)
+            {
+                await SetRightSidebarAsync(); // ✅ keep sidebar on validation error
                 return View("StudentProfile", vm);
+            }
 
             int userId = _profileService.GetCurrentUserId();
             await _profileService.UpdateStudentProfileAsync(userId, vm);
@@ -114,6 +132,8 @@ namespace ASI.Basecode.WebApp.Controllers
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
+            await SetRightSidebarAsync(); // ✅ SSR sidebar
+
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.IdNumber == idNumber);
@@ -121,7 +141,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (user == null)
                 return View(new StudyLoadViewModel());
 
-            // Build VM from service: terms are sourced from AssignedCourses via Grades
             var vm = await _studyLoadService.GetStudyLoadAsync(user.UserId, term);
             return View(vm); // View name is StudyLoad.cshtml
         }
@@ -137,6 +156,8 @@ namespace ASI.Basecode.WebApp.Controllers
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
+            await SetRightSidebarAsync(); // ✅ SSR sidebar
+
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.IdNumber == idNumber, ct);
@@ -151,9 +172,12 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // CALENDAR & NOTIFICATIONS
         // --------------------------------------------------------------------
-        public IActionResult Calendar()
+        public async Task<IActionResult> Calendar()
         {
             ViewData["PageHeader"] = "Calendar";
+
+            await SetRightSidebarAsync(); // ✅ SSR sidebar
+
             return View("~/Views/Shared/Partials/Calendar.cshtml");
         }
 

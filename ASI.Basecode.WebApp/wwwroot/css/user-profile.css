@@ -10,7 +10,7 @@ body {
     max-width: 1010px;
     margin: auto;
     box-shadow: none;
-}
+}s
 
 /* Optional: dim controls when in read-only for UX clarity */
 .is-readonly .form-control,

@@ -3,6 +3,7 @@ using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -11,31 +12,47 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly INotificationService _notificationService;
+        private readonly IRightSidebarService _rightSidebar; // ✅ inject
 
-        public NotificationsController(IProfileService profileService,
-                                       INotificationService notificationService)
+        public NotificationsController(
+            IProfileService profileService,
+            INotificationService notificationService,
+            IRightSidebarService rightSidebar) // ✅ inject
         {
             _profileService = profileService;
             _notificationService = notificationService;
+            _rightSidebar = rightSidebar;
+        }
+
+        private async Task SetRightSidebarAsync()
+        {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                ViewData["RightSidebar"] =
+                    await _rightSidebar.BuildAsync(User, takeNotifications: 5, takeEvents: 5);
+            }
         }
 
         // --- Canonical GET routes per role (named) --------------------------
         [HttpGet("/Student/Notifications", Name = "StudentNotifications")]
         [Authorize(Roles = "Student")]
-        public IActionResult StudentIndex() => BuildIndexView();
+        public async Task<IActionResult> StudentIndex() => await BuildIndexViewAsync();
 
         [HttpGet("/Teacher/Notifications", Name = "TeacherNotifications")]
         [Authorize(Roles = "Teacher")]
-        public IActionResult TeacherIndex() => BuildIndexView();
+        public async Task<IActionResult> TeacherIndex() => await BuildIndexViewAsync();
 
         [HttpGet("/Admin/Notifications", Name = "AdminNotifications")]
         [Authorize(Roles = "Admin")]
-        public IActionResult AdminIndex() => BuildIndexView();
+        public async Task<IActionResult> AdminIndex() => await BuildIndexViewAsync();
 
         // Shared builder used by all three
-        private IActionResult BuildIndexView()
+        private async Task<IActionResult> BuildIndexViewAsync()
         {
             ViewData["PageHeader"] = "Notifications";
+
+            // ✅ SSR the right sidebar here as well
+            await SetRightSidebarAsync();
 
             var userId = _profileService.GetCurrentUserId();
             var items = _notificationService.GetLatest(userId, page: 1, pageSize: 100);
@@ -50,7 +67,6 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         // --- POST actions (role-agnostic) -----------------------------------
-
         [HttpPost("/Notifications/MarkRead")]
         [ValidateAntiForgeryToken]
         public IActionResult MarkRead(int id)
@@ -69,12 +85,10 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToRoleNotifications();
         }
 
-        // Redirect helper → sends user back to proper role URL
         private IActionResult RedirectToRoleNotifications()
         {
             if (User.IsInRole("Admin")) return RedirectToRoute("AdminNotifications");
             if (User.IsInRole("Teacher")) return RedirectToRoute("TeacherNotifications");
-            // default to Student if both/none (based on your auth model)
             return RedirectToRoute("StudentNotifications");
         }
     }

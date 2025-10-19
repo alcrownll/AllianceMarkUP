@@ -12,19 +12,17 @@ html, body {
     background: #E5EFFB;
 }
 
-/* (LEFT SIDEBAR removed – now in left-sidebar.css) */
-
 /* =============== RIGHT SIDEBAR =============== */
 .right-sidebar {
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
-    width: 280px;
-    min-width: 280px;
-    max-width: 280px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
     background: #fff;
-    padding: 1rem;
+    padding: 1.25rem; 
     overflow-y: auto;
     z-index: 1000;
 }
@@ -104,9 +102,8 @@ html, body {
 }
 
 /* =============== MAIN CONTENT =============== */
-/* margin-left moved to left-sidebar.css to keep in one place */
 .main-content {
-    margin-right: 280px; /* keep if right sidebar is present */
+    margin-right: 340px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;

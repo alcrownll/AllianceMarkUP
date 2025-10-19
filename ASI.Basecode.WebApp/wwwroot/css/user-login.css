@@ -36,7 +36,7 @@ body {
     padding: 24px
 }
 
-/* glass layout (used on other login screens) */
+/* glass layout  */
 .glass-stage {
     width: min(800px,95vw);
     height: min(500px,90vh);
@@ -507,4 +507,16 @@ body {
 .yt-success__text {
     color: #14532d;
     font-size: 13px
+}
+
+.yt-btn.is-loading .yt-btn__spinner {
+    display: inline-block;
+}
+
+.yt-btn.is-loading .yt-btn__text {
+    opacity: .9;
+}
+
+#fpModal .yt-modal__card {
+    padding-bottom: 5px;
 }

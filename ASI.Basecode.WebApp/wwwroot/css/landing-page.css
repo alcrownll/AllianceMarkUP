@@ -337,13 +337,31 @@ img {
     margin-top: 6px
 }
 
+/* Base grid (kept for other layouts) */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(3,1fr);
     gap: 18px;
     margin-top: 26px;
-    align-items: stretch
+    align-items: stretch;
 }
+
+    /* Centered two-card layout (removes empty third column) */
+    .card-grid.centered-two {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: stretch;
+        gap: 18px;
+        max-width: 820px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        .card-grid.centered-two > .portal-card {
+            flex: 1 1 360px;
+            max-width: 380px;
+        }
 
 /* Icon tile base */
 .icon-wrap {
@@ -367,17 +385,13 @@ img {
         background: linear-gradient(90deg,#006EFF,#0075FF) !important;
     }
 
-    .icon-wrap.icon-admin {
-        background: linear-gradient(90deg,#0080FF,#0092FF) !important;
-    }
-
 /* Portal card – raised */
 .portal-card {
     background: #fff;
     border: 1px solid #e8ecff;
     border-radius: 18px;
     min-height: 460px;
-    padding: 32px 26px 24px;
+    padding: 32px 26px 24px; /* ← exact padding preserved */
     box-shadow: 0 8px 28px rgba(2,6,23,.06);
     transition: transform .26s cubic-bezier(.2,.8,.2,1), box-shadow .26s, border-color .26s, filter .26s;
     will-change: transform;
@@ -391,13 +405,8 @@ img {
         margin: 10px 0 8px
     }
 
-    .portal-card h3,
-    .portal-card p,
-    .portal-card .mini,
-    .portal-card .icon-wrap,
-    .portal-card .actions,
-    .portal-card .actions .btn {
-        transition: transform .26s cubic-bezier(.2,.8,.2,1), box-shadow .26s;
+    .portal-card h3, .portal-card p, .portal-card .mini, .portal-card .icon-wrap, .portal-card .actions, .portal-card .actions .btn {
+        transition: transform .26s cubic-bezier(.2,.8,.2,1);
         transform-origin: center;
     }
 
@@ -408,18 +417,14 @@ img {
         filter: saturate(1.02);
     }
 
-        .portal-card:hover .icon-wrap,
-        .portal-card:hover h3,
-        .portal-card:hover p,
-        .portal-card:hover .mini,
-        .portal-card:hover .actions {
+        .portal-card:hover .icon-wrap, .portal-card:hover h3, .portal-card:hover p, .portal-card:hover .mini, .portal-card:hover .actions {
             transform: translateY(-2px);
         }
 
     .portal-card > * + * {
         margin-top: 14px
     }
-
+    /* ← exact spacing preserved */
     .portal-card p {
         color: #475569;
         margin: 0 auto
@@ -428,25 +433,35 @@ img {
     .portal-card .mini {
         list-style: none;
         padding: 0;
-        margin: 18px 0 24px;
-        display: grid;
-        gap: 16px;
+        margin: 18px 0 24px; /* exact margin preserved */
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* center the rows as a group */
+        gap: 12px;
     }
 
         .portal-card .mini li {
+            display: grid;
+            grid-template-columns: 22px auto; /* fixed icon column + flexible text */
+            align-items: center;
+            column-gap: 12px;
+            width: 100%;
+            max-width: clamp(260px, 90%, 360px); /* consistent row width so icons align */
+            text-align: left; /* readable while the list is centered */
             color: #334155;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.35
+            /* nudge the whole row (icon + text) to the right */
+            padding-left: 2.5rem; /* adjust 6–16px to taste */
         }
 
         .portal-card .mini i {
             color: var(--b4);
-            margin-right: 8px
+            width: 22px; 
+            justify-self: center; 
+            line-height: 1;
         }
 
+/* Actions */
 .actions {
     margin-top: auto;
     padding-top: 10px;
@@ -475,15 +490,6 @@ img {
 
     .btn-teacher.solid:hover {
         box-shadow: 0 12px 26px rgba(0,110,255,.32)
-    }
-
-.btn-admin.solid {
-    background: linear-gradient(90deg,#0080FF,#0092FF);
-    box-shadow: 0 8px 18px rgba(0,128,255,.25)
-}
-
-    .btn-admin.solid:hover {
-        box-shadow: 0 12px 26px rgba(0,128,255,.32)
     }
 
 /* WHY */
@@ -548,7 +554,6 @@ img {
     padding: 28px 0
 }
 
-/* tighter heading margins in footer */
 .site-footer h4, .site-footer h6 {
     margin: 0 0 6px;
 }
@@ -582,14 +587,13 @@ img {
     margin-top: 8px
 }
 
-/* Footer brand row */
 .footer-brand {
     display: flex;
     align-items: center;
     gap: 8px;
     font-weight: 800;
 }
-    /* pull the paragraph closer to the brand row */
+
     .footer-brand + p {
         margin-top: 4px;
     }
@@ -626,16 +630,8 @@ img {
         margin-left: auto
     }
 
-    .card-grid {
-        grid-template-columns: 1fr
-    }
-
-    .why-grid {
-        grid-template-columns: 1fr 1fr
-    }
-
-    .portal-card {
-        min-height: 420px
+    .card-grid.centered-two {
+        max-width: 520px;
     }
 }
 
@@ -649,24 +645,3 @@ img {
     }
 }
 
-/* Confetti */
-.confetti {
-    --rx: 0;
-    --ry: -1;
-    --t: 700ms;
-    position: fixed;
-    width: 6px;
-    height: 6px;
-    background: linear-gradient(180deg,#60a5fa,#2563eb);
-    transform: translate(-50%,-50%);
-    border-radius: 2px;
-    pointer-events: none;
-    animation: fly var(--t) ease-out forwards;
-}
-
-@keyframes fly {
-    to {
-        transform: translate(calc(-50% + 80px*var(--rx)), calc(-50% + 90px*var(--ry)));
-        opacity: 0
-    }
-}

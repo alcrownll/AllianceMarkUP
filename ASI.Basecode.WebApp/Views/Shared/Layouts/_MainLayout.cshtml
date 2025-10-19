@@ -1,4 +1,5 @@
 ﻿@using static ASI.Basecode.Resources.Views.Screen
+@using ASI.Basecode.Services.ServiceModels
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,56 +7,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
 
-    <!-- MarkUP Favicon -->
-    <!-- Force MarkUP favicon -->
-    <link rel="icon" type="image/png" href="~/img/MarkUPLogo.png?v=2" />
-    <link rel="shortcut icon" type="image/png" href="~/img/MarkUPLogo.png?v=2" />
-
-
-
     <!-- Bootstrap + Site Styles -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           rel="stylesheet"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
           crossorigin="anonymous">
     <link rel="stylesheet" href="~/css/main-site.css" />
-
-    <!-- Hover label (global) -->
     <link rel="stylesheet" href="~/css/hover-label.css" />
 
-    <!-- For Mini Calendar -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+     <!-- Right Sidebar styles -->
+  <link rel="stylesheet" href="~/css/right-sidebar.css" asp-append-version="true" /> 
 
-    <script>
-        (function () {
-          function loadInto(el) {
-            if (!el) return;
-            var url = el.getAttribute('data-url');
-            if (!url) return;
+  <!-- Icon set used in the sidebar (Bootstrap Icons) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-            fetch(url, { credentials: 'same-origin' })
-              .then(r => r.text())
-              .then(html => {
-                el.innerHTML = html;
-                var input = el.querySelector('#miniCalendar');
-                if (input && window.flatpickr) flatpickr(input, { inline: true });
-              })
-              .catch(() => { el.innerHTML = '<div class="p-3 text-danger small">Failed to load.</div>'; });
-          }
-          document.addEventListener('DOMContentLoaded', function () {
-            loadInto(document.getElementById('rightSidebar'));
-          });
-        })();
-    </script>
+  <!-- Mini Calendar CSS (Flatpickr) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     @RenderSection("Styles", required: false)
 </head>
 <body>
-
-    <!-- Page layout container -->
     <div class="layout-container d-flex">
-        <!-- LEFT SIDEBAR (Role-based Navigation) -->
+        <!-- LEFT SIDEBAR -->
         <aside class="left-sidebar">
             @if (User != null && User.IsInRole("Student"))
             {
@@ -71,60 +44,55 @@
             }
         </aside>
 
-        <!-- CENTER CONTENT (Header + Scrollable Body) -->
+        <!-- CENTER CONTENT -->
         <main class="main-content flex-grow-1 d-flex flex-column">
-            <!-- Constant Header (center only) -->
             <header class="main-header">
                 <h2>@ViewData["PageHeader"]</h2>
             </header>
-
-            <!-- Scrollable RenderBody -->
             <section class="content flex-grow-1 overflow-auto">
                 @RenderBody()
             </section>
         </main>
 
-        <!-- RIGHT SIDEBAR (Profile + Calendar + Notifs, shared across roles) -->
+        <!-- RIGHT SIDEBAR  -->
         <aside class="right-sidebar">
-            <div id="rightSidebar" data-url="@Url.Action("RightSidebar", "Partials")">
-                <div class="p-3 text-muted small">Loading…</div>
-            </div>
+            @{
+                var rightVm = ViewData["RightSidebar"] as RightSidebarViewModel;
+            }
+            @if (rightVm != null)
+            {
+                @await Html.PartialAsync("Sidebars/_RightSidebar", rightVm)
+            }
+            else
+            {
+                <!-- Optional minimal fallback (should rarely show if controllers set ViewData) -->
+                <div class="p-3 small text-muted">—</div>
+            }
         </aside>
     </div>
 
-    <!-- jQuery (needed for jquery-validate). Keep exactly one jQuery. -->
+    <!-- JS libs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
             integrity="sha512-894ye88kF4Cw6y2Lh2a8b4B1hZ9E1bQF1r5jvGDa5aC9YxZ+4Z6kG6dkhTW0Wg6l5/1Q9ct6wC5hKZJx+oQw=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <!-- Bootstrap 5.3 bundle (includes Popper + all plugins like Modal) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
 
-    <!-- Validation (requires jQuery; order matters: jQuery -> validate -> unobtrusive) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"
-            integrity="sha512-t3sS2x2H1tVq2a8Q7yJvO4v0f2c8Y3m3dWmBq8v2CTbO5r1v5yQ4U1r0wF9k8uL7v1cl8f7y6Q2H1qzj9YxCtg=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"
-            integrity="sha512-eS9m4+UoE8LwP4dH3A8pQfQ2Qk3n5zvI9UO0R8mGm3GZ8sVg6B5yUQ3Zr7W2DUEr8h4qj3j2wX7kY0u0WQkUeg=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Flatpickr JS (calendar enhancement) -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <!-- Optional libraries you already use -->
     <script src="https://kit.fontawesome.com/7a7c645416.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"
             referrerpolicy="no-referrer"></script>
 
-    <!-- Your site-wide JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <!-- Hover label (global) JS -->
     <script src="~/js/hover-label.js" asp-append-version="true"></script>
 
-    <!-- Floating cursor-follow label (global) -->
+    <!-- Floating cursor-follow label -->
     <div id="hoverLabel" role="status" aria-live="polite" aria-hidden="true"></div>
 
-    @await RenderSectionAsync("Modals", required: false)   <!-- ⬅ added -->
+    @await RenderSectionAsync("Modals", required: false)
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

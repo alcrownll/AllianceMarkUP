@@ -1,6 +1,6 @@
 ﻿@{
     Layout = null;
-    ViewData["Title"] = "MarkUP — Track Student Performance with Precision";
+    ViewData["Title"] = "MarkUP";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -40,17 +40,16 @@
     <section class="hero" id="hero">
         <div class="container grid-2">
             <div class="hero-copy reveal-up">
-                <div class="eyebrow">Analytics • Insights • Precision</div>
-                <h1>Track Student <span class="grad">Performance</span> with Precision</h1>
+                <div class="eyebrow">UCLM • College of Computer Studies</div>
+                <h1>From Grades to Insight,<br><span class="grad">All in One Place</span></h1>
                 <p class="lead">
-                    Comprehensive analytics and insights to help students, teachers, and administrators
-                    make data-driven decisions for academic success.
+                    MarkUP supports CCS students with transparent grade insights and equips faculty with efficient recording and review in one secure space.
                 </p>
 
                 <div class="chip-row">
-                    <span class="chip"><i class="bi bi-activity"></i> Real-time Analytics</span>
-                    <span class="chip"><i class="bi bi-shield-check"></i> Secure Platform</span>
-                    <span class="chip"><i class="bi bi-plug"></i> Easy Integration</span>
+                    <span class="chip"><i class="bi bi-activity"></i> Real-Time</span>
+                    <span class="chip"><i class="bi bi-people"></i> Role-Based Access</span>
+                    <span class="chip"><i class="bi bi-graph-up"></i> GWA &amp; Term Insights</span>
                 </div>
             </div>
 
@@ -58,7 +57,7 @@
                 <div class="dash-card" id="tilt">
                     <div class="dash-head">
                         <span class="dot"></span>
-                        <span class="title">Performance Dashboard</span>
+                        <span class="title">Performance Snapshot</span>
                         <i class="bi bi-bar-chart-line"></i>
                     </div>
                     <ul class="dash-list">
@@ -69,8 +68,8 @@
 
                     <div class="micro-cards">
                         <div class="micro"><div class="big">1.24</div><div class="cap">Best GWA</div></div>
-                        <div class="micro"><div class="big">+12%</div><div class="cap">This term</div></div>
-                        <div class="micro"><div class="big">98</div><div class="cap">Submissions</div></div>
+                        <div class="micro"><div class="big">+12%</div><div class="cap">This Term</div></div>
+                        <div class="micro"><div class="big">98</div><div class="cap">Grade Records</div></div>
                     </div>
                 </div>
             </div>
@@ -81,18 +80,19 @@
     <section id="portals" class="portals">
         <div class="container">
             <h2 class="center reveal-up section-title">Choose Your Portal</h2>
-            <p class="sub center reveal-up">Access your personalized dashboard based on your role in the educational ecosystem</p>
+            <p class="sub center reveal-up">Access your personalized dashboard based on your role in the educational ecosystem.</p>
 
-            <div class="card-grid">
+           
+            <div class="card-grid centered-two">
                 <!-- Student -->
                 <article class="portal-card reveal-up">
                     <div class="icon-wrap icon-student"><i class="bi bi-mortarboard-fill"></i></div>
                     <h3>Student Portal</h3>
-                    <p>Track your academic progress, view grades, assignments, and get personalized insights to improve your performance.</p>
+                    <p>View official grades, track your GWA, and see term-by-term performance insights.</p>
                     <ul class="mini">
-                        <li><i class="bi bi-check-circle-fill"></i> Performance Analytics</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Assignment Tracking</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Achievement Badges</li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>View Grades &amp; GWA</span></li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>Term &amp; Course Analytics</span></li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>Progress Trends</span></li>
                     </ul>
                     <div class="actions">
                         <a class="btn solid ripple btn-student" asp-controller="Login" asp-action="StudentLogin">
@@ -105,32 +105,15 @@
                 <article class="portal-card reveal-up">
                     <div class="icon-wrap icon-teacher"><i class="bi bi-easel2-fill"></i></div>
                     <h3>Teacher Portal</h3>
-                    <p>Monitor student progress, manage assignments, generate reports, and provide targeted feedback to enhance learning outcomes.</p>
+                    <p>Upload grades and review assigned classes with quick performance snapshots.</p>
                     <ul class="mini">
-                        <li><i class="bi bi-check-circle-fill"></i> Class Management</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Report Generation</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Student Feedback</li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>Record Grades</span></li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>View Assigned Courses</span></li>
+                        <li><i class="bi bi-check-circle-fill"></i><span>Progress Trends</span></li>
                     </ul>
                     <div class="actions">
                         <a class="btn solid ripple btn-teacher" asp-controller="Login" asp-action="TeacherLogin">
                             Teacher Login <i class="bi bi-arrow-right-short"></i>
-                        </a>
-                    </div>
-                </article>
-
-                <!-- Admin -->
-                <article class="portal-card reveal-up">
-                   <div class="icon-wrap icon-admin"><i class="bi bi-gear-fill"></i></div>
-                    <h3>Admin Portal</h3>
-                    <p>Oversee institutional performance, manage users, configure system settings, and access comprehensive analytics dashboards.</p>
-                    <ul class="mini">
-                        <li><i class="bi bi-check-circle-fill"></i> System Management</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Institution Analytics</li>
-                        <li><i class="bi bi-check-circle-fill"></i> User Administration</li>
-                    </ul>
-                    <div class="actions">
-                        <a class="btn solid ripple btn-admin" asp-controller="Login" asp-action="AdminLogin">
-                            Admin Login <i class="bi bi-arrow-right-short"></i>
                         </a>
                     </div>
                 </article>
@@ -142,28 +125,28 @@
     <section id="features" class="why">
         <div class="container">
             <h2 class="center reveal-up section-title">Why Choose MarkUP?</h2>
-            <p class="sub center reveal-up">Powerful features designed to transform educational performance tracking and analysis</p>
+            <p class="sub center reveal-up">Powerful features designed to transform educational performance tracking and analysis.</p>
 
-            <div class="why-grid">
+        <div class="why-grid">
                 <div class="why-item reveal-up">
                     <div class="why-icon"><i class="bi bi-lightning-charge-fill"></i></div>
-                    <h4>Real-time Updates</h4>
-                    <p>Get instant notifications and live performance updates.</p>
+                    <h4>Fast Grade Workflows</h4>
+                    <p>Optimized screens for uploading and viewing grades.</p>
                 </div>
                 <div class="why-item reveal-up">
                     <div class="why-icon"><i class="bi bi-phone-fill"></i></div>
                     <h4>Mobile Friendly</h4>
-                    <p>Access your dashboard anywhere, anytime on any device.</p>
+                    <p>Access from any device—no extra installs.</p>
                 </div>
                 <div class="why-item reveal-up">
                     <div class="why-icon"><i class="bi bi-shield-lock-fill"></i></div>
                     <h4>Secure &amp; Private</h4>
-                    <p>Enterprise-grade security protecting your data.</p>
+                    <p>Role-based access for students and faculty.</p>
                 </div>
                 <div class="why-item reveal-up">
-                    <div class="why-icon"><i class="bi bi-puzzle-fill"></i></div>
-                    <h4>Easy Integration</h4>
-                    <p>Seamlessly integrate with existing school systems.</p>
+                    <div class="why-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                    <h4>Analytics</h4>
+                    <p>See GWA trends and term summaries at a glance.</p>
                 </div>
             </div>
         </div>
@@ -177,13 +160,12 @@
                     <img src="~/img/MarkUPLogo.png" alt="MarkUP logo" />
                     <h4>MarkUP</h4>
                 </div>
-                <p>Empowering education through intelligent performance tracking and analytics.</p>
+                <p>MarkUP gives students clear grade insights and faculty streamlined workflows—backed by real-time access and role-based security.</p>
             </div>
             <div>
                 <h6>Platform</h6>
                 <a asp-controller="Login" asp-action="StudentLogin">Student Portal</a>
                 <a asp-controller="Login" asp-action="TeacherLogin">Teacher Portal</a>
-                <a asp-controller="Login" asp-action="AdminLogin">Admin Portal</a>
             </div>
             <div>
                 <h6>Support</h6>
@@ -198,20 +180,13 @@
                     <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
                     <a href="#" aria-label="Github"><i class="bi bi-github"></i></a>
                 </div>
-                <p class="tiny">© @DateTime.Now.Year MarkUP</p>
+                <p class="tiny">© 2025 MarkUP</p>
             </div>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script>
-        // Mobile nav
-        const toggle = document.querySelector('.nav-toggle');
-        const header = document.querySelector('.nav');
-        toggle?.addEventListener('click', () => {
-            const open = header.classList.toggle('open');
-            toggle.setAttribute('aria-expanded', String(open));
-        });
 
         // Slide-in + fade-in on scroll
         const io = new IntersectionObserver((entries) => {
@@ -219,26 +194,14 @@
         }, { threshold: 0.15, rootMargin: "0px 0px -20px 0px" });
         document.querySelectorAll('.reveal-up').forEach(el => io.observe(el));
 
-        // Confetti
-        function burst(x, y) {
-            const n = 14;
-            for (let i = 0; i < n; i++) {
-                const s = document.createElement('span');
-                s.className = 'confetti';
-                s.style.left = x + 'px';
-                s.style.top = y + 'px';
-                s.style.setProperty('--rx', (Math.random()*2-1).toFixed(2));
-                s.style.setProperty('--ry', (Math.random()*-1-0.2).toFixed(2));
-                s.style.setProperty('--t', (600 + Math.random()*500).toFixed(0) + 'ms');
-                document.body.appendChild(s);
-                setTimeout(() => s.remove(), 900);
-            }
-        }
+        // Optional ripple hook
         document.querySelectorAll('.btn.ripple').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const r = btn.getBoundingClientRect();
-                const x = r.left + e.offsetX, y = r.top + e.offsetY;
-                burst(x, y);
+                if (typeof burst === 'function') {
+                    const r = btn.getBoundingClientRect();
+                    const x = r.left + e.offsetX, y = r.top + e.offsetY;
+                    burst(x, y);
+                }
             });
         });
 
