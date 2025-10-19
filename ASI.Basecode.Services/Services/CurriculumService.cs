@@ -3,6 +3,7 @@ using ASI.Basecode.Data.Models;
 using ASI.Basecode.Data.Repositories;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +63,7 @@ namespace ASI.Basecode.Services.Services
         }
 
         public Task<bool> SetProgramActiveAsync(int id, bool isActive)
-       => _programs.SetActiveAsync(id, isActive);
+           => _programs.SetActiveAsync(id, isActive);
 
         public IEnumerable<ProgramCourse> GetTerm(int programId, int year, int term)
         {
@@ -75,12 +76,7 @@ namespace ASI.Basecode.Services.Services
             _progCourses.DeleteProgramCourse(programCourseId);
         }
 
-        // ---------- NEW: program-scoped safety helpers ----------
-        // Add both signatures to ICurriculumService
-
-        /// <summary>
-        /// Returns true if the ProgramCourse belongs to the Program.
-        /// </summary>
+        // ---------- program-scoped safety helpers ----------
         public bool ProgramOwnsProgramCourse(int programId, int programCourseId)
         {
             return _progCourses
@@ -89,20 +85,15 @@ namespace ASI.Basecode.Services.Services
                            pc.ProgramId == programId);
         }
 
-        /// <summary>
-        /// Removes the ProgramCourse only if it belongs to the given Program.
-        /// Returns true when removed, false if not found / not owned.
-        /// </summary>
         public bool TryRemoveProgramCourse(int programId, int programCourseId)
         {
-            // Ownership check keeps deletes scoped to the current program
             var belongs = ProgramOwnsProgramCourse(programId, programCourseId);
             if (!belongs) return false;
 
             _progCourses.DeleteProgramCourse(programCourseId);
             return true;
         }
-        // --------------------------------------------------------
+        // ---------------------------------------------------
 
         public bool HasAnyCourses(int programId)
         {
@@ -145,18 +136,29 @@ namespace ASI.Basecode.Services.Services
             return program;
         }
 
+        // ===== EF-translatable search for Programs (PostgreSQL ILIKE) =====
+
         public IEnumerable<Program> ListPrograms(string q = null)
         {
-            var all = _programs.GetPrograms();
-            if (string.IsNullOrWhiteSpace(q)) return all;
+            IQueryable<Program> query = _programs.GetPrograms().AsNoTracking();
 
-            q = q.Trim();
-            return all.Where(p =>
-                (!string.IsNullOrEmpty(p.ProgramCode) && p.ProgramCode.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(p.ProgramName) && p.ProgramName.Contains(q, StringComparison.OrdinalIgnoreCase)));
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                q = q.Trim();
+                var pattern = $"%{q}%";
+
+                query = query.Where(p =>
+                    (p.ProgramCode != null && EF.Functions.ILike(p.ProgramCode, pattern)) ||
+                    (p.ProgramName != null && EF.Functions.ILike(p.ProgramName, pattern)));
+            }
+
+            return query
+                .OrderBy(p => p.ProgramCode)
+                .Take(500)
+                .ToList();
         }
+        // ================================================================
 
-        
         public void AddCoursesToTermBulk(int programId, int year, int term, int[] courseIds, int[] prereqIds)
         {
             if (courseIds == null || courseIds.Length == 0) return;
@@ -187,6 +189,36 @@ namespace ASI.Basecode.Services.Services
 
                 existing.Add(cid);
             }
+        }
+
+        public bool UpdateProgram(int id, string code, string name, bool isActive)
+        {
+            // Load tracked entity
+            var entity = _programs.GetProgramById(id);
+            if (entity == null) return false;
+
+            // Unique ProgramCode (case-insensitive, trim)
+            var codeNorm = (code ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codeNorm))
+                throw new InvalidOperationException("Program code is required.");
+
+            var nameNorm = (name ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nameNorm))
+                throw new InvalidOperationException("Program name is required.");
+
+            var duplicate = _programs.GetPrograms()
+                .Any(p => p.ProgramId != id &&
+                          p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
+            if (duplicate)
+                throw new InvalidOperationException("A program with the same code already exists.");
+
+            // Apply updates
+            entity.ProgramCode = codeNorm;
+            entity.ProgramName = nameNorm;
+            entity.IsActive = isActive;
+
+            _programs.UpdateProgram(entity);
+            return true;
         }
     }
 }

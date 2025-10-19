@@ -13,6 +13,7 @@ namespace ASI.Basecode.Services.Interfaces
         Program ActivateProgram(int programId);         // optional if you use IsActive toggle elsewhere
         void DiscardProgram(int programId);
         bool HasAnyCourses(int programId);
+        bool UpdateProgram(int id, string code, string name, bool isActive);
 
         // ProgramCourses
         ProgramCourse AddCourseToTerm(int programId, int year, int term, int courseId, int prereqCourseId);

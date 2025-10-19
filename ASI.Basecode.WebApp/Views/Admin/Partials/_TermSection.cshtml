@@ -1,18 +1,17 @@
 ﻿@using System
 
 @{
-    int y = 0;
-    if (ViewData["Year"] is int yi) y = yi;
-    else if (ViewData["Year"] is long yl) y = (int)yl;
-    else if (ViewData["Year"] is string ys && int.TryParse(ys, out var yp)) y = yp;
-    else y = DateTime.Now.Year;
+    int yearLevel;
+    if (ViewData["Year"] is int yi) yearLevel = yi;
+    else if (ViewData["Year"] is long yl) yearLevel = (int)yl;
+    else if (ViewData["Year"] is string ys && int.TryParse(ys, out var yp)) yearLevel = yp;
+    else yearLevel = 1;
 
-    var k1 = $"Y{y}T1";
-    var k2 = $"Y{y}T2";
+    var k1 = $"Y{yearLevel}T1";
+    var k2 = $"Y{yearLevel}T2";
 }
 
 <style>
-    /* Stacked child modal */
     .modal-backdrop.stacked {
         z-index: 1060 !important;
     }
@@ -32,9 +31,8 @@
                     <div class="small text-muted">Total Units: <span id="units-@k1">0</span></div>
                     <button type="button"
                             class="btn btn-sm btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#coursePickerModal"
-                            data-year="@y" data-term="1" data-key="@k1">
+                            data-action="open-course-picker"
+                            data-year="@yearLevel" data-term="1" data-key="@k1">
                         Add Course
                     </button>
                 </div>
@@ -54,7 +52,7 @@
                                 <th style="width:10%"></th>
                             </tr>
                         </thead>
-                        <tbody id="tbl-@k1" data-term-table data-year="@y" data-term="1">
+                        <tbody id="tbl-@k1" data-term-table data-year="@yearLevel" data-term="1">
                             <tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>
                         </tbody>
                     </table>
@@ -72,9 +70,8 @@
                     <div class="small text-muted">Total Units: <span id="units-@k2">0</span></div>
                     <button type="button"
                             class="btn btn-sm btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#coursePickerModal"
-                            data-year="@y" data-term="2" data-key="@k2">
+                            data-action="open-course-picker"
+                            data-year="@yearLevel" data-term="2" data-key="@k2">
                         Add Course
                     </button>
                 </div>
@@ -94,7 +91,7 @@
                                 <th style="width:10%"></th>
                             </tr>
                         </thead>
-                        <tbody id="tbl-@k2" data-term-table data-year="@y" data-term="2">
+                        <tbody id="tbl-@k2" data-term-table data-year="@yearLevel" data-term="2">
                             <tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>
                         </tbody>
                     </table>
@@ -106,7 +103,6 @@
 
 <script>
     (function () {
-      // Prevent duplicate binding if this partial re-renders
       if (window.__termSectionBoundOnce) {
         try { window.recalcUnits?.('@k1'); window.recalcUnits?.('@k2'); } catch {}
         return;
@@ -115,11 +111,10 @@
 
       try { window.recalcUnits?.('@k1'); window.recalcUnits?.('@k2'); } catch {}
 
-      // Remove-row handler (server POST + UI update)
+      // Remove-row handler
       document.addEventListener('click', async (e) => {
         const btn = e.target.closest('button[data-remove]');
         if (!btn) return;
-
         if (btn.disabled) return;
         btn.disabled = true;
 
@@ -134,10 +129,7 @@
         const pid = (typeof getCurrentProgramId === 'function') ? getCurrentProgramId() : '';
 
         if (!id || !pid) {
-          tr.remove();
-          window.recalcUnits?.(key);
-          btn.disabled = false;
-          return;
+          tr.remove(); window.recalcUnits?.(key); btn.disabled = false; return;
         }
 
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
@@ -151,19 +143,13 @@
             credentials: 'same-origin',
             body: form.toString()
           });
-
           if (!res.ok) {
             const msg = (await res.text()) || `Failed to remove (HTTP ${res.status}).`;
             alert(msg);
-            if (res.status === 404) {
-              tr.remove();
-              window.recalcUnits?.(key);
-            }
+            if (res.status === 404) { tr.remove(); window.recalcUnits?.(key); }
             return;
           }
-
-          tr.remove();
-          window.recalcUnits?.(key);
+          tr.remove(); window.recalcUnits?.(key);
         } catch (err) {
           alert(err?.message || 'Network error while removing item.');
         } finally {
@@ -171,32 +157,29 @@
         }
       });
 
-      // Keep only target-setting + stacking tweaks here.
-      const pickerEl = document.getElementById('coursePickerModal');
-      if (pickerEl) {
-        pickerEl.addEventListener('show.bs.modal', (e) => {
-          const btn = e.relatedTarget; // the Add Course button
-          window.COURSE_PICK_TARGET = {
-            year: Number(btn?.getAttribute('data-year') || 1),
-            term: Number(btn?.getAttribute('data-term') || 1)
-          };
+      // Programmatic open for the Course Picker (prevents parent from closing)
+      document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-action="open-course-picker"]');
+        if (!trigger) return;
 
-          const tgt = document.getElementById('stackTermTarget');
-          if (tgt) {
-            tgt.textContent = `Year ${window.COURSE_PICK_TARGET.year} — ` +
-              (window.COURSE_PICK_TARGET.term === 2 ? '2nd Sem' : '1st Sem');
-          }
-        });
+        e.preventDefault();
+        e.stopPropagation();
 
-        pickerEl.addEventListener('shown.bs.modal', () => {
-          const bds = document.querySelectorAll('.modal-backdrop');
-          bds[bds.length - 1]?.classList.add('stacked');
-          document.body.classList.add('modal-open');
-        });
+        const pickerEl = document.getElementById('coursePickerModal');
+        if (!pickerEl) return;
 
-        pickerEl.addEventListener('hidden.bs.modal', () => {
-          if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
-        });
-      }
+        const yr = Number(trigger.getAttribute('data-year') || 1);
+        const tm = Number(trigger.getAttribute('data-term') || 1);
+
+        window.COURSE_PICK_TARGET = { year: yr, term: tm };
+
+        const tgt = document.getElementById('stackTermTarget');
+        if (tgt) tgt.textContent = `Year ${yr} — ${tm === 2 ? '2nd Sem' : '1st Sem'}`;
+
+        // Show child explicitly; keep parent open
+        const modal = bootstrap.Modal.getOrCreateInstance(pickerEl, { backdrop: 'static', keyboard: false });
+        modal.show();
+      });
+
     })();
 </script>
