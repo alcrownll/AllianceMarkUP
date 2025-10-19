@@ -169,6 +169,7 @@
                     }
                 ]
             },
+
             options: {
                 responsive: true,
                 maintainAspectRatio: false,

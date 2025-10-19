@@ -183,6 +183,8 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public string CourseCode { get; set; }
         public decimal Grade { get; set; }
+        public decimal? Percent { get; set; }
+        public int Units { get; set; }
     }
 
     public class StudentSnapshotRowModel

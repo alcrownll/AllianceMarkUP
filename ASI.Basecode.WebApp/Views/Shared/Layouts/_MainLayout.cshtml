@@ -13,22 +13,43 @@
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
           crossorigin="anonymous">
     <link rel="stylesheet" href="~/css/main-site.css" />
+
+    <!-- Hover label (global) -->
     <link rel="stylesheet" href="~/css/hover-label.css" />
 
-     <!-- Right Sidebar styles -->
-  <link rel="stylesheet" href="~/css/right-sidebar.css" asp-append-version="true" /> 
+    <!-- For Mini Calendar -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <!-- Icon set used in the sidebar (Bootstrap Icons) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <script>
+        (function () {
+          function loadInto(el) {
+            if (!el) return;
+            var url = el.getAttribute('data-url');
+            if (!url) return;
 
-  <!-- Mini Calendar CSS (Flatpickr) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+            fetch(url, { credentials: 'same-origin' })
+              .then(r => r.text())
+              .then(html => {
+                el.innerHTML = html;
+                var input = el.querySelector('#miniCalendar');
+                if (input && window.flatpickr) flatpickr(input, { inline: true });
+              })
+              .catch(() => { el.innerHTML = '<div class="p-3 text-danger small">Failed to load.</div>'; });
+          }
+          document.addEventListener('DOMContentLoaded', function () {
+            loadInto(document.getElementById('rightSidebar'));
+          });
+        })();
+    </script>
 
     @RenderSection("Styles", required: false)
 </head>
 <body>
+
+    <!-- Page layout container -->
     <div class="layout-container d-flex">
-        <!-- LEFT SIDEBAR -->
+        <!-- LEFT SIDEBAR (Role-based Navigation) -->
         <aside class="left-sidebar">
             @if (User != null && User.IsInRole("Student"))
             {
@@ -44,49 +65,52 @@
             }
         </aside>
 
-        <!-- CENTER CONTENT -->
+        <!-- CENTER CONTENT (Header + Scrollable Body) -->
         <main class="main-content flex-grow-1 d-flex flex-column">
+            <!-- Constant Header (center only) -->
             <header class="main-header">
                 <h2>@ViewData["PageHeader"]</h2>
             </header>
+
+            <!-- Scrollable RenderBody -->
             <section class="content flex-grow-1 overflow-auto">
                 @RenderBody()
             </section>
         </main>
 
-        <!-- RIGHT SIDEBAR  -->
+        <!-- RIGHT SIDEBAR (Profile + Calendar + Notifs, shared across roles) -->
         <aside class="right-sidebar">
-            @{
-                var rightVm = ViewData["RightSidebar"] as RightSidebarViewModel;
-            }
-            @if (rightVm != null)
-            {
-                @await Html.PartialAsync("Sidebars/_RightSidebar", rightVm)
-            }
-            else
-            {
-                <!-- Optional minimal fallback (should rarely show if controllers set ViewData) -->
-                <div class="p-3 small text-muted">—</div>
-            }
+            <div id="rightSidebar" data-url="@Url.Action("RightSidebar", "Partials")">
+                <div class="p-3 text-muted small">Loading…</div>
+            </div>
         </aside>
     </div>
 
     <!-- JS libs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
-            integrity="sha512-894ye88kF4Cw6y2Lh2a8b4B1hZ9E1bQF1r5jvGDa5aC9YxZ+4Z6kG6dkhTW0Wg6l5/1Q9ct6wC5hKZJx+oQw=="
+            integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
 
-    <!-- Flatpickr JS (calendar enhancement) -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Validation (requires jQuery; order matters: jQuery -> validate -> unobtrusive) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"
+            integrity="sha512-37T7leoNS06R80c8Ulq7cdCDU5MNQBwlYoy1TX/WUsLFC2eYNqtKlV0QjH7r8JpG/S0GUMZwebnVFLPd6SU5yg=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"
+            integrity="sha512-o6XqxgrUsKmchwy9G5VRNWSSxTS4Urr4loO6/0hYdpWmFUfHqGzawGxeQGMDqYzxjY9sbktPbNlkIQJWagVZQg=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+    <!-- Optional libraries you already use -->
     <script src="https://kit.fontawesome.com/7a7c645416.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"
             referrerpolicy="no-referrer"></script>
 
+    <!-- Your site-wide JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Hover label (global) JS -->
     <script src="~/js/hover-label.js" asp-append-version="true"></script>
 
     <!-- Floating cursor-follow label -->
