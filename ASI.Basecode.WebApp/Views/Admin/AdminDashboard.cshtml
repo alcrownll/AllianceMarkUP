@@ -61,7 +61,7 @@
                 <i class="fa-solid fa-book-open"></i>
             </div>
             <div class="kpi-content">
-                <span class="kpi-label">Courses</span>
+                <span class="kpi-label">Active Courses</span>
                 <span class="kpi-value">@((Model?.Summary?.ActiveCourses ?? 0).ToString("N0"))</span>
             </div>
         </article>
@@ -133,11 +133,16 @@
                     <select id="termSelector" class="form-select form-select-sm" aria-label="Filter by term" data-selector="term">
                         @if (!termOptions.Any())
                         {
-                    
+                            <option value="">Whole Year</option>
                         }
                         else
                         {
-
+                            foreach (var option in termOptions)
+                            {
+                                var optionValue = option.TermKey ?? string.Empty;
+                                var isSelected = string.Equals(optionValue, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                                <option value="@optionValue" selected="@(isSelected)">@option.Label</option>
+                            }
                         }
                     </select>
                 </div>
@@ -164,7 +169,7 @@
     <script>
         window.AdminDashboardInitial = @Html.Raw(JsonSerializer.Serialize(initialPayload));
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-MY7MzGt1eo8yEmzMhq5OA4nmpW53GMFFJkybLBGnp9KKnz4YKarSqrHpEe+Th9qH" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
     <script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
 }
 

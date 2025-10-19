@@ -1,16 +1,14 @@
 @model ASI.Basecode.WebApp.Models.AdminReportsViewModel
 @using System.Text.Json
-@using ASI.Basecode.Services.ServiceModels
-@using System.Linq
 @{
     ViewData["Title"] = "Reports";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
 
-    var dashboard = Model?.Dashboard ?? new ReportsDashboardModel();
-    var studentOptions = dashboard?.Student?.Students ?? new List<StudentOptionModel>();
-    var selectedStudentId = Model?.SelectedStudentId ?? dashboard?.Student?.SelectedStudentId;
-    var teacherDirectory = dashboard?.Teacher?.Directory ?? new List<TeacherDirectoryItemModel>();
-    var selectedTeacherId = Model?.SelectedTeacherId ?? dashboard?.Teacher?.SelectedTeacher?.TeacherId;
+    var dashboard = Model?.Dashboard ?? new ASI.Basecode.Services.ServiceModels.ReportsDashboardModel();
+    var selectedTermKey = Model?.SelectedTermKey ?? dashboard.TermKey ?? string.Empty;
+    var schoolYears = Model?.SchoolYears ?? dashboard.AvailableSchoolYears ?? new List<string>();
+    var termOptions = dashboard.TermOptions ?? new List<ASI.Basecode.Services.ServiceModels.ReportTermOptionModel>();
+    var selectedSchoolYear = Model?.SelectedSchoolYear ?? dashboard.SchoolYear ?? schoolYears.LastOrDefault() ?? string.Empty;
     var serializedDashboard = JsonSerializer.Serialize(dashboard);
 }
 
@@ -18,33 +16,68 @@
     <header class="reports-header glass">
         <div class="header-left">
             <h1>Reports Dashboard</h1>
-            <p>Monitor academic performance and faculty workloads with up-to-date student and teacher insights.</p>
+            <p>Analyze institutional performance, faculty loads, and student progress across the university.</p>
+        </div>
+        <div class="header-actions">
+            <label for="reportSchoolYear" class="form-label">School Year</label>
+            <select id="reportSchoolYear" class="form-select form-select-sm" aria-label="Select school year" data-selector="school-year">
+                @if (!schoolYears.Any())
+                {
+                    <option value="">--</option>
+                }
+                else
+                {
+                    foreach (var year in schoolYears)
+                    {
+                        var selected = string.Equals(year, selectedSchoolYear, StringComparison.OrdinalIgnoreCase);
+                        <option value="@year" selected="@(selected)">@year</option>
+                    }
+                }
+            </select>
+            <label for="reportTerm" class="form-label">Term</label>
+            <select id="reportTerm" class="form-select form-select-sm" aria-label="Select term" data-selector="term">
+                @if (!termOptions.Any())
+                {
+                    <option value="">Whole Year</option>
+                }
+                else
+                {
+                    foreach (var option in termOptions)
+                    {
+                        var optionValue = option.TermKey ?? string.Empty;
+                        var selected = string.Equals(optionValue, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+                        <option value="@optionValue" selected="@(selected)">@option.Label</option>
+                    }
+                }
+            </select>
+            <button class="btn btn-outline-primary" type="button" data-action="schedule-export">Schedule Export</button>
         </div>
     </header>
 
     <nav class="reports-tabs" role="tablist">
-        <button class="reports-tab active" data-tab="student" type="button" aria-controls="student-panel">Student</button>
-        <button class="reports-tab" data-tab="teacher" type="button" aria-controls="teacher-panel">Teacher</button>
+        <button class="reports-tab active" data-tab="student" type="button">Student</button>
+        <button class="reports-tab" data-tab="overall" type="button">Overall</button>
+        <button class="reports-tab" data-tab="teacher" type="button">Teacher</button>
     </nav>
 
-    <section class="tab-panel active" id="student-panel" data-panel="student" role="tabpanel" aria-label="Student reports">
+    <section class="tab-panel active" data-panel="student" role="tabpanel">
         <header class="student-controls glass">
             <div class="control-group">
                 <label for="studentSelector" class="form-label">Student</label>
                 <select id="studentSelector" class="form-select" data-selector="student">
                     <option value="">Select Student</option>
-                    @if (studentOptions.Any())
+                    @if (dashboard?.Student?.Students?.Any() == true)
                     {
-                        foreach (var option in studentOptions)
+                        foreach (var option in dashboard.Student.Students)
                         {
-                            var isSelected = selectedStudentId == option.StudentId;
-                            <option value="@option.StudentId" selected="@(isSelected)">@option.Name (@option.Program)</option>
+                            var selected = Model?.SelectedStudentId == option.StudentId || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
+                            <option value="@option.StudentId" selected="@(selected)">@option.Name (@option.Program)</option>
                         }
                     }
                 </select>
             </div>
             <div class="control-group actions">
-                <button class="btn btn-outline-primary" type="button" data-action="download-student-report">Download Grade Report (PDF)</button>
+                <button class="btn btn-outline-primary" type="button">Download Grade Report (PDF)</button>
             </div>
         </header>
 
@@ -52,8 +85,8 @@
             <article class="panel glass span-2">
                 <header class="panel-header">
                     <div>
-                        <h2>Average Grade by Course</h2>
-                        <span>Compare course performance for the selected student.</span>
+                        <h2>Grades by Course</h2>
+                        <span>Performance per subject for the selected student.</span>
                     </div>
                 </header>
                 <div class="panel-body">
@@ -64,39 +97,31 @@
             <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
-                        <h2>Workload vs Performance</h2>
-                        <span>Target high-unit courses with low grades for intervention.</span>
+                        <h2>Pass vs Fail</h2>
+                        <span>GPA-based distribution of final grades.</span>
                     </div>
                 </header>
                 <div class="panel-body">
-                    <canvas id="studentWorkloadMatrix" height="220"></canvas>
-                    <p class="chart-footnote">Focus on the highlighted quadrant: heavy units with lower grades.</p>
+                    <canvas id="studentStatusChart" height="220"></canvas>
                 </div>
             </article>
 
             <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
-                        <h2>Units Completed vs Remaining</h2>
-                        <span>Track progress toward program completion.</span>
+                        <h2>Top Strengths &amp; Risks</h2>
+                        <span>Surface standout and at-risk subjects.</span>
                     </div>
                 </header>
-                <div class="panel-body units-progress" data-section="units-progress">
-                    <div class="progress-summary">
-                        <strong class="mini-value" data-field="units-percent">0%</strong>
-                        <span class="mini-label">Completion rate</span>
+                <div class="panel-body">
+                    <div class="chip-list strength" data-empty-text="No strengths yet.">
+                        <span class="chip chip-empty" data-empty="true">No strengths yet.</span>
                     </div>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: 0%;" data-field="units-fill"></div>
+                    <div class="chip-list risk" data-empty-text="No risks identified.">
+                        <span class="chip chip-empty" data-empty="true">No risks identified.</span>
                     </div>
-                    <ul class="list-unstyled progress-stats">
-                        <li><strong data-field="units-earned">0</strong> units earned</li>
-                        <li><span data-field="units-remaining">0 units remaining</span></li>
-                        <li><span>Total requirement: <span data-field="units-required">0</span> units</span></li>
-                    </ul>
                 </div>
             </article>
-
             <article class="panel glass span-2 student-grade-breakdown">
                 <header class="panel-header">
                     <div>
@@ -131,193 +156,276 @@
         </div>
     </section>
 
-    <section class="tab-panel" id="teacher-panel" data-panel="teacher" role="tabpanel" aria-label="Teacher reports">
-        <header class="student-controls glass teacher-controls">
-            <div class="control-group">
-                <label for="teacherSelector" class="form-label">Teacher</label>
-                <select id="teacherSelector" class="form-select" data-selector="teacher">
-                    <option value="">Select Teacher</option>
-                    @if (teacherDirectory.Any())
-                    {
-                        foreach (var item in teacherDirectory)
-                        {
-                            var isSelected = selectedTeacherId == item.TeacherId;
-                            <option value="@item.TeacherId" selected="@(isSelected)">@item.Name (@item.Department)</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="control-group actions">
-                <button class="btn btn-outline-primary" type="button" data-action="export-teacher">Export Teaching Load (CSV)</button>
-            </div>
-        </header>
 
-        <div class="student-grid teacher-grid">
+    <section class="tab-panel" data-panel="overall" role="tabpanel">
+        <div class="kpi-row">
+            <article class="kpi-card glass">
+                <span class="kpi-label">Total Enrolled</span>
+                <h2 class="kpi-value" data-field="overall-total">0</h2>
+                <span class="kpi-meta">Current selection</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Growth</span>
+                <h2 class="kpi-value" data-field="overall-growth">0%</h2>
+                <span class="kpi-meta">vs last term</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Average GWA</span>
+                <h2 class="kpi-value" data-field="overall-gwa">0.00</h2>
+                <span class="kpi-meta">Institution-wide</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Pass Rate</span>
+                <h2 class="kpi-value" data-field="overall-pass">0%</h2>
+                <span class="kpi-meta">Current term</span>
+            </article>
+            <article class="kpi-card glass">
+                <span class="kpi-label">Retention</span>
+                <h2 class="kpi-value" data-field="overall-retention">0%</h2>
+                <span class="kpi-meta">Returning vs new</span>
+            </article>
+        </div>
+
+        <div class="reports-grid">
             <article class="panel glass span-2">
                 <header class="panel-header">
                     <div>
-                        <h2>Teacher Overview</h2>
-                        <span>Snapshot of teaching load for the selected faculty member.</span>
+                        <h2>Enrollment Trend</h2>
+                        <span>Track enrollment movement by period and facet.</span>
                     </div>
-                    <div class="panel-actions">
-                        <button class="btn btn-outline-primary btn-sm" type="button" data-action="print-teacher">Print Assignments</button>
+                    <div class="panel-controls">
+                        <button class="btn btn-link btn-sm" type="button" data-action="export-trend">Export CSV</button>
                     </div>
                 </header>
                 <div class="panel-body">
-                    <div class="teacher-summary">
-                        <h3 data-field="teacher-name">Select a teacher</h3>
-                        <p data-field="teacher-meta">--</p>
-                    </div>
-                    <div class="mini-cards">
-                        <article class="mini-card">
-                            <span class="mini-label">Teaching Load</span>
-                            <strong class="mini-value" data-field="teacher-load">0 units</strong>
-                        </article>
-                        <article class="mini-card">
-                            <span class="mini-label">Sections</span>
-                            <strong class="mini-value" data-field="teacher-sections">0</strong>
-                        </article>
-                        <article class="mini-card">
-                            <span class="mini-label">Pass Rate</span>
-                            <strong class="mini-value" data-field="teacher-pass">0%</strong>
-                        </article>
-                        <article class="mini-card">
-                            <span class="mini-label">Submissions Finalized</span>
-                            <strong class="mini-value" data-field="teacher-submissions">0%</strong>
-                        </article>
-                    </div>
+                    <canvas id="overallTrendChart" height="320"></canvas>
                 </div>
             </article>
 
             <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
-                        <h2>Course Pass Rates</h2>
-                        <span>Performance across handled sections.</span>
+                        <h2>Program Leaderboard</h2>
+                        <span>Enrollment volume and growth rates.</span>
                     </div>
+                    <button class="btn btn-link btn-sm" type="button" data-action="export-programs">Export Excel</button>
                 </header>
-                <div class="panel-body">
-                    <canvas id="teacherCourseChart" height="220"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Submission Progress</h2>
-                        <span>Completion of grade submissions.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="teacherSubmissionChart" height="220"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-2">
-                <header class="panel-header">
-                    <div>
-                        <h2>Teaching Assignments</h2>
-                        <span>Classes handled by the selected faculty member.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm" data-table="teacher-assignments">
-                            <thead>
-                                <tr>
-                                    <th>Course</th>
-                                    <th>Section</th>
-                                    <th>Schedule</th>
-                                    <th>Units</th>
-                                    <th>Enrolled</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr data-empty="true">
-                                    <td colspan="5" class="text-center">Select a teacher to see assignments.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </article>
-
-            <article class="panel glass span-2">
-                <header class="panel-header">
-                    <div>
-                        <h2>Submission Status</h2>
-                        <span>Track outstanding grade submissions.</span>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <ul class="status-list" data-list="teacher-submissions">
-                        <li data-empty="true" class="pending">Select a teacher to load submission statuses.</li>
+                <div class="panel-body leaderboard" data-list="program-leaderboard">
+                    <ul>
+                        <li data-empty="true"><span>--</span><strong>0</strong><small>0%</small></li>
                     </ul>
                 </div>
             </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Demographic Breakdown</h2>
+                        <span>Understand diversity and status mix.</span>
+                    </div>
+                    <button class="btn btn-link btn-sm" type="button" data-action="export-demographics">Export CSV</button>
+                </header>
+                <div class="panel-body demo-grid">
+                    <div class="demo-card">
+                        <h3>Gender Split</h3>
+                        <canvas id="demoGenderChart" height="160"></canvas>
+                    </div>
+                    <div class="demo-card">
+                        <h3>Age Bands</h3>
+                        <canvas id="demoAgeChart" height="160"></canvas>
+                    </div>
+                    <div class="demo-card">
+                        <h3>Status</h3>
+                        <canvas id="demoStatusChart" height="160"></canvas>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Course Outcomes</h2>
+                        <span>Identify courses needing attention.</span>
+                    </div>
+                </header>
+                <div class="panel-body outcomes-grid">
+                    <div class="outcome-list">
+                        <h3>High Failure Rate</h3>
+                        <ol data-list="course-failure">
+                            <li data-empty="true">No data</li>
+                        </ol>
+                    </div>
+                    <div class="outcome-list">
+                        <h3>Top Performing</h3>
+                        <ol data-list="course-success">
+                            <li data-empty="true">No data</li>
+                        </ol>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>At-Risk Indicators</h2>
+                        <span>Monitor early-warning signals.</span>
+                    </div>
+                </header>
+                <div class="panel-body risk-grid" data-list="risk-indicators">
+                    <div class="risk-chip" data-empty="true">No risk indicators.</div>
+                </div>
+            </article>
+
+            <article class="panel glass span-1">
+                <header class="panel-header">
+                    <div>
+                        <h2>Capacity &amp; Load</h2>
+                        <span>Ensure resources align with demand.</span>
+                    </div>
+                </header>
+                <div class="panel-body capacity-grid">
+                    <div class="capacity-card">
+                        <span class="capacity-label">Sections ≥ 90% capacity</span>
+                        <strong class="capacity-value" data-field="capacity-sections">0</strong>
+                    </div>
+                    <div class="capacity-card">
+                        <span class="capacity-label">Faculty load ≥ 24 units</span>
+                        <strong class="capacity-value" data-field="capacity-faculty">0</strong>
+                    </div>
+                    <div class="capacity-card">
+                        <span class="capacity-label">Average class size</span>
+                        <strong class="capacity-value" data-field="capacity-average">0</strong>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <footer class="reports-footer">
+            <p>Select any program or course to drill deeper into trends and outcomes. Export results or schedule recurring deliveries for executive reviews.</p>
+        </footer>
+    </section>
+
+    <section class="tab-panel" data-panel="teacher" role="tabpanel">
+        <div class="split-layout">
+            <aside class="teacher-directory glass">
+                <header>
+                    <h2>Teacher Directory</h2>
+                    <div class="directory-controls">
+                        <input type="search" class="form-control" placeholder="Search faculty" aria-label="Search teacher" data-filter="teacher-search" />
+                        <select class="form-select form-select-sm" aria-label="Filter by department" data-filter="teacher-department">
+                            <option value="" selected>All Programs</option>
+                        </select>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-action="export-teachers">Export CSV</button>
+                    </div>
+                </header>
+                <table class="table table-hover" data-table="teacher-directory">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Email</th>
+                            <th>Rank</th>
+                            <th>Load</th>
+                            <th>Sections</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-empty="true">
+                            <td colspan="6" class="text-center">Loading directory...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </aside>
+
+            <section class="teacher-detail glass">
+                <header class="detail-header">
+                    <div>
+                        <h2 data-field="teacher-name">Select a teacher</h2>
+                        <span data-field="teacher-meta">--</span>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn btn-primary btn-sm" type="button" data-action="print-teacher">Print teaching assignments</button>
+                    </div>
+                </header>
+
+                <div class="detail-kpis">
+                    <article class="mini-card">
+                        <span class="mini-label">Teaching Load</span>
+                        <strong class="mini-value" data-field="teacher-load">0 units</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Sections</span>
+                        <strong class="mini-value" data-field="teacher-sections">0</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Pass Rate</span>
+                        <strong class="mini-value" data-field="teacher-pass">0%</strong>
+                    </article>
+                    <article class="mini-card">
+                        <span class="mini-label">Submissions Finalized</span>
+                        <strong class="mini-value" data-field="teacher-submissions">0%</strong>
+                    </article>
+                </div>
+
+                <div class="detail-body">
+                    <article class="panel">
+                        <header><h3>Teaching Assignments</h3></header>
+                        <div class="table-responsive">
+                            <table class="table table-sm" data-table="teacher-assignments">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Section</th>
+                                        <th>Schedule</th>
+                                        <th>Units</th>
+                                        <th>Enrolled</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr data-empty="true">
+                                        <td colspan="5" class="text-center">Select a teacher to load assignments.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Submission Progress</h3></header>
+                        <div class="panel-body submission-chart">
+                            <canvas id="teacherSubmissionChart" height="220"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Course Pass Rates</h3></header>
+                        <div class="panel-body">
+                            <canvas id="teacherPassChart" height="200"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="panel">
+                        <header><h3>Submission Status</h3></header>
+                        <ul class="status-list" data-list="teacher-submissions">
+                            <li data-empty="true" class="pending">Select a teacher to load submission statuses.</li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
         </div>
     </section>
+
+
 </div>
 
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-reports.css" asp-append-version="true" />
 }
+
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-MY7MzGt1eo8yEmzMhq5OA4nmpW53GMFFJkybLBGnp9KKnz4YKarSqrHpEe+Th9qH" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
     <script>
         window.AdminReportsInitial = @Html.Raw(serializedDashboard);
     </script>
-    <script src="~/js/admin-reports-student.js" asp-append-version="true"></script>
-    <script src="~/js/admin-reports-teacher.js" asp-append-version="true"></script>
-    <script>
-        (function () {
-            const page = document.getElementById('reports-page');
-            if (!page) {
-                return;
-            }
-
-            const tabs = Array.from(page.querySelectorAll('.reports-tab'));
-            const panels = Array.from(page.querySelectorAll('.tab-panel'));
-            const toggles = Array.from(document.querySelectorAll('[data-action="go-student"], [data-action="go-teacher"]'));
-
-            function activate(targetName) {
-                const target = (targetName || 'student').toLowerCase();
-
-                tabs.forEach(tab => {
-                    const isMatch = (tab.dataset.tab || '').toLowerCase() === target;
-                    tab.classList.toggle('active', isMatch);
-                    tab.setAttribute('aria-selected', isMatch ? 'true' : 'false');
-                    tab.tabIndex = isMatch ? 0 : -1;
-                });
-
-                panels.forEach(panel => {
-                    const isMatch = (panel.dataset.panel || '').toLowerCase() === target;
-                    panel.classList.toggle('active', isMatch);
-                    panel.hidden = !isMatch;
-                    panel.setAttribute('aria-hidden', isMatch ? 'false' : 'true');
-                });
-
-                page.dataset.activePanel = target;
-            }
-
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => activate(tab.dataset.tab));
-            });
-
-            toggles.forEach(button => {
-                button.addEventListener('click', () => {
-                    const target = button.dataset.action === 'go-teacher' ? 'teacher' : 'student';
-                    activate(target);
-                });
-            });
-
-            const initial = page.dataset.activePanel
-                || tabs.find(t => t.classList.contains('active'))?.dataset.tab
-                || 'student';
-
-            activate(initial);
-
-            window.AdminReportsTabs = { activate };
-        })();
-    </script>
+    <script src="~/js/admin-reports.js" asp-append-version="true"></script>
 }
