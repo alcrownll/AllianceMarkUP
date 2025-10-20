@@ -41,9 +41,9 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <div id="finishErr" class="text-danger small me-auto" style="display:none;"></div>
-                <button type="button" class="btn btn-primary" id="btnFinishProspectus">Finish</button>
+            <div class="modal-footer justify-content-between">
+                <small class="text-muted">All changes are saved automatically.</small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -81,7 +81,7 @@
     .modal-backdrop.stacked {
         z-index: 1060 !important;
     }
-    /* backdrop between parent & child */
+
     #coursePickerModal {
         z-index: 1065 !important;
     }
@@ -94,17 +94,15 @@
       window.__prospectusInitBound = true;
 
       const parent = document.getElementById('programProspectusModal');
+      const child  = document.getElementById('coursePickerModal');
 
-      // Expose for child modal (Course Picker) to read ProgramId
+      // expose for child
       window.getCurrentProgramId = function () { return parent?.dataset.programId || ''; };
 
-      function setErr(msg) {
-        const el = document.getElementById('finishErr');
-        if (!el) return;
-        el.innerHTML = msg || '';
-        el.style.display = msg ? 'block' : 'none';
+      // ensure child is a <body> sibling (never nested inside parent)
+      if (child && child.parentElement !== document.body) {
+        document.body.appendChild(child);
       }
-      const clearErr = () => setErr('');
 
       async function loadOneTerm(programId, y, t) {
         const host = document.querySelector(`tbody[data-term-table][data-year="${y}"][data-term="${t}"]`);
@@ -117,8 +115,8 @@
           host.innerHTML = '';
           (d.items || []).forEach(it => {
             const tr = document.createElement('tr');
-            tr.dataset.id = it.id;                 // ProgramCourseId
-            tr.dataset.courseCode = it.code || ''; // used by CoursePicker filtering
+            tr.dataset.id = it.id;
+            tr.dataset.courseCode = it.code || '';
             tr.setAttribute('data-row', 'course');
             tr.innerHTML = `
               <td>${it.code ?? ''}</td>
@@ -142,7 +140,6 @@
       }
 
       async function loadAllTerms(programId) {
-        // show placeholders
         document.querySelectorAll('tbody[data-term-table]').forEach(tbody => {
           tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>';
         });
@@ -164,20 +161,29 @@
         if (sumCode) sumCode.textContent = code;
         if (sumName) sumName.textContent = name;
 
-        clearErr();
         if (pid) await loadAllTerms(pid);
+      });
+
+      // Keep parent open while child is open
+      parent.addEventListener('hide.bs.modal', (e) => {
+        if (child?.classList.contains('show')) e.preventDefault();
       });
 
       parent.addEventListener('hidden.bs.modal', () => {
         if (!document.querySelector('.modal.show')) document.body.classList.remove('modal-open');
-        clearErr();
       });
 
-      // Finish button (placeholder success toast)
-      document.getElementById('btnFinishProspectus')?.addEventListener('click', () => {
-        clearErr();
-        setErr('Saved.');
-        setTimeout(() => setErr(''), 1200);
-      });
+      // Child stacking glue
+      if (child) {
+        child.addEventListener('shown.bs.modal', () => {
+          const bds = document.querySelectorAll('.modal-backdrop');
+          bds[bds.length - 1]?.classList.add('stacked');
+          document.body.classList.add('modal-open');
+        });
+        child.addEventListener('hidden.bs.modal', () => {
+          // re-add scroll lock if parent still visible
+          if (parent.classList.contains('show')) document.body.classList.add('modal-open');
+        });
+      }
     })();
 </script>

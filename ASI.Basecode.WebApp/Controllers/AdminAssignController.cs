@@ -1,5 +1,4 @@
-﻿// ASI.Basecode.WebApp/Controllers/AdminAssignController.cs
-using ASI.Basecode.Data.Models;
+﻿using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -61,36 +60,29 @@ namespace ASI.Basecode.WebApp.Controllers
             string blockYear,
             string blockSection,
             string mode,
-            [FromForm] int[] SelectedStudentIds, 
-                                                 
+            [FromForm] int[] SelectedStudentIds,
+
             [FromForm] string ScheduleRoom,
-            [FromForm] string ScheduleStart,   
-            [FromForm] string ScheduleEnd,     
-            [FromForm] string ScheduleDaysCsv, 
+            [FromForm] string ScheduleStart,
+            [FromForm] string ScheduleEnd,
+            [FromForm] string ScheduleDaysCsv,
             CancellationToken ct)
         {
             IEnumerable<int> extras = SelectedStudentIds ?? new int[0];
 
             var id = await _service.CreateAssignedCourseAsync(
-                model, blockProgram, blockYear, blockSection, extras, ct);
+                model,
+                blockProgram,
+                blockYear,
+                blockSection,
+                extras,
+                ScheduleRoom,
+                ScheduleStart,
+                ScheduleEnd,
+                ScheduleDaysCsv,
+                ct);
 
-            if (!string.IsNullOrWhiteSpace(ScheduleDaysCsv))
-            {
-                var days = ScheduleDaysCsv.Split(',', System.StringSplitOptions.RemoveEmptyEntries)
-                                          .Select(s => int.TryParse(s, out var d) ? d : -1)
-                                          .Where(d => d >= 1 && d <= 6);
-
-                try
-                {
-                    await _service.CreateSchedulesAsync(id, ScheduleRoom, ScheduleStart, ScheduleEnd, days, ct);
-                }
-                catch (System.Exception ex)
-                {
-                    TempData["ImportErr"] = $"Course created, but schedule not saved: {ex.Message}";
-                }
-            }
-
-            TempData["ImportOk"] = $"Assigned course created (ID #{id}).";
+            TempData["Ok"] = $"Assigned course created (ID #{id}).";
             return RedirectToAction(nameof(Index));
         }
 
@@ -128,7 +120,6 @@ namespace ASI.Basecode.WebApp.Controllers
             ViewBag.Programs = await _service.GetProgramsAsync();
             ViewBag.Teachers = await _service.GetTeachersWithUsersAsync();
             ViewBag.EnrolledStudents = await _service.GetEnrolledStudentsAsync(id, ct);
-
             ViewBag.Schedules = await _service.GetSchedulesAsync(id, ct);
 
             return View("~/Views/Admin/AdminAssignView.cshtml", ac);
@@ -140,7 +131,7 @@ namespace ASI.Basecode.WebApp.Controllers
             AssignedCourse model,
             int[] RemoveStudentIds,
             int[] AddStudentIds,
-            // NEW schedule fields
+            // SCHEDULE (raw; service will parse/validate/leniently handle)
             [FromForm] string ScheduleRoom,
             [FromForm] string ScheduleStart,
             [FromForm] string ScheduleEnd,
@@ -159,14 +150,15 @@ namespace ASI.Basecode.WebApp.Controllers
 
             try
             {
-                await _service.UpdateAssignedCourseAsync(model, RemoveStudentIds, AddStudentIds, ct);
-
-                var days = (ScheduleDaysCsv ?? "")
-                    .Split(',', System.StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => int.TryParse(s, out var d) ? d : -1)
-                    .Where(d => d >= 1 && d <= 6);
-
-                await _service.UpsertSchedulesAsync(model.AssignedCourseId, ScheduleRoom, ScheduleStart, ScheduleEnd, days, ct);
+                await _service.UpdateAssignedCourseAsync(
+                    model,
+                    RemoveStudentIds,
+                    AddStudentIds,
+                    ScheduleRoom,
+                    ScheduleStart,
+                    ScheduleEnd,
+                    ScheduleDaysCsv,
+                    ct);
 
                 TempData["Ok"] = "Assigned course updated.";
                 return RedirectToAction(nameof(Index));

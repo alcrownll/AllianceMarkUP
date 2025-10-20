@@ -111,6 +111,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Email { get; set; }
         public string Rank { get; set; }
         public decimal TeachingLoadUnits { get; set; }
+        public int TeachingLoadCount { get; set; }
         public int SectionCount { get; set; }
         public decimal PassRatePercent { get; set; }
         public decimal SubmissionCompletionPercent { get; set; }
@@ -118,26 +119,34 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<CoursePassRateModel> CoursePassRates { get; set; } = new List<CoursePassRateModel>();
         public IList<TeacherSubmissionStatusModel> SubmissionStatuses { get; set; } = new List<TeacherSubmissionStatusModel>();
         public IList<NamedValueModel> SubmissionSummary { get; set; } = new List<NamedValueModel>();
+        public int PassCount { get; set; }
+        public int FailCount { get; set; }
+        public int IncompleteCount { get; set; }
     }
 
     public class TeacherAssignmentModel
     {
         public string CourseCode { get; set; }
+        public string SubjectName { get; set; }
         public string Section { get; set; }
         public string Schedule { get; set; }
         public decimal Units { get; set; }
         public int Enrolled { get; set; }
+        public decimal? FinalGrade { get; set; }
+        public string Status { get; set; }
     }
 
     public class CoursePassRateModel
     {
         public string CourseCode { get; set; }
+        public string SubjectName { get; set; }
         public decimal PassRatePercent { get; set; }
     }
 
     public class TeacherSubmissionStatusModel
     {
         public string CourseCode { get; set; }
+        public string SubjectName { get; set; }
         public string Status { get; set; }
         public bool IsComplete { get; set; }
     }
@@ -170,6 +179,15 @@ namespace ASI.Basecode.Services.ServiceModels
         public StudentEngagementModel Engagement { get; set; } = new StudentEngagementModel();
         public IList<StudentSnapshotRowModel> Snapshot { get; set; } = new List<StudentSnapshotRowModel>();
         public IList<StudentGradeBreakdownModel> GradeBreakdown { get; set; } = new List<StudentGradeBreakdownModel>();
+        public string ConsistencyLabel { get; set; }
+        public IList<StudentComparativeHighlightModel> ComparativeHighlights { get; set; } = new List<StudentComparativeHighlightModel>();
+    }
+
+    public class StudentComparativeHighlightModel
+    {
+        public string Course { get; set; }
+        public decimal? Grade { get; set; }
+        public string PeriodLabel { get; set; }
     }
 
     public class StudentTrendPointModel

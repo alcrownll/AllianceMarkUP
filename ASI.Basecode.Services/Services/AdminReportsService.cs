@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using ASI.Basecode.Data.Interfaces;
+using ASI.Basecode.Data;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
@@ -13,109 +12,62 @@ namespace ASI.Basecode.Services.Services
 {
     public class AdminReportsService : IAdminReportsService
     {
-        private readonly IGradeRepository _grades;
-        private readonly ITeacherRepository _teachers;
-        private readonly IStudentRepository _students;
-        private readonly IAssignedCourseRepository _assignedCourses;
+        private readonly AsiBasecodeDBContext _ctx;
 
-        private const decimal AtRiskGwaThreshold = 2.5m;
-        private const int UnitsTarget = 150;
-
-        public AdminReportsService(
-            IGradeRepository grades,
-            ITeacherRepository teachers,
-            IStudentRepository students,
-            IAssignedCourseRepository assignedCourses)
+        public AdminReportsService(AsiBasecodeDBContext ctx)
         {
-            _grades = grades;
-            _teachers = teachers;
-            _students = students;
-            _assignedCourses = assignedCourses;
+            _ctx = ctx;
         }
 
         public async Task<ReportsDashboardModel> GetDashboardAsync(string schoolYear = null, string termKey = null, int? highlightedTeacherId = null, int? highlightedStudentId = null)
         {
-            var availableSchoolYears = await GetAvailableSchoolYearsAsync();
-            var normalizedSchoolYear = NormalizeSchoolYear(availableSchoolYears, schoolYear);
-
+            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
             var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
-            var normalizedTermKey = NormalizeTermKey(termOptions, termKey);
+            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
 
-            var gradesScoped = await LoadGradesAsync(normalizedSchoolYear, normalizedTermKey);
+            var students = await LoadStudentDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
+            var teachers = await LoadTeacherDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
 
-            var summary = await BuildOverallSummaryAsync(normalizedSchoolYear, normalizedTermKey, gradesScoped, termOptions);
-            var trend = await BuildEnrollmentTrendAsync(normalizedSchoolYear);
-            var leaderboard = BuildProgramLeaderboard(gradesScoped);
-            var demographics = await BuildDemographicsAsync(normalizedSchoolYear, normalizedTermKey);
-            var outcomes = BuildCourseOutcomes(gradesScoped);
-            var risks = BuildRiskIndicators(gradesScoped);
-            var capacity = await BuildCapacityAsync(normalizedSchoolYear, normalizedTermKey);
-
-            var teacherDirectory = await BuildTeacherDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
-            var teacherId = highlightedTeacherId ?? teacherDirectory.FirstOrDefault()?.TeacherId;
-            var teacherDetail = teacherId.HasValue
-                ? await GetTeacherDetailAsync(teacherId.Value, normalizedSchoolYear, normalizedTermKey)
-                : new TeacherDetailModel();
-
-            var studentData = await BuildStudentOptionsAsync(normalizedSchoolYear, normalizedTermKey);
-            var studentOptions = studentData.Options;
-            var programs = studentData.Programs;
-            var sections = studentData.Sections;
-            var studentId = highlightedStudentId;
-            if (studentId.HasValue && !studentOptions.Any(option => option.StudentId == studentId.Value))
+            StudentAnalyticsModel studentAnalytics = null;
+            if (highlightedStudentId.HasValue)
             {
-                studentId = null;
+                studentAnalytics = await GetStudentAnalyticsAsync(highlightedStudentId.Value, normalizedSchoolYear, normalizedTermKey);
             }
 
-            var studentAnalytics = studentId.HasValue
-                ? await GetStudentAnalyticsAsync(studentId.Value, normalizedSchoolYear, normalizedTermKey)
-                : new StudentAnalyticsModel();
+            TeacherDetailModel teacherDetail = null;
+            if (highlightedTeacherId.HasValue)
+            {
+                teacherDetail = await GetTeacherDetailAsync(highlightedTeacherId.Value, normalizedSchoolYear, normalizedTermKey);
+            }
 
             return new ReportsDashboardModel
             {
                 SchoolYear = normalizedSchoolYear,
                 TermKey = normalizedTermKey,
-                AvailableSchoolYears = availableSchoolYears,
+                AvailableSchoolYears = await GetAvailableSchoolYearsAsync(),
                 TermOptions = termOptions,
-                Overall = new ReportsOverallModel
+                Student = new ReportsStudentModel
                 {
-                    Summary = summary,
-                    EnrollmentTrend = trend,
-                    ProgramLeaderboard = leaderboard,
-                    Demographics = demographics,
-                    CourseOutcomes = outcomes,
-                    RiskIndicators = risks,
-                    Capacity = capacity
+                    Students = students,
+                    SelectedStudentId = highlightedStudentId,
+                    Analytics = studentAnalytics ?? new StudentAnalyticsModel()
                 },
                 Teacher = new ReportsTeacherModel
                 {
-                    Directory = teacherDirectory,
-                    SelectedTeacher = teacherDetail
-                },
-                Student = new ReportsStudentModel
-                {
-                    Students = studentOptions,
-                    SelectedStudentId = studentId,
-                    Analytics = studentAnalytics,
-                    Programs = programs,
-                    Sections = sections
+                    Directory = teachers,
+                    SelectedTeacher = teacherDetail ?? new TeacherDetailModel()
                 }
             };
         }
 
         public async Task<TeacherDetailModel> GetTeacherDetailAsync(int teacherId, string schoolYear = null, string termKey = null)
         {
-            var teacher = await _teachers.GetTeachers()
+            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
+            var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
+            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
+
+            var teacher = await _ctx.Teachers
                 .Include(t => t.User)
-                .ThenInclude(u => u.UserProfile)
-                .Include(t => t.AssignedCourses)
-                .ThenInclude(ac => ac.Course)
-                .Include(t => t.AssignedCourses)
-                .ThenInclude(ac => ac.Program)
-                .Include(t => t.AssignedCourses)
-                .ThenInclude(ac => ac.Grades)
-                .Include(t => t.AssignedCourses)
-                .ThenInclude(ac => ac.ClassSchedules)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.TeacherId == teacherId);
 
@@ -124,327 +76,267 @@ namespace ASI.Basecode.Services.Services
                 return new TeacherDetailModel();
             }
 
-            var scopedCourses = teacher.AssignedCourses
-                .Where(ac => MatchesTerm(ac.Semester, schoolYear, termKey))
-                .ToList();
+            var assignedCourses = await _ctx.AssignedCourses
+                .Where(ac => ac.TeacherId == teacherId && ac.SchoolYear == normalizedSchoolYear)
+                .Include(ac => ac.Course)
+                .Include(ac => ac.Program)
+                .Include(ac => ac.ClassSchedules)
+                .AsNoTracking()
+                .ToListAsync();
 
-            var courseDetails = scopedCourses
-                .Select(ac => new
+            if (!string.IsNullOrEmpty(normalizedTermKey))
+            {
+                assignedCourses = assignedCourses
+                    .Where(ac => MatchesTermKey(ac.Semester, normalizedTermKey))
+                    .ToList();
+            }
+
+            var grades = await _ctx.Grades
+                .Where(g => g.AssignedCourse.TeacherId == teacherId && g.AssignedCourse.SchoolYear == normalizedSchoolYear)
+                .Include(g => g.AssignedCourse)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(normalizedTermKey))
+            {
+                grades = grades
+                    .Where(g => MatchesTermKey(g.AssignedCourse.Semester, normalizedTermKey))
+                    .ToList();
+            }
+
+            var assignments = assignedCourses.Select(ac =>
+            {
+                var courseGrades = grades
+                    .Where(g => g.AssignedCourseId == ac.AssignedCourseId)
+                    .ToList();
+
+                var finalGradeValues = courseGrades
+                    .Select(ComputeFinalGradeValue)
+                    .Where(value => value.HasValue)
+                    .Select(value => value.Value)
+                    .ToList();
+
+                var hasIncompleteGrades = courseGrades.Any(g => !IsGradeComplete(g));
+                decimal? averageFinalGrade = finalGradeValues.Any()
+                    ? Math.Round(finalGradeValues.Average(), 2)
+                    : (decimal?)null;
+
+                var status = hasIncompleteGrades
+                    ? "Incomplete"
+                    : MapFinalGradeToStatus(averageFinalGrade);
+
+                return new TeacherAssignmentModel
                 {
-                    AssignedCourse = ac,
-                    Grades = (ac.Grades ?? new List<Grade>()).ToList()
+                    CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
+                    SubjectName = ac.Course?.Description ?? ac.Course?.CourseCode ?? ac.EDPCode,
+                    Schedule = BuildScheduleDescription(ac.ClassSchedules),
+                    Units = ac.Units,
+                    Enrolled = courseGrades.Count,
+                    FinalGrade = averageFinalGrade,
+                    Status = status
+                };
+            }).ToList();
+
+            var coursePassRates = assignedCourses.Select(ac =>
+            {
+                var courseGrades = grades
+                    .Where(g => g.AssignedCourseId == ac.AssignedCourseId)
+                    .ToList();
+
+                var outcomes = courseGrades
+                    .Select(ComputeFinalGradeValue)
+                    .Where(value => value.HasValue && value.Value >= 1m)
+                    .Select(value => MapFinalGradeToStatus(value.Value))
+                    .ToList();
+
+                var passCount = outcomes.Count(result => result == "Passed");
+                var failCount = outcomes.Count(result => result == "Failed");
+                var total = passCount + failCount;
+                var passRate = total > 0 ? Math.Round(passCount * 100m / total, 1) : 0m;
+
+                return new CoursePassRateModel
+                {
+                    CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
+                    SubjectName = ac.Course?.Description ?? ac.Course?.CourseCode ?? ac.EDPCode,
+                    PassRatePercent = passRate
+                };
+            })
+            .OrderByDescending(model => model.PassRatePercent)
+            .ToList();
+
+            var submissionStatuses = assignedCourses.Select(ac =>
+            {
+                var courseGrades = grades
+                    .Where(g => g.AssignedCourseId == ac.AssignedCourseId)
+                    .ToList();
+                var isComplete = courseGrades.Any() && courseGrades.All(IsGradeComplete);
+
+                return new TeacherSubmissionStatusModel
+                {
+                    CourseCode = ac.Course?.CourseCode ?? ac.EDPCode,
+                    SubjectName = ac.Course?.Description ?? ac.Course?.CourseCode ?? ac.EDPCode,
+                    Status = isComplete ? "Complete" : "Incomplete",
+                    IsComplete = isComplete
+                };
+            }).ToList();
+
+            var submissionSummary = submissionStatuses
+                .GroupBy(status => status.IsComplete)
+                .Select(group => new NamedValueModel
+                {
+                    Name = group.Key ? "All grades submitted" : "Some grades are ungraded",
+                    Value = group.Count()
                 })
                 .ToList();
 
-            var grades = courseDetails
-                .SelectMany(x => x.Grades)
+            var gradeOutcomes = grades
+                .Select(ComputeFinalGradeValue)
+                .Where(value => value.HasValue && value.Value >= 1m)
+                .Select(value => MapFinalGradeToStatus(value.Value))
                 .ToList();
 
-            var passCount = grades.Count(g => ExtractFinalScore(g) >= 75m);
-            var gradedCount = grades.Count(g => ExtractFinalScore(g).HasValue);
-            var passRate = gradedCount == 0 ? 0m : Math.Round(passCount * 100m / gradedCount, 1);
+            var aggregatePassCount = gradeOutcomes.Count(result => result == "Passed");
+            var aggregateFailCount = gradeOutcomes.Count(result => result == "Failed");
+            var aggregateTotal = aggregatePassCount + aggregateFailCount;
+            var passRateAggregate = aggregateTotal > 0 ? Math.Round(aggregatePassCount * 100m / aggregateTotal, 1) : 0m;
 
-            var totalCourses = courseDetails.Count;
-            var completedCourses = courseDetails.Count(x => x.Grades.Any(g => ExtractFinalScore(g).HasValue));
-            var completionPercent = totalCourses == 0
+            var submissionCompletion = assignments.Count == 0
                 ? 0m
-                : Math.Round(completedCourses * 100m / totalCourses, 1);
+                : Math.Round((decimal)submissionStatuses.Count(status => status.IsComplete) / assignments.Count * 100m, 1);
 
-            var submissionSummary = new List<NamedValueModel>();
-            if (totalCourses > 0)
+            var passFailCounts = assignments.Aggregate(new PassFailAccumulator(), (acc, assignment) =>
             {
-                submissionSummary.Add(new NamedValueModel
+                switch ((assignment.Status ?? "").ToLowerInvariant())
                 {
-                    Name = "All grades submitted",
-                    Value = completedCourses
-                });
+                    case "passed":
+                        acc.Pass += 1;
+                        break;
+                    case "failed":
+                        acc.Fail += 1;
+                        break;
+                    default:
+                        acc.Incomplete += 1;
+                        break;
+                }
 
-                submissionSummary.Add(new NamedValueModel
-                {
-                    Name = "Some grades are ungraded",
-                    Value = totalCourses - completedCourses
-                });
-            }
+                return acc;
+            });
 
             return new TeacherDetailModel
             {
                 TeacherId = teacher.TeacherId,
-                Name = BuildName(teacher.User),
-                Department = ResolveTeacherDepartment(teacher, scopedCourses),
-                Email = teacher.User?.Email ?? string.Empty,
+                Name = teacher.User != null ? $"{teacher.User.FirstName} {teacher.User.LastName}" : "Teacher",
+                Department = ResolveTeacherDepartment(assignedCourses, teacher),
+                Email = teacher.User?.Email ?? "--",
                 Rank = teacher.Position,
-                TeachingLoadUnits = scopedCourses.Sum(ac => ac.Units),
-                SectionCount = totalCourses,
-                PassRatePercent = passRate,
-                SubmissionCompletionPercent = completionPercent,
+                TeachingLoadUnits = assignedCourses.Sum(ac => ac.Units),
+                TeachingLoadCount = assignments.Count,
+                SectionCount = assignments.Count,
+                PassRatePercent = passRateAggregate,
+                SubmissionCompletionPercent = submissionCompletion,
+                Assignments = assignments,
+                CoursePassRates = coursePassRates,
+                SubmissionStatuses = submissionStatuses,
                 SubmissionSummary = submissionSummary,
-                Assignments = courseDetails.Select(x => new TeacherAssignmentModel
-                {
-                    CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
-                    Section = x.AssignedCourse.EDPCode,
-                    Schedule = BuildSchedule(x.AssignedCourse.ClassSchedules),
-                    Units = x.AssignedCourse.Units,
-                    Enrolled = x.Grades.Select(g => g.StudentId).Distinct().Count()
-                }).ToList(),
-                CoursePassRates = courseDetails.Select(x =>
-                {
-                    var courseGrades = x.Grades;
-                    var graded = courseGrades.Where(g => ExtractFinalScore(g).HasValue).ToList();
-                    var pass = graded.Count(g => ExtractFinalScore(g) >= 75m);
-                    var rate = graded.Count == 0 ? 0m : Math.Round(pass * 100m / graded.Count, 1);
-                    return new CoursePassRateModel
-                    {
-                        CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
-                        PassRatePercent = rate
-                    };
-                }).ToList(),
-                SubmissionStatuses = courseDetails.Select(x =>
-                {
-                    var hasAllGrades = x.Grades.Any() && x.Grades.All(g => ExtractFinalScore(g).HasValue);
-                    var status = hasAllGrades ? "All grades submitted" : "Some grades are ungraded";
-                    return new TeacherSubmissionStatusModel
-                    {
-                        CourseCode = x.AssignedCourse.Course?.CourseCode ?? x.AssignedCourse.EDPCode,
-                        Status = status,
-                        IsComplete = hasAllGrades
-                    };
-                }).ToList()
+                PassCount = passFailCounts.Pass,
+                FailCount = passFailCounts.Fail,
+                IncompleteCount = passFailCounts.Incomplete
             };
         }
 
         public async Task<StudentAnalyticsModel> GetStudentAnalyticsAsync(int studentId, string schoolYear = null, string termKey = null)
         {
-            var studentRecord = await _students.GetStudents()
-                .Include(s => s.User)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.StudentId == studentId);
+            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
+            var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
+            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
 
-            if (studentRecord == null && studentId > 0)
+            var gradesQuery = _ctx.Grades
+                .Where(g => g.StudentId == studentId && g.AssignedCourse.SchoolYear == normalizedSchoolYear)
+                .Include(g => g.AssignedCourse)
+                .ThenInclude(ac => ac.Course)
+                .Include(g => g.AssignedCourse)
+                .ThenInclude(ac => ac.Program)
+                .AsNoTracking();
+
+            var grades = await gradesQuery.ToListAsync();
+
+            if (!string.IsNullOrEmpty(normalizedTermKey))
             {
-                studentRecord = await _students.GetStudents()
-                    .Include(s => s.User)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(s => s.UserId == studentId);
+                grades = grades
+                    .Where(g => MatchesTermKey(g.AssignedCourse.Semester, normalizedTermKey))
+                    .ToList();
+            }
 
-                if (studentRecord != null)
+            var courseGrades = grades
+                .GroupBy(g => g.AssignedCourse.Course.CourseCode)
+                .Select(group => new StudentCourseGradeModel
                 {
-                    studentId = studentRecord.StudentId;
-                }
-            }
-
-            if (studentRecord == null)
-            {
-                return new StudentAnalyticsModel();
-            }
-
-            var baseGrades = _grades.GetGrades()
-                .Include(g => g.AssignedCourse)
-                .ThenInclude(ac => ac.Course)
-                .Include(g => g.Student)
-                .ThenInclude(s => s.User)
-                .ThenInclude(u => u.UserProfile)
-                .AsNoTracking()
-                .Where(g => g.AssignedCourse != null);
-
-            if (!string.IsNullOrWhiteSpace(termKey))
-            {
-                baseGrades = baseGrades.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(termKey));
-            }
-            else if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                baseGrades = baseGrades.Where(g => g.AssignedCourse.Semester != null &&
-                    (g.AssignedCourse.Semester.StartsWith(schoolYear) || !g.AssignedCourse.Semester.Contains("-")));
-            }
-
-            var gradeEntries = await baseGrades
-                .Include(g => g.AssignedCourse)
-                .ThenInclude(ac => ac.Course)
-                .Include(g => g.Student)
-                .ThenInclude(s => s.User)
-                .AsNoTracking()
-                .Where(g => g.StudentId == studentId && g.AssignedCourse != null)
-                .ToListAsync();
-
-            gradeEntries = gradeEntries
-                .Where(g => MatchesTerm(g.AssignedCourse.Semester, schoolYear, termKey))
+                    CourseCode = group.Key,
+                    Grade = MapToPercent(group) ?? 0m
+                })
+                .OrderBy(g => g.CourseCode)
                 .ToList();
 
-            var ungradedRowsQuery = baseGrades
-                .Where(g => g.Final == null)
-                .GroupBy(g => new
-                {
-                    g.StudentId,
-                    g.Student.User.IdNumber,
-                    g.Student.User.LastName,
-                    g.Student.User.FirstName,
-                    g.Student.Program,
-                    Gender = g.Student.User.UserProfile.Gender,
-                    g.Student.YearLevel,
-                    g.AssignedCourse.EDPCode
-                });
-
-            if (studentId > 0)
+            var gradeBreakdown = grades.Select(g => new StudentGradeBreakdownModel
             {
-                ungradedRowsQuery = ungradedRowsQuery.Where(group => group.Key.StudentId == studentId);
-            }
-
-            var ungradedRows = await ungradedRowsQuery
-                .Select(group => new StudentSnapshotRowModel
-                {
-                    EdpCode = group.Key.EDPCode,
-                    IdNumber = group.Key.IdNumber,
-                    LastName = group.Key.LastName,
-                    FirstName = group.Key.FirstName,
-                    Program = group.Key.Program,
-                    Gender = string.IsNullOrWhiteSpace(group.Key.Gender) ? "Unknown" : group.Key.Gender,
-                    YearLevel = group.Key.YearLevel,
-                    Gwa = null,
-                    Status = "Ungraded"
-                })
-                .OrderBy(row => row.LastName)
-                .ThenBy(row => row.FirstName)
-                .ToListAsync();
-
-            if (!gradeEntries.Any())
-            {
-                var gradeBreakdownEmpty = ungradedRows.Select(row => new StudentGradeBreakdownModel
-                {
-                    EdpCode = row.EdpCode,
-                    Subject = row.EdpCode,
-                    Status = "Incomplete"
-                }).ToList();
-
-                return new StudentAnalyticsModel
-                {
-                    Snapshot = ungradedRows,
-                    GradeBreakdown = gradeBreakdownEmpty,
-                    StatusMix = new List<NamedValueModel>
-                    {
-                        new NamedValueModel { Name = "Pass", Value = 0 },
-                        new NamedValueModel { Name = "Fail", Value = 0 },
-                        new NamedValueModel { Name = "Incomplete", Value = gradeBreakdownEmpty.Count }
-                    }
-                };
-            }
-
-            decimal? ConvertComponent(decimal? value) => value.HasValue ? MapPercentToGwa(value.Value) : (decimal?)null;
-
-            var courseSummaries = gradeEntries.Select(entry =>
-            {
-                var finalPercent = ExtractFinalScore(entry);
-                var gwa = finalPercent.HasValue ? MapPercentToGwa(finalPercent.Value) : (decimal?)null;
-
-                return new
-                {
-                    Entry = entry,
-                    FinalPercent = finalPercent,
-                    Gwa = gwa,
-                    CourseCode = entry.AssignedCourse?.Course?.CourseCode ?? entry.AssignedCourse?.EDPCode ?? "--",
-                    Subject = entry.AssignedCourse?.Course?.Description
-                        ?? entry.AssignedCourse?.Course?.CourseCode
-                        ?? entry.AssignedCourse?.EDPCode
-                        ?? string.Empty
-                };
+                EdpCode = g.AssignedCourse.EDPCode,
+                Subject = g.AssignedCourse.Course.Description,
+                Prelim = g.Prelims,
+                Midterm = g.Midterm,
+                Prefinal = g.SemiFinal,
+                Final = g.Final,
+                FinalGrade = MapToPercent(g),
+                Status = DetermineStudentStatus(g)
             }).ToList();
 
-            var gradedSummaries = courseSummaries.Where(summary => summary.Gwa.HasValue).ToList();
-
-            var courseGrades = gradedSummaries
-                .Select(summary => new StudentCourseGradeModel
+            var statusMix = gradeBreakdown
+                .GroupBy(row => row.Status ?? "Incomplete")
+                .Select(group => new NamedValueModel
                 {
-                    CourseCode = summary.CourseCode,
-                    Grade = summary.Gwa!.Value
+                    Name = group.Key,
+                    Value = group.Count()
                 })
-                .OrderBy(summary => summary.CourseCode)
                 .ToList();
 
-            var earnedUnits = courseSummaries
-                .Where(summary => summary.Gwa.HasValue && summary.Gwa.Value <= 3.0m)
-                .Sum(summary => summary.Entry.AssignedCourse?.Units ?? 0);
+            var volatility = CalculateVolatility(courseGrades.Select(cg => cg.Grade).ToList());
+            var consistencyLabel = MapVolatilityToLabel(volatility);
 
-            var passCount = courseSummaries.Count(summary => summary.Gwa.HasValue && summary.Gwa.Value <= 3.0m);
-            var failCount = courseSummaries.Count(summary => summary.Gwa.HasValue && summary.Gwa.Value > 3.0m);
-            var incompleteCount = courseSummaries.Count(summary => !summary.Gwa.HasValue);
-
-            var topStrengths = gradedSummaries
-                .OrderBy(summary => summary.Gwa.Value)
-                .Take(3)
-                .Select(summary => $"{summary.Gwa!.Value:F2} in {summary.CourseCode}")
-                .ToList();
-
-            var riskCourses = gradedSummaries
-                .Where(summary => summary.Gwa!.Value > 3.0m)
-                .OrderByDescending(summary => summary.Gwa.Value)
-                .Take(3)
-                .Select(summary => $"{summary.Gwa!.Value:F2} in {summary.CourseCode}")
-                .ToList();
-
-            var gradeBreakdown = courseSummaries
-                .Select(summary => new StudentGradeBreakdownModel
-                {
-                    EdpCode = summary.Entry.AssignedCourse?.EDPCode ?? summary.CourseCode,
-                    Subject = summary.Subject,
-                    Prelim = ConvertComponent(summary.Entry.Prelims),
-                    Midterm = ConvertComponent(summary.Entry.Midterm),
-                    Prefinal = ConvertComponent(summary.Entry.SemiFinal),
-                    Final = ConvertComponent(summary.Entry.Final),
-                    FinalGrade = summary.Gwa,
-                    Status = summary.Gwa.HasValue
-                        ? (summary.Gwa.Value > 3.0m ? "Fail" : "Pass")
-                        : "Incomplete"
-                })
-                .OrderBy(row => row.Subject)
-                .ToList();
+            var comparativeHighlights = BuildComparativeHighlights(grades);
 
             return new StudentAnalyticsModel
             {
-                GwaTrend = new List<StudentTrendPointModel>(),
                 CourseGrades = courseGrades,
-                UnitsProgress = new StudentUnitsProgressModel
-                {
-                    EarnedUnits = earnedUnits,
-                    RequiredUnits = UnitsTarget
-                },
-                StatusMix = new List<NamedValueModel>
-                {
-                    new NamedValueModel { Name = "Pass", Value = passCount },
-                    new NamedValueModel { Name = "Fail", Value = failCount },
-                    new NamedValueModel { Name = "Incomplete", Value = incompleteCount }
-                },
-                Strengths = topStrengths,
-                Risks = riskCourses,
-                Engagement = new StudentEngagementModel
-                {
-                    AttendancePercent = 0,
-                    OnTimeSubmissionPercent = 0,
-                    MissingWorkCount = incompleteCount
-                },
-                GradeBreakdown = gradeBreakdown
+                GradeBreakdown = gradeBreakdown,
+                StatusMix = statusMix,
+                ConsistencyLabel = consistencyLabel,
+                ComparativeHighlights = comparativeHighlights
             };
+        }
+
+        private async Task<string> ResolveSchoolYearAsync(string schoolYear)
+        {
+            if (!string.IsNullOrWhiteSpace(schoolYear))
+            {
+                return schoolYear;
+            }
+
+            var mostRecent = await _ctx.AssignedCourses
+                .Where(ac => ac.SchoolYear != null)
+                .OrderByDescending(ac => ac.SchoolYear)
+                .Select(ac => ac.SchoolYear)
+                .FirstOrDefaultAsync();
+
+            return mostRecent ?? string.Empty;
         }
 
         private async Task<IList<string>> GetAvailableSchoolYearsAsync()
         {
-            var semesters = await _grades.GetGrades()
-                .Where(g => g.AssignedCourse != null && g.AssignedCourse.Semester != null)
-                .Select(g => g.AssignedCourse.Semester)
+            return await _ctx.AssignedCourses
+                .Where(ac => ac.SchoolYear != null)
+                .Select(ac => ac.SchoolYear)
                 .Distinct()
-                .AsNoTracking()
+                .OrderBy(year => year)
                 .ToListAsync();
-
-            var normalized = semesters
-                .Select(GetSchoolYearFromSemester)
-                .Where(sy => !string.IsNullOrWhiteSpace(sy))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (!normalized.Any() || normalized.All(sy => sy.Length != 9 || !sy.Contains('-', StringComparison.Ordinal)))
-            {
-                normalized = BuildDefaultSchoolYears(3);
-            }
-
-            normalized.Sort((a, b) => string.CompareOrdinal(b, a));
-            return normalized;
         }
 
         private async Task<IList<ReportTermOptionModel>> BuildTermOptionsAsync(string schoolYear)
@@ -454,771 +346,408 @@ namespace ASI.Basecode.Services.Services
                 return new List<ReportTermOptionModel>();
             }
 
-            var rawSemesters = await _grades.GetGrades()
-                .Where(g => g.AssignedCourse != null && g.AssignedCourse.Semester != null)
-                .Select(g => g.AssignedCourse.Semester)
+            var semesters = await _ctx.AssignedCourses
+                .Where(ac => ac.SchoolYear == schoolYear && ac.Semester != null)
+                .Select(ac => ac.Semester)
                 .Distinct()
                 .AsNoTracking()
                 .ToListAsync();
 
-            var tokens = rawSemesters
-                .Select(ExtractTermToken)
-                .Where(token => !string.IsNullOrWhiteSpace(token))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            var parsed = semesters
+                .Select(ParseTerm)
+                .Where(term => term != null)
+                .OrderBy(term => term.YearStart)
+                .ThenBy(term => term.SemesterOrder)
+                .Select(term => new ReportTermOptionModel
+                {
+                    TermKey = term.TermKey,
+                    Label = term.Label,
+                    SchoolYear = term.SchoolYear
+                })
                 .ToList();
 
-            foreach (var fallbackToken in DefaultTermTokens)
+            if (parsed.Count > 0)
             {
-                if (!tokens.Contains(fallbackToken, StringComparer.OrdinalIgnoreCase))
+                parsed.Insert(0, new ReportTermOptionModel
                 {
-                    tokens.Add(fallbackToken);
-                }
-            }
-
-            tokens.Sort((a, b) => string.CompareOrdinal(a, b));
-
-            var options = tokens
-                .Select(token => new ReportTermOptionModel
-                {
-                    TermKey = token,
-                    Label = TermTokenToLabel(token),
+                    TermKey = string.Empty,
+                    Label = $"{schoolYear} - Whole Year",
                     SchoolYear = schoolYear
-                })
-                .ToList();
+                });
+            }
 
-            options.Insert(0, new ReportTermOptionModel
-            {
-                TermKey = string.Empty,
-                Label = "Whole Term",
-                SchoolYear = schoolYear
-            });
-
-            return options;
+            return parsed;
         }
 
-        private async Task<List<Grade>> LoadGradesAsync(string schoolYear, string termKey)
+        private static string NormalizeTermKey(string termKey, IList<ReportTermOptionModel> options)
         {
-            var query = _grades.GetGrades()
-                .Include(g => g.Student)
-                .ThenInclude(s => s.User)
-                .ThenInclude(u => u.UserProfile)
-                .Include(g => g.AssignedCourse)
-                .ThenInclude(ac => ac.Course)
-                .Include(g => g.AssignedCourse)
-                .ThenInclude(ac => ac.Teacher)
-                .ThenInclude(t => t.User)
-                .AsNoTracking()
-                .Where(g => g.AssignedCourse != null);
-
-            if (!string.IsNullOrWhiteSpace(termKey))
+            if (string.IsNullOrWhiteSpace(termKey))
             {
-                query = query.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(termKey));
-            }
-            else if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                query = query.Where(g => g.AssignedCourse.Semester != null &&
-                    (g.AssignedCourse.Semester.StartsWith(schoolYear) || !g.AssignedCourse.Semester.Contains("-")));
+                return string.Empty;
             }
 
-            return await query.ToListAsync();
+            return options.FirstOrDefault(option => string.Equals(option.TermKey, termKey, StringComparison.OrdinalIgnoreCase))?.TermKey ?? string.Empty;
         }
 
-        private async Task<ReportsOverallSummary> BuildOverallSummaryAsync(string schoolYear, string termKey, List<Grade> gradesScoped, IList<ReportTermOptionModel> termOptions)
+        private async Task<IList<StudentOptionModel>> LoadStudentDirectoryAsync(string schoolYear, string termKey)
         {
-            var currentEnrollment = gradesScoped
-                .Select(g => g.StudentId)
-                .Distinct()
-                .Count();
-
-            var previousTermKey = termOptions
-                .Select(o => o.TermKey)
-                .Where(key => !string.IsNullOrEmpty(key))
-                .Distinct()
-                .Where(key => string.IsNullOrEmpty(termKey) || string.Compare(key, termKey, StringComparison.OrdinalIgnoreCase) < 0)
-                .OrderByDescending(key => key)
-                .FirstOrDefault();
-
-            var previousEnrollment = await CountDistinctStudentsAsync(schoolYear, previousTermKey);
-
-            var averageGwa = gradesScoped
-                .Select(ExtractFinalScore)
-                .Where(score => score.HasValue)
-                .Select(score => MapPercentToGwa(score.Value))
-                .DefaultIfEmpty(0m)
-                .Average();
-
-            var passCount = gradesScoped.Count(g => ExtractFinalScore(g) >= 75m);
-            var graded = gradesScoped.Count(g => ExtractFinalScore(g).HasValue);
-            var passRate = graded == 0 ? 0m : Math.Round(passCount * 100m / graded, 1);
-
-            var returningStudents = gradesScoped
-                .Where(g => g.Student != null && string.Equals(g.Student.AdmissionType, "old", StringComparison.OrdinalIgnoreCase))
-                .Select(g => g.StudentId)
-                .Distinct()
-                .Count();
-
-            var retention = currentEnrollment == 0 ? 0m : Math.Round(returningStudents * 100m / currentEnrollment, 1);
-
-            return new ReportsOverallSummary
-            {
-                TotalEnrolled = currentEnrollment,
-                GrowthPercent = ComputeChangePercent(previousEnrollment, currentEnrollment),
-                AverageGwa = Math.Round(averageGwa, 2),
-                PassRatePercent = passRate,
-                RetentionPercent = retention
-            };
-        }
-
-        private async Task<int> CountDistinctStudentsAsync(string schoolYear, string termKey)
-        {
-            var query = _grades.GetGrades()
-                .Where(g => g.AssignedCourse != null)
-                .AsNoTracking();
-
-            if (!string.IsNullOrWhiteSpace(termKey))
-            {
-                query = query.Where(g => g.AssignedCourse.Semester == termKey);
-            }
-            else if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                query = query.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(schoolYear));
-            }
-
-            return await query
-                .Select(g => g.StudentId)
-                .Distinct()
-                .CountAsync();
-        }
-
-        private async Task<IList<TrendPointModel>> BuildEnrollmentTrendAsync(string schoolYear)
-        {
-            var data = await _grades.GetGrades()
-                .Where(g => g.AssignedCourse != null && g.AssignedCourse.Semester != null)
-                .Select(g => new { g.AssignedCourse.Semester, g.StudentId })
-                .AsNoTracking()
-                .ToListAsync();
-
-            if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                data = data.Where(x => MatchesTerm(x.Semester, schoolYear, null)).ToList();
-            }
-
-            return data
-                .GroupBy(x => x.Semester)
-                .OrderBy(g => g.Key)
-                .Select(g => new TrendPointModel
-                {
-                    TermKey = g.Key,
-                    Label = g.Key,
-                    Value = g.Select(x => x.StudentId).Distinct().Count()
-                })
-                .ToList();
-        }
-
-        private IList<ProgramLeaderboardItemModel> BuildProgramLeaderboard(List<Grade> gradesScoped)
-        {
-            return gradesScoped
-                .Where(g => g.Student != null)
-                .GroupBy(g => g.Student.Program ?? "Unknown")
-                .Select(g => new ProgramLeaderboardItemModel
-                {
-                    Program = g.Key,
-                    Enrollment = g.Select(x => x.StudentId).Distinct().Count(),
-                    GrowthPercent = 0m
-                })
-                .OrderByDescending(g => g.Enrollment)
-                .ToList();
-        }
-
-        private async Task<DemographicBreakdownModel> BuildDemographicsAsync(string schoolYear, string termKey)
-        {
-            var gradesQuery = _grades.GetGrades()
-                .Where(g => g.AssignedCourse != null);
-
-            if (!string.IsNullOrWhiteSpace(termKey))
-            {
-                gradesQuery = gradesQuery.Where(g => g.AssignedCourse.Semester == termKey);
-            }
-            else if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                gradesQuery = gradesQuery.Where(g => g.AssignedCourse.Semester != null && g.AssignedCourse.Semester.StartsWith(schoolYear));
-            }
-
-            var studentIdsQuery = gradesQuery
-                .Select(g => g.StudentId)
-                .Distinct();
-
-            var students = await _students.GetStudents()
-                .Where(s => studentIdsQuery.Contains(s.StudentId))
+            var students = await _ctx.Students
                 .Include(s => s.User)
-                .ThenInclude(u => u.UserProfile)
-                .Include(s => s.Grades)
-                .ThenInclude(g => g.AssignedCourse)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var genders = students
-                .Select(s => string.IsNullOrWhiteSpace(s.User?.UserProfile?.Gender) ? "Unknown" : s.User.UserProfile.Gender)
-                .GroupBy(g => g)
-                .Select(g => new NamedValueModel { Name = g.Key, Value = g.Count() })
-                .ToList();
-
-            var ageBands = students
-                .Select(s => s.User?.UserProfile?.DateOfBirth)
-                .Where(dob => dob.HasValue)
-                .Select(dob => CategorizeAge(dob.Value.ToAge()))
-                .GroupBy(label => label)
-                .Select(g => new NamedValueModel { Name = g.Key, Value = g.Count() })
-                .OrderBy(g => g.Name)
-                .ToList();
-
-            var sections = students
-                .Select(s => string.IsNullOrWhiteSpace(s.Section) ? "Unassigned" : s.Section)
-                .GroupBy(sec => sec)
-                .Select(g => new NamedValueModel { Name = g.Key, Value = g.Count() })
-                .OrderBy(x => x.Name)
-                .ToList();
-
-            return new DemographicBreakdownModel
-            {
-                GenderSplit = genders,
-                AgeBands = ageBands,
-                Statuses = sections
-            };
-        }
-        // VALIDATIONS
-        private CourseOutcomeModel BuildCourseOutcomes(List<Grade> gradesScoped)
-        {
-            var courseGroups = gradesScoped
-                .Where(g => g.AssignedCourse != null)
-                .GroupBy(g => g.AssignedCourse.Course?.CourseCode ?? g.AssignedCourse.EDPCode)
-                .Select(g => new
-                {
-                    Course = g.Key,
-                    Grades = g.ToList()
-                })
-                .ToList();
-
-            var failureRates = courseGroups
-                .Select(g => new CourseStatModel
-                {
-                    CourseCode = g.Course,
-                    MetricValue = ComputeFailureRate(g.Grades)
-                })
-                .OrderByDescending(c => c.MetricValue)
-                .Take(5)
-                .ToList();
-
-            var bestPerforming = courseGroups
-                .Select(g => new CourseStatModel
-                {
-                    CourseCode = g.Course,
-                    MetricValue = ComputePassRate(g.Grades)
-                })
-                .OrderByDescending(c => c.MetricValue)
-                .Take(5)
-                .ToList();
-
-            return new CourseOutcomeModel
-            {
-                HighestFailureRates = failureRates,
-                BestPerforming = bestPerforming
-            };
-        }
-
-        private List<RiskIndicatorModel> BuildRiskIndicators(List<Grade> gradesScoped)
-        {
-            var studentGwa = gradesScoped
-                .GroupBy(g => g.StudentId)
-                .Select(g => new
-                {
-                    StudentId = g.Key,
-                    Gwa = MapPercentToGwa(g.Select(ExtractFinalScore).AverageOrDefault())
-                })
-                .ToList();
-
-            var riskStudents = studentGwa.Count(s => s.Gwa > AtRiskGwaThreshold && s.Gwa > 0);
-
-            var sections = gradesScoped
-                .GroupBy(g => g.AssignedCourseId)
-                .Select(g => new
-                {
-                    Section = g.Key,
-                    PassRate = ComputePassRate(g.ToList())
-                })
-                .ToList();
-
-            var lowPassSections = sections.Count(s => s.PassRate < 70m);
-
-            var pendingGrades = gradesScoped
-                .Where(g => !g.Final.HasValue)
-                .GroupBy(g => g.AssignedCourseId)
-                .Count();
-
-            return new List<RiskIndicatorModel>
-            {
-                new RiskIndicatorModel { Label = "Students below GWA threshold", Count = riskStudents },
-                new RiskIndicatorModel { Label = "Sections pass rate < 70%", Count = lowPassSections },
-                new RiskIndicatorModel { Label = "Courses with pending grades", Count = pendingGrades }
-            };
-        }
-        
-        private async Task<CapacityLoadModel> BuildCapacityAsync(string schoolYear, string termKey)
-        {
-            var sectionsQuery = _assignedCourses.GetAssignedCourses()
-                .Include(ac => ac.Grades)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(termKey))
-            {
-                sectionsQuery = sectionsQuery.Where(ac => ac.Semester == termKey);
-            }
-            else if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                sectionsQuery = sectionsQuery.Where(ac => ac.Semester != null && ac.Semester.StartsWith(schoolYear));
-            }
-
-            var sections = await sectionsQuery
-                .AsNoTracking()
-                .ToListAsync();
-
-            var nearCapacity = sections.Count(ac => (ac.Grades?.Select(g => g.StudentId).Distinct().Count() ?? 0) >= 35);
-            var highLoadFaculty = sections
-                .GroupBy(ac => ac.TeacherId)
-                .Count(g => g.Sum(ac => ac.Units) >= 24);
-            var averageClassSize = sections.Count == 0
-                ? 0m
-                : Math.Round((decimal)sections.Average(ac => ac.Grades?.Select(g => g.StudentId).Distinct().Count() ?? 0), 1);
-
-            return new CapacityLoadModel
-            {
-                SectionsNearCapacity = nearCapacity,
-                FacultyHighLoad = highLoadFaculty,
-                AverageClassSize = averageClassSize
-            };
-        }
-
-        private async Task<IList<TeacherDirectoryItemModel>> BuildTeacherDirectoryAsync(string schoolYear, string termKey)
-        {
-            var teachers = await _teachers.GetTeachers()
-                .Include(t => t.User)
-                .Include(t => t.AssignedCourses)
-                .ThenInclude(ac => ac.ClassSchedules)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return teachers.Select(t => {
-                var scopedCourses = t.AssignedCourses.Where(ac => MatchesTerm(ac.Semester, schoolYear, termKey)).ToList();
-                return new TeacherDirectoryItemModel
-                {
-                    TeacherId = t.TeacherId,
-                    Name = BuildName(t.User),
-                    Department = ResolveTeacherDepartment(t, scopedCourses),
-                    Email = t.User?.Email ?? string.Empty,
-                    Rank = t.Position,
-                    LoadUnits = scopedCourses.Sum(ac => ac.Units),
-                    Sections = scopedCourses.Count
-                };
-            })
-            .OrderByDescending(t => t.Sections)
-            .ThenBy(t => t.Name)
-            .ToList();
-        }
-
-        private async Task<(IList<StudentOptionModel> Options, IList<string> Programs, IList<string> Sections)> BuildStudentOptionsAsync(string schoolYear, string termKey)
-        {
-            var students = await _students.GetStudents()
-                .Include(s => s.User)
-                .Include(s => s.Grades)
-                .ThenInclude(g => g.AssignedCourse)
                 .AsNoTracking()
                 .OrderBy(s => s.User.LastName)
                 .ThenBy(s => s.User.FirstName)
                 .ToListAsync();
 
-            var scopedStudents = students
-                .Select(s => new
+            return students
+                .Select(student => new StudentOptionModel
                 {
-                    Student = s,
-                    Grades = (s.Grades ?? new List<Grade>())
-                        .Where(g => g.AssignedCourse != null && MatchesTerm(g.AssignedCourse.Semester, schoolYear, termKey))
-                        .ToList()
+                    StudentId = student.StudentId,
+                    Name = student.User != null ? $"{student.User.FirstName} {student.User.LastName}" : "Student",
+                    Program = student.Program,
+                    Sections = new List<string>()
                 })
-                .Where(x => x.Grades.Any())
                 .ToList();
+        }
 
-            var options = scopedStudents
-                .Select(x =>
-                {
-                    return new StudentOptionModel
+        private async Task<IList<TeacherDirectoryItemModel>> LoadTeacherDirectoryAsync(string schoolYear, string termKey)
+        {
+            var teachers = await _ctx.Teachers
+                .Include(t => t.User)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var assignments = await _ctx.AssignedCourses
+                .Where(ac => ac.SchoolYear == schoolYear)
+                .Include(ac => ac.Program)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!string.IsNullOrEmpty(termKey))
+            {
+                assignments = assignments
+                    .Where(ac => MatchesTermKey(ac.Semester, termKey))
+                    .ToList();
+            }
+
+            var stats = assignments
+                .GroupBy(ac => ac.TeacherId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => new
                     {
-                        StudentId = x.Student.StudentId,
-                        Name = BuildName(x.Student.User),
-                        Program = x.Student.Program,
-                        Sections = x.Grades
-                            .Select(g => g.AssignedCourse?.EDPCode)
-                            .Where(code => !string.IsNullOrWhiteSpace(code))
-                            .Distinct()
-                            .OrderBy(code => code)
-                            .ToList() ?? new List<string>()
+                        LoadUnits = group.Sum(ac => ac.Units),
+                        Sections = group.Count(),
+                        Department = group.Select(ac => ac.Program?.ProgramName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
+                    });
+
+            return teachers
+                .Select(teacher =>
+                {
+                    stats.TryGetValue(teacher.TeacherId, out var stat);
+
+                    return new TeacherDirectoryItemModel
+                    {
+                        TeacherId = teacher.TeacherId,
+                        Name = teacher.User != null ? $"{teacher.User.FirstName} {teacher.User.LastName}" : "Teacher",
+                        Department = stat?.Department ?? teacher.Position ?? "--",
+                        Email = teacher.User?.Email ?? "--",
+                        Rank = teacher.Position,
+                        LoadUnits = stat?.LoadUnits ?? 0,
+                        Sections = stat?.Sections ?? 0
                     };
                 })
+                .OrderBy(item => item.Name)
                 .ToList();
-
-            var programs = options
-                .Select(o => o.Program)
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(p => p)
-                .ToList();
-
-            var sections = options
-                .SelectMany(o => o.Sections)
-                .Where(section => !string.IsNullOrWhiteSpace(section))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(section => section)
-                .ToList();
-
-            return (options, programs, sections);
         }
 
-        private static string NormalizeSchoolYear(IList<string> availableSchoolYears, string requested)
+        private static string BuildScheduleDescription(IEnumerable<ClassSchedule> schedules)
         {
-            if (!string.IsNullOrWhiteSpace(requested) && availableSchoolYears.Contains(requested))
+            var first = schedules.FirstOrDefault();
+            if (first == null)
             {
-                return requested;
+                return "--";
             }
 
-            return availableSchoolYears.LastOrDefault();
+            return $"{first.Day.ToString()} {first.StartTime:hh\\:mm}-{first.EndTime:hh\\:mm}";
         }
 
-        private static string NormalizeTermKey(IList<ReportTermOptionModel> terms, string requested)
+        private static string DetermineSection(AssignedCourse course)
         {
-            if (string.IsNullOrWhiteSpace(requested))
+            return course.Program?.ProgramName ?? "--";
+        }
+
+        private static string ResolveTeacherDepartment(IEnumerable<AssignedCourse> assignments, Teacher teacher)
+        {
+            var programName = assignments
+                .Select(ac => ac.Program?.ProgramName)
+                .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+
+            if (!string.IsNullOrWhiteSpace(programName))
             {
-                return string.Empty;
+                return programName;
             }
 
-            return terms.FirstOrDefault(t => string.Equals(t.TermKey, requested, StringComparison.OrdinalIgnoreCase))?.TermKey ?? string.Empty;
+            return teacher.Position ?? "--";
         }
 
-        private static string GetSchoolYearFromSemester(string semester)
+        private static decimal? MapToPercent(IEnumerable<Grade> grades)
         {
-            if (string.IsNullOrWhiteSpace(semester))
+            var finalGrades = grades.Select(MapToPercent).Where(value => value.HasValue).Select(value => value.Value).ToList();
+            if (!finalGrades.Any())
             {
                 return null;
             }
 
-            var normalized = semester.Trim();
-            var hyphenParts = normalized.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (hyphenParts.Length >= 2 && hyphenParts[0].Length == 4)
-            {
-                return $"{hyphenParts[0]}-{hyphenParts[1]}";
-            }
-
-            var spaceParts = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (spaceParts.Length >= 2 && spaceParts[0].Length == 4)
-            {
-                return spaceParts[0];
-            }
-            
-            var ordinal = ExtractTermToken(semester);
-            if (!string.IsNullOrWhiteSpace(ordinal))
-            {
-                return InferSchoolYearForTermToken(ordinal);
-            }
-
-            return null;
+            return Math.Round(finalGrades.Average(), 2);
         }
 
-        private static string GetFriendlyTermLabel(string semester)
-        {
-            if (string.IsNullOrWhiteSpace(semester))
-            {
-                return semester;
-            }
-
-            var token = ExtractTermToken(semester);
-            return TermTokenToLabel(token ?? semester);
-        }
-
-        private static string InferSchoolYearForTermToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return null;
-            }
-
-            var today = DateTime.UtcNow;
-            var start = today.Month >= 6 ? today.Year : today.Year - 1;
-            return $"{start}-{start + 1}";
-        }
-
-        private static string TermTokenToLabel(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return token;
-            }
-
-            return token.EndsWith("st", StringComparison.OrdinalIgnoreCase) ? "1st Term"
-                : token.EndsWith("nd", StringComparison.OrdinalIgnoreCase) ? "2nd Term"
-                : token.EndsWith("rd", StringComparison.OrdinalIgnoreCase) ? "3rd Term"
-                : token.EndsWith("th", StringComparison.OrdinalIgnoreCase) ? token
-                : token;
-        }
-
-        private static string ExtractTermToken(string semester)
-        {
-            if (string.IsNullOrWhiteSpace(semester))
-            {
-                return null;
-            }
-
-            var normalized = semester.Trim();
-            var hyphenParts = normalized.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var ordinalFromHyphen = hyphenParts.FirstOrDefault(IsOrdinalToken);
-            if (!string.IsNullOrWhiteSpace(ordinalFromHyphen))
-            {
-                return ordinalFromHyphen;
-            }
-
-            var parts = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var ordinal = parts.FirstOrDefault(IsOrdinalToken);
-            return ordinal ?? (IsOrdinalToken(normalized) ? normalized : normalized);
-        }
-
-        private static List<string> BuildDefaultSchoolYears(int count)
-        {
-            var today = DateTime.UtcNow;
-            var startYear = today.Month >= 6 ? today.Year : today.Year - 1;
-
-            return Enumerable.Range(0, Math.Max(count, 1))
-                .Select(offset => startYear - offset)
-                .Select(year => $"{year}-{year + 1}")
-                .ToList();
-        }
-
-        private static bool IsOrdinalToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return false;
-            }
-
-            return token.EndsWith("st", StringComparison.OrdinalIgnoreCase)
-                || token.EndsWith("nd", StringComparison.OrdinalIgnoreCase)
-                || token.EndsWith("rd", StringComparison.OrdinalIgnoreCase)
-                || token.EndsWith("th", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static IReadOnlyList<string> GetDefaultTermTokens()
-        {
-            return DefaultTermTokens;
-        }
-
-        private static readonly string[] DefaultTermTokens = { "1st", "2nd", "3rd" };
-
-        private static bool MatchesTerm(string semester, string schoolYear, string termKey)
-        {
-            if (string.IsNullOrWhiteSpace(semester))
-            {
-                return string.IsNullOrWhiteSpace(termKey) && string.IsNullOrWhiteSpace(schoolYear);
-            }
-
-            if (!string.IsNullOrWhiteSpace(termKey))
-            {
-                return string.Equals(semester, termKey, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (!string.IsNullOrWhiteSpace(schoolYear))
-            {
-                if (semester.Contains('-', StringComparison.OrdinalIgnoreCase) || semester.Contains('/', StringComparison.OrdinalIgnoreCase))
-                {
-                    return semester.StartsWith(schoolYear, StringComparison.OrdinalIgnoreCase);
-                }
-
-                // legacy semesters like "1st" do not embed the school year; include them when filtering by year
-                return true;
-            }
-
-            return true;
-        }
-
-        private static decimal ComputeChangePercent(int previous, int current)
-        {
-            if (previous <= 0)
-            {
-                return current > 0 ? 100m : 0m;
-            }
-
-            return Math.Round(((decimal)current - previous) / previous * 100m, 1);
-        }
-
-        private static decimal? ExtractFinalScore(Grade grade)
+        private static decimal? MapToPercent(Grade grade)
         {
             if (grade == null)
             {
                 return null;
             }
 
-            var components = new (decimal? Score, decimal Weight)[]
-            {
-                (grade.Prelims, 0.3m),
-                (grade.Midterm, 0.3m),
-                (grade.SemiFinal, 0.2m),
-                (grade.Final, 0.2m)
-            };
-
-            var weightedTotal = 0m;
-            var weightSum = 0m;
-
-            foreach (var component in components)
-            {
-                if (component.Score.HasValue)
-                {
-                    weightedTotal += component.Score.Value * component.Weight;
-                    weightSum += component.Weight;
-                }
-            }
-
-            if (weightSum <= 0)
+            var components = new List<decimal?> { grade.Prelims, grade.Midterm, grade.SemiFinal, grade.Final };
+            var available = components.Where(value => value.HasValue).Select(value => value.Value).ToList();
+            if (!available.Any())
             {
                 return null;
             }
 
-            return Math.Round(weightedTotal / weightSum, 2);
+            return Math.Round(available.Average(), 2);
         }
 
-        private static decimal ComputePassRate(IList<Grade> grades)
+        private static string DetermineStudentStatus(Grade grade)
         {
-            if (grades == null || grades.Count == 0)
+            var finalGrade = ComputeFinalGradeValue(grade);
+            return MapFinalGradeToStatus(finalGrade);
+        }
+
+        private static string DetermineAggregateStatus(IEnumerable<Grade> grades)
+        {
+            var gradeList = grades.ToList();
+            if (!gradeList.Any())
+            {
+                return "Incomplete";
+            }
+
+            if (gradeList.Any(g => !IsGradeComplete(g)))
+            {
+                return "Incomplete";
+            }
+
+            var finalGrades = gradeList
+                .Select(ComputeFinalGradeValue)
+                .Where(value => value.HasValue)
+                .Select(value => value.Value)
+                .ToList();
+
+            if (!finalGrades.Any())
+            {
+                return "Incomplete";
+            }
+
+            var average = Math.Round(finalGrades.Average(), 2);
+            return MapFinalGradeToStatus(average);
+        }
+
+        private class PassFailAccumulator
+        {
+            public int Pass { get; set; }
+            public int Fail { get; set; }
+            public int Incomplete { get; set; }
+        }
+
+        private static bool IsGradeComplete(Grade grade)
+        {
+            if (grade == null)
+            {
+                return false;
+            }
+
+            return grade.Prelims.HasValue
+                && grade.Midterm.HasValue
+                && grade.SemiFinal.HasValue
+                && grade.Final.HasValue;
+        }
+
+        private static decimal? ComputeFinalGradeValue(Grade grade)
+        {
+            if (!IsGradeComplete(grade))
+            {
+                return null;
+            }
+
+            return MapToPercent(grade);
+        }
+
+        private static string MapFinalGradeToStatus(decimal? finalGrade)
+        {
+            if (!finalGrade.HasValue || finalGrade.Value < 1m)
+            {
+                return "Incomplete";
+            }
+
+            return finalGrade.Value < 3m ? "Passed" : "Failed";
+        }
+
+        private static decimal ComputePassRate(IEnumerable<decimal?> grades)
+        {
+            var validGrades = grades.Where(value => value.HasValue).Select(value => value.Value).ToList();
+            if (!validGrades.Any())
             {
                 return 0m;
             }
 
-            var graded = grades.Where(g => ExtractFinalScore(g).HasValue).ToList();
-            if (graded.Count == 0)
+            var passed = validGrades.Count(value => value < 3m);
+            return Math.Round((decimal)passed / validGrades.Count * 100m, 1);
+        }
+
+        private static string DetermineSubmissionStatus(IEnumerable<Grade> grades)
+        {
+            var gradeList = grades.ToList();
+            if (gradeList.All(g => g.Final.HasValue))
+            {
+                return "Complete";
+            }
+
+            if (gradeList.Any(g => g.Final.HasValue))
+            {
+                return "Partial";
+            }
+
+            return "Missing";
+        }
+
+        private static decimal CalculateVolatility(IList<decimal> grades)
+        {
+            if (grades.Count <= 1)
             {
                 return 0m;
             }
 
-            var pass = graded.Count(g => ExtractFinalScore(g) >= 75m);
-            return Math.Round(pass * 100m / graded.Count, 1);
+            var averages = grades.Select(g => (double)g).ToList();
+            var mean = averages.Average();
+            var variance = averages.Average(value => Math.Pow(value - mean, 2));
+            return Math.Round((decimal)Math.Sqrt(variance), 2);
         }
 
-        private static decimal ComputeFailureRate(IList<Grade> grades)
+        private static string MapVolatilityToLabel(decimal volatility)
         {
-            if (grades == null || grades.Count == 0)
+            if (volatility < 3m)
             {
-                return 0m;
+                return "Stable";
             }
 
-            var graded = grades.Where(g => ExtractFinalScore(g).HasValue).ToList();
-            if (graded.Count == 0)
+            if (volatility < 6m)
             {
-                return 0m;
+                return "Steady Improver";
             }
 
-            var failed = graded.Count(g => ExtractFinalScore(g) < 75m);
-            return Math.Round(failed * 100m / graded.Count, 1);
+            return "Volatile";
         }
 
-        private static decimal MapPercentToGwa(decimal percent)
+        private static IList<StudentComparativeHighlightModel> BuildComparativeHighlights(IEnumerable<Grade> grades)
         {
-            if (percent <= 5m && percent > 0m)
+            return grades
+                .Where(grade => grade.AssignedCourse?.Course != null)
+                .GroupBy(grade => grade.AssignedCourse.Course.CourseCode)
+                .Select(group =>
+                {
+                    var best = group
+                        .Select(grade => new
+                        {
+                            Grade = MapToPercent(grade),
+                            Period = grade.AssignedCourse.Semester
+                        })
+                        .Where(x => x.Grade.HasValue)
+                        .OrderByDescending(x => x.Grade)
+                        .FirstOrDefault();
+
+                    return new StudentComparativeHighlightModel
+                    {
+                        Course = group.Key,
+                        Grade = best?.Grade,
+                        PeriodLabel = best != null ? ParseTerm(best.Period)?.Label ?? best.Period : "--"
+                    };
+                })
+                .Where(item => item.Grade.HasValue)
+                .OrderByDescending(item => item.Grade)
+                .ToList();
+        }
+
+        private static bool MatchesTermKey(string semester, string termKey)
+        {
+            if (string.IsNullOrWhiteSpace(termKey))
             {
-                return Math.Round(percent, 2);
+                return true;
             }
 
-            if (percent >= 96) return 1.00m;
-            if (percent >= 93) return 1.25m;
-            if (percent >= 90) return 1.50m;
-            if (percent >= 87) return 1.75m;
-            if (percent >= 84) return 2.00m;
-            if (percent >= 81) return 2.25m;
-            if (percent >= 78) return 2.50m;
-            if (percent >= 75) return 2.75m;
-            if (percent >= 70) return 3.00m;
-            if (percent >= 65) return 4.00m;
-            return 5.00m;
+            var term = ParseTerm(semester);
+            return term != null && string.Equals(term.TermKey, termKey, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string CategorizeAge(int age)
+        private static TermInfo ParseTerm(string semester)
         {
-            if (age < 18) return "<18";
-            if (age <= 20) return "18-20";
-            if (age <= 22) return "21-22";
-            if (age <= 24) return "23-24";
-            return "25+";
-        }
-
-        private static string BuildName(User user)
-        {
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(semester))
             {
-                return string.Empty;
+                return null;
             }
 
-            return string.Join(" ", new[] { user.FirstName, user.LastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
-        }
-
-        private static string BuildSchedule(IEnumerable<ClassSchedule> schedules)
-        {
-            if (schedules == null)
+            var parts = semester.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
             {
-                return string.Empty;
+                return null;
             }
 
-            return string.Join(", ", schedules.Select(s =>
+            var termName = parts[0];
+            var schoolYear = parts[1];
+            return new TermInfo
             {
-                var start = s.StartTime.ToString("hh\\:mm", CultureInfo.InvariantCulture);
-                var end = s.EndTime.ToString("hh\\:mm", CultureInfo.InvariantCulture);
-                return $"{s.Day} {start}-{end}";
-            }));
+                TermKey = semester,
+                Label = semester,
+                SchoolYear = schoolYear,
+                YearStart = ExtractYearStart(schoolYear),
+                SemesterOrder = MapTermOrder(termName)
+            };
         }
 
-        private static string ResolveTeacherDepartment(Teacher teacher, IList<AssignedCourse> scopedCourses)
+        private static int ExtractYearStart(string schoolYear)
         {
-            var programCode = scopedCourses?
-                .Select(ac => ac.Program?.ProgramCode)
-                .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p));
-
-            return programCode ?? "N/A";
-        }
-    }
-
-    internal static class DateOnlyExtensions
-    {
-        public static int ToAge(this DateOnly date)
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var age = today.Year - date.Year;
-            if (today < date.AddYears(age))
+            if (string.IsNullOrWhiteSpace(schoolYear))
             {
-                age--;
+                return 0;
             }
 
-            return age;
-        }
-
-        public static int? ToAge(this DateOnly? date)
-        {
-            return date.HasValue ? date.Value.ToAge() : (int?)null;
-        }
-    }
-
-    internal static class EnumerableExtensions
-    {
-        public static decimal AverageOrDefault(this IEnumerable<decimal?> values)
-        {
-            var list = values.Where(v => v.HasValue).Select(v => v.Value).ToList();
-            if (!list.Any())
+            var dashIndex = schoolYear.IndexOf('-');
+            if (dashIndex <= 0)
             {
-                return 0m;
+                return 0;
             }
 
-            return list.Average();
+            return int.TryParse(schoolYear.Substring(0, dashIndex), out var start) ? start : 0;
+        }
+
+        private static int MapTermOrder(string termName)
+        {
+            return termName switch
+            {
+                "Prelim" => 1,
+                "Midterm" => 2,
+                "SemiFinal" => 3,
+                "Final" => 4,
+                _ => 0
+            };
+        }
+
+        private class TermInfo
+        {
+            public string TermKey { get; set; }
+            public string Label { get; set; }
+            public string SchoolYear { get; set; }
+            public int YearStart { get; set; }
+            public int SemesterOrder { get; set; }
         }
     }
 }

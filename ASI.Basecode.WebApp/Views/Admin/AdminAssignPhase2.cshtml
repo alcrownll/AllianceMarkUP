@@ -6,36 +6,27 @@
     ViewData["Title"] = "Assign Course";
     ViewData["PageHeader"] = "Assign Course";
 
-    var courses  = (IEnumerable<Course>)(ViewBag.Courses  ?? Enumerable.Empty<Course>());
+    var courses = (IEnumerable<Course>)(ViewBag.Courses ?? Enumerable.Empty<Course>());
     var programs = (IEnumerable<Program>)(ViewBag.Programs ?? Enumerable.Empty<Program>());
     var teachers = (IEnumerable<Teacher>)(ViewBag.Teachers ?? Enumerable.Empty<Teacher>());
     var students = (IEnumerable<Student>)(ViewBag.Students ?? Enumerable.Empty<Student>());
 
     int pageIndex = (int)(ViewData["Page"] ?? ViewBag.Page ?? 1);
-    int pageSize  = 10;
-    int total     = (int)(ViewBag.Total ?? students.Count());
+    int pageSize = 10;
+    int total = (int)(ViewBag.Total ?? students.Count());
     int pageCount = (int)Math.Ceiling(total / (double)pageSize);
 
-    string mode         = (string)(ViewBag.Mode ?? "block");
+    string mode = (string)(ViewBag.Mode ?? "block");
     string blockProgram = (string)(ViewBag.BlockProgram ?? "");
-    string blockYear    = (string)(ViewBag.BlockYear ?? "");
+    string blockYear = (string)(ViewBag.BlockYear ?? "");
     string blockSection = (string)(ViewBag.BlockSection ?? "");
-    string status       = (string)(ViewBag.FilterStatus ?? "Active");
+    string status = (string)(ViewBag.FilterStatus ?? "Active");
 }
 
 <link rel="stylesheet" href="~/css/main-site.css" />
 
 <div class="container my-4">
     <div class="profile-card">
-        @if (TempData["ImportOk"] != null)
-        {
-            <div class="alert alert-success mb-3">@TempData["ImportOk"]</div>
-        }
-        @if (TempData["ImportErr"] != null)
-        {
-            <div class="alert alert-danger  mb-3">@TempData["ImportErr"]</div>
-        }
-
         <form asp-controller="AdminAssign" asp-action="Assign" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
@@ -119,7 +110,8 @@
                     <label class="form-label">Name</label>
                     <select class="form-select" asp-for="TeacherId" id="TeacherId" required>
                         <option value="">-- Select --</option>
-                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t => t.User.FirstName))
+                        @foreach (var t in teachers.Where(t => t.User != null).OrderBy(t => t.User.LastName).ThenBy(t =>
+                                                t.User.FirstName))
                         {
                             <option value="@t.TeacherId">@($"{t.User.LastName}, {t.User.FirstName}")</option>
                         }
@@ -135,20 +127,20 @@
             <div class="row g-3 uniform-row">
                 <div class="col-md-4">
                     <label class="form-label">Room</label>
-                    <select id="RoomSelect" name="ScheduleRoom" class="form-select" disabled>
+                    <select id="RoomSelect" name="ScheduleRoom" class="form-select">
                         <option value="">-- Select Room --</option>
                     </select>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Start Time</label>
-                    <input id="StartTime" name="ScheduleStart" type="time"
-                           class="form-control" min="07:30" max="21:30" step="900" />
+                    <input id="StartTime" name="ScheduleStart" type="time" class="form-control" min="07:30" max="21:30"
+                        step="900" />
                     <small class="tiny-hint text-muted">Earliest Start Time: 7:30 AM</small>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">End Time</label>
-                    <input id="EndTime" name="ScheduleEnd" type="time"
-                           class="form-control" min="07:30" max="21:30" step="900" />
+                    <input id="EndTime" name="ScheduleEnd" type="time" class="form-control" min="07:30" max="21:30"
+                        step="900" />
                     <small class="tiny-hint text-muted">Latest End Time: 9:30 PM</small>
                 </div>
             </div>
@@ -158,10 +150,13 @@
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Monday">Monday</button>
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Tuesday">Tuesday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Wednesday">Wednesday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Thursday">Thursday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Wednesday">Wednesday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Thursday">Thursday</button>
                     <button type="button" class="btn btn-outline-secondary day-btn" data-day="Friday">Friday</button>
-                    <button type="button" class="btn btn-outline-secondary day-btn" data-day="Saturday">Saturday</button>
+                    <button type="button" class="btn btn-outline-secondary day-btn"
+                        data-day="Saturday">Saturday</button>
                 </div>
                 <small id="DayLiveText" class="text-muted d-block mt-2"></small>
             </div>
@@ -249,26 +244,33 @@
                 </div>
 
                 <div class="d-flex gap-2 mt-2">
-                    <button type="button" id="btnResetBlockFilters" class="btn btn-outline-secondary btn-sm">Reset block filters</button>
+                    <button type="button" id="btnResetBlockFilters" class="btn btn-outline-secondary btn-sm">Reset block
+                        filters</button>
                 </div>
 
                 <div class="d-flex align-items-center gap-4 mt-4">
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" id="extraOff" name="modeRadio" value="block" @(mode == "block" ? "checked" : "")>
+                        <input class="form-check-input" type="radio" id="extraOff" name="modeRadio" value="block" @(mode
+                                                                                                                                              == "block" ? "checked" : "")>
                         <label class="form-check-label" for="extraOff">Block only</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" id="extraOn" name="modeRadio" value="manual" @(mode == "manual" ? "checked" : "")>
+                        <input class="form-check-input" type="radio" id="extraOn" name="modeRadio" value="manual" @(mode
+                                                                                                                                              == "manual" ? "checked" : "")>
                         <label class="form-check-label" for="extraOn">Add more students not in block section</label>
                     </div>
                 </div>
             </div>
 
             <div id="manualFields" class="mt-3" style="display:@(mode == "manual" ? "block" : "none")">
-                <div class="alert alert-info py-2"><div class="small mb-0">This table shows <strong>only students NOT in the selected block.</strong></div></div>
+                <div class="alert alert-info py-2">
+                    <div class="small mb-0">This table shows <strong>only students NOT in the selected block.</strong>
+                    </div>
+                </div>
 
                 <div class="position-relative">
-                    <div id="manualTableSpinner" class="d-none" style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6);z-index:5;">
+                    <div id="manualTableSpinner" class="d-none"
+                        style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6);z-index:5;">
                         <div class="spinner-border" role="status" aria-label="Loading manual table"></div>
                     </div>
                     <div id="manualTableHost">
