@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using ASI.Basecode.Services.Interfaces;
@@ -34,6 +35,7 @@ namespace ASI.Basecode.WebApp.Controllers
             await HttpContext.SignInAsync("ASI_Basecode", principal);
             return RedirectToAction("Dashboard");
         }
+
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Dashboard(string schoolYear = null, string termKey = null)
         {
@@ -54,20 +56,18 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("AdminDashboard", vm);
         }
 
-        // ✅ Manage Accounts (Students, Teachers)
         [Authorize(Roles = "Admin")]
         public IActionResult Accounts()
         {
             return View("AdminAccounts");
         }
-        // ✅ Manage Courses (catalog of subjects)
+
         [Authorize(Roles = "Admin")]
         public IActionResult Courses()
         {
             return View("AdminCourses");
         }
 
-        // ✅ Manage Classes (specific offerings, schedules, teachers, enrolled students)
         [Authorize(Roles = "Admin")]
         public IActionResult Classes()
         {
@@ -116,7 +116,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(analytics);
         }
 
-
         [Authorize(Roles = "Admin")]
         public IActionResult Calendar()
         {
@@ -137,6 +136,28 @@ namespace ASI.Basecode.WebApp.Controllers
             }
 
             return Json(detail);
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> DiagnoseDashboardData()
+        {
+            var detail = await _dashboardService.GetYearDetailAsync(null, null);
+
+            return Json(new
+            {
+                message = "Dashboard Data Diagnostic",
+                schoolYear = detail?.SchoolYear,
+                subjectEnrollmentsCount = detail?.SubjectEnrollments?.Count ?? 0,
+                subjectEnrollments = detail?.SubjectEnrollments?.Take(3),
+                subjectAverageGpaCount = detail?.SubjectAverageGpa?.Count ?? 0,
+                subjectAverageGpa = detail?.SubjectAverageGpa?.Take(3),
+                passFailRatesCount = detail?.PassFailRates?.Count ?? 0,
+                passFailRates = detail?.PassFailRates,
+                termOptionsCount = detail?.TermOptions?.Count ?? 0,
+                termOptions = detail?.TermOptions,
+                overallPassRate = detail?.OverallPassRate,
+            });
         }
     }
 }

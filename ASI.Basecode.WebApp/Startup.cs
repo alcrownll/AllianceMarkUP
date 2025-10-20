@@ -1,4 +1,4 @@
-﻿using ASI.Basecode.Data;
+using ASI.Basecode.Data;
 using ASI.Basecode.Resources.Constants;
 using ASI.Basecode.Services.Manager;
 using ASI.Basecode.WebApp.Authentication;
@@ -89,10 +89,22 @@ namespace ASI.Basecode.WebApp
             {
                 options.UseNpgsql(
                     Configuration.GetConnectionString("DefaultConnection"),
-                    npgsqlOptions => npgsqlOptions.CommandTimeout(120));
+                    npgsqlOptions =>
+                    {
+                        npgsqlOptions.CommandTimeout(120);
+                        npgsqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(10),
+                            errorCodesToAdd: null);
+                    });
             });
 
-            services.AddControllersWithViews();
+            services.AddControllersWithViews()
+                .AddJsonOptions(options =>
+                {
+                    // Ensure JSON responses use camelCase for consistency with JavaScript
+                    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                });
             services.AddRazorPages().AddRazorRuntimeCompilation();
 
             //Configuration

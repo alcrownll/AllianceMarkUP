@@ -5,14 +5,15 @@
         return;
     }
 
+    const initialDashboard = window.AdminReportsInitial || null;
     const state = {
-        dashboard: window.AdminReportsInitial || null,
+        dashboard: initialDashboard,
         selectedTeacherId: null,
         selectedStudentId: null,
         teacherDirectory: [],
         studentOptions: [],
-        selectedSchoolYear: null,
-        selectedTermKey: null
+        selectedSchoolYear: initialDashboard?.SchoolYear || initialDashboard?.schoolYear || null,
+        selectedTermKey: initialDashboard?.TermKey || initialDashboard?.termKey || null
     };
 
     const chartRegistry = new Map();
@@ -346,24 +347,43 @@
             container.appendChild(card);
         });
     }
-
+    
     function renderTeacherDetail(detail) {
-        const hasDetail = detail && detail.TeacherId;
-        const assignments = hasDetail && Array.isArray(detail.Assignments) ? detail.Assignments : [];
-        const submissionStatuses = hasDetail && Array.isArray(detail.SubmissionStatuses) ? detail.SubmissionStatuses : [];
-        const coursePassRates = hasDetail && Array.isArray(detail.CoursePassRates) ? detail.CoursePassRates : [];
+        const teacherId = readProp(detail, 'TeacherId');
+        const hasDetail = Boolean(teacherId);
+        const assignmentsSource = readProp(detail, 'Assignments');
+        const submissionStatusesSource = readProp(detail, 'SubmissionStatuses');
+        const coursePassRatesSource = readProp(detail, 'CoursePassRates');
 
-        setField('teacher-name', hasDetail ? (detail.Name || 'Select a teacher') : 'Select a teacher');
-        setField('teacher-meta', hasDetail ? `${detail.Rank || '--'} · ${detail.Department || '--'}` : '--');
+        const assignments = hasDetail && Array.isArray(assignmentsSource) ? assignmentsSource : [];
+        const submissionStatuses = hasDetail && Array.isArray(submissionStatusesSource) ? submissionStatusesSource : [];
+        const coursePassRates = hasDetail && Array.isArray(coursePassRatesSource) ? coursePassRatesSource : [];
 
-        const teachingLoadCount = hasDetail ? toNumber(detail.TeachingLoadCount, 0) : 0;
-        const passRatePercent = hasDetail ? toNumber(detail.PassRatePercent, 0) : 0;
-        const completedCourses = submissionStatuses.filter(item => item?.IsComplete).length;
+        const teacherName = hasDetail ? (readProp(detail, 'Name') || 'Select a teacher') : 'Select a teacher';
+        const teacherRank = readProp(detail, 'Rank') || '--';
+        const teacherDepartment = readProp(detail, 'Department') || '--';
+
+        setField('teacher-name', teacherName);
+        setField('teacher-meta', hasDetail ? `${teacherRank} · ${teacherDepartment}` : '--');
+
+        const teachingLoadCount = hasDetail ? toNumber(readProp(detail, 'TeachingLoadCount'), 0) : 0;
+        const passRatePercent = hasDetail ? toNumber(readProp(detail, 'PassRatePercent'), 0) : 0;
+        const completedCourses = submissionStatuses.filter(item => Boolean(readProp(item, 'IsComplete'))).length;
         const totalAssignments = assignments.length;
 
-        setField('teacher-load', `${formatNumber(teachingLoadCount)} courses`);
+        const subjectLabel = teachingLoadCount === 1 ? 'subject' : 'subjects';
+        setField('teacher-load', `${formatNumber(teachingLoadCount)} ${subjectLabel}`);
         setField('teacher-pass', `${passRatePercent.toFixed(1)}%`);
         setField('teacher-submissions', totalAssignments ? `${formatNumber(completedCourses)}/${formatNumber(totalAssignments)}` : '0/0');
+
+        const loadCard = root.querySelector('[data-card="teacher-load"]');
+        const passCard = root.querySelector('[data-card="teacher-pass"]');
+        [loadCard, passCard].forEach(card => {
+            if (!card) {
+                return;
+            }
+            card.classList.toggle('metric-card-active', hasDetail);
+        });
 
         if (els.teacherAssignmentsBody) {
             els.teacherAssignmentsBody.innerHTML = '';
@@ -371,20 +391,23 @@
                 els.teacherAssignmentsBody.innerHTML = '<tr data-empty="true"><td colspan="6" class="text-center">Select a teacher to load assignments.</td></tr>';
             } else {
                 assignments.forEach(item => {
-                    const finalGradeValue = item?.FinalGrade;
+                    const subjectName = readProp(item, 'SubjectName') || readProp(item, 'CourseCode') || '--';
+                    const schedule = readProp(item, 'Schedule') || '--';
+                    const units = readProp(item, 'Units');
+                    const finalGradeValue = readProp(item, 'FinalGrade');
                     const finalGrade = Number.isFinite(toNumber(finalGradeValue, NaN))
                         ? toNumber(finalGradeValue).toFixed(2)
                         : '--';
-                    const status = (item?.Status || '--').toLowerCase();
+                    const statusLabel = readProp(item, 'Status') || '--';
+                    const statusClass = statusLabel.toLowerCase();
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${item?.SubjectName || item?.CourseCode || '--'}</td>
-                        <td>${item?.Schedule || '--'}</td>
-                        <td>${formatNumber(item?.Units)}</td>
-                        <td>${formatNumber(item?.Enrolled)}</td>
+                        <td>${subjectName}</td>
+                        <td>${schedule}</td>
+                        <td>${formatNumber(units)}</td>
                         <td>${finalGrade}</td>
-                        <td class="status-${status}">${item?.Status || '--'}</td>`;
+                        <td class="status-${statusClass}">${statusLabel}</td>`;
                     els.teacherAssignmentsBody.appendChild(tr);
                 });
             }
@@ -397,21 +420,23 @@
                 els.teacherSubmissionList.innerHTML = `<li data-empty="true" class="pending">${message}</li>`;
             } else {
                 submissionStatuses.forEach(item => {
-                    const isComplete = Boolean(item?.IsComplete);
+                    const isComplete = Boolean(readProp(item, 'IsComplete'));
+                    const subjectName = readProp(item, 'SubjectName') || readProp(item, 'CourseCode') || '--';
+                    const statusLabel = readProp(item, 'Status') || (isComplete ? 'Complete' : 'Incomplete');
                     const li = document.createElement('li');
                     li.className = isComplete ? 'status-chip status-complete' : 'status-chip status-incomplete';
-                    li.textContent = `${item?.SubjectName || item?.CourseCode || '--'} · ${item?.Status || '--'}`;
+                    li.textContent = `${subjectName} · ${statusLabel}`;
                     els.teacherSubmissionList.appendChild(li);
                 });
             }
         }
 
-        const passRateLabels = coursePassRates.map(item => item?.SubjectName || item?.CourseCode || '--');
-        const passRateData = coursePassRates.map(item => toNumber(item?.PassRatePercent, 0));
+        const passRateLabels = coursePassRates.map(item => readProp(item, 'SubjectName') || readProp(item, 'CourseCode') || '--');
+        const passRateData = coursePassRates.map(item => toNumber(readProp(item, 'PassRatePercent'), 0));
 
         ensureChart('teacherPassChart', 'bar', passRateLabels, [
             {
-                label: 'Pass %',
+                label: 'Subject Pass %',
                 data: passRateData,
                 backgroundColor: 'rgba(37, 99, 235, 0.65)',
                 borderRadius: 6,
@@ -436,7 +461,7 @@
             }
         });
     }
-
+    
     function renderStudent(analytics) {
         const gradeBreakdownRaw = readProp(analytics, 'GradeBreakdown');
         const gradeBreakdown = Array.isArray(gradeBreakdownRaw) ? gradeBreakdownRaw : [];
@@ -763,6 +788,8 @@
             setLoading(true);
             const detail = await fetchJson('/Admin/ReportsTeacherDetail', {
                 teacherId,
+                schoolYear: state.selectedSchoolYear,
+                termKey: state.selectedTermKey
             });
             renderTeacherDetail(detail);
         } catch (error) {

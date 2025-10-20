@@ -9,13 +9,6 @@
     ViewData["PageHeader"] = "Admin Dashboard";
 
     var selectedTermKey = Model?.YearDetail?.SelectedTermKey ?? string.Empty;
-    var termOptions = Model?.YearDetail?.TermOptions ?? new List<TermOptionModel>();
-    var selectedTermLabel = termOptions
-        .FirstOrDefault(t => string.Equals(t.TermKey ?? string.Empty, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase))
-        ?.Label
-        ?? (!string.IsNullOrWhiteSpace(Model?.YearDetail?.SchoolYear)
-            ? $"{Model.YearDetail.SchoolYear} - Whole Year"
-            : "Whole Year");
 
     var initialPayload = new
     {
@@ -61,7 +54,7 @@
                 <i class="fa-solid fa-book-open"></i>
             </div>
             <div class="kpi-content">
-                <span class="kpi-label">Active Courses</span>
+                <span class="kpi-label">Courses</span>
                 <span class="kpi-value">@((Model?.Summary?.ActiveCourses ?? 0).ToString("N0"))</span>
             </div>
         </article>
@@ -71,7 +64,7 @@
         <div class="panel-header">
             <div>
                 <h2>Students Enrolled</h2>
-                <span>Number of students per term</span>
+                <span>Number of students per subject</span>
             </div>
             <span class="panel-hint">Hover to reveal totals</span>
         </div>
@@ -80,71 +73,12 @@
         </div>
     </section>
 
-    <section class="panel glass breakdown-panel">
-        <div class="panel-header">
-            <div>
-                <h2>Students Breakdown</h2>
-                <span>Distribution by program and year level</span>
-            </div>
-            <div class="panel-actions">
-                <label for="yearSelector" class="form-label">School Year</label>
-                <select id="yearSelector" class="form-select form-select-sm" aria-label="Select school year">
-                    @if ((Model?.SchoolYears?.Count ?? 0) == 0)
-                    {
-                        <option>--</option>
-                    }
-                    else
-                    {
-                        foreach (var year in Model!.SchoolYears)
-                        {
-                            var isSelected = string.Equals(year, Model?.SelectedSchoolYear, System.StringComparison.OrdinalIgnoreCase);
-                            <option value="@year" selected="@(isSelected)">@year</option>
-                        }
-                    }
-                </select>
-            </div>
-        </div>
-        <div class="panel-body breakdown-grid">
-            <div class="donut-card">
-                <div class="donut-wrapper">
-                    <canvas id="programDistributionChart" height="260"></canvas>
-                    <div class="donut-center" id="programShareHighlight">
-                        <span class="donut-value">--</span>
-                        <span class="donut-label">Top Share</span>
-                    </div>
-                </div>
-                <ul class="donut-legend" id="programLegendList"></ul>
-            </div>
-            <div class="horizontal-card">
-                <canvas id="yearLevelHorizontalChart" height="260"></canvas>
-            </div>
-        </div>
-    </section>
-
     <section class="panel-grid">
         <article class="panel glass">
             <div class="panel-header">
                 <div>
                     <h2>Average GPA</h2>
-                    <span>Weighted per available term</span>
-                </div>
-                <div class="panel-actions">
-                    <label for="termSelector" class="form-label">Term</label>
-                    <select id="termSelector" class="form-select form-select-sm" aria-label="Filter by term" data-selector="term">
-                        @if (!termOptions.Any())
-                        {
-                            <option value="">Whole Year</option>
-                        }
-                        else
-                        {
-                            foreach (var option in termOptions)
-                            {
-                                var optionValue = option.TermKey ?? string.Empty;
-                                var isSelected = string.Equals(optionValue, selectedTermKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
-                                <option value="@optionValue" selected="@(isSelected)">@option.Label</option>
-                            }
-                        }
-                    </select>
+                    <span>Weighted per subject</span>
                 </div>
             </div>
             <div class="panel-body">
@@ -155,7 +89,7 @@
             <div class="panel-header">
                 <div>
                     <h2>Pass vs Fail Rate</h2>
-                    <span>Aggregate for selected school year</span>
+                    <span>Defines performance success frequency</span>
                 </div>
             </div>
             <div class="panel-body">
@@ -167,9 +101,9 @@
 
 @section Scripts {
     <script>
-        window.AdminDashboardInitial = @Html.Raw(JsonSerializer.Serialize(initialPayload));
+        window.AdminDashboardInitial = @Html.Raw(JsonSerializer.Serialize(initialPayload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" integrity="sha384-+3zZX0hgqPfrxGX2YeliYg+6TSHI+b/xGaxmwoMPmxjSPdZRhqUWLWyd4InENcy9" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
 }
 

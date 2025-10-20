@@ -333,13 +333,26 @@
     gap: 16px;
 }
 
-.mini-card {
+ .mini-card {
     padding: 14px 16px;
     border-radius: 16px;
     background: rgba(226, 232, 240, 0.6);
     display: flex;
     flex-direction: column;
     gap: 4px;
+    align-items: center;
+    text-align: center;
+}
+
+.mini-card.metric-card-active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(96, 165, 250, 0.35);
+}
+
+.mini-card.metric-card-active .mini-label,
+.mini-card.metric-card-active .mini-value {
+    color: #ffffff;
 }
 
 .mini-label {

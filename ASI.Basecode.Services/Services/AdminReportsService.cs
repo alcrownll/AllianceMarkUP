@@ -69,20 +69,35 @@ namespace ASI.Basecode.Services.Services
             var teacher = await _ctx.Teachers
                 .Include(t => t.User)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.TeacherId == teacherId);
+                .FirstOrDefaultAsync(t => t.TeacherId == teacherId
+                    && t.User != null
+                    && t.User.Role != null
+                    && t.User.Role.ToLower() == "teacher");
 
             if (teacher == null)
             {
                 return new TeacherDetailModel();
             }
 
-            var assignedCourses = await _ctx.AssignedCourses
+            var assignedCoursesQuery = _ctx.AssignedCourses
                 .Where(ac => ac.TeacherId == teacherId && ac.SchoolYear == normalizedSchoolYear)
                 .Include(ac => ac.Course)
                 .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
-                .AsNoTracking()
-                .ToListAsync();
+                .AsNoTracking();
+
+            var assignedCourses = await assignedCoursesQuery.ToListAsync();
+
+            if (!assignedCourses.Any())
+            {
+                assignedCourses = await _ctx.AssignedCourses
+                    .Where(ac => ac.TeacherId == teacherId)
+                    .Include(ac => ac.Course)
+                    .Include(ac => ac.Program)
+                    .Include(ac => ac.ClassSchedules)
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
 
             if (!string.IsNullOrEmpty(normalizedTermKey))
             {
@@ -91,11 +106,21 @@ namespace ASI.Basecode.Services.Services
                     .ToList();
             }
 
-            var grades = await _ctx.Grades
+            var gradesQuery = _ctx.Grades
                 .Where(g => g.AssignedCourse.TeacherId == teacherId && g.AssignedCourse.SchoolYear == normalizedSchoolYear)
                 .Include(g => g.AssignedCourse)
-                .AsNoTracking()
-                .ToListAsync();
+                .AsNoTracking();
+
+            var grades = await gradesQuery.ToListAsync();
+
+            if (!grades.Any())
+            {
+                grades = await _ctx.Grades
+                    .Where(g => g.AssignedCourse.TeacherId == teacherId)
+                    .Include(g => g.AssignedCourse)
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
 
             if (!string.IsNullOrWhiteSpace(normalizedTermKey))
             {
@@ -143,16 +168,15 @@ namespace ASI.Basecode.Services.Services
                     .Where(g => g.AssignedCourseId == ac.AssignedCourseId)
                     .ToList();
 
-                var outcomes = courseGrades
+                var completedGrades = courseGrades
                     .Select(ComputeFinalGradeValue)
-                    .Where(value => value.HasValue && value.Value >= 1m)
-                    .Select(value => MapFinalGradeToStatus(value.Value))
+                    .Where(value => value.HasValue)
+                    .Select(value => value.Value)
                     .ToList();
 
-                var passCount = outcomes.Count(result => result == "Passed");
-                var failCount = outcomes.Count(result => result == "Failed");
-                var total = passCount + failCount;
-                var passRate = total > 0 ? Math.Round(passCount * 100m / total, 1) : 0m;
+                var passRate = completedGrades.Any()
+                    ? Math.Round(completedGrades.Count(value => value < 3m) * 100m / completedGrades.Count, 1)
+                    : 0m;
 
                 return new CoursePassRateModel
                 {
@@ -189,16 +213,15 @@ namespace ASI.Basecode.Services.Services
                 })
                 .ToList();
 
-            var gradeOutcomes = grades
+            var aggregateCompletedGrades = grades
                 .Select(ComputeFinalGradeValue)
-                .Where(value => value.HasValue && value.Value >= 1m)
-                .Select(value => MapFinalGradeToStatus(value.Value))
+                .Where(value => value.HasValue)
+                .Select(value => value.Value)
                 .ToList();
 
-            var aggregatePassCount = gradeOutcomes.Count(result => result == "Passed");
-            var aggregateFailCount = gradeOutcomes.Count(result => result == "Failed");
-            var aggregateTotal = aggregatePassCount + aggregateFailCount;
-            var passRateAggregate = aggregateTotal > 0 ? Math.Round(aggregatePassCount * 100m / aggregateTotal, 1) : 0m;
+            var passRateAggregate = aggregateCompletedGrades.Any()
+                ? Math.Round(aggregateCompletedGrades.Count(value => value < 3m) * 100m / aggregateCompletedGrades.Count, 1)
+                : 0m;
 
             var submissionCompletion = assignments.Count == 0
                 ? 0m
@@ -232,7 +255,9 @@ namespace ASI.Basecode.Services.Services
                 TeachingLoadUnits = assignedCourses.Sum(ac => ac.Units),
                 TeachingLoadCount = assignments.Count,
                 SectionCount = assignments.Count,
-                PassRatePercent = passRateAggregate,
+                PassRatePercent = assignments.Sum(a => a.FinalGrade.HasValue ? a.FinalGrade.Value : 0m) > 0 && assignments.Any(a => a.FinalGrade.HasValue)
+                    ? Math.Round(assignments.Where(a => a.FinalGrade.HasValue).Average(a => a.FinalGrade.Value < 3m ? 100m : 0m), 1)
+                    : passRateAggregate,
                 SubmissionCompletionPercent = submissionCompletion,
                 Assignments = assignments,
                 CoursePassRates = coursePassRates,
@@ -320,13 +345,20 @@ namespace ASI.Basecode.Services.Services
                 return schoolYear;
             }
 
-            var mostRecent = await _ctx.AssignedCourses
-                .Where(ac => ac.SchoolYear != null)
-                .OrderByDescending(ac => ac.SchoolYear)
-                .Select(ac => ac.SchoolYear)
-                .FirstOrDefaultAsync();
+            try
+            {
+                var mostRecent = await _ctx.AssignedCourses
+                    .Where(ac => ac.SchoolYear != null)
+                    .OrderByDescending(ac => ac.SchoolYear)
+                    .Select(ac => ac.SchoolYear)
+                    .FirstOrDefaultAsync();
 
-            return mostRecent ?? string.Empty;
+                return mostRecent ?? string.Empty;
+            }
+            catch (InvalidOperationException)
+            {
+                return string.Empty;
+            }
         }
 
         private async Task<IList<string>> GetAvailableSchoolYearsAsync()
@@ -411,13 +443,22 @@ namespace ASI.Basecode.Services.Services
 
         private async Task<IList<TeacherDirectoryItemModel>> LoadTeacherDirectoryAsync(string schoolYear, string termKey)
         {
-            var teachers = await _ctx.Teachers
-                .Include(t => t.User)
+            var teacherUsers = await _ctx.Users
+                .Include(u => u.Teacher)
+                .Where(u => u.Role != null
+                    && u.Role.ToLower() == "teacher"
+                    && u.Teacher != null)
                 .AsNoTracking()
                 .ToListAsync();
 
+            var teacherIds = teacherUsers
+                .Select(u => u.Teacher?.TeacherId)
+                .Where(id => id.HasValue)
+                .Select(id => id.Value)
+                .ToList();
+
             var assignments = await _ctx.AssignedCourses
-                .Where(ac => ac.SchoolYear == schoolYear)
+                .Where(ac => teacherIds.Contains(ac.TeacherId) && ac.SchoolYear == schoolYear)
                 .Include(ac => ac.Program)
                 .AsNoTracking()
                 .ToListAsync();
@@ -440,22 +481,29 @@ namespace ASI.Basecode.Services.Services
                         Department = group.Select(ac => ac.Program?.ProgramName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
                     });
 
-            return teachers
-                .Select(teacher =>
+            return teacherUsers
+                .Select(user =>
                 {
+                    var teacher = user.Teacher;
+                    if (teacher == null)
+                    {
+                        return null;
+                    }
+
                     stats.TryGetValue(teacher.TeacherId, out var stat);
 
                     return new TeacherDirectoryItemModel
                     {
                         TeacherId = teacher.TeacherId,
-                        Name = teacher.User != null ? $"{teacher.User.FirstName} {teacher.User.LastName}" : "Teacher",
+                        Name = $"{user.FirstName} {user.LastName}",
                         Department = stat?.Department ?? teacher.Position ?? "--",
-                        Email = teacher.User?.Email ?? "--",
+                        Email = user.Email ?? "--",
                         Rank = teacher.Position,
                         LoadUnits = stat?.LoadUnits ?? 0,
                         Sections = stat?.Sections ?? 0
                     };
                 })
+                .Where(item => item != null && (item.LoadUnits > 0 || item.Sections > 0))
                 .OrderBy(item => item.Name)
                 .ToList();
         }

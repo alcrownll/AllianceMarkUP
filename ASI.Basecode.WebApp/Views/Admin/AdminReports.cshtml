@@ -217,11 +217,11 @@
             </header>
 
             <div class="detail-kpis justify-content-center text-center gap-3">
-                <article class="mini-card text-center">
-                    <span class="mini-label">Teaching Load</span>
+                <article class="mini-card text-center" data-card="teacher-load">
+                    <span class="mini-label">Subjects</span>
                     <strong class="mini-value" data-field="teacher-load">0 courses</strong>
                 </article>
-                <article class="mini-card text-center">
+                <article class="mini-card text-center" data-card="teacher-pass">
                     <span class="mini-label">Pass Rate</span>
                     <strong class="mini-value" data-field="teacher-pass">0%</strong>
                 </article>
@@ -229,7 +229,7 @@
 
             <div class="detail-body">
                 <article class="panel">
-                    <header><h3>Course Pass Rates</h3></header>
+                    <header><h3>Subject Pass Rates</h3></header>
                     <div class="panel-body">
                         <canvas id="teacherPassChart" height="220"></canvas>
                     </div>
@@ -244,7 +244,6 @@
                                     <th>Subject</th>
                                     <th>Schedule</th>
                                     <th>Units</th>
-                                    <th>Enrolled</th>
                                     <th>Final</th>
                                     <th>Status</th>
                                 </tr>

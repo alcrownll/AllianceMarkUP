@@ -11,6 +11,9 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<PassFailRateModel> PassFailRates { get; set; } = new List<PassFailRateModel>();
         public IList<TermOptionModel> TermOptions { get; set; } = new List<TermOptionModel>();
         public string SelectedTermKey { get; set; }
+        public decimal OverallPassRate { get; set; }
+        public IList<SubjectEnrollmentPointModel> SubjectEnrollments { get; set; } = new List<SubjectEnrollmentPointModel>();
+        public IList<SubjectGpaPointModel> SubjectAverageGpa { get; set; } = new List<SubjectGpaPointModel>();
     }
 
     public class ProgramShareModel
@@ -52,5 +55,19 @@ namespace ASI.Basecode.Services.ServiceModels
         public string SchoolYear { get; set; }
         public int YearStart { get; set; }
         public int SemesterOrder { get; set; }
+    }
+
+    public class SubjectEnrollmentPointModel
+    {
+        public string CourseCode { get; set; }
+        public string CourseName { get; set; }
+        public int StudentCount { get; set; }
+    }
+
+    public class SubjectGpaPointModel
+    {
+        public string CourseCode { get; set; }
+        public string CourseName { get; set; }
+        public decimal AverageGpa { get; set; }
     }
 }
