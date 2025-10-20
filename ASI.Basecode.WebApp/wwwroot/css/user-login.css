@@ -128,7 +128,7 @@ body {
         height: 44px;
         border-radius: 25px;
         border: 2px solid transparent;
-        padding: 0 16px 0 54px;
+        padding: 0 16px 0 54px; /* leave space for icon */
         font-size: 15px;
         color: #0f162c;
         background: linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#c9d4ff,#96afff) border-box;
@@ -165,24 +165,64 @@ body {
         color: var(--pill-border-focus);
     }
 
-/* left input icons (generic) */
+/* ===== ICONS: tie to input background (no movement on errors) ===== */
+
+/* remove pseudo-element icon usage completely */
 .with-icon:before {
-    content: "";
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    width: 20px;
-    height: 20px;
-    transform: translateY(-50%);
-    opacity: .9;
+    content: none;
+    display: none;
 }
 
-.with-icon.id:before {
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'%3E%3C/rect%3E%3Cpath d='M7 9h6M7 13h10'/%3E%3C/svg%3E") center/20px no-repeat;
+/* default (idle) */
+.with-icon.id input {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'%3E%3C/rect%3E%3Cpath d='M7 9h6M7 13h10'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#c9d4ff,#96afff) border-box;
+    background-size: 20px 20px, auto, auto;
 }
 
-.with-icon.pw:before {
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='10' rx='2'%3E%3C/rect%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E") center/20px no-repeat;
+.with-icon.pw input {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='10' rx='2'%3E%3C/rect%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#c9d4ff,#96afff) border-box;
+    background-size: 20px 20px, auto, auto;
+}
+
+/* focus */
+.with-icon.id input:focus {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'%3E%3C/rect%3E%3Cpath d='M7 9h6M7 13h10'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,var(--pill-border-focus),var(--pill-border-focus)) border-box;
+    background-size: 20px 20px, auto, auto;
+}
+
+.with-icon.pw input:focus {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%234E6BFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='10' rx='2'%3E%3C/rect%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,var(--pill-border-focus),var(--pill-border-focus)) border-box;
+    background-size: 20px 20px, auto, auto;
+}
+
+/* error */
+.notched-field input.input-validation-error {
+    background: linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#fca5a5,#ef4444) border-box;
+    box-shadow: 0 0 0 4px rgba(220,38,38,.12);
+    outline: none;
+}
+
+    .notched-field input.input-validation-error + label {
+        top: -8px;
+        transform: none;
+        font-size: 12px;
+        color: #ef4444;
+    }
+
+    .notched-field input.input-validation-error:focus {
+        background: linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#fca5a5,#ef4444) border-box;
+        box-shadow: 0 0 0 4px rgba(220,38,38,.12);
+    }
+
+/* keep the icon visible in error state too */
+.with-icon.id input.input-validation-error {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23EF4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'%3E%3C/rect%3E%3Cpath d='M7 9h6M7 13h10'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#fca5a5,#ef4444) border-box;
+    background-size: 20px 20px, auto, auto;
+}
+
+.with-icon.pw input.input-validation-error {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23EF4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='10' rx='2'%3E%3C/rect%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E") no-repeat 20px center, linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#fca5a5,#ef4444) border-box;
+    background-size: 20px 20px, auto, auto;
 }
 
 /* helpers & buttons */
@@ -520,3 +560,41 @@ body {
 #fpModal .yt-modal__card {
     padding-bottom: 5px;
 }
+
+/* ======== validation colors (unobtrusive + summary) ======== */
+.field-validation-error, .val.text-danger {
+    color: #b91c1c !important;
+    font-size: 12px;
+}
+
+.validation-summary-errors {
+    color: #b91c1c !important;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+    .validation-summary-errors ul {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+/* When wrong-credentials (auth-fail) is applied to the form: */
+.auth-fail .notched-field input {
+    background: linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg,#fca5a5,#ef4444) border-box;
+    box-shadow: 0 0 0 4px rgba(220,38,38,.12);
+    outline: none;
+}
+
+    /* float label color stays red while in auth-fail */
+    .auth-fail .notched-field input + label {
+        top: -8px;
+        transform: none;
+        font-size: 12px;
+        color: #ef4444;
+    }
+
+
+
+
+
+

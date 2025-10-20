@@ -36,19 +36,19 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             var claims = new[]
             {
-        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-        new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
-        new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
-        new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
-        new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
-        new Claim("IdNumber", user.IdNumber ?? string.Empty),
-        new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+             new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+             new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
+             new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+             new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
+             new Claim("IdNumber", user.IdNumber ?? string.Empty),
+             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
     };
 
             var identity = new ClaimsIdentity(claims, AuthScheme);
             return new ClaimsPrincipal(identity);
         }
-        
+
         private async Task SignInUserAsync(User user, bool rememberMe)
         {
             var principal = BuildPrincipal(user);
@@ -84,6 +84,8 @@ namespace ASI.Basecode.WebApp.Controllers
             _userService = userService;
         }
 
+ 
+
         // =======================
         // STUDENT LOGIN
         // =======================
@@ -91,12 +93,12 @@ namespace ASI.Basecode.WebApp.Controllers
         [AllowAnonymous]
         public IActionResult StudentLogin()
         {
-            return View("StudentLogin", new LoginViewModel());
+            return View("StudentLogin", new StudentLoginViewModel());
         }
 
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> StudentLogin(LoginViewModel model)
+        public async Task<IActionResult> StudentLogin(StudentLoginViewModel model)
         {
             if (!ModelState.IsValid)
                 return View("~/Views/Login/StudentLogin.cshtml", model);
@@ -110,7 +112,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 return RedirectToAction("Dashboard", "Student");
             }
 
-            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            ModelState.AddModelError(string.Empty, "Incorrect ID Number or Password.");
             return View("~/Views/Login/StudentLogin.cshtml", model);
         }
 
@@ -121,12 +123,12 @@ namespace ASI.Basecode.WebApp.Controllers
         [AllowAnonymous]
         public IActionResult TeacherLogin()
         {
-            return View("TeacherLogin", new LoginViewModel());
+            return View("TeacherLogin", new TeacherLoginViewModel());
         }
 
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> TeacherLogin(LoginViewModel model)
+        public async Task<IActionResult> TeacherLogin(TeacherLoginViewModel model)
         {
             if (!ModelState.IsValid)
                 return View("~/Views/Login/TeacherLogin.cshtml", model);
@@ -140,7 +142,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 return RedirectToAction("Dashboard", "Teacher");
             }
 
-            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            ModelState.AddModelError(string.Empty, "Incorrect ID Number or Password.");
             return View("~/Views/Login/TeacherLogin.cshtml", model);
         }
 
@@ -152,12 +154,12 @@ namespace ASI.Basecode.WebApp.Controllers
         [AllowAnonymous]
         public IActionResult AdminLogin()
         {
-            return View("AdminLogin", new LoginViewModel());
+            return View("AdminLogin", new AdminLoginViewModel());
         }
 
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> AdminLogin(LoginViewModel model)
+        public async Task<IActionResult> AdminLogin(AdminLoginViewModel model)
         {
             if (!ModelState.IsValid)
                 return View("~/Views/Login/AdminLogin.cshtml", model);
@@ -171,7 +173,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 return RedirectToAction("Dashboard", "Admin");
             }
 
-            TempData["ErrorMessage"] = "Invalid ID Number or Password.";
+            ModelState.AddModelError(string.Empty, "Incorrect ID Number or Password.");
             return View("~/Views/Login/AdminLogin.cshtml", model);
         }
 
@@ -236,8 +238,8 @@ namespace ASI.Basecode.WebApp.Controllers
             string LinkFactory(string token) => Url.Action(
                 "ResetPassword",
                 "Login",
-                new { token = Uri.EscapeDataString(token) },   // encode token
-                Request.Scheme                                 // preserve scheme/host/pathbase
+                new { token = Uri.EscapeDataString(token) },
+                Request.Scheme
             );
 
             var result = await _userService.RequestPasswordResetAsync(
@@ -294,8 +296,8 @@ namespace ASI.Basecode.WebApp.Controllers
             ModelState.AddModelError("", "Could not update password. Try again.");
             return View("ResetPassword", vm);
         }
-        
-     
+
+
 
 
     }

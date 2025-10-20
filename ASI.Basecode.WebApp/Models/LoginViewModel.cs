@@ -8,22 +8,34 @@ namespace ASI.Basecode.WebApp.Models
     /// </summary>
     public class LoginViewModel
     {
-        /*/// <summary>ユーザーID</summary>
-        [JsonPropertyName("userId")]
-        [Required(ErrorMessage = "UserId is required.")]
-        public string User { get; set; }*/
-
-        /// <summary>ユーザーID</summary>
+      
         [JsonPropertyName("idNumber")]
         [Required(ErrorMessage = "ID Number is required.")]
         public string IdNumber { get; set; }
 
-        /// <summary>パスワード</summary>
         [JsonPropertyName("password")]
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
 
         [JsonPropertyName("rememberMe")]
         public bool RememberMe { get; set; }
+    }
+
+    public class StudentLoginViewModel : LoginViewModel
+    {
+        [Required(ErrorMessage = "Student ID required.")]
+        public new string IdNumber { get; set; }
+    }
+
+    public class TeacherLoginViewModel : LoginViewModel
+    {
+        [Required(ErrorMessage = "Teacher ID required.")]
+        public new string IdNumber { get; set; }
+    }
+
+    public class AdminLoginViewModel : LoginViewModel
+    {
+        [Required(ErrorMessage = "Admin ID required.")]
+        public new string IdNumber { get; set; }
     }
 }

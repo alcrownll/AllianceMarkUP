@@ -1,4 +1,4 @@
-﻿@model ASI.Basecode.WebApp.Models.LoginViewModel
+﻿@model ASI.Basecode.WebApp.Models.TeacherLoginViewModel
 
 @{
     Layout = "~/Views/Shared/Layouts/_LayoutLogin.cshtml";
@@ -34,7 +34,7 @@
                 <h2 class="portal-title">TEACHER PORTAL</h2>
             </div>
 
-            <form asp-controller="Login" asp-action="TeacherLogin" method="post" class="form-stack">
+            <form asp-controller="Login" asp-action="TeacherLogin" method="post" class="form-stack" novalidate>
                 @Html.AntiForgeryToken()
 
                 <div class="notched-field with-icon id">
@@ -63,11 +63,15 @@
                     </svg>
                     Login
                 </button>
+                @{
 
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <p class="error">@TempData["ErrorMessage"]</p>
+                    var topErrors = ViewData.ModelState[string.Empty]?.Errors;
+                    if (topErrors != null && topErrors.Count > 0)
+                    {
+                        <div class="val text-danger">@topErrors[0].ErrorMessage</div>
+                    }
                 }
+    
             </form>
         </div>
     </div>
