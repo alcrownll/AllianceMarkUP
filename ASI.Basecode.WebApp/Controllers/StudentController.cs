@@ -33,7 +33,6 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IStudentDashboardService _studentDashboardService;
         private readonly IStudyLoadService _studyLoadService;
         private readonly IStudentGradesService _studentGradesService;
-        private readonly IRightSidebarService _rightSidebar; 
 
         public StudentController(
             IGradeRepository gradeRepository,
@@ -46,8 +45,8 @@ namespace ASI.Basecode.WebApp.Controllers
             INotificationService notificationService,
             IStudentDashboardService studentDashboardService,
             IStudyLoadService studyLoadService,
-            IStudentGradesService studentGradesService,
-            IRightSidebarService rightSidebar)
+            IStudentGradesService studentGradesService
+            )
         {
             _gradeRepository = gradeRepository;
             _studentRepository = studentRepository;
@@ -60,15 +59,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _studentDashboardService = studentDashboardService;
             _studyLoadService = studyLoadService;
             _studentGradesService = studentGradesService;
-            _rightSidebar = rightSidebar;
-        }
-
-        private async Task SetRightSidebarAsync()
-        {
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                ViewData["RightSidebar"] = await _rightSidebar.BuildAsync(User, takeNotifications: 5, takeEvents: 5);
-            }
         }
 
         // --------------------------------------------------------------------
@@ -82,8 +72,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
-            await SetRightSidebarAsync();
-
             var vm = await _studentDashboardService.BuildAsync(idNumber);
             return View("StudentDashboard", vm);
         }
@@ -94,8 +82,6 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Profile()
         {
             ViewData["PageHeader"] = "Profile";
-
-            await SetRightSidebarAsync(); // ✅ SSR sidebar
 
             int userId = _profileService.GetCurrentUserId();
             var vm = await _profileService.GetStudentProfileAsync(userId);
@@ -110,7 +96,6 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             if (!ModelState.IsValid)
             {
-                await SetRightSidebarAsync(); // ✅ keep sidebar on validation error
                 return View("StudentProfile", vm);
             }
 
@@ -131,8 +116,6 @@ namespace ASI.Basecode.WebApp.Controllers
             var idNumber = HttpContext.Session.GetString("IdNumber");
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
-
-            await SetRightSidebarAsync(); // ✅ SSR sidebar
 
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
@@ -156,8 +139,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (string.IsNullOrEmpty(idNumber))
                 return RedirectToAction("StudentLogin", "Account");
 
-            await SetRightSidebarAsync(); // ✅ SSR sidebar
-
             var user = await _userRepository.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.IdNumber == idNumber, ct);
@@ -172,14 +153,7 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // CALENDAR & NOTIFICATIONS
         // --------------------------------------------------------------------
-        public async Task<IActionResult> Calendar()
-        {
-            ViewData["PageHeader"] = "Calendar";
-
-            await SetRightSidebarAsync(); // ✅ SSR sidebar
-
-            return View("~/Views/Shared/Partials/Calendar.cshtml");
-        }
+        public IActionResult Calendar() => RedirectToAction("Index", "Calendar");
 
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
 

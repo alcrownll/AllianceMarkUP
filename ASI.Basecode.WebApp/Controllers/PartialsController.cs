@@ -1,12 +1,15 @@
 ﻿using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 using System;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
-    [Authorize] // users must be logged in to fetch these
+    [Authorize] // users must be logged in
     public class PartialsController : Controller
     {
         private readonly IRightSidebarService _rightSidebar;
@@ -18,20 +21,19 @@ namespace ASI.Basecode.WebApp.Controllers
             _calendar = calendar;
         }
 
+        // ===== Existing endpoints you already have =====
         [HttpGet]
-        public async Task<IActionResult> RightSidebar()
+        public IActionResult RightSidebar()
         {
-            var vm = await _rightSidebar.BuildAsync(User, takeNotifications: 5);
-            return PartialView("~/Views/Shared/Sidebars/_RightSidebar.cshtml", vm);
+            return ViewComponent("RightSidebar", new { takeNotifications = 5, takeEvents = 5 });
         }
 
+        // You can keep this if some page still loads a calendar *partial*.
         [HttpGet]
         public async Task<IActionResult> Calendar(DateTime? fromUtc, DateTime? toUtc)
         {
-            // default: 30-day window around today
             var from = fromUtc ?? DateTime.UtcNow.AddDays(-15);
             var to = toUtc ?? DateTime.UtcNow.AddDays(45);
-
             var vm = await _calendar.GetUserCalendarAsync(User, from, to);
             return PartialView("~/Views/Shared/Partials/_Calendar.cshtml", vm);
         }

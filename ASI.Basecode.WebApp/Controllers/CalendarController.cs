@@ -3,6 +3,8 @@ using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
@@ -12,32 +14,19 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly ICalendarService _calendarService;
-        private readonly IRightSidebarService _rightSidebar; // ✅ inject
 
         public CalendarController(
             IProfileService profileService,
-            ICalendarService calendarService,
-            IRightSidebarService rightSidebar) // ✅ inject
+            ICalendarService calendarService
+        )
         {
             _profileService = profileService;
             _calendarService = calendarService;
-            _rightSidebar = rightSidebar;
         }
 
-        // small helper so we don’t forget to SSR the sidebar
-        private async Task SetRightSidebarAsync()
-        {
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                ViewData["RightSidebar"] =
-                    await _rightSidebar.BuildAsync(User, takeNotifications: 5, takeEvents: 5);
-            }
-        }
-
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
         // Canonical GET routes per role (Student / Teacher / Admin)
-        // --------------------------------------------------------------------
-
+        // ------------------------------------------------------------
         [HttpGet("/Student/Calendar", Name = "StudentCalendar")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> StudentIndex(DateTime? from = null, DateTime? to = null)
@@ -53,15 +42,21 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> AdminIndex(DateTime? from = null, DateTime? to = null)
             => await BuildCalendarViewAsync(from, to);
 
-        // --------------------------------------------------------------------
+        // A universal landing that redirects to the correct role route.
+        [HttpGet("/Calendar")]
+        public IActionResult Index()
+        {
+            if (User.IsInRole("Admin")) return RedirectToRoute("AdminCalendar");
+            if (User.IsInRole("Teacher")) return RedirectToRoute("TeacherCalendar");
+            return RedirectToRoute("StudentCalendar");
+        }
+
+        // ------------------------------------------------------------
         // Shared builder used by all three
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
         private async Task<IActionResult> BuildCalendarViewAsync(DateTime? from, DateTime? to)
         {
             ViewData["PageHeader"] = "Calendar";
-
-            // ✅ SSR the right sidebar for this page, too
-            await SetRightSidebarAsync();
 
             // Default range = ±30 days
             var start = from ?? DateTime.UtcNow.AddDays(-30);
@@ -71,19 +66,45 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Calendar.cshtml", model);
         }
 
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
         // JSON Feed for FullCalendar
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // IMPORTANT: FullCalendar sends ISO strings with timezone. Accept string, parse robustly,
+        // and return objects with keys: id, title, start, end, allDay, extendedProps.
         [HttpGet("/Calendar/Feed")]
-        public async Task<IActionResult> Feed(DateTime start, DateTime end)
+        public async Task<IActionResult> Feed(string start, string end)
         {
-            var model = await _calendarService.GetUserCalendarAsync(User, start, end);
-            return Json(model.Events);
+            if (!DateTimeOffset.TryParse(start, CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out var s))
+                s = DateTimeOffset.UtcNow.AddMonths(-1);
+
+            if (!DateTimeOffset.TryParse(end, CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out var e))
+                e = DateTimeOffset.UtcNow.AddMonths(2);
+
+            var model = await _calendarService.GetUserCalendarAsync(User, s.UtcDateTime, e.UtcDateTime);
+
+            var events = model.Events.Select(ev => new
+            {
+                id = ev.Id.ToString(),
+                title = ev.Title,
+                start = ev.StartUtc, // UTC timestamps are fine; FC renders in local (timeZone:'local')
+                end = ev.EndUtc,
+                allDay = ev.IsAllDay,
+                extendedProps = new
+                {
+                    location = ev.Location,
+                    isGlobal = ev.IsGlobal,
+                    canEdit = ev.CanEdit
+                }
+            });
+
+            return Json(events);
         }
 
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
         // CRUD: Create / Update / Delete
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
         [HttpPost("/Calendar/Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CalendarEventCreateVm input)

@@ -141,6 +141,57 @@
                 timeZone: 'local',
                 headerToolbar: false,
                 selectable: true,
+                dayMaxEvents: true,
+                slotEventOverlap: true,
+
+                // Card-like content (title + chips)
+                eventContent: (arg) => {
+                    const ev = arg.event;
+                    const x  = ev.extendedProps || {};
+
+                    const root = document.createElement('div');
+                    root.className = 'evt-card';
+
+                    const title = document.createElement('div');
+                    title.className = 'evt-title';
+                    title.textContent = ev.title || '(Untitled)';
+
+                    const row = document.createElement('div');
+                    row.className = 'evt-row';
+
+                    // Color dot (matches background strip color index)
+                    const hashKey = (x.category || x.calendarId || x.program || ev.id || ev.title || '');
+                    let h = 0; for (let i = 0; i < hashKey.length; i++) h = (h * 31 + hashKey.charCodeAt(i)) | 0;
+                    const idx = Math.abs(h) % 10;
+
+                    // time chip
+                    const chip = document.createElement('span');
+                    chip.className = 'evt-chip';
+                    const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    chip.innerHTML = `<span class="evt-dot evt-dot-${idx}"></span>${ev.allDay ? 'All day' : (ev.start ? (ev.end ? (fmt(ev.start) + ' – ' + fmt(ev.end)) : fmt(ev.start)) : '')}`;
+                    row.appendChild(chip);
+
+                    // location chip
+                    if (x.location) {
+                        const loc = document.createElement('span');
+                        loc.className = 'evt-chip';
+                        loc.textContent = x.location;
+                        row.appendChild(loc);
+                    }
+
+                    // global badge
+                    if (x.isGlobal) {
+                        const pill = document.createElement('span');
+                        pill.className = 'evt-pill';
+                        pill.textContent = 'GLOBAL';
+                        row.appendChild(pill);
+                    }
+
+                    root.appendChild(title);
+                    root.appendChild(row);
+
+                    return { domNodes: [root] };
+                },
 
                 select: (info) => {
                     document.getElementById('eventModalTitle').innerText = 'Add Event';
@@ -181,20 +232,22 @@
                         .catch(err => failure(err));
                 },
 
-                     eventClassNames: (arg) => {
-            const e = arg.event.extendedProps || {};
-            const key = e.category || e.calendarId || e.program || arg.event.id || arg.event.title || '';
-            let h = 0;
-            for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
-            const idx = Math.abs(h) % 10;
-            return ['evt-badge', `evt-color-${idx}`];
-        },
+                // Add color class + global flag for styling
+                eventClassNames: (arg) => {
+                    const e = arg.event.extendedProps || {};
+                    const key = e.category || e.calendarId || e.program || arg.event.id || arg.event.title || '';
+                    let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+                    const idx = Math.abs(h) % 10;
+                    const classes = ['evt-badge', `evt-color-${idx}`];
+                    if (e.isGlobal) classes.push('evt-global');
+                    return classes;
+                },
 
                 eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: true }
             });
             calendar.render();
 
-            // toolbar
+            // toolbar actions
             document.getElementById('btnPrev').addEventListener('click', () => { calendar.prev(); syncTitle(); });
             document.getElementById('btnNext').addEventListener('click', () => { calendar.next(); syncTitle(); });
             document.getElementById('btnToday').addEventListener('click', () => { calendar.today(); syncTitle(); });
@@ -202,12 +255,12 @@
             const btnWeek  = document.getElementById('btnWeek');
             const btnDay   = document.getElementById('btnDay');
             const btnList  = document.getElementById('btnList');
-            function setActive(btn) { [btnMonth, btnWeek, btnDay, btnList].forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+            function setActive(btn){ [btnMonth, btnWeek, btnDay, btnList].forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
             btnMonth.addEventListener('click', () => { calendar.changeView('dayGridMonth'); setActive(btnMonth); syncTitle(); });
-            btnWeek.addEventListener('click',  () => { calendar.changeView('timeGridWeek'); setActive(btnWeek);  syncTitle(); });
-            btnDay.addEventListener('click',   () => { calendar.changeView('timeGridDay');  setActive(btnDay);   syncTitle(); });
-            btnList.addEventListener('click',  () => { calendar.changeView('listWeek');     setActive(btnList);  syncTitle(); });
-            function syncTitle() { document.getElementById('calTitle').innerText = calendar.view.title; }
+            btnWeek .addEventListener('click', () => { calendar.changeView('timeGridWeek'); setActive(btnWeek ); syncTitle(); });
+            btnDay  .addEventListener('click', () => { calendar.changeView('timeGridDay');  setActive(btnDay  ); syncTitle(); });
+            btnList .addEventListener('click', () => { calendar.changeView('listWeek');     setActive(btnList ); syncTitle(); });
+            function syncTitle(){ document.getElementById('calTitle').innerText = calendar.view.title; }
             syncTitle();
 
             // Add button

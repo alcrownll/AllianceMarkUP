@@ -49,57 +49,6 @@ html, body {
         flex-shrink: 0;
     }
 
-/* =============== RIGHT SIDEBAR: Mini Calendar =============== */
-.right-sidebar .calendar-widget .flatpickr-input {
-    display: none;
-}
-
-.right-sidebar .calendar-widget .flatpickr-calendar {
-    width: 100% !important;
-    max-width: 248px;
-}
-
-.right-sidebar .calendar-widget .flatpickr-days,
-.right-sidebar .calendar-widget .dayContainer {
-    width: auto !important;
-    min-width: 0 !important;
-}
-
-.right-sidebar .calendar-widget .flatpickr-weekday {
-    font-size: 10px;
-    letter-spacing: .02em;
-}
-
-.right-sidebar .calendar-widget .flatpickr-months .flatpickr-month,
-.right-sidebar .calendar-widget .flatpickr-current-month {
-    font-size: 18px;
-    line-height: 1.2;
-}
-
-.right-sidebar .calendar-widget .flatpickr-day {
-    max-width: 28px;
-    height: 28px;
-    line-height: 28px;
-    margin: 2px;
-    font-size: 10px;
-}
-
-    .right-sidebar .calendar-widget .flatpickr-day.today,
-    .right-sidebar .calendar-widget .flatpickr-day.selected {
-        border-radius: 50%;
-    }
-
-.right-sidebar .calendar-widget .flatpickr-weekwrapper {
-    display: none !important;
-}
-
-.right-sidebar .calendar-widget .flatpickr-calendar,
-.right-sidebar .calendar-widget .flatpickr-days,
-.right-sidebar .calendar-widget .dayContainer {
-    box-shadow: none !important;
-    border: none !important;
-    outline: none !important;
-}
 
 /* =============== MAIN CONTENT =============== */
 .main-content {

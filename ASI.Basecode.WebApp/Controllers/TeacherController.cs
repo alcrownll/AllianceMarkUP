@@ -25,7 +25,7 @@ namespace ASI.Basecode.WebApp.Controllers
             IProfileService profileService,
             ITeacherCourseService teacherCourseService,
             IHttpContextAccessor httpContext,
-            ITeacherDashboardService dashboardService)   // <-- inject dashboard service
+            ITeacherDashboardService dashboardService)
         {
             _profileService = profileService;
             _teacherCourseService = teacherCourseService;

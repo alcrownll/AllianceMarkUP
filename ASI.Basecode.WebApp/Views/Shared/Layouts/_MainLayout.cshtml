@@ -55,18 +55,7 @@
 
         <!-- RIGHT SIDEBAR  -->
         <aside class="right-sidebar">
-            @{
-                var rightVm = ViewData["RightSidebar"] as RightSidebarViewModel;
-            }
-            @if (rightVm != null)
-            {
-                @await Html.PartialAsync("Sidebars/_RightSidebar", rightVm)
-            }
-            else
-            {
-                <!-- Optional minimal fallback (should rarely show if controllers set ViewData) -->
-                <div class="p-3 small text-muted">—</div>
-            }
+          @await Component.InvokeAsync("RightSidebar", new { takeNotifications = 5, takeEvents = 5 })
         </aside>
     </div>
 
