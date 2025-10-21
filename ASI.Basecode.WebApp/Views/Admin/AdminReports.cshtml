@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Reports";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["PageHeader"] = "Admin Reports";
 
     var dashboard = Model?.Dashboard ?? new ASI.Basecode.Services.ServiceModels.ReportsDashboardModel();
     var selectedTermKey = Model?.SelectedTermKey ?? dashboard.TermKey ?? string.Empty;
@@ -12,27 +13,32 @@
     var serializedDashboard = JsonSerializer.Serialize(dashboard);
 }
 
-<div class="reports-page" id="reports-page">
-    <header class="reports-header glass">
-        <h1>Reports Dashboard</h1>
-    </header>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
+<div class="reports-page" id="reports-page">
+    <!-- Centered Segmented Tabs -->
     <nav class="reports-tabs" role="tablist">
-        <button class="reports-tab active" data-tab="student" type="button">Student</button>
-        <button class="reports-tab" data-tab="teacher" type="button">Teacher</button>
+        <button class="reports-tab active" data-tab="student" type="button">
+            <i class="bi-person"></i> Student
+        </button>
+        <button class="reports-tab" data-tab="teacher" type="button">
+            <i class="bi-person-workspace"></i> Teacher
+        </button>
     </nav>
 
+    <!-- STUDENT TAB -->
     <section class="tab-panel active" data-panel="student" role="tabpanel">
         <header class="student-controls glass">
-            <div class="control-group">
-                <label for="studentSelector" class="form-label">Student</label>
+            <div class="inline-field">
+                <label for="studentSelector" class="form-label m-0">Student</label>
                 <select id="studentSelector" class="form-select" data-selector="student">
                     <option value="">Select Student</option>
                     @if (dashboard?.Student?.Students?.Any() == true)
                     {
                         foreach (var option in dashboard.Student.Students)
                         {
-                            var selected = Model?.SelectedStudentId == option.StudentId || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
+                            var selected = Model?.SelectedStudentId == option.StudentId
+                            || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
                             <option value="@option.StudentId" selected="@(selected)">@option.Name</option>
                         }
                     }
@@ -49,7 +55,7 @@
                     </div>
                 </header>
                 <div class="panel-body">
-                    <canvas id="studentCourseChart" height="260"></canvas>
+                    <canvas id="studentCourseChart" height="220"></canvas>
                 </div>
             </article>
 
@@ -61,11 +67,11 @@
                     </div>
                 </header>
                 <div class="panel-body">
-                    <canvas id="studentStatusChart" height="220"></canvas>
+                    <canvas id="studentStatusChart" height="180"></canvas>
                 </div>
             </article>
 
-            <article class="panel glass span-2">
+            <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
                         <h2>Simple Comparative Analysis</h2>
@@ -78,6 +84,7 @@
                     </div>
                 </div>
             </article>
+
             <article class="panel glass span-2 student-grade-breakdown">
                 <header class="panel-header">
                     <div>
@@ -112,95 +119,20 @@
         </div>
     </section>
 
-
-    <section class="tab-panel" data-panel="overall" role="tabpanel">
-        <div class="kpi-row">
-            <article class="kpi-card glass">
-                <span class="kpi-label">Total Enrolled</span>
-                <h2 class="kpi-value" data-field="overall-total">0</h2>
-                <span class="kpi-meta">Current selection</span>
-            </article>
-            <article class="kpi-card glass">
-                <span class="kpi-label">Growth</span>
-                <h2 class="kpi-value" data-field="overall-growth">0%</h2>
-                <span class="kpi-meta">vs last term</span>
-            </article>
-            <article class="kpi-card glass">
-                <span class="kpi-label">Average GWA</span>
-                <h2 class="kpi-value" data-field="overall-gwa">0.00</h2>
-                <span class="kpi-meta">Institution-wide</span>
-            </article>
-            <article class="kpi-card glass">
-                <span class="kpi-label">Pass Rate</span>
-                <h2 class="kpi-value" data-field="overall-pass">0%</h2>
-                <span class="kpi-meta">Current term</span>
-            </article>
-            <article class="kpi-card glass">
-                <span class="kpi-label">Retention</span>
-                <h2 class="kpi-value" data-field="overall-retention">0%</h2>
-                <span class="kpi-meta">Returning vs new</span>
-            </article>
-        </div>
-
-        <div class="reports-grid">
-            <article class="panel glass span-2">
-                <header class="panel-header">
-                    <div>
-                        <h2>Enrollment Trend</h2>
-                        <span>Track enrollment movement by period and facet.</span>
-                    </div>
-                    <div class="panel-controls">
-                        <button class="btn btn-link btn-sm" type="button" data-action="export-trend">Export CSV</button>
-                    </div>
-                </header>
-                <div class="panel-body">
-                    <canvas id="overallTrendChart" height="320"></canvas>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Program Leaderboard</h2>
-                        <span>Enrollment volume and growth rates.</span>
-                    </div>
-                    <button class="btn btn-link btn-sm" type="button" data-action="export-programs">Export Excel</button>
-                </header>
-                <div class="panel-body leaderboard" data-list="program-leaderboard">
-                    <ul>
-                        <li data-empty="true"><span>--</span><strong>0</strong><small>0%</small></li>
-                    </ul>
-                </div>
-            </article>
-
-            <article class="panel glass span-1">
-                <header class="panel-header">
-                    <div>
-                        <h2>Demographic Breakdown</h2>
-                        <span>Understand diversity and status mix.</span>
-                    </div>
-                    <button class="btn btn-link btn-sm" type="button" data-action="export-demographics">Export CSV</button>
-                </header>
-                <div class="panel-body demo-grid">
-                    <div class="demo-card">
-                        <p class="text-muted mb-0">No demographic data.</p>
-                    </div>
-                </div>
-            </article>
-        </div>
-    </section>
-
+    <!-- TEACHER TAB (refactored into panels/containers) -->
     <section class="tab-panel" data-panel="teacher" role="tabpanel">
+        <!-- Selector -->
         <header class="teacher-controls glass">
-            <div class="control-group">
-                <label for="teacherSelector" class="form-label">Teacher</label>
+            <div class="inline-field">
+                <label for="teacherSelector" class="form-label m-0">Teacher</label>
                 <select id="teacherSelector" class="form-select" data-selector="teacher">
                     <option value="">Select Teacher</option>
                     @if (dashboard?.Teacher?.Directory?.Any() == true)
                     {
                         foreach (var option in dashboard.Teacher.Directory)
                         {
-                            var selected = Model?.SelectedTeacherId == option.TeacherId || (Model?.SelectedTeacherId == null && dashboard.Teacher.SelectedTeacher?.TeacherId == option.TeacherId);
+                            var selected = Model?.SelectedTeacherId == option.TeacherId
+                            || (Model?.SelectedTeacherId == null && dashboard.Teacher.SelectedTeacher?.TeacherId == option.TeacherId);
                             <option value="@option.TeacherId" selected="@(selected)">@option.Name (@option.Department)</option>
                         }
                     }
@@ -208,63 +140,68 @@
             </div>
         </header>
 
-        <section class="teacher-detail glass">
-            <header class="detail-header">
-                <div>
-                    <h2 data-field="teacher-name">Select a teacher</h2>
-                    <span data-field="teacher-meta">--</span>
+        <!-- Top row: teacher info (left) | submission status (right) -->
+        <div class="teacher-layout">
+            <!-- Left: Teacher header + mini KPIs -->
+            <section class="panel glass teacher-info">
+                <header class="detail-header">
+                    <div>
+                        <h2 class="teacher-name" data-field="teacher-name">Select a teacher</h2>
+                        <span class="teacher-meta" data-field="teacher-meta">--</span>
+                    </div>
+                </header>
+
+                <div class="metric-row">
+                    <article class="metric-chip">
+                        <span class="metric-label">Subjects</span>
+                        <strong class="metric-value" data-field="teacher-load">0</strong>
+                    </article>
+                    <article class="metric-chip">
+                        <span class="metric-label">Pass Rate</span>
+                        <strong class="metric-value" data-field="teacher-pass">0%</strong>
+                    </article>
                 </div>
-            </header>
+            </section>
 
-            <div class="detail-kpis justify-content-center text-center gap-3">
-                <article class="mini-card text-center" data-card="teacher-load">
-                    <span class="mini-label">Subjects</span>
-                    <strong class="mini-value" data-field="teacher-load">0 courses</strong>
-                </article>
-                <article class="mini-card text-center" data-card="teacher-pass">
-                    <span class="mini-label">Pass Rate</span>
-                    <strong class="mini-value" data-field="teacher-pass">0%</strong>
-                </article>
-            </div>
+            <!-- Right: Submission Status -->
+            <section class="panel glass teacher-submissions">
+                <header><h3>Submission Status</h3></header>
+                <ul class="status-list" data-list="teacher-submissions">
+                    <li data-empty="true" class="pending">Select a teacher to load submission statuses.</li>
+                </ul>
+            </section>
 
-            <div class="detail-body">
-                <article class="panel">
-                    <header><h3>Subject Pass Rates</h3></header>
-                    <div class="panel-body">
-                        <canvas id="teacherPassChart" height="220"></canvas>
-                    </div>
-                </article>
+            <!-- Full width: Subject Pass Rates -->
+            <section class="panel glass teacher-passrates span-2">
+                <header><h3>Subject Pass Rates</h3></header>
+                <div class="panel-body">
+                    <canvas id="teacherPassChart" height="200"></canvas>
+                </div>
+            </section>
 
-                <article class="panel">
-                    <header><h3>Teaching Assignments</h3></header>
-                    <div class="table-responsive">
-                        <table class="table table-sm" data-table="teacher-assignments">
-                            <thead>
-                                <tr>
-                                    <th>Subject</th>
-                                    <th>Schedule</th>
-                                    <th>Units</th>
-                                    <th>Final</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr data-empty="true">
-                                    <td colspan="6" class="text-center">Select a teacher to load assignments.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </article>
-
-                <article class="panel">
-                    <header><h3>Submission Status</h3></header>
-                    <ul class="status-list" data-list="teacher-submissions">
-                        <li data-empty="true" class="pending">Select a teacher to load submission statuses.</li>
-                    </ul>
-                </article>
-            </div>
-        </section>
+            <!-- Full width: Teaching Assignments -->
+            <section class="panel glass teacher-assignments span-2">
+                <header><h3>Teaching Assignments</h3></header>
+                <div class="table-responsive">
+                    <table class="table table-sm" data-table="teacher-assignments">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Schedule</th>
+                                <th>Units</th>
+                                <th>Final</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-empty="true">
+                                <td colspan="5" class="text-center">Select a teacher to load assignments.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
     </section>
 </div>
 
@@ -276,6 +213,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js"></script>
     <script>
         window.AdminReportsInitial = @Html.Raw(serializedDashboard);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.reports-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+            tabs.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.dataset.tab;
+                    tabs.forEach(b => b.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelector(`.tab-panel[data-panel="${tab}"]`)?.classList.add('active');
+                });
+            });
+        });
     </script>
     <script src="~/js/admin-reports.js" asp-append-version="true"></script>
 }

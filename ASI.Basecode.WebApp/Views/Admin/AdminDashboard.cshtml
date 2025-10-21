@@ -1,4 +1,4 @@
-@model ASI.Basecode.WebApp.Models.AdminDashboardViewModel
+﻿@model ASI.Basecode.WebApp.Models.AdminDashboardViewModel
 @using System.Text.Json
 @using System.Collections.Generic
 @using System.Linq
@@ -21,14 +21,9 @@
     };
 }
 
+<link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+
 <div class="admin-dashboard" id="admin-dashboard">
-    <section class="dashboard-hero glass">
-        <div class="hero-primary">
-            <span class="hero-eyebrow">College of Computer Studies</span>
-            <h1 class="hero-title">University of Cebu Lapu-Lapu Mandaue</h1>
-        </div>
-        <div class="hero-tools"></div>
-    </section>
 
     <section class="kpi-grid">
         <article class="kpi-card glass">

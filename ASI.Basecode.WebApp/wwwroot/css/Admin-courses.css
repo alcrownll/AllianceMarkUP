@@ -6,7 +6,8 @@
 .admin-courses-card {
     max-width: 1100px;
     margin: 0 auto;
-    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
     border-radius: .5rem;
 }
 
@@ -68,7 +69,7 @@
 
 /* Soften table head */
 .admin-courses-card .table thead th {
-    background: #f8f9fa;
+    background: #E5EFFB;
     border-bottom: 2px solid #dee2e6;
 }
 
@@ -98,3 +99,152 @@ body.modal-open {
         padding-right: 0 !important;
         margin-right: 0 !important;
     }
+
+/* ===== Match TermSections tab style exactly ===== */
+.nav-tabs.folder-tabs {
+    border-bottom: 1px solid #dee2e6;
+    gap: .25rem;
+    font-weight: 500;
+}
+
+    .nav-tabs.folder-tabs .nav-link {
+        border: 1px solid transparent;
+        border-top-left-radius: .375rem;
+        border-top-right-radius: .375rem;
+        color: #000000;
+        background-color: transparent;
+        padding: .5rem .9rem;
+        transition: all .15s ease-in-out;
+    }
+
+        .nav-tabs.folder-tabs .nav-link:hover {
+            color: #000000;
+            background-color: #E5EFFA;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+
+        .nav-tabs.folder-tabs .nav-link.active,
+        .nav-tabs.folder-tabs .nav-item.show .nav-link {
+            color: #0252A9;
+            background-color: #E5EFFB;
+            border-color: #dee2e6 #dee2e6 #fff;
+            font-weight: 600;
+        }
+
+/* Tiny helper for “no matches” on Courses */
+.no-matches {
+    padding: 2rem 0;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* === Compact Table Adjustments for Programs & Courses =================== */
+.admin-courses-card table {
+    font-size: 0.85rem; /* smaller overall font */
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.admin-courses-card th,
+.admin-courses-card td {
+    padding: 0.45rem 0.7rem; /* tighter vertical + horizontal space */
+}
+
+    /* Reduce spacing inside cells with badges or buttons */
+    .admin-courses-card td .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.55rem;
+    }
+
+    /* Smaller buttons in table rows */
+    .admin-courses-card td .btn {
+        font-size: 0.78rem !important;
+        padding: 0.28rem 0.65rem !important;
+        border-radius: 40px;
+    }
+
+    /* Widen Description column slightly while remaining compact */
+    .admin-courses-card th:nth-child(2),
+    .admin-courses-card td:nth-child(2) {
+        width: 43%;
+        text-align: left;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    /* Center the "Actions" header and its cells */
+    .admin-courses-card th:last-child,
+    .admin-courses-card td:last-child {
+        text-align: center !important;
+    }
+
+    /* Optional: constrain Code and Actions widths a bit */
+    .admin-courses-card th:first-child,
+    .admin-courses-card td:first-child { /* Code */
+        width: 10rem;
+    }
+
+    .admin-courses-card th:last-child,
+    .admin-courses-card td:last-child { /* Actions */
+        width: 14rem;
+    }
+
+/* === Brand Blue Buttons (shared) ======================================= */
+.admin-courses-card .btn.btn-primary {
+    background-color: #0252A9 !important;
+    border-color: #0252A9 !important;
+    color: #fff !important;
+    border-radius: 50px;
+    padding: 0.35rem 0.8rem;
+    font-weight: 600;
+    transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+    .admin-courses-card .btn.btn-primary:hover,
+    .admin-courses-card .btn.btn-primary:focus {
+        background-color: #01448E !important;
+        border-color: #01448E !important;
+    }
+
+/* === Row Actions (solid blue for Manage Courses & Edit, red for Delete) */
+.row-actions {
+    display: inline-flex;
+    gap: 0.3rem;
+    justify-content: center;
+}
+
+    .row-actions .btn.btn-primary,
+    .row-actions .btn.btn-info {
+        background-color: #0252A9 !important;
+        border-color: #0252A9 !important;
+        color: #fff !important;
+        border-radius: 50px;
+        padding: 0.32rem 0.8rem !important;
+        font-size: 0.78rem !important;
+        font-weight: 500;
+        transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+    }
+
+        .row-actions .btn.btn-primary:hover,
+        .row-actions .btn.btn-info:hover {
+            background-color: #0252A9 !important;
+            border-color: #0252A9 !important;
+            transform: translateY(-1px);
+        }
+
+    /* Delete stays red */
+    .row-actions .btn.btn-danger {
+        background-color: transparent !important;
+        color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+        border-radius: 50px;
+        padding: 0.32rem 0.8rem !important;
+        font-size: 0.78rem !important;
+    }
+
+        .row-actions .btn.btn-danger:hover {
+            background-color: #dc3545 !important;
+            color: #fff !important;
+            border-color: #dc3545 !important;
+            transform: translateY(-1px);
+        }

@@ -9,30 +9,40 @@
     max-width: 1150px;
     margin: 0 auto;
     border-radius: .75rem;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
 }
 
-    /* ===== TABS ===== */
+    /* ===== TABS (copy folder style from Programs/Courses) ===== */
     .admin-accounts-card .nav-tabs {
-        gap: 2rem;
+        border-bottom: 1px solid #dee2e6;
+        gap: .25rem;
+        font-weight: 500;
         margin-bottom: 0.75rem;
     }
 
         .admin-accounts-card .nav-tabs .nav-link {
-            font-weight: 600;
-            color: #495057;
-            border: none;
-            border-bottom: 2px solid transparent;
-            padding: 0.4rem 0.6rem;
-            transition: color 0.2s, border-color 0.2s;
+            border: 1px solid transparent;
+            border-top-left-radius: .375rem;
+            border-top-right-radius: .375rem;
+            color: #000000;
+            background-color: transparent;
+            padding: .5rem .9rem;
+            transition: all .15s ease-in-out;
         }
 
             .admin-accounts-card .nav-tabs .nav-link:hover {
-                color: #0252A9;
+                color: #000000;
+                background-color: #E5EFFA;
+                border-color: #dee2e6 #dee2e6 #fff;
             }
 
-            .admin-accounts-card .nav-tabs .nav-link.active {
+            .admin-accounts-card .nav-tabs .nav-link.active,
+            .admin-accounts-card .nav-tabs .nav-item.show .nav-link {
                 color: #0252A9;
-                border-bottom: 2px solid #0252A9;
+                background-color: #E5EFFB;
+                border-color: #dee2e6 #dee2e6 #fff;
+                font-weight: 600;
             }
 
 /* ===== TABLE WRAPPER ===== */
@@ -57,7 +67,7 @@
         font-weight: 600;
         font-size: .9rem;
         color: #374151;
-        background: #f8f9fa;
+        background: #E5EFFB;
         border-bottom: 2px solid #dee2e6;
     }
 
@@ -88,8 +98,6 @@
 }
 
 /* ===== BUTTONS ===== */
-
-/* General blue brand color: #0252A9 */
 .btn.btn-primary,
 #printUsersBtn,
 .filters-row .btn.btn-outline.btn-xs {
@@ -132,7 +140,6 @@
     gap: 0.4rem;
     justify-content: flex-end;
 }
-
     /* Default style: outlined (white background) */
     .row-actions .btn {
         min-width: 85px;
@@ -143,8 +150,7 @@
         font-weight: 500;
         transition: all 0.2s ease;
     }
-
-        /* --- VIEW BUTTON (blue outline by default) --- */
+        /* VIEW (blue outline by default) */
         .row-actions .btn.btn-primary {
             background-color: transparent !important;
             color: #0252A9 !important;
@@ -157,8 +163,7 @@
                 color: #fff !important;
                 border-color: #0252A9 !important;
             }
-
-        /* --- SUSPEND BUTTON (red outline by default) --- */
+        /* SUSPEND (red outline by default) */
         .row-actions .btn.btn-danger {
             background-color: transparent !important;
             color: #dc3545 !important;
@@ -171,7 +176,6 @@
                 color: #fff !important;
                 border-color: #dc3545 !important;
             }
-
         /* Optional: subtle lift on hover */
         .row-actions .btn:hover {
             transform: translateY(-1px);
