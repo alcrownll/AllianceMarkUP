@@ -1,78 +1,77 @@
 ﻿@using ASI.Basecode.Data.Models
 @model IEnumerable<Program>
 
-<div class="table-responsive">
-    <table class="table align-middle mb-0">
-        <thead class="table-light">
-            <tr>
-                <th style="width:16rem;">Code</th>
-                <th>Description</th>
-                <th class="text-center" style="width:10rem;">Status</th>
-                <th class="text-end" style="width:22rem;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model == null || !Model.Any())
-            {
+<div class="table-wrapper">
+    <div class="table-responsive no-shadow-table">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-4">No programs found.</td>
+                    <th style="width:16rem;">Code</th>
+                    <th>Description</th>
+                    <th class="text-center" style="width:10rem;">Status</th>
+                    <th class="text-center" style="width:16rem;">Actions</th>
                 </tr>
-            }
-            else
-            {
-                foreach (var p in Model.OrderBy(x => x.ProgramCode))
+            </thead>
+            <tbody>
+                @if (Model == null || !Model.Any())
                 {
-                    <tr data-program-id="@p.ProgramId">
-                        <td class="fw-semibold text-uppercase">@p.ProgramCode</td>
-                        <td>@p.ProgramName</td>
-                        <td class="text-center">
-                            @if (p.IsActive)
-                            {
-                                <span class="badge bg-success-subtle text-success">Active</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex align-items-center gap-2">
-                                <!-- Manage Courses -->
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-primary"
-                                        data-action="manage-courses"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#programProspectusModal"
-                                        data-program-id="@p.ProgramId"
-                                        data-program-code="@p.ProgramCode"
-                                        data-program-name="@p.ProgramName">
-                                    Manage Courses
-                                </button>
-
-                                <!-- Edit -->
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-primary"
-                                        data-action="program-edit"
-                                        data-program-id="@p.ProgramId"
-                                        data-program-code="@p.ProgramCode"
-                                        data-program-name="@p.ProgramName"
-                                        data-program-active="@p.IsActive.ToString().ToLower()">
-                                    Edit
-                                </button>
-
-                                <!-- Delete (handled by script in main view) -->
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-danger btn-program-delete"
-                                        data-program-id="@p.ProgramId"
-                                        data-program-code="@p.ProgramCode"
-                                        data-program-name="@p.ProgramName">
-                                    Delete
-                                </button>
-                            </div>
-                        </td>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No programs found.</td>
                     </tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    foreach (var p in Model.OrderBy(x => x.ProgramCode))
+                    {
+                        <tr data-program-id="@p.ProgramId">
+                            <td class="fw-semibold text-uppercase">@p.ProgramCode</td>
+                            <td>@p.ProgramName</td>
+                            <td class="text-center">
+                                @if (p.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <div class="row-actions">
+                                    <button type="button"
+                                            class="btn btn-outline-primary"
+                                            data-action="manage-courses"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#programProspectusModal"
+                                            data-program-id="@p.ProgramId"
+                                            data-program-code="@p.ProgramCode"
+                                            data-program-name="@p.ProgramName">
+                                        Manage Courses
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary"
+                                            data-action="program-edit"
+                                            data-program-id="@p.ProgramId"
+                                            data-program-code="@p.ProgramCode"
+                                            data-program-name="@p.ProgramName"
+                                            data-program-active="@p.IsActive.ToString().ToLower()">
+                                        Edit
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-program-delete"
+                                            data-program-id="@p.ProgramId"
+                                            data-program-code="@p.ProgramCode"
+                                            data-program-name="@p.ProgramName">
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
