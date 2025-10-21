@@ -4,7 +4,7 @@
     --muted-2: #64748b;
     --line: #e5e7eb;
     --brand: #2563eb;
-    --accent: #22c55e; 
+    --accent: #22c55e;
 }
 
 /* Layout helpers */
@@ -19,11 +19,17 @@
 
 .card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 20px;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 5px 7px rgba(0, 0, 0, 0.20) !important;
+    transition: all 0.25s ease;
 }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 7px rgba(0, 0, 0, 0.30);
+    }
 
     .card.p24 {
         padding: 24px;
@@ -34,9 +40,10 @@
     grid-template-columns: repeat(12, 1fr);
 }
 
+/* 3-up at desktop: each spans 4 columns */
 .kpi {
     position: relative;
-    grid-column: span 6;
+    grid-column: span 4;
     padding: 22px 86px 22px 24px;
     min-height: 140px;
     display: flex;
@@ -52,7 +59,7 @@
     .kpi h4 {
         margin: 0 0 8px;
         font-size: 16px;
-        color: var(--ink);
+        color: #0252A9;
     }
 
     .kpi .value {
@@ -83,6 +90,53 @@
         color: var(--brand);
     }
 
+        /* Thicker icon look */
+        .kpi .icon i {
+            font-size: 28px;
+            font-weight: 900;
+            -webkit-text-stroke: 0.45px currentColor;
+        }
+
+/* Per-KPI colors */
+.kpi-courses .icon {
+    background: linear-gradient(180deg, #fff3e0, #ffe0b2); /* orange-ish */
+    color: #ef6c00;
+}
+
+.kpi-students .icon {
+    background: linear-gradient(180deg, #e8f5e9, #c8e6c9); /* green */
+    color: #2e7d32;
+}
+
+.kpi-program .icon {
+    background: linear-gradient(180deg, #f3e8ff, #e0c3fc); /* violet */
+    color: #7c3aed;
+}
+
+/* Inline header (title + toggle) inside the KPI card */
+.kpi-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap; /* wraps nicely on smaller widths */
+    margin-bottom: 6px;
+}
+
+/* Make the toggle snug for KPI use */
+
+    .kpi-seg .seg-btn {
+        padding: 4px 10px; /* slightly tighter than default */
+        font-size: 12px;
+        line-height: 1;
+    }
+
+/* Optional: keep the icon a touch smaller so it doesn't crowd the header */
+.kpi-program .icon {
+    margin-top:10px;
+    width: 56px;
+    height: 56px;
+}
+
 /* ================= COURSES HANDLED ================= */
 .panel-title-row {
     display: flex;
@@ -92,9 +146,14 @@
 }
 
 .panel-title {
-    font-weight: 800;
-    color: var(--ink);
+    font-weight: 700;
+    color: #0252A9; 
     font-size: 16px;
+}
+
+.current-program-hint {
+    font-size: 12px;
+    color: var(--muted-2);
 }
 
 /* Segmented control */
@@ -122,18 +181,18 @@
         color: #fff;
     }
 
-/* ======= COURSE LIST: 3-UP GRID (aligned & even height) ======= */
+/* ======= COURSE LIST: 3-UP GRID ======= */
 .list {
-    margin-top: 24px; /* ↓ move grid slightly lower */
+    margin-top: 24px;
     display: grid;
     gap: 12px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
-    grid-auto-rows: 1fr; /* equal row height */
+    grid-auto-rows: 1fr;
 }
 
 .item {
-    display: grid; /* ensures consistent alignment */
+    display: grid;
     grid-template-columns: 42px 1fr; /* icon | text */
     align-items: center;
     gap: 12px;
@@ -145,7 +204,7 @@
     height: 100%;
     box-sizing: border-box;
     transition: box-shadow 0.2s ease;
-    will-change: transform; /* prevents sub-pixel misalignment */
+    will-change: transform;
 }
 
     .item:hover {
@@ -162,6 +221,11 @@
     font-size: 18px;
     color: var(--brand);
 }
+
+    .dot i {
+        font-size: 18px;
+        -webkit-text-stroke: 0.4px currentColor;
+    }
 
 .item > div {
     margin: 0;
@@ -198,8 +262,8 @@
 
 .hi-title {
     font-weight: 800;
-    color: var(--ink);
-    font-size: 18px;
+    color: #0252A9;
+    font-size: 20px;
     margin-bottom: 8px;
 }
 
@@ -211,6 +275,7 @@
 }
 
 .ring-wrap {
+    margin-top: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -265,9 +330,9 @@
 
 @media (max-width: 1100px) {
     .kpi {
-        grid-column: span 12;
+        grid-column: span 6;
     }
-
+    /* 2-up KPI on medium screens */
     .list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -293,6 +358,10 @@
 }
 
 @media (max-width: 640px) {
+    .kpi {
+        grid-column: span 12;
+    }
+    /* 1-up KPI on small screens */
     .chart-area {
         height: 240px;
     }

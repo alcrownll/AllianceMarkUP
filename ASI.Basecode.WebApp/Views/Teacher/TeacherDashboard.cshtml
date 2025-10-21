@@ -6,13 +6,13 @@
     ViewData["Title"] = "Teacher Dashboard";
     ViewData["PageHeader"] = "Teacher Dashboard";
 
-    // Create dynamic client data from the Programs list
     var programs = Model.Programs ?? new List<ASI.Basecode.Services.ServiceModels.ProgramData>();
     var programsData = programs.ToDictionary(
         p => p.ProgramCode,
-        p => new { 
+        p => new
+        {
             courses = p.Courses.Select(c => new { code = c.Code, title = c.Title, students = c.Students }),
-            uniqueStudents = p.StudentsTotal  // Pass the unique student count per program
+            uniqueStudents = p.StudentsTotal
         }
     );
     var summaryData = (Model.Summary ?? new List<ASI.Basecode.Services.ServiceModels.ProgramSummaryItem>())
@@ -28,60 +28,80 @@
 }
 
 @section Styles {
+    <!-- Bootstrap Icons (if not in your layout) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/teacher-dashboard.css" />
 }
 
 <div class="dash-wrap grid teacher-dashboard">
     <!-- KPI row -->
     <div class="grid kpis">
-        <div class="card kpi" aria-label="Courses Handled">
+        <!-- Courses Handled -->
+        <div class="card kpi kpi-courses">
             <div class="kpi-body">
                 <h4>Courses Handled</h4>
                 <div class="value" id="kpiSubjectsValue">@Model.TotalCourses</div>
                 <div class="meta" id="kpiSubjectsMeta">Across programs</div>
             </div>
-            <div class="icon" aria-hidden="true">📘</div>
+            <div class="icon"><i class="bi bi-journal-bookmark-fill"></i></div>
         </div>
 
-        <div class="card kpi" aria-label="Total Students">
+        <!-- Total Students -->
+        <div class="card kpi kpi-students">
             <div class="kpi-body">
                 <h4>Total Students</h4>
                 <div class="value" id="kpiStudentsValue">@Model.TotalStudents</div>
                 <div class="meta" id="kpiStudentsMeta">Across selected program</div>
             </div>
-            <div class="icon" aria-hidden="true">👥</div>
+            <div class="icon"><i class="bi bi-people-fill"></i></div>
+        </div>
+
+        <!-- Program (toggle beside title) -->
+        <div class="card kpi kpi-program">
+            <div class="kpi-body">
+                <div class="kpi-head">
+                    <h4>Program</h4>
+                    <div class="seg kpi-seg" role="tablist" aria-label="Program Switcher">
+                        @if (programs.Any())
+                        {
+                            @for (int i = 0; i < programs.Count; i++)
+                            {
+                                var program = programs[i];
+                                var isFirst = i == 0;
+                                <button class="seg-btn @(isFirst ? "active" : "")"
+                                        id="seg@(program.ProgramCode)"
+                                        aria-pressed="@(isFirst ? "true" : "false")"
+                                        role="tab"
+                                        aria-selected="@(isFirst ? "true" : "false")">
+                                    @program.ProgramCode
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <button class="seg-btn active" id="segNoPrograms" aria-pressed="true" role="tab" aria-selected="true">
+                                No Programs
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="value" id="kpiProgramValue">@(programs.Any() ? programs.First().ProgramCode : "—")</div>
+                <div class="meta">Tap a code to switch</div>
+            </div>
+            <div class="icon"><i class="bi bi-diagram-3-fill"></i></div>
         </div>
     </div>
 
-    <!-- Courses Handled: BSCS / BSIT toggle + list -->
+    <!-- Courses Handled -->
     <div class="card p24">
         <div class="panel-title-row">
             <div class="panel-title">Courses Handled</div>
-            <div class="seg" role="tablist" aria-label="Program">
-                @if (programs.Any())
-                {
-                    @for (int i = 0; i < programs.Count; i++)
-                    {
-                        var program = programs[i];
-                        var isFirst = i == 0;
-                        <button class="seg-btn @(isFirst ? "active" : "")" 
-                                id="seg@(program.ProgramCode)" 
-                                aria-pressed="@(isFirst ? "true" : "false")" 
-                                role="tab" 
-                                aria-selected="@(isFirst ? "true" : "false")">
-                            @program.ProgramCode
-                        </button>
-                    }
-                }
-                else
-                {
-                    <!-- Fallback for no programs -->
-                    <button class="seg-btn active" id="segNoPrograms" aria-pressed="true" role="tab" aria-selected="true">No Programs</button>
-                }
+            <div class="current-program-hint">
+                Current: <span id="currentProgramHint">@(programs.Any() ? programs.First().ProgramCode : "—")</span>
             </div>
         </div>
-
-        <div class="list" id="coursesList"><!-- populated by script --></div>
+        <div class="list" id="coursesList"></div>
     </div>
 
     <!-- Teaching Highlights -->
@@ -90,7 +110,7 @@
             <div class="hi-title">Teaching Highlights</div>
             <div class="hi-inner">
                 <div class="ring-wrap">
-                    <canvas id="gradingRing" class="ring-canvas" role="img" aria-label="Grading progress ring"></canvas>
+                    <canvas id="gradingRing" class="ring-canvas"></canvas>
                     <div class="ring-legend">
                         <div>Graded: <span id="gradedPctLabel">0%</span></div>
                         <div>Remaining: <span id="remainingPctLabel">0%</span></div>
@@ -100,7 +120,7 @@
                 <div class="chart-col">
                     <div class="chart-title">Students vs Courses per Program</div>
                     <div class="chart-area">
-                        <canvas id="byProgramBar" role="img" aria-label="Students and courses by program"></canvas>
+                        <canvas id="byProgramBar"></canvas>
                     </div>
                 </div>
             </div>
@@ -109,157 +129,10 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Data for external JS -->
     <script>
-        // ======= Data from server =======
-        const server = @Html.Raw(json);
-        const programData = server.programs || {};
-        const summaryData = server.summary || {};
-        const gradedPct = Number(server.gradedPct || 0);
-        const programKeys = Object.keys(programData);
-
-        // Elements
-        const coursesList = document.getElementById('coursesList');
-        const kpiSubjectsValue = document.getElementById('kpiSubjectsValue');
-        const kpiSubjectsMeta  = document.getElementById('kpiSubjectsMeta');
-        const kpiStudentsValue = document.getElementById('kpiStudentsValue');
-        const kpiStudentsMeta  = document.getElementById('kpiStudentsMeta');
-
-        // Get all program buttons dynamically
-        const programButtons = {};
-        programKeys.forEach(key => {
-            programButtons[key] = document.getElementById(`seg${key}`);
-        });
-
-        // Display text mapping - show full program code
-        const displayName = (key) => key;
-
-        function renderCourses(programKey) {
-          const programInfo = programData[programKey];
-          const list = programInfo?.courses || [];
-          const uniqueStudentsTotal = programInfo?.uniqueStudents || 0; // Use the unique count from server
-          
-          coursesList.innerHTML = "";
-
-          list.forEach(c => {
-            const item  = document.createElement('div');
-            item.className = 'item';
-
-            const dot   = document.createElement('div');
-            dot.className = 'dot';
-            dot.textContent = '📄';
-
-            const main  = document.createElement('div');
-            const title = document.createElement('div');
-            title.className = 'i-title';
-            title.textContent = `${c.code} • ${c.title}`;
-
-            const sub   = document.createElement('div');
-            sub.className = 'i-sub';
-            sub.textContent = `${c.students} students`;
-
-            main.appendChild(title);
-            main.appendChild(sub);
-            item.appendChild(dot);
-            item.appendChild(main);
-            coursesList.appendChild(item);
-          });
-
-          // ✅ KPIs per selected tab (0 when empty)
-          const subjectsCount = list.length;
-          kpiSubjectsValue.textContent = subjectsCount;
-          kpiStudentsValue.textContent = uniqueStudentsTotal; // Use unique student count
-          kpiSubjectsMeta.textContent  = `${displayName(programKey)} • ${subjectsCount} ${subjectsCount === 1 ? 'course' : 'courses'}`;
-          kpiStudentsMeta.textContent  = `${displayName(programKey)} • students`;
-
-          // Toggle states - update all buttons
-          Object.keys(programButtons).forEach(key => {
-            const btn = programButtons[key];
-            if (btn) {
-              if (key === programKey) {
-                btn.classList.add('active');
-                btn.setAttribute('aria-pressed','true');
-                btn.setAttribute('aria-selected','true');
-              } else {
-                btn.classList.remove('active');
-                btn.setAttribute('aria-pressed','false');
-                btn.setAttribute('aria-selected','false');
-              }
-            }
-          });
-        }
-
-        // Add event listeners dynamically for all program buttons
-        Object.keys(programButtons).forEach(key => {
-          const btn = programButtons[key];
-          if (btn) {
-            btn.addEventListener('click', () => renderCourses(key));
-            btn.addEventListener('keydown', e => {
-              if (['Enter',' '].includes(e.key)) {
-                e.preventDefault();
-                renderCourses(key);
-              }
-            });
-          }
-        });
-
-        // ✅ Initial: First program active (or fallback)
-        if (programKeys.length > 0) {
-          renderCourses(programKeys[0]);
-        } else {
-          coursesList.innerHTML = '<div class="item">No courses assigned</div>';
-        }
-
-        // ======= Donut (unchanged) =======
-        new Chart(document.getElementById('gradingRing'), {
-          type: 'doughnut',
-          data: { datasets: [{ data: [gradedPct, 1 - gradedPct], borderWidth: 0, backgroundColor: ['#22c55e', '#e8eef7'], cutout: '78%' }] },
-          options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { display: false }, tooltip: { enabled: false } } },
-          plugins: [{
-            id: 'centerTextTeacher',
-            afterDraw(chart) {
-              const { ctx, chartArea } = chart; if (!chartArea) return;
-              const cx = (chartArea.left + chartArea.right) / 2;
-              const cy = (chartArea.top + chartArea.bottom) / 2;
-              ctx.save();
-              ctx.font = '700 44px Inter, system-ui, -apple-system, Segoe UI, Roboto';
-              ctx.fillStyle = '#22c55e';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(Math.round(gradedPct * 100) + '%', cx, cy - 12);
-              ctx.font = '12px Inter, system-ui, -apple-system, Segoe UI, Roboto';
-              ctx.fillStyle = '#6b7280';
-              ctx.fillText('Grading Progress', cx, cy + 18);
-              ctx.restore();
-            }
-          }]
-        });
-
-        document.getElementById('gradedPctLabel').textContent = Math.round(gradedPct * 100) + '%';
-        document.getElementById('remainingPctLabel').textContent = (100 - Math.round(gradedPct * 100)) + '%';
-
-        // ======= Bar (Dynamic) =======
-        const chartLabels = programKeys.length > 0 ? programKeys : ['No Programs'];
-        const studentsData = programKeys.map(key => Number(summaryData[key]?.students || 0));
-        const coursesData = programKeys.map(key => Number(summaryData[key]?.courses || 0));
-
-        new Chart(document.getElementById('byProgramBar'), {
-          type: 'bar',
-          data: {
-            labels: chartLabels,
-            datasets: [
-              { label: 'Students', data: studentsData, borderWidth: 0, backgroundColor: '#2563eb' },
-              { label: 'Courses',  data: coursesData,  borderWidth: 0, backgroundColor: '#22c55e' }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: {
-              y: { beginAtZero: true, grid: { color: '#eef2f7' }, ticks: { color: '#64748b', font: { size: 11 } } },
-              x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } }
-            },
-            plugins: { legend: { display: true } }
-          }
-        });
+        window.__TDATA = @Html.Raw(json);
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/teacher-dashboard.js"></script>
 }

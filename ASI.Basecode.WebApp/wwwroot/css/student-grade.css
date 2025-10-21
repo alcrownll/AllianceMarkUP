@@ -6,15 +6,15 @@ body {
 .grades-page {
     max-width: 1020px;
     margin: 0 auto;
-    padding: 16px 0 32px;
+    padding: 10px 40px 24px;
 }
 
 .grades-card {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20) !important;
 }
 
 .grades-toolbar {

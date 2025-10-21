@@ -10,11 +10,16 @@
 
 .card {
     background: #fff;
-    border-radius: 14px;
+    border-radius: 20px;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20) !important;
+    transition: all 0.25s ease;
 }
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.30);
+    }
 
     .card.p16 {
         padding: 16px;
@@ -45,9 +50,9 @@
 
     .kpi h4 {
         margin: 0 0 8px;
-        font-size: 16px;
+        font-size: 18px;
         color: #0252A9;
-        font-weight: 800;   
+        font-weight: 800;
     }
 
     .kpi .value {
@@ -67,6 +72,7 @@
         color: #16a34a;
         font-weight: 700;
     }
+
     /* Icon pinned to the RIGHT */
     .kpi .icon {
         position: absolute;
@@ -79,9 +85,26 @@
         background: linear-gradient(180deg,#eaf3ff,#dbe8ff);
         display: grid;
         place-items: center;
-        font-size: 22px;
-        color: #2563eb;
+        font-size: 28px; 
+        font-weight: 900; 
+        -webkit-text-stroke: 0.4px currentColor; 
     }
+
+/* ----- Individual KPI colors (change per-card) ----- */
+.kpi-gwa .icon {
+    background: linear-gradient(180deg, #f3e8ff, #e0c3fc); /* violet gradient */
+    color: #7e22ce; /* main violet/purple tone */
+}
+
+.kpi-program .icon {
+    background: linear-gradient(180deg, #e8f5e9, #c8e6c9); /* green-ish */
+    color: #2e7d32;
+}
+
+.kpi-units .icon {
+    background: linear-gradient(180deg, #fff3e0, #ffe0b2); /* orange-ish */
+    color: #ef6c00;
+}
 
 /* Academic Highlights */
 .hi {
@@ -91,9 +114,10 @@
 .hi-title {
     font-weight: 800;
     color: #0252A9;
-    font-size: 18px;
+    font-size: 25px;
     margin-bottom: 8px;
 }
+
 /* Left donut fixed width; Right chart fills remaining space */
 .hi-inner {
     display: grid;
@@ -103,6 +127,7 @@
 }
 
 .ring-wrap {
+    margin-top: 35px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,6 +138,7 @@
     font-size: 12px;
     color: #6b7280;
 }
+
 /* Keep donut perfectly square (no stretch) */
 .ring-canvas {
     width: 260px !important;
@@ -148,6 +174,7 @@
         background: #2563eb;
         color: #fff;
     }
+
 /* Chart area now controls the canvas size */
 .chart-area {
     position: relative;
@@ -222,6 +249,7 @@
     font-weight: 700;
 }
 
+/* ---------- Responsive ---------- */
 @media (max-width: 1200px) {
     .hi-inner {
         grid-template-columns: 320px 1fr;

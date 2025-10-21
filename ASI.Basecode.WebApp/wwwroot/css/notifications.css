@@ -10,8 +10,8 @@
     background: #fff;
     border-radius: 16px;
     padding: 1.5rem 2rem;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20) !important;
 }
 
 /* Header */

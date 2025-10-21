@@ -289,8 +289,14 @@ body {
         background-color: #f5f9ff;
     }
 
-/* Excel Upload Modal Styles */
+/*================================ Excel Upload Modal Styles =================================*/
+#excelUploadModal .modal-content {
+    border-radius: 1.51rem;
+}
+
 #excelUploadModal .modal-header {
+    border-top-left-radius: 1.50rem;
+    border-top-right-radius: 1.50rem;
     background-color: #0252A9;
     color: white;
 }
@@ -302,7 +308,7 @@ body {
 #excelUploadModal .alert-info {
     background-color: #e7f3ff;
     border-color: #b3d9ff;
-    color: #0252A9;
+    color: #0252A9;x
 }
 
 #excelUploadModal .form-control:focus {
