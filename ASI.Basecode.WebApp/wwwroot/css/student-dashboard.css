@@ -5,13 +5,15 @@
 
 .grid {
     display: grid;
-    gap: 16px;
+    gap: 25px;
 }
 
 .card {
     background: #fff;
     border-radius: 14px;
     overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
 }
 
     .card.p16 {
@@ -44,14 +46,15 @@
     .kpi h4 {
         margin: 0 0 8px;
         font-size: 16px;
-        color: #0f172a;
+        color: #0252A9;
+        font-weight: 800;   
     }
 
     .kpi .value {
-        font-size: 32px;
+        font-size: 22px;
         font-weight: 800;
         color: #0f172a;
-        line-height: 1.1;
+        line-height: 1.7;
     }
 
     .kpi .meta {
@@ -87,7 +90,7 @@
 
 .hi-title {
     font-weight: 800;
-    color: #0f172a;
+    color: #0252A9;
     font-size: 18px;
     margin-bottom: 8px;
 }

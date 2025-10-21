@@ -9,8 +9,9 @@ body {
     padding: 2rem;
     max-width: 1010px;
     margin: auto;
-    box-shadow: none;
-}s
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+}
 
 /* Optional: dim controls when in read-only for UX clarity */
 .is-readonly .form-control,

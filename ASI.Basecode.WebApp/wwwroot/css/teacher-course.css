@@ -38,8 +38,8 @@ body {
 
             /* Hover effect for inactive tabs */
             .grade-tab-container .nav-pills .nav-link:hover:not(.active) {
-                background-color: #d7e6ff;
-                color: #0252A9;
+                transform: translateY(-2px);
+                box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
             }
 
 /* Table alignment */
