@@ -1,4 +1,3 @@
-/* ===== CONTAINER & CARD ===== */
 .admin-accounts-container {
     padding: 1.5rem;
     background: #E5EFFB;
@@ -144,7 +143,7 @@
     .row-actions .btn {
         min-width: 85px;
         font-size: 0.8rem;
-        padding: 0.35rem 0.75rem; /* smaller height */
+        padding: 0.35rem 0.75rem;
         border-radius: 50px;
         text-align: center;
         font-weight: 500;
@@ -200,7 +199,6 @@
     font-weight: 500;
 }
 
-/* ===== ALIGNMENT HELPERS ===== */
 .accounts-table td.text-start {
     text-align: left;
 }
@@ -213,7 +211,6 @@
     text-align: right;
 }
 
-/* ===== SCROLL FIX FOR MODALS ===== */
 html {
     overflow-y: scroll;
 }
@@ -221,3 +218,65 @@ html {
 body.modal-open {
     padding-right: 0 !important;
 }
+
+/* ========================= CONFIRM SUSPEND / ACTION MODAL ============================ */
+#confirmSuspendModal .modal-content {
+    border-radius: 1rem;
+    border: 1px solid #f1c6ca; /* soft red border */
+}
+
+#confirmSuspendModal .modal-header {
+    background: #8B0E0E !important; /* dark red header */
+    color: #fff !important;
+    border: 0;
+    padding: .9rem 1rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+}
+
+#confirmSuspendModal .modal-title {
+    color: #fff !important;
+    font-weight: 700;
+}
+
+#confirmSuspendModal .btn-close {
+    filter: invert(1) grayscale(1) brightness(200%); /* white close icon */
+    opacity: .9;
+}
+
+    #confirmSuspendModal .btn-close:hover {
+        opacity: 1;
+    }
+
+#confirmSuspendModal .modal-body {
+    background: #fff;
+    padding-top: 1rem;
+    color: #1f2937;
+}
+/* Footer and buttons */
+#confirmSuspendModal .modal-footer {
+    border-top: 0;
+    padding-top: .25rem;
+}
+
+#confirmSuspendModal .btn.btn-outline-secondary {
+    border-radius: 999px;
+    font-weight: 600;
+}
+/* Primary action button (Confirm) styled as red pill */
+#confirmSuspendModal #confirmActionBtn {
+    background-color: #B01616;
+    border-color: #B01616;
+    color: #fff;
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 0.45rem 1.1rem;
+    transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+    #confirmSuspendModal #confirmActionBtn:hover,
+    #confirmSuspendModal #confirmActionBtn:focus {
+        background-color: #8B0E0E;
+        border-color: #8B0E0E;
+        transform: translateY(-1px);
+    }

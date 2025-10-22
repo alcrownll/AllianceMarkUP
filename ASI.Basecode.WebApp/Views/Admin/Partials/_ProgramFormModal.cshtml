@@ -1,8 +1,9 @@
 ﻿@* Views/Admin/Partials/_ProgramFormModal.cshtml *@
 <div class="modal fade" id="programFormModal" tabindex="-1" aria-labelledby="programFormLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content shadow-sm border-0 rounded-3">
-            <div class="modal-header bg-primary text-white">
+        <div class="modal-content shadow-sm border-0 rounded-4">
+            @* increased border radius *@
+            <div class="modal-header program-modal-header text-white">
                 <h5 class="modal-title fw-semibold" id="programFormLabel">
                     <i class="bi bi-journal me-2"></i> <span id="pfTitle">Add Program</span>
                 </h5>
@@ -52,7 +53,7 @@
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4" id="pfPrimaryBtn">
+                    <button type="submit" class="btn btn-brand rounded-pill px-4" id="pfPrimaryBtn">
                         Add Program
                     </button>
                 </div>
@@ -63,150 +64,150 @@
 
 <script>
     (function () {
-      const modalEl   = document.getElementById('programFormModal');
-      const form      = document.getElementById('programForm');
-      const errEl     = document.getElementById('programFormError');
-      const titleEl   = document.getElementById('pfTitle');
-      const helpEl    = document.getElementById('pfHelp');
-      const codeEl    = document.getElementById('pfCode');
-      const nameEl    = document.getElementById('pfName');
-      const idEl      = document.getElementById('pfProgramId');
-      const activeEl  = document.getElementById('pfActive');
-      const activeHint= document.getElementById('pfActiveHint');
-      const primary   = document.getElementById('pfPrimaryBtn');
+        const modalEl   = document.getElementById('programFormModal');
+        const form      = document.getElementById('programForm');
+        const errEl     = document.getElementById('programFormError');
+        const titleEl   = document.getElementById('pfTitle');
+        const helpEl    = document.getElementById('pfHelp');
+        const codeEl    = document.getElementById('pfCode');
+        const nameEl    = document.getElementById('pfName');
+        const idEl      = document.getElementById('pfProgramId');
+        const activeEl  = document.getElementById('pfActive');
+        const activeHint= document.getElementById('pfActiveHint');
+        const primary   = document.getElementById('pfPrimaryBtn');
 
-      let MODE = 'add';
-      const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
+        let MODE = 'add';
+        const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
 
-      // Open "Add"
-      window.openAddProgramModal = function () {
-        MODE = 'add';
-        idEl.value = '';
-        titleEl.textContent = 'Add Program';
-        helpEl.textContent = 'Fill in the program’s basic details. Once added, you can assign courses to it.';
-        primary.textContent = 'Add Program';
+        // Open "Add"
+        window.openAddProgramModal = function () {
+            MODE = 'add';
+            idEl.value = '';
+            titleEl.textContent = 'Add Program';
+            helpEl.textContent = 'Fill in the program’s basic details. Once added, you can assign courses to it.';
+            primary.textContent = 'Add Program';
 
-        codeEl.value = '';
-        nameEl.value = '';
-        codeEl.readOnly = false;
-        nameEl.readOnly = false;
+            codeEl.value = '';
+            nameEl.value = '';
+            codeEl.readOnly = false;
+            nameEl.readOnly = false;
 
-        activeEl.checked = false;
-        activeEl.disabled = true;
-        activeHint.textContent = 'Status is set after the program is created.';
+            activeEl.checked = false;
+            activeEl.disabled = true;
+            activeHint.textContent = 'Status is set after the program is created.';
 
-        showErr('');
-        form.classList.remove('was-validated');
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-      };
+            showErr('');
+            form.classList.remove('was-validated');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        };
 
-      // Open "Edit"
-      window.openEditProgramModal = function (prog) {
-        MODE = 'edit';
-        idEl.value = prog.id;
-        titleEl.textContent = 'Edit Program';
-        helpEl.textContent = 'You can update program details or toggle its active status.';
-        primary.textContent = 'Save Changes';
+        // Open "Edit"
+        window.openEditProgramModal = function (prog) {
+            MODE = 'edit';
+            idEl.value = prog.id;
+            titleEl.textContent = 'Edit Program';
+            helpEl.textContent = 'You can update program details or toggle its active status.';
+            primary.textContent = 'Save Changes';
 
-        codeEl.value = prog.code || '';
-        nameEl.value = prog.name || '';
-        codeEl.readOnly = false;
-        nameEl.readOnly = false;
+            codeEl.value = prog.code || '';
+            nameEl.value = prog.name || '';
+            codeEl.readOnly = false;
+            nameEl.readOnly = false;
 
-        activeEl.checked = !!prog.isActive;
-        activeEl.disabled = false;
-        activeHint.textContent = 'Toggle the program’s active status.';
+            activeEl.checked = !!prog.isActive;
+            activeEl.disabled = false;
+            activeHint.textContent = 'Toggle the program’s active status.';
 
-        showErr('');
-        form.classList.remove('was-validated');
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-      };
+            showErr('');
+            form.classList.remove('was-validated');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        };
 
-      // Button openers
-      document.addEventListener('click', (e) => {
-        const addBtn = e.target.closest('[data-action="program-add"]');
-        if (addBtn) { e.preventDefault(); window.openAddProgramModal(); return; }
+        // Button openers
+        document.addEventListener('click', (e) => {
+            const addBtn = e.target.closest('[data-action="program-add"]');
+            if (addBtn) { e.preventDefault(); window.openAddProgramModal(); return; }
 
-        const editBtn = e.target.closest('[data-action="program-edit"]');
-        if (editBtn) {
-          e.preventDefault();
-          window.openEditProgramModal({
-            id: editBtn.getAttribute('data-program-id'),
-            code: editBtn.getAttribute('data-program-code'),
-            name: editBtn.getAttribute('data-program-name'),
-            isActive: (editBtn.getAttribute('data-program-active') === 'true')
-          });
-        }
-      });
-
-      // Submit handler
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        showErr('');
-        form.classList.remove('was-validated');
-
-        if (!codeEl.value.trim() || !nameEl.value.trim()) {
-          form.classList.add('was-validated');
-          return;
-        }
-
-        primary.disabled = true;
-        const origText = primary.textContent;
-        primary.textContent = 'Saving...';
-
-        try {
-          const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
-
-          if (MODE === 'add') {
-            // CREATE
-            const fd = new FormData();
-            if (token) fd.append('__RequestVerificationToken', token);
-            fd.append('code', codeEl.value.trim());
-            fd.append('name', nameEl.value.trim());
-            fd.append('notes', '');
-
-            const res = await fetch('/admin/programs/create', {
-              method: 'POST',
-              headers: { 'X-Requested-With': 'XMLHttpRequest' },
-              body: fd
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || data.ok !== true) throw new Error(data.message || 'Create failed.');
-          } else {
-            // UPDATE (code + name + isActive)
-            const id = idEl.value;
-            const fd = new FormData();
-            if (token) fd.append('__RequestVerificationToken', token);
-            fd.append('ProgramCode', codeEl.value.trim());
-            fd.append('ProgramName', nameEl.value.trim());
-            fd.append('IsActive', activeEl.checked ? 'true' : 'false');
-
-            const res = await fetch(`/admin/programs/${encodeURIComponent(id)}/update`, {
-              method: 'POST',
-              headers: { 'X-Requested-With': 'XMLHttpRequest' },
-              body: fd
-            });
-
-            if (res.status === 409) {
-              const c = await res.json().catch(() => ({}));
-              throw new Error(c.message || 'Duplicate program code.');
+            const editBtn = e.target.closest('[data-action="program-edit"]');
+            if (editBtn) {
+                e.preventDefault();
+                window.openEditProgramModal({
+                    id: editBtn.getAttribute('data-program-id'),
+                    code: editBtn.getAttribute('data-program-code'),
+                    name: editBtn.getAttribute('data-program-name'),
+                    isActive: (editBtn.getAttribute('data-program-active') === 'true')
+                });
             }
-            if (!res.ok) {
-              const c = await res.json().catch(() => ({}));
-              throw new Error(c.message || 'Update failed.');
-            }
-          }
+        });
 
-          if (typeof loadProgramTable === 'function') await loadProgramTable();
-          bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-          if (window.showToast) showToast(MODE === 'add' ? 'Program created.' : 'Program updated.');
-        } catch (err) {
-          console.error(err);
-          showErr(err.message || 'An unexpected error occurred. Please try again.');
-        } finally {
-          primary.disabled = false;
-          primary.textContent = origText;
-        }
-      });
+        // Submit handler
+        form.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            showErr('');
+            form.classList.remove('was-validated');
+
+            if (!codeEl.value.trim() || !nameEl.value.trim()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            primary.disabled = true;
+            const origText = primary.textContent;
+            primary.textContent = 'Saving...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+
+                if (MODE === 'add') {
+                    // CREATE
+                    const fd = new FormData();
+                    if (token) fd.append('__RequestVerificationToken', token);
+                    fd.append('code', codeEl.value.trim());
+                    fd.append('name', nameEl.value.trim());
+                    fd.append('notes', '');
+
+                    const res = await fetch('/admin/programs/create', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: fd
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.ok !== true) throw new Error(data.message || 'Create failed.');
+                } else {
+                    // UPDATE
+                    const id = idEl.value;
+                    const fd = new FormData();
+                    if (token) fd.append('__RequestVerificationToken', token);
+                    fd.append('ProgramCode', codeEl.value.trim());
+                    fd.append('ProgramName', nameEl.value.trim());
+                    fd.append('IsActive', activeEl.checked ? 'true' : 'false');
+
+                    const res = await fetch(`/admin/programs/${encodeURIComponent(id)}/update`, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: fd
+                    });
+
+                    if (res.status === 409) {
+                        const c = await res.json().catch(() => ({}));
+                        throw new Error(c.message || 'Duplicate program code.');
+                    }
+                    if (!res.ok) {
+                        const c = await res.json().catch(() => ({}));
+                        throw new Error(c.message || 'Update failed.');
+                    }
+                }
+
+                if (typeof loadProgramTable === 'function') await loadProgramTable();
+                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                if (window.showToast) showToast(MODE === 'add' ? 'Program created.' : 'Program updated.');
+            } catch (err) {
+                console.error(err);
+                showErr(err.message || 'An unexpected error occurred. Please try again.');
+            } finally {
+                primary.disabled = false;
+                primary.textContent = origText;
+            }
+        });
     })();
 </script>

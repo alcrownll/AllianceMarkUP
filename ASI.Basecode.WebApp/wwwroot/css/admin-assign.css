@@ -205,3 +205,72 @@ body.modal-open {
         background-color: #0252A9 !important;
         color: #fff !important;
     }
+
+/* ============================================================
+   CONFIRM ASSIGNED COURSE DELETE MODAL (scoped to dynamic id)
+   Matches the dark-red themed delete modal style
+   ============================================================ */
+.modal[id^="confirmDelete-"] .modal-content {
+    border-radius: 1rem;
+    border: 1px solid #f1c6ca; /* soft red border */
+    box-shadow: 0 12px 30px rgba(139,14,14,.25);
+}
+
+.modal[id^="confirmDelete-"] .modal-header {
+    background: #8B0E0E !important; /* dark red header */
+    color: #fff !important;
+    border: 0;
+    padding: .9rem 1rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+}
+
+.modal[id^="confirmDelete-"] .modal-title {
+    color: #fff !important;
+    font-weight: 700;
+}
+
+.modal[id^="confirmDelete-"] .btn-close {
+    filter: invert(1) grayscale(1) brightness(200%); /* white close icon */
+    opacity: .9;
+}
+
+    .modal[id^="confirmDelete-"] .btn-close:hover {
+        opacity: 1;
+    }
+
+.modal[id^="confirmDelete-"] .modal-body {
+    background: #fff;
+    padding-top: 1rem;
+    color: #1f2937;
+}
+
+/* Buttons */
+.modal[id^="confirmDelete-"] .modal-footer {
+    border-top: 0;
+    padding-top: .25rem;
+}
+
+.modal[id^="confirmDelete-"] .btn.btn-light {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+/* Promote the red Delete button to branded dark red with pill shape */
+.modal[id^="confirmDelete-"] .btn.btn-danger {
+    background-color: #B01616; /* brandy red */
+    border-color: #B01616;
+    color: #fff;
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 0.45rem 1.1rem;
+    transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+    .modal[id^="confirmDelete-"] .btn.btn-danger:hover,
+    .modal[id^="confirmDelete-"] .btn.btn-danger:focus {
+        background-color: #8B0E0E;
+        border-color: #8B0E0E;
+        box-shadow: 0 6px 16px rgba(139,14,14,.28);
+        transform: translateY(-1px);
+    }

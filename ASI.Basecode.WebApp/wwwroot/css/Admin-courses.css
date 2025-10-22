@@ -1,5 +1,4 @@
-﻿/* ===== admin-courses.css ===== */
-.admin-courses-container {
+﻿.admin-courses-container {
     padding: 1.5rem;
 }
 
@@ -150,7 +149,6 @@ body.modal-open {
         padding: 0.28rem 0.65rem !important;
         border-radius: 40px;
     }
-
     /* Default description width in generic tables */
     .admin-courses-card th:nth-child(2),
     .admin-courses-card td:nth-child(2) {
@@ -159,13 +157,11 @@ body.modal-open {
         white-space: normal;
         word-break: break-word;
     }
-
     /* Code col width in generic tables */
     .admin-courses-card th:first-child,
     .admin-courses-card td:first-child {
         width: 10rem;
     }
-
     /* Actions column generic */
     .admin-courses-card th:last-child,
     .admin-courses-card td:last-child {
@@ -190,14 +186,12 @@ body.modal-open {
         border-color: #01448E !important;
     }
 
-/* ====== Responsive Flat Table (no shadow) ====== */
 .table-wrapper {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 8px;
 }
-
 /* Table inside this wrapper is flat */
 .no-shadow-table table {
     background: transparent !important;
@@ -209,7 +203,6 @@ body.modal-open {
     border-collapse: collapse;
     font-size: 0.85rem;
 }
-
 /* Header styling */
 .no-shadow-table thead th {
     background-color: #E5EFFB !important;
@@ -219,14 +212,12 @@ body.modal-open {
     vertical-align: middle;
     padding: 0.6rem 0.8rem;
 }
-
 /* Body styling (lighter dividers) */
 .no-shadow-table tbody td {
     vertical-align: middle;
     padding: 0.55rem 0.8rem;
     border-bottom: 1px solid #f3f4f6; /* softened */
 }
-
 /* Left-align for description, center for unit cols */
 .no-shadow-table td:nth-child(2) {
     text-align: left;
@@ -237,7 +228,6 @@ body.modal-open {
     text-align: center;
 }
 
-/* === Row Action Buttons (outline, one-line) === */
 .row-actions {
     display: inline-flex;
     gap: 0.4rem;
@@ -249,7 +239,7 @@ body.modal-open {
         font-weight: 600;
         border-radius: 50px;
         padding: 0.35rem 0.9rem;
-        min-width: 110px;
+        min-width: 80px;
         white-space: nowrap;
         transition: all 0.2s ease;
     }
@@ -282,12 +272,11 @@ body.modal-open {
         min-width: 70px;
     }
 
-/* ====== Course Table Specific Overrides (wider Code) ====== */
+/* ====================== Course Table ================ */
 .admin-courses-card .courses-table {
     table-layout: auto;
 }
 
-    /* Code column: wide and no wrap */
     .admin-courses-card .courses-table th:first-child,
     .admin-courses-card .courses-table td:first-child {
         width: 120px !important;
@@ -295,10 +284,9 @@ body.modal-open {
         overflow-wrap: normal !important;
         word-break: keep-all !important;
         hyphens: none !important;
-        text-align: left; /* reads better for long codes */
+        text-align: left;
     }
 
-    /* Description: take remaining space, wrap naturally */
     .admin-courses-card .courses-table th:nth-child(2),
     .admin-courses-card .courses-table td:nth-child(2) {
         width: auto !important;
@@ -307,7 +295,6 @@ body.modal-open {
         word-break: break-word;
     }
 
-    /* Unit columns remain compact */
     .admin-courses-card .courses-table th:nth-child(3),
     .admin-courses-card .courses-table th:nth-child(4),
     .admin-courses-card .courses-table th:nth-child(5),
@@ -318,7 +305,6 @@ body.modal-open {
         text-align: center;
     }
 
-    /* Actions roomy and centered */
     .admin-courses-card .courses-table th:last-child,
     .admin-courses-card .courses-table td:last-child {
         width: 220px !important;
@@ -332,23 +318,332 @@ body.modal-open {
     }
 }
 
-/* Round the table header corners for the no-shadow course table */
 .no-shadow-table thead th:first-child {
-    border-top-left-radius: 8px; /* same as your card radius */
+    border-top-left-radius: 8px;
 }
 
 .no-shadow-table thead th:last-child {
     border-top-right-radius: 8px;
 }
 
-/* Make sure header background and border-radius blend smoothly */
 .no-shadow-table thead th {
     background-color: #E5EFFB !important;
     border-bottom: 2px solid #dee2e6;
 }
 
-/* Optional: remove clipping so radius shows if parent has overflow hidden */
 .no-shadow-table table {
     border-collapse: separate;
     border-spacing: 0;
+}
+
+/* ============== PROGRAM FORM MODAL ================== */
+.program-modal-header {
+    background-color: #0252A9 !important;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+
+#programFormModal .modal-content {
+    border-radius: 1rem !important;
+}
+
+#programFormModal .btn-brand {
+    background-color: #0252A9 !important;
+    border-color: #0252A9 !important;
+    color: #fff !important;
+    font-weight: 600;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+    #programFormModal .btn-brand:hover {
+        background-color: #01448E !important;
+        border-color: #01448E !important;
+        transform: translateY(-1px);
+    }
+
+/* ============== ADD/ EDIT COURSE MODAL ============== */
+.course-modal-header {
+    background-color: #0252A9 !important;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+
+#addCourseModal .modal-content {
+    border-radius: 1rem !important;
+}
+
+#addCourseModal .btn.btn-brand {
+    background-color: #0252A9 !important;
+    border-color: #0252A9 !important;
+    color: #fff !important;
+    font-weight: 600;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+    #addCourseModal .btn.btn-brand:hover {
+        background-color: #01448E !important;
+        border-color: #01448E !important;
+        transform: translateY(-1px);
+    }
+
+#addCourseModal .form-label {
+    font-size: .9rem;
+}
+
+#addCourseModal .form-control {
+    font-size: .9rem;
+    border-radius: .5rem;
+}
+
+/* =================== PORAGRAM PROSPECTUS MODAL ================ */
+#programProspectusModal .modal-dialog {
+    max-width: 80vw;
+}
+
+#programProspectusModal .modal-content {
+    border-radius: 1rem !important;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#programProspectusModal .modal-body {
+    overflow-y: auto;
+    max-height: calc(80vh - 7.5rem);
+}
+
+.prospectus-header {
+    background-color: #0252A9 !important;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+
+#programProspectusModal .nav-tabs.folder-tabs {
+    border-bottom: 1px solid #dee2e6;
+    gap: .25rem;
+    font-weight: 500;
+}
+
+    #programProspectusModal .nav-tabs.folder-tabs .nav-link {
+        border: 1px solid transparent;
+        border-top-left-radius: .375rem;
+        border-top-right-radius: .375rem;
+        color: #000;
+        background-color: transparent;
+        padding: .5rem .9rem;
+        transition: all .15s ease-in-out;
+        user-select: none;
+        caret-color: transparent;
+    }
+
+        #programProspectusModal .nav-tabs.folder-tabs .nav-link:hover {
+            color: #000;
+            background-color: #E5EFFA;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+
+        #programProspectusModal .nav-tabs.folder-tabs .nav-link.active,
+        #programProspectusModal .nav-tabs.folder-tabs .nav-item.show .nav-link {
+            color: #0252A9;
+            background-color: #E5EFFB;
+            border-color: #dee2e6 #dee2e6 #fff;
+            font-weight: 600;
+        }
+
+#programProspectusModal table th,
+#programProspectusModal table td {
+    white-space: nowrap;
+}
+
+#programProspectusModal .card {
+    display: flex;
+    flex-direction: column;
+}
+
+#programProspectusModal .card-body {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.modal-backdrop.stacked {
+    z-index: 1060 !important;
+}
+
+#coursePickerModal {
+    z-index: 1065 !important;
+}
+
+/* ========================== TERM SELECTION MODAL =================== */
+#programProspectusModal .prospectus-term .card {
+    border: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(16,24,40,.06);
+}
+/* Header bar (dark blue) */
+#programProspectusModal .prospectus-term .card-header {
+    background-color: #0252A9 !important;
+    color: #fff !important;
+    padding: .75rem 1rem;
+}
+
+    #programProspectusModal .prospectus-term .card-header .small,
+    #programProspectusModal .prospectus-term .card-header .text-muted {
+        color: rgba(255,255,255,.8) !important;
+    }
+/* Table header (light blue) */
+#programProspectusModal .prospectus-term thead th {
+    background-color: #E5EFFB !important;
+    border-bottom: 2px solid #dee2e6 !important;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+#programProspectusModal .prospectus-term table td {
+    vertical-align: middle;
+}
+
+
+#programProspectusModal .prospectus-term .btn-addcourse {
+    background-color: #E5EFFB !important;
+    color: #0252A9 !important;
+    border: none !important;
+    font-weight: 600;
+    border-radius: 999px;
+    transition: all .2s ease-in-out;
+}
+
+    #programProspectusModal .prospectus-term .btn-addcourse:hover {
+        background-color: #ffffff !important;
+        color: #01448E !important;
+        transform: translateY(-1px);
+    }
+
+/* Keep nested modals stacking */
+.modal-backdrop.stacked {
+    z-index: 1060 !important;
+}
+
+/* ============== COURSE PICKER MODAL =========== */
+#coursePickerModal .modal-dialog {
+    max-width: min(950px, 90vw);
+}
+
+@media (min-width: 1000px) {
+    #coursePickerModal .modal-dialog {
+        max-width: 60vw;
+    }
+}
+
+#coursePickerModal .modal-content {
+    border-radius: 1rem !important;
+}
+
+#coursePickerModal .cp-header {
+    background-color: #0252A9 !important;
+    border-top-left-radius: 1rem !important;
+    border-top-right-radius: 1rem !important;
+}
+/* Brand buttons */
+#coursePickerModal .btn-brand {
+    background-color: #0252A9 !important;
+    border-color: #0252A9 !important;
+    color: #fff !important;
+    font-weight: 600;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+    #coursePickerModal .btn-brand:hover {
+        background-color: #01448E !important;
+        border-color: #01448E !important;
+        transform: translateY(-1px);
+    }
+
+#coursePickerModal .btn-outline-brand {
+    color: #0252A9 !important;
+    border: 2px solid #0252A9 !important;
+    background: transparent !important;
+    font-weight: 600;
+    transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+
+    #coursePickerModal .btn-outline-brand:hover {
+        background: #0252A9 !important;
+        color: #fff !important;
+        transform: translateY(-1px);
+    }
+
+/* ================ CONFIRM PROGRAM DELETE MODAL =========================== */
+#confirmProgramDeleteModal .modal-content {
+    border-radius: 1rem;
+    border: 1px solid #f1c6ca; /* soft red border */
+    box-shadow: 0 12px 30px rgba(139,14,14,.25);
+}
+
+#confirmProgramDeleteModal .modal-header {
+    background: #8B0E0E !important; /* dark red header */
+    color: #fff !important;
+    border: 0;
+    padding: .9rem 1rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+}
+
+    #confirmProgramDeleteModal .modal-header .bi-exclamation-octagon-fill {
+        color: #fff !important; /* keep icon white on dark header */
+    }
+
+#confirmProgramDeleteModal .modal-title {
+    color: #fff !important;
+}
+
+#confirmProgramDeleteModal .modal-body {
+    background: #fff;
+    padding-top: 1rem;
+}
+
+#confirmProgramDeleteModal .alert-warning {
+    background: #FFF3F3; /* very light red tint */
+    border: 1px solid #F5C2C7;
+    color: #6B2226;
+}
+
+#confirmProgramDeleteModal .badge.bg-dark-subtle {
+    background: #F0D7D9 !important; /* soft red chip */
+    color: #7E1B1F !important;
+}
+
+/* Buttons */
+#confirmProgramDeleteModal .btn-light {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+#confirmProgramDeleteModal #pdConfirmBtn {
+    background-color: #B01616; /* brandy red */
+    border-color: #B01616;
+    color: #fff;
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 0.45rem 1.1rem;
+    transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+    #confirmProgramDeleteModal #pdConfirmBtn:hover,
+    #confirmProgramDeleteModal #pdConfirmBtn:focus {
+        background-color: #8B0E0E;
+        border-color: #8B0E0E;
+        box-shadow: 0 6px 16px rgba(139,14,14,.28);
+        transform: translateY(-1px);
+    }
+
+/* Spinner stays aligned but visible on red buttons */
+#confirmProgramDeleteModal #pdSpinner {
+    filter: brightness(0) invert(1); /* make spinner white if needed */
+}
+
+/* Footer cleanup */
+#confirmProgramDeleteModal .modal-footer {
+    border-top: 0;
+    padding-top: .25rem;
 }

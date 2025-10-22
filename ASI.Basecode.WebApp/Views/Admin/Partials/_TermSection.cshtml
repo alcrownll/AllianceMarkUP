@@ -11,26 +11,16 @@
     var k2 = $"Y{yearLevel}T2";
 }
 
-<style>
-    .modal-backdrop.stacked {
-        z-index: 1060 !important;
-    }
-
-    #coursePickerModal {
-        z-index: 1065 !important;
-    }
-</style>
-
-<div class="row g-3 align-items-stretch">
+<div class="prospectus-term row g-3 align-items-stretch">
     <!-- 1st Semester -->
     <div class="col-12 col-xl-6 d-flex">
-        <div class="card flex-fill shadow-sm">
+        <div class="card flex-fill">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <div><strong>1st Semester</strong></div>
+                <div class="fw-semibold">1st Semester</div>
                 <div class="d-flex align-items-center gap-3 flex-nowrap">
-                    <div class="small text-muted">Total Units: <span id="units-@k1">0</span></div>
+                    <div class="small">Total Units: <span id="units-@k1">0</span></div>
                     <button type="button"
-                            class="btn btn-sm btn-primary"
+                            class="btn btn-sm btn-addcourse px-3"
                             data-action="open-course-picker"
                             data-year="@yearLevel" data-term="1" data-key="@k1">
                         Add Course
@@ -41,7 +31,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive prospectus-table">
                     <table class="table mb-0 align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
@@ -63,13 +53,13 @@
 
     <!-- 2nd Semester -->
     <div class="col-12 col-xl-6 d-flex">
-        <div class="card flex-fill shadow-sm">
+        <div class="card flex-fill">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <div><strong>2nd Semester</strong></div>
+                <div class="fw-semibold">2nd Semester</div>
                 <div class="d-flex align-items-center gap-3 flex-nowrap">
-                    <div class="small text-muted">Total Units: <span id="units-@k2">0</span></div>
+                    <div class="small">Total Units: <span id="units-@k2">0</span></div>
                     <button type="button"
-                            class="btn btn-sm btn-primary"
+                            class="btn btn-sm btn-addcourse px-3"
                             data-action="open-course-picker"
                             data-year="@yearLevel" data-term="2" data-key="@k2">
                         Add Course
@@ -80,7 +70,7 @@
             <div class="card-body p-0">
                 <div class="table-responsive prospectus-table">
                     <table class="table mb-0 align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th style="width:18%">Course Code</th>
                                 <th>Descriptive Title</th>
@@ -176,7 +166,6 @@
         const tgt = document.getElementById('stackTermTarget');
         if (tgt) tgt.textContent = `Year ${yr} — ${tm === 2 ? '2nd Sem' : '1st Sem'}`;
 
-        // Show child explicitly; keep parent open
         const modal = bootstrap.Modal.getOrCreateInstance(pickerEl, { backdrop: 'static', keyboard: false });
         modal.show();
       });

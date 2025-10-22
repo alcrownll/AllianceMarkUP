@@ -2,19 +2,23 @@
 <div class="modal fade" id="programProspectusModal" tabindex="-1" aria-labelledby="prospectusLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xxl">
-        <div class="modal-content shadow">
-            <div class="modal-header">
+        <div class="modal-content shadow border-0 rounded-4">
+            <!-- ===== HEADER ===== -->
+            <div class="modal-header prospectus-header text-white">
                 <div>
-                    <h5 class="modal-title" id="prospectusLabel">Build Prospectus</h5>
-                    <div class="text-muted small">
+                    <h5 class="modal-title fw-semibold" id="prospectusLabel">
+                        <i class="bi bi-journal-text me-2"></i> Build Prospectus
+                    </h5>
+                    <div class="text-white-50 small">
                         Program: <strong id="sumCode">—</strong> — <span id="sumName">—</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body">
-                <ul class="nav nav-tabs" role="tablist">
+            <!-- ===== BODY ===== -->
+            <div class="modal-body p-3 p-xl-4">
+                <ul class="nav nav-tabs folder-tabs" role="tablist">
                     <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" data-bs-target="#year1" role="tab">I — First Year</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#year2" role="tab">II — Second Year</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#year3" role="tab">III — Third Year</a></li>
@@ -41,52 +45,13 @@
                 </div>
             </div>
 
-            <div class="modal-footer justify-content-between">
+            <!-- ===== FOOTER ===== -->
+            <div class="modal-footer border-0 justify-content-start pt-0">
                 <small class="text-muted">All changes are saved automatically.</small>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    #programProspectusModal .modal-dialog {
-        max-width: 80vw;
-    }
-
-    #programProspectusModal table th, #programProspectusModal table td {
-        white-space: nowrap;
-    }
-
-    #programProspectusModal .nav-tabs .nav-link {
-        user-select: none;
-        caret-color: transparent;
-    }
-
-    #programProspectusModal .tab-pane > .col-12.d-xl-flex {
-        align-items: stretch;
-    }
-
-    #programProspectusModal .card {
-        display: flex;
-        flex-direction: column;
-    }
-
-    #programProspectusModal .card-body {
-        flex: 1 1 auto;
-        min-height: 0;
-    }
-
-    /* Stacked modal z-indexes for nested Course Picker */
-    .modal-backdrop.stacked {
-        z-index: 1060 !important;
-    }
-
-    #coursePickerModal {
-        z-index: 1065 !important;
-    }
-    /* child above that backdrop */
-</style>
 
 <script>
     (function () {
@@ -96,10 +61,8 @@
       const parent = document.getElementById('programProspectusModal');
       const child  = document.getElementById('coursePickerModal');
 
-      // expose for child
       window.getCurrentProgramId = function () { return parent?.dataset.programId || ''; };
 
-      // ensure child is a <body> sibling (never nested inside parent)
       if (child && child.parentElement !== document.body) {
         document.body.appendChild(child);
       }
@@ -148,7 +111,6 @@
         await Promise.all(jobs);
       }
 
-      // When Prospectus opens, set Program metadata and load terms
       parent.addEventListener('show.bs.modal', async (e) => {
         const btn  = e.relatedTarget;
         const pid  = btn?.getAttribute('data-program-id')   ?? '';
@@ -164,7 +126,6 @@
         if (pid) await loadAllTerms(pid);
       });
 
-      // Keep parent open while child is open
       parent.addEventListener('hide.bs.modal', (e) => {
         if (child?.classList.contains('show')) e.preventDefault();
       });
@@ -173,7 +134,6 @@
         if (!document.querySelector('.modal.show')) document.body.classList.remove('modal-open');
       });
 
-      // Child stacking glue
       if (child) {
         child.addEventListener('shown.bs.modal', () => {
           const bds = document.querySelectorAll('.modal-backdrop');
@@ -181,7 +141,6 @@
           document.body.classList.add('modal-open');
         });
         child.addEventListener('hidden.bs.modal', () => {
-          // re-add scroll lock if parent still visible
           if (parent.classList.contains('show')) document.body.classList.add('modal-open');
         });
       }
