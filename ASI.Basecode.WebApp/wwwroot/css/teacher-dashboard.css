@@ -60,6 +60,7 @@
         margin: 0 0 8px;
         font-size: 16px;
         color: #0252A9;
+        font-weight: 800;
     }
 
     .kpi .value {
@@ -145,10 +146,10 @@
     gap: 12px;
 }
 
-.panel-title {
-    font-weight: 700;
-    color: #0252A9; 
-    font-size: 16px;
+.teacher-dashboard .panel-title {
+    color: #0252A9 !important;
+    font-weight: 800;
+    font-size: 20px;
 }
 
 .current-program-hint {

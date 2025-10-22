@@ -37,9 +37,9 @@ body {
             }
 
             /* Hover effect for inactive tabs */
-            .grade-tab-container .nav-pills .nav-link:hover:not(.active) {
+            .grade-tab-container .nav-pills .nav-link:hover {
                 transform: translateY(-2px);
-                box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+                box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.30);
             }
 
 /* Table alignment */
@@ -65,12 +65,15 @@ body {
 
 /* =========================================== Filter Section Styling ============================================= */
 .teacher-filter-container {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    transition: all 0.25s ease;
 }
 
-    /* Add space between rows and controls */
-    .teacher-filter-container .row {
-        row-gap: 1.5rem;
+    .teacher-filter-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.30);
     }
 
     /* Make dropdowns and inputs more elegant */
@@ -107,7 +110,7 @@ body {
 
 /* =============================== Students & Grades Table Styling ======================================= */
 .teacher-grades-card {
-    border-left: 16px solid #0252A9; /* blue bar on the left */
+    border-left: 16px solid #0252A9;
     border-radius: 0.75rem;
     overflow: hidden;
 }
@@ -152,9 +155,16 @@ body {
     transition: 0.2s ease;
 }
 
+/* Keep the Year label on one line */
+.teacher-filter-container .form-label.no-wrap {
+    white-space: nowrap;
+}
+
+
 /* ====================================== Grade Entry Table ================================================== */
 .grade-entry-table {
     font-size: 0.9rem;
+
 }
 
     .grade-entry-table thead th {
@@ -202,15 +212,15 @@ body {
 
 /* Color Variants */
 .icon-edit {
-    background-color: #e7f2ff; /* light blue */
+    background-color: #e7f2ff;
 }
 
 .icon-upload {
-    background-color: #fff6cc; /* soft yellow */
+    background-color: #fff6cc;
 }
 
 .icon-pdf {
-    background-color: #e7f9ee; /* soft green */
+    background-color: #e7f9ee;
 }
 
 /* Tooltip adjustments */
@@ -232,8 +242,8 @@ body {
     .teacher-edit-card .card-header:first-child {
         background: #fff !important;
         color: #0252A9;
-        font-size: 1.25rem; /* slightly bigger */
-        font-weight: 700; /* bold */
+        font-size: 1.25rem;
+        font-weight: 700;
         border-bottom: none;
         padding-top: 1rem;
         padding-bottom: 0.75rem;
@@ -289,44 +299,91 @@ body {
         background-color: #f5f9ff;
     }
 
-/*================================ Excel Upload Modal Styles =================================*/
+/* ======================= Excel Upload Modal (updated) ======================= */
 #excelUploadModal .modal-content {
-    border-radius: 1.51rem;
+    border-radius: 1.5rem;
 }
 
 #excelUploadModal .modal-header {
-    border-top-left-radius: 1.50rem;
-    border-top-right-radius: 1.50rem;
-    background-color: #0252A9;
-    color: white;
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    background-color: #013B7E; /* dark blue header */
+    color: #fff;
 }
 
-#excelUploadModal .modal-header .btn-close {
-    filter: invert(1);
+    #excelUploadModal .modal-header .btn-close {
+        filter: invert(1);
+    }
+
+/* Icon beside title */
+#excelUploadModal .modal-title i {
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #ffffff;
 }
 
+/* Info alert */
 #excelUploadModal .alert-info {
     background-color: #e7f3ff;
     border-color: #b3d9ff;
-    color: #0252A9;x
+    color: #0252A9;
 }
 
+/* Inputs */
 #excelUploadModal .form-control:focus {
     border-color: #0252A9;
-    box-shadow: 0 0 0 0.2rem rgba(2, 82, 169, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(2, 82, 169, 0.18);
 }
 
+/* Buttons */
+#excelUploadModal .btn {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+/* Outline (Download Template) */
 #excelUploadModal .btn-outline-primary {
     color: #0252A9;
     border-color: #0252A9;
+    padding: 0.45rem 0.9rem;
 }
 
-#excelUploadModal .btn-outline-primary:hover{
-    color: #fff;
+    #excelUploadModal .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #0252A9;
+        border-color: #0252A9;
+    }
+
+/* Secondary (Close) */
+#excelUploadModal .btn-secondary {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    padding: 0.45rem 0.9rem;
+}
+
+    #excelUploadModal .btn-secondary:hover {
+        background-color: #e5e7eb;
+        color: #013B7E;
+        border-color: #cdd3da;
+    }
+
+/* Primary (Upload & Process) */
+#excelUploadModal .btn-primary,
+#excelUploadModal #uploadExcelBtn {
     background-color: #0252A9;
     border-color: #0252A9;
+    color: #fff;
+    padding: 0.45rem 1.0rem;
 }
 
+    #excelUploadModal .btn-primary:hover,
+    #excelUploadModal #uploadExcelBtn:hover {
+        background-color: #013B7E;
+        border-color: #013B7E;
+    }
+
+/* Progress bar */
 #excelUploadModal .progress-bar {
     background-color: #0252A9;
 }
@@ -340,7 +397,7 @@ body {
     margin-bottom: 0.25rem;
 }
 
-/* Upload button states */
+/* Disabled upload button */
 #uploadExcelBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;

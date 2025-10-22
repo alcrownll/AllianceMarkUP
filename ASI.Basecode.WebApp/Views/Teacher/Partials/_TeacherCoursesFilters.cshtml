@@ -27,14 +27,14 @@
 
             <!-- Filter by Year Level -->
             <div class="col-md-2">
-                <label class="form-label fw-semibold">Filter by Year Level</label>
+                <label class="form-label fw-semibold no-wrap">Filter by Year Level</label>
                 <select class="form-select" name="yearLevel" id="filterYearLevel">
                     <option value="">All Year Levels</option>
                     @foreach (var year in yearLevels)
                     {
                         var yearSuffix = year == 1 ? "st" : year == 2 ? "nd" : year == 3 ? "rd" : "th";
                         var isSelected = ViewBag.FilterYearLevel as int? == year;
-                        @if (isSelected)
+                        if (isSelected)
                         {
                             <option value="@year" selected>@year@yearSuffix Year</option>
                         }

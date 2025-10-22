@@ -14,76 +14,109 @@
     padding: 1.25rem 1.25rem 2rem;
     background: var(--bg);
     min-height: calc(100vh - 4rem);
+    gap: 1.5rem;
 }
 
 /* Glass cards */
 .glass {
-    background: var(--glass);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: #fff;
     border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+    transition: all 0.25s ease;
 }
 
-/* KPI */
+    .glass:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.30);
+    }
+
+/* ================= KPI — styled like Student Dashboard ================= */
 .kpi-grid {
     margin: .25rem 0 1.25rem;
     display: grid;
-    grid-template-columns: repeat(3,minmax(0,1fr));
-    gap: .9rem;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.50rem;
 }
 
 .kpi-card {
+    position: relative;
+    grid-column: span 4;
     display: flex;
     align-items: center;
-    gap: .9rem;
-    padding: 1rem;
+    padding: 22px 86px 22px 24px;
+    min-height: 140px;
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.kpi-icon {
-    flex: 0 0 auto;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    color: #fff;
-}
-
-    .kpi-icon.students {
-        background: #2563eb;
-    }
-
-    .kpi-icon.teachers {
-        background: #22c55e;
-    }
-
-    .kpi-icon.courses {
-        background: #f59e0b;
-    }
-
-    .kpi-icon i {
-        font-size: 1.1rem;
-        line-height: 1;
-    }
-
+/* Text block */
 .kpi-content {
     display: flex;
     flex-direction: column;
+    justify-content: center;
 }
 
 .kpi-label {
-    font-size: .78rem;
-    color: var(--muted);
-    letter-spacing: .02em;
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #0252A9;
+    font-weight: 800;
+    letter-spacing: 0;
 }
 
 .kpi-value {
-    font-size: 1rem;
+    font-size: 22px;
     font-weight: 800;
-    color: #0b203a;
+    color: #0f172a;
+    line-height: 1.7;
 }
 
-/* Panels */
+.kpi-meta {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.kpi-icon {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    /* default gradient (blue-ish) */
+    background: linear-gradient(180deg, #eaf3ff, #dbe8ff);
+    color: #2563eb;
+}
+
+    .kpi-icon i {
+        font-size: 28px;
+        font-weight: 900;
+        line-height: 1;
+        -webkit-text-stroke: 0.4px currentColor;
+    }
+
+    /* Per-card gradients/colors — aligned to student dashboard palette */
+    .kpi-icon.students {
+        background: linear-gradient(180deg, #e8f5e9, #c8e6c9); /* green-ish */
+        color: #2e7d32;
+    }
+
+    .kpi-icon.teachers {
+        background: linear-gradient(180deg, #f3e8ff, #e0c3fc); /* violet */
+        color: #7e22ce;
+    }
+
+    .kpi-icon.courses {
+        background: linear-gradient(180deg, #fff3e0, #ffe0b2); /* orange-ish */
+        color: #ef6c00;
+    }
+
+/* ===== Panels */
 .panel {
     padding: 1rem 1rem;
 }
@@ -155,7 +188,9 @@
 }
 
 /* Loading */
-#admin-dashboard.is-loading .panel, #admin-dashboard.is-loading .kpi-card, #admin-dashboard.is-loading .dashboard-hero {
+#admin-dashboard.is-loading .panel,
+#admin-dashboard.is-loading .kpi-card,
+#admin-dashboard.is-loading .dashboard-hero {
     opacity: .65;
     transition: opacity .15s ease;
 }
@@ -170,10 +205,11 @@ canvas {
     display: block;
 }
 
-/* Responsive */
+/* ================= Responsive (match student KPI breakpoints) ================= */
 @media (max-width:1100px) {
-    .kpi-grid {
-        grid-template-columns: repeat(3,1fr);
+    /* 2-up KPI on medium screens */
+    .kpi-card {
+        grid-column: span 6;
     }
 }
 
@@ -181,39 +217,27 @@ canvas {
     .panel-grid {
         grid-template-columns: 1fr;
     }
+}
 
-    .kpi-grid {
-        grid-template-columns: repeat(2,1fr);
+@media (max-width:800px) {
+    .kpi-card {
+        grid-column: span 12;
     }
+    /* 1-up KPI on small */
 }
 
 @media (max-width:640px) {
-    .kpi-grid {
-        grid-template-columns: 1fr;
-    }
-
     .panel-header h2 {
         font-size: .98rem;
     }
 }
 
-/* ===== HARD KILL: remove ALL shadows within dashboard (even from other CSS files) ===== */
-.admin-dashboard *,
-.admin-dashboard *::before,
-.admin-dashboard *::after {
-    box-shadow: none !important;
-    text-shadow: none !important;
-    filter: none !important;
-    -webkit-filter: none !important;
+
+.kpi-grid {
+    gap: 1.5rem; 
 }
 
-/* Also neutralize common Bootstrap utilities if they sneak in */
-.admin-dashboard .shadow,
-.admin-dashboard .shadow-sm,
-.admin-dashboard .shadow-lg,
-.admin-dashboard .card,
-.admin-dashboard .card::before,
-.admin-dashboard .card::after {
-    box-shadow: none !important;
-    filter: none !important;
+
+.panel-grid {
+    gap: 1.5rem; 
 }
