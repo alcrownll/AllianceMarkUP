@@ -575,75 +575,207 @@ body.modal-open {
 
 /* ================ CONFIRM PROGRAM DELETE MODAL =========================== */
 #confirmProgramDeleteModal .modal-content {
-    border-radius: 1rem;
-    border: 1px solid #f1c6ca; /* soft red border */
-    box-shadow: 0 12px 30px rgba(139,14,14,.25);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,.15);
 }
 
 #confirmProgramDeleteModal .modal-header {
-    background: #8B0E0E !important; /* dark red header */
+    background: linear-gradient(135deg, #a02525 0%, #8B1E1E 100%);
     color: #fff !important;
     border: 0;
-    padding: .9rem 1rem;
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    padding: 1rem 1.25rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
 }
 
     #confirmProgramDeleteModal .modal-header .bi-exclamation-octagon-fill {
-        color: #fff !important; /* keep icon white on dark header */
+        color: #fff !important;
     }
 
 #confirmProgramDeleteModal .modal-title {
     color: #fff !important;
+    font-size: 1.1rem;
 }
 
 #confirmProgramDeleteModal .modal-body {
     background: #fff;
-    padding-top: 1rem;
+    padding: 1.25rem;
 }
 
 #confirmProgramDeleteModal .alert-warning {
-    background: #FFF3F3; /* very light red tint */
-    border: 1px solid #F5C2C7;
+    background: #FCF4F4;
+    border: 1px solid #EACECE;
     color: #6B2226;
+    border-radius: 0.375rem;
 }
 
+    #confirmProgramDeleteModal .alert-warning .bi-exclamation-triangle-fill {
+        color: #B91C1C;
+    }
+
 #confirmProgramDeleteModal .badge.bg-dark-subtle {
-    background: #F0D7D9 !important; /* soft red chip */
-    color: #7E1B1F !important;
+    background: #E8E8E8 !important;
+    color: #2C2C2C !important;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
 }
 
 /* Buttons */
 #confirmProgramDeleteModal .btn-light {
-    border-radius: 999px;
+    border-radius: 0.375rem;
     font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid #dee2e6;
 }
 
+    #confirmProgramDeleteModal .btn-light:hover {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+    }
+
 #confirmProgramDeleteModal #pdConfirmBtn {
-    background-color: #B01616; /* brandy red */
-    border-color: #B01616;
+    background-color: #A92F2F;
+    border-color: #A92F2F;
     color: #fff;
-    border-radius: 999px;
-    font-weight: 700;
-    padding: 0.45rem 1.1rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
     transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
 
     #confirmProgramDeleteModal #pdConfirmBtn:hover,
     #confirmProgramDeleteModal #pdConfirmBtn:focus {
-        background-color: #8B0E0E;
-        border-color: #8B0E0E;
-        box-shadow: 0 6px 16px rgba(139,14,14,.28);
+        background-color: #8B1E1E;
+        border-color: #8B1E1E;
+        box-shadow: 0 4px 12px rgba(139,30,30,.25);
         transform: translateY(-1px);
+    }
+
+    #confirmProgramDeleteModal #pdConfirmBtn:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        opacity: 0.65;
+        transform: none;
     }
 
 /* Spinner stays aligned but visible on red buttons */
 #confirmProgramDeleteModal #pdSpinner {
-    filter: brightness(0) invert(1); /* make spinner white if needed */
+    filter: brightness(0) invert(1);
 }
 
 /* Footer cleanup */
 #confirmProgramDeleteModal .modal-footer {
     border-top: 0;
-    padding-top: .25rem;
+    padding: 0.75rem 1.25rem 1.25rem;
+}
+
+/* ================ CONFIRM COURSE DELETE MODAL =========================== */
+#deleteCourseModal .modal-content {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,.15);
+}
+
+#deleteCourseModal .modal-header {
+    background: linear-gradient(135deg, #a02525 0%, #8B1E1E 100%);
+    color: #fff !important;
+    border: 0;
+    padding: 1rem 1.25rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+    #deleteCourseModal .modal-header .bi-exclamation-octagon-fill {
+        color: #fff !important;
+    }
+
+#deleteCourseModal .modal-title {
+    color: #fff !important;
+    font-size: 1.1rem;
+}
+
+#deleteCourseModal .modal-body {
+    background: #fff;
+    padding: 1.25rem;
+}
+
+#deleteCourseModal .alert-warning {
+    background: #FCF4F4;
+    border: 1px solid #EACECE;
+    color: #6B2226;
+    border-radius: 0.375rem;
+}
+
+    #deleteCourseModal .alert-warning .bi-exclamation-triangle-fill {
+        color: #B91C1C;
+    }
+
+#deleteCourseModal .alert-danger {
+    background: #FEE;
+    border: 1px solid #EACECE;
+    color: #842029;
+    border-radius: 0.375rem;
+}
+
+    #deleteCourseModal .alert-danger .bi-exclamation-circle-fill {
+        color: #B91C1C;
+    }
+
+#deleteCourseModal .badge.bg-dark-subtle {
+    background: #E8E8E8 !important;
+    color: #2C2C2C !important;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+/* Buttons */
+#deleteCourseModal .btn-light {
+    border-radius: 0.375rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid #dee2e6;
+}
+
+    #deleteCourseModal .btn-light:hover {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+    }
+
+#deleteCourseModal #deleteButton {
+    background-color: #A92F2F;
+    border-color: #A92F2F;
+    color: #fff;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+    #deleteCourseModal #deleteButton:hover,
+    #deleteCourseModal #deleteButton:focus {
+        background-color: #8B1E1E;
+        border-color: #8B1E1E;
+        box-shadow: 0 4px 12px rgba(139,30,30,.25);
+        transform: translateY(-1px);
+    }
+
+    #deleteCourseModal #deleteButton:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        opacity: 0.65;
+        transform: none;
+    }
+
+/* Spinner stays aligned but visible on red buttons */
+#deleteCourseModal #deleteSpinner {
+    filter: brightness(0) invert(1);
+}
+
+/* Footer cleanup */
+#deleteCourseModal .modal-footer {
+    border-top: 0;
+    padding: 0.75rem 1.25rem 1.25rem;
 }
