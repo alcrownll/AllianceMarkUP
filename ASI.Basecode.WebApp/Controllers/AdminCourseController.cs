@@ -2,9 +2,10 @@
 using ASI.Basecode.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ASI.Basecode.WebApp.Controllers
 {
@@ -13,12 +14,14 @@ namespace ASI.Basecode.WebApp.Controllers
     public class AdminCoursesController : Controller
     {
         private readonly ICourseService _service;
+
+        // Primary constructor with simplified initialization
         public AdminCoursesController(ICourseService service) => _service = service;
 
         [HttpGet("")] // GET /admin/courses
         public async Task<IActionResult> Index()
         {
-            var courses = await _service.GetAllAsync() ?? new List<Course>();
+            var courses = await _service.GetAllAsync() ?? Enumerable.Empty<Course>();
             return View("~/Views/Admin/AdminCourses.cshtml", courses);
         }
 
@@ -26,7 +29,7 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpGet("all")]
         public async Task<IActionResult> All()
         {
-            var items = (await _service.GetAllAsync() ?? new List<Course>())
+            var items = (await _service.GetAllAsync() ?? Enumerable.Empty<Course>())
                 .Select(c => new {
                     courseId = c.CourseId,
                     courseCode = c.CourseCode,
@@ -59,8 +62,7 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Create([Bind("CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml",
-                    await _service.GetAllAsync() ?? new List<Course>());
+                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync() ?? Enumerable.Empty<Course>());
 
             await _service.CreateAsync(course);
             return RedirectToAction(nameof(Index));
@@ -71,8 +73,7 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> Edit([Bind("CourseId,CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml",
-                    await _service.GetAllAsync() ?? new List<Course>());
+                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync() ?? Enumerable.Empty<Course>());
 
             await _service.UpdateAsync(course);
             return RedirectToAction(nameof(Index));
@@ -82,8 +83,41 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            await _service.DeleteAsync(id);
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                // Attempt to delete the course
+                await _service.DeleteAsync(id);
+                // If no error, pass a success message to be displayed
+                return Json(new { success = true, message = "Course deleted successfully." });
+            }
+            catch (DbUpdateException ex)
+            {
+                // Debugging: Log or inspect the inner exception message
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Error message: {ex.InnerException.Message}");
+                }
+
+                // Check for foreign key violation
+                if (ex.InnerException?.Message.Contains("ProgramCourses_CourseId_fkey") == true)
+                {
+                    // Foreign key violation error
+                    return Json(new { success = false, message = "This course cannot be deleted because it is referenced in ProgramCourses or AssignedCourses." });
+                }
+                else
+                {
+                    // Handle other database exceptions
+                    return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
+                }
+            }
+            catch (Exception)
+            {
+                // General exception handling (unexpected errors)
+                return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
+            }
         }
+
+
+
     }
 }

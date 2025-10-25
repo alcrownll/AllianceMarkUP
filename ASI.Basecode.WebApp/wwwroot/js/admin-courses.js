@@ -42,7 +42,7 @@
 
         // assumes table body rows contain columns: Code, Title, Lec, Lab, Units, etc.
         table.querySelectorAll('tbody tr').forEach(tr => {
-            // skip placeholder rows (e.g., “No courses found.” spanning row)
+            // skip placeholder rows (e.g., "No courses found." spanning row)
             const tds = tr.querySelectorAll('td');
             if (!tds.length) return;
 
@@ -133,7 +133,7 @@
         if (target === '#programs') loadProgramTable($search.value || '');
     });
 
-    // DELETE Modal flow
+    // DELETE Modal flow for PROGRAMS
     (function () {
         const modalEl = document.getElementById('confirmProgramDeleteModal');
         const bsModal = modalEl ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
@@ -288,4 +288,115 @@
             bootstrap.Modal.getOrCreateInstance(childEl).hide();
         });
     })();
+})();
+
+// ===== Course DELETE Modal flow =====
+(() => {
+    const modalEl = document.getElementById('deleteCourseModal');
+    if (!modalEl) return;
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const courseNameEl = modalEl.querySelector('#courseName');
+    const courseCodeEl = modalEl.querySelector('#courseCode');
+    const messageEl = modalEl.querySelector('#modalMessage');
+    const deleteBtn = modalEl.querySelector('#deleteButton');
+    const spinner = modalEl.querySelector('#deleteSpinner');
+
+    let pendingDelete = { id: null, row: null };
+
+    // Listen for delete button clicks
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-course-delete');
+        if (!btn) return;
+
+        const courseId = btn.dataset.courseId;
+        const courseCode = btn.dataset.courseCode || 'CODE';
+        const courseName = btn.dataset.courseName || 'Course';
+
+        // Store pending delete info
+        pendingDelete.id = courseId;
+        pendingDelete.row = btn.closest('tr');
+
+        // Set the course info in the modal
+        courseCodeEl.textContent = courseCode.toUpperCase();
+        courseNameEl.textContent = courseName;
+
+        // Reset message to default warning
+        messageEl.className = 'alert alert-warning d-flex align-items-start gap-2';
+        messageEl.innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+            <div class="small">
+                Deleting this course will remove it permanently. <strong>This action cannot be undone.</strong>
+            </div>
+        `;
+
+        // Show the modal
+        bsModal.show();
+    });
+
+    // Handle delete confirmation
+    deleteBtn?.addEventListener('click', async function () {
+        if (!pendingDelete.id) return;
+
+        deleteBtn.disabled = true;
+        spinner?.classList.remove('d-none');
+
+        // Get CSRF token
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+
+        // Create form data
+        const fd = new FormData();
+        fd.append('__RequestVerificationToken', token);
+        fd.append('id', pendingDelete.id);
+
+        try {
+            const response = await fetch('/admin/courses/delete', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: fd
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Successfully deleted
+                if (window.showToast) {
+                    window.showToast('Course deleted successfully.', 'success');
+                }
+
+                // Remove row from table
+                pendingDelete.row?.remove();
+
+                // Close the modal
+                bsModal.hide();
+            } else {
+                // Show error message in modal (foreign key violation or other error)
+                messageEl.className = 'alert alert-danger d-flex align-items-start gap-2';
+                messageEl.innerHTML = `
+                    <i class="bi bi-exclamation-circle-fill mt-1"></i>
+                    <div class="small">
+                        <strong>Cannot delete this course!</strong><br>
+                        ${result.message || 'An error occurred while deleting the course.'}
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+
+            // Show error in modal
+            messageEl.className = 'alert alert-danger d-flex align-items-start gap-2';
+            messageEl.innerHTML = `
+                <i class="bi bi-exclamation-circle-fill mt-1"></i>
+                <div class="small">
+                    <strong>Network Error!</strong><br>
+                    An error occurred while deleting the course. Please try again.
+                </div>
+            `;
+        } finally {
+            deleteBtn.disabled = false;
+            spinner?.classList.add('d-none');
+        }
+    });
 })();
