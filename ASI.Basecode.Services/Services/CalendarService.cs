@@ -12,9 +12,13 @@ namespace ASI.Basecode.Services.Services
     public class CalendarService : ICalendarService
     {
         private readonly ICalendarEventRepository _events;
+        private readonly INotificationService _notificationService;
 
-        public CalendarService(ICalendarEventRepository eventsRepo)
-            => _events = eventsRepo;
+        public CalendarService(ICalendarEventRepository eventsRepo, INotificationService notificationService)
+        {
+            _events = eventsRepo;
+            _notificationService = notificationService;
+        }
 
         private static bool CanEdit(ClaimsPrincipal principal, CalendarEvent e, int actorId)
         {
@@ -83,6 +87,9 @@ namespace ASI.Basecode.Services.Services
 
             _events.Add(entity);
 
+            _notificationService.AddNotification(actorId, "New Event Added", "A new event has been added to the calendar.");
+
+
             return Task.FromResult(new CalendarEventVm
             {
                 Id = entity.CalendarEventId,
@@ -95,6 +102,7 @@ namespace ASI.Basecode.Services.Services
                 CanEdit = true
             });
         }
+
 
         public Task<CalendarEventVm> UpdateAsync(ClaimsPrincipal principal, CalendarEventUpdateVm input)
         {
@@ -139,6 +147,9 @@ namespace ASI.Basecode.Services.Services
             e.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             _events.Update(e);
 
+            _notificationService.AddNotification(actorId, "Event Updated", "An existing event has been updated in the calendar.");
+
+
             return Task.FromResult(new CalendarEventVm
             {
                 Id = e.CalendarEventId,
@@ -151,6 +162,7 @@ namespace ASI.Basecode.Services.Services
                 CanEdit = true
             });
         }
+
 
         public Task DeleteAsync(ClaimsPrincipal principal, int id)
         {

@@ -1,7 +1,7 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using Basecode.Data.Repositories;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -41,6 +41,12 @@ namespace ASI.Basecode.Data.Repositories
                 this.GetDbSet<Student>().Remove(student);
                 UnitOfWork.SaveChanges();
             }
+        }
+
+        // Asynchronous version for GetStudentById
+        public async Task<Student> GetByIdAsync(int studentId)
+        {
+            return await this.GetDbSet<Student>().FirstOrDefaultAsync(x => x.StudentId == studentId);
         }
     }
 }

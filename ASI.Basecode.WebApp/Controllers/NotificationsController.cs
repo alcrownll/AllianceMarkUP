@@ -12,12 +12,12 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IProfileService _profileService;
         private readonly INotificationService _notificationService;
-        private readonly IRightSidebarService _rightSidebar; // ✅ inject
+        private readonly IRightSidebarService _rightSidebar;
 
         public NotificationsController(
             IProfileService profileService,
             INotificationService notificationService,
-            IRightSidebarService rightSidebar) // ✅ inject
+            IRightSidebarService rightSidebar)
         {
             _profileService = profileService;
             _notificationService = notificationService;

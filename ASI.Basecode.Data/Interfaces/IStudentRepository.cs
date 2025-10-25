@@ -15,5 +15,8 @@ namespace ASI.Basecode.Data.Interfaces
         void AddStudent(Student student);
         void UpdateStudent(Student student);
         void DeleteStudent(int studentId);
+
+        Task<Student> GetByIdAsync(int studentId);
+
     }
 }

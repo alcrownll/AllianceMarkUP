@@ -23,13 +23,16 @@ namespace ASI.Basecode.Services.Services
         private readonly IStudentRepository _studentRepository;
         private readonly IUnitOfWork _unitOfWork;
 
+        private readonly INotificationService _notificationService;
+
         public TeacherCourseService(
             AsiBasecodeDBContext ctx,
             IAssignedCourseRepository assignedCourseRepository,
             IGradeRepository gradeRepository,
             IClassScheduleRepository classScheduleRepository,
             IStudentRepository studentRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService)  // Injecting NotificationService
         {
             _ctx = ctx;
             _assignedCourseRepository = assignedCourseRepository;
@@ -37,6 +40,7 @@ namespace ASI.Basecode.Services.Services
             _classScheduleRepository = classScheduleRepository;
             _studentRepository = studentRepository;
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;  // Assigning to field
         }
 
         public async Task<List<TeacherCourseViewModel>> GetTeacherAssignedCoursesAsync(int teacherId, string semester = null)
@@ -175,10 +179,14 @@ namespace ASI.Basecode.Services.Services
             return students;
         }
 
+
         public async Task<bool> UpdateStudentGradesAsync(List<StudentGradeUpdateModel> grades)
         {
             try
             {
+                // List of students whose grades have been updated
+                List<int> affectedStudentIds = new List<int>();
+
                 foreach (var gradeUpdate in grades)
                 {
                     var existingGrade = await _ctx.Grades
@@ -186,22 +194,49 @@ namespace ASI.Basecode.Services.Services
 
                     if (existingGrade != null)
                     {
-                        // Update only non-null values
+                        // Check and update grades, and mark which students were affected
                         if (gradeUpdate.Prelims.HasValue)
+                        {
                             existingGrade.Prelims = gradeUpdate.Prelims;
+                            affectedStudentIds.Add(existingGrade.StudentId);
+                        }
                         if (gradeUpdate.Midterm.HasValue)
+                        {
                             existingGrade.Midterm = gradeUpdate.Midterm;
+                            affectedStudentIds.Add(existingGrade.StudentId);
+                        }
                         if (gradeUpdate.SemiFinal.HasValue)
+                        {
                             existingGrade.SemiFinal = gradeUpdate.SemiFinal;
+                            affectedStudentIds.Add(existingGrade.StudentId);
+                        }
                         if (gradeUpdate.Final.HasValue)
+                        {
                             existingGrade.Final = gradeUpdate.Final;
-                        // Note: Remarks is no longer stored in database, calculated from grades
+                            affectedStudentIds.Add(existingGrade.StudentId);
+                        }
 
                         _gradeRepository.UpdateGrade(existingGrade);
                     }
                 }
 
                 await _unitOfWork.SaveChangesAsync();
+
+                // After updating grades, notify students
+                foreach (var studentId in affectedStudentIds.Distinct())
+                {
+                    var student = await _studentRepository.GetByIdAsync(studentId); // Get student details
+                    if (student != null)
+                    {
+                        // Notify the student
+                        _notificationService.AddNotification(
+                            student.UserId, // Assuming the student has a UserId property
+                            "Grade updated",
+                            $"Your grade for a course has been uploaded."
+                        );
+                    }
+                }
+
                 return true;
             }
             catch (Exception)
@@ -209,6 +244,8 @@ namespace ASI.Basecode.Services.Services
                 return false;
             }
         }
+
+
 
         public async Task<List<string>> GetTeacherProgramsAsync(int teacherId)
         {
