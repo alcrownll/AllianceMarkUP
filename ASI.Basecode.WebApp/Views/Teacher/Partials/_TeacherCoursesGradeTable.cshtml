@@ -2,14 +2,12 @@
 @{
     var filteredStudents = ViewBag.FilteredStudents as List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel> ?? new List<ASI.Basecode.Services.ServiceModels.StudentGradeViewModel>();
 
-    // Helper function to get grade badge CSS class
     string GetGradeBadgeClass(decimal? gradeValue)
     {
         if (!gradeValue.HasValue) return "";
-        return gradeValue <= 3.0m ? "bg-success" : gradeValue <= 5.0m ? "bg-warning" : "bg-danger";
+        return gradeValue <= 3.0m ? "bg-success" : gradeValue <= 4.0m ? "bg-warning" : "bg-danger";
     }
 
-    // Helper function to render grade cell
     IHtmlContent RenderGradeCell(decimal? gradeValue)
     {
         if (gradeValue.HasValue)
@@ -22,7 +20,6 @@
         }
     }
 
-    // Helper function to calculate remarks based on final grade
     string CalculateRemarks(decimal? finalGrade)
     {
         if (!finalGrade.HasValue)

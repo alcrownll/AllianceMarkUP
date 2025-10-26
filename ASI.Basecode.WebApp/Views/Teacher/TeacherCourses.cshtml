@@ -17,15 +17,13 @@
     </div>
 }
 
-@* Antiforgery token for AJAX requests, tang-tanga ni if naay issues sa debugging *@
 @Html.AntiForgeryToken()
 
 @* Main content area - visible on screen *@
 <div class="teacher-courses-container no-print">
-
     <div class="container-fluid">
 
-        @* ======= Centered Grade View / Grade Entry Tabs ======= *@
+        @* ======= Grade View / Grade Entry Tabs ======= *@
         <div class="grade-tab-container">
             <ul class="nav nav-pills" id="gradeTabs" role="tablist">
                 <li class="nav-item" role="presentation">
@@ -51,7 +49,6 @@
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
                 <!-- Content for Grade Entry tab -->
-
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h4 class="mb-3">Class Schedule</h4>
@@ -132,95 +129,8 @@
                 <!-- Edit Grades Panel -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesEditPanel.cshtml")
 
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Excel Upload Modal -->
-<div class="modal fade" id="excelUploadModal" tabindex="-1" aria-labelledby="excelUploadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title d-flex align-items-center" id="excelUploadModalLabel">
-                    <i class="bi bi-file-earmark-spreadsheet-fill me-2" aria-hidden="true"></i>
-                    Upload Excel Grades
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <!-- Course Info -->
-                    <div class="col-12 mb-3">
-                        <div class="alert alert-info">
-                            <strong>Course:</strong> <span id="uploadCourseInfo"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Instructions -->
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <h6>Instructions:</h6>
-                        <ol class="small text-muted">
-                            <li>Download the Excel template to get the correct format with student data</li>
-                            <li>Fill in the grades for Prelims, Midterm, Semi-Final, and Final columns</li>
-                            <li>Grades must be between 1.0 and 5.0</li>
-                            <li>Leave cells blank if no grade is available</li>
-                            <li>Do not modify student information (ID, Name) columns</li>
-                            <li>Remarks are automatically determined by the system based on grades</li>
-                            <li>Upload the completed Excel file</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <!-- Download Template Button -->
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <button type="button" class="btn btn-outline-primary" id="downloadTemplateBtn">
-                            <i class="bi bi-download me-1"></i>Download Excel Template
-                        </button>
-                    </div>
-                </div>
-
-                <!-- File Upload -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="mb-3">
-                            <label for="excelFileInput" class="form-label">Select Excel File</label>
-                            <input type="file" class="form-control" id="excelFileInput" accept=".xlsx,.xls">
-                            <div class="form-text">Accepted formats: .xlsx, .xls (Max size: 5MB)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Upload Progress -->
-                <div class="row" id="uploadProgress" style="display: none;">
-                    <div class="col-12">
-                        <div class="progress mb-3">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
-                                Processing...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Upload Results -->
-                <div class="row" id="uploadResults" style="display: none;">
-                    <div class="col-12">
-                        <div class="alert" id="uploadResultAlert">
-                            <div id="uploadResultMessage"></div>
-                            <div id="uploadErrorList" style="display: none;">
-                                <strong>Errors:</strong>
-                                <ul id="uploadErrors"></ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="uploadExcelBtn">Upload & Process</button>
+                <!-- Excel Upload Modal -->
+                @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesExcelUpload.cshtml")
             </div>
         </div>
     </div>
