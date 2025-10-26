@@ -27,7 +27,7 @@
     }
 
     // ===== Client-side filter for Courses tab =====
-    function filterCoursesTable(query) {
+    window.filterCoursesTable = function (query) {
         const tab = document.getElementById('courses');
         const table = tab?.querySelector('table');
         const noMatches = document.getElementById('coursesNoMatches');
@@ -55,7 +55,7 @@
         });
 
         if (noMatches) noMatches.classList.toggle('d-none', visible !== 0);
-    }
+    };
 
     // ===== Unified search wiring =====
     const $search = document.getElementById('globalSearch');
@@ -74,7 +74,7 @@
             if (target === '#programs') {
                 loadProgramTable(q);
             } else if (target === '#courses') {
-                filterCoursesTable(q);
+                window.filterCoursesTable(q);
             }
         };
 
@@ -100,7 +100,7 @@
             performSearch(true);
         } else if (target === '#courses') {
             // Ensure courses are filtered client-side using current query
-            filterCoursesTable($search.value || '');
+            window.filterCoursesTable($search.value || '');
         }
     });
 
@@ -399,4 +399,27 @@
             spinner?.classList.add('d-none');
         }
     });
+
+    // ===== Course table AJAX loader =====
+    window.loadCourseTable = async function () {
+        const coursesTab = document.querySelector('#courses .table-responsive');
+        if (!coursesTab) return;
+
+        try {
+            const res = await fetch('/admin/courses/list', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await res.text();
+            coursesTab.innerHTML = html;
+
+            // Reapply current search filter if function exists
+            const searchVal = document.getElementById('globalSearch')?.value || '';
+            if (searchVal && typeof window.filterCoursesTable === 'function') {
+                window.filterCoursesTable(searchVal);
+            }
+        } catch (err) {
+            console.error('Failed to reload courses:', err);
+            if (window.showToast) window.showToast('Failed to reload courses.', 'error');
+        }
+    };
 })();

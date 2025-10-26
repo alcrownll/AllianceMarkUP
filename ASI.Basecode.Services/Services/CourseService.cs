@@ -30,6 +30,7 @@ namespace ASI.Basecode.Services.Services
         // Get a course by its ID
         public async Task<Course?> GetByIdAsync(int id) =>
             await _repo.GetCourses()
+                       .AsNoTracking() // Prevent tracking for read-only operations
                        .FirstOrDefaultAsync(c => c.CourseId == id);
 
         // Create a new course
@@ -43,7 +44,19 @@ namespace ASI.Basecode.Services.Services
         // Update an existing course
         public async Task UpdateAsync(Course course)
         {
+            // Calculate total units
             course.TotalUnits = course.LecUnits + course.LabUnits;
+
+            // Detach any existing tracked entity with the same key
+            var trackedEntity = _uow.Database.ChangeTracker.Entries<Course>()
+                .FirstOrDefault(e => e.Entity.CourseId == course.CourseId);
+
+            if (trackedEntity != null)
+            {
+                trackedEntity.State = EntityState.Detached;
+            }
+
+            // Now update the course
             _repo.UpdateCourse(course);
             await _uow.SaveChangesAsync();
         }
@@ -57,7 +70,6 @@ namespace ASI.Basecode.Services.Services
                 // If dependencies exist, throw an exception or handle accordingly
                 throw new InvalidOperationException("This course cannot be deleted because it is referenced in ProgramCourses or AssignedCourses.");
             }
-
             _repo.DeleteCourse(id);
             await _uow.SaveChangesAsync();
         }

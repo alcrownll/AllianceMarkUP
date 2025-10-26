@@ -64,7 +64,7 @@
                 <div class="tab-pane fade" id="courses" role="tabpanel">
                     <div class="table-responsive">
                         <div class="mt-3 d-flex justify-content-end">
-                            <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                            <button class="btn btn-primary rounded-pill px-4" data-action="course-add">
                                 <span class="me-2">+</span> Add Course
                             </button>
                         </div>
@@ -78,7 +78,7 @@
                             @await Html.PartialAsync("~/Views/Admin/Partials/_CoursesTable.cshtml", Model)
                         }
 
-                        <!-- Client-side “no matches” indicator (hidden by default) -->
+                        <!-- Client-side "no matches" indicator (hidden by default) -->
                         <div id="coursesNoMatches" class="no-matches d-none">No matching courses.</div>
                     </div>
                 </div>

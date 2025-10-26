@@ -779,3 +779,20 @@ body.modal-open {
     border-top: 0;
     padding: 0.75rem 1.25rem 1.25rem;
 }
+/* Update the course form button style to match the Add Program button */
+.btn.btn-brand {
+    background-color: #0252A9 !important; /* Blue background */
+    border-color: #0252A9 !important;
+    color: #fff !important; /* White text */
+    font-weight: 600;
+    border-radius: 50px; /* Rounded corners */
+    padding: 0.5rem 1.5rem; /* Adjust padding to match the button look */
+    transition: background-color .2s ease, transform .2s ease; /* Smooth transition on hover */
+}
+
+    .btn.btn-brand:hover,
+    .btn.btn-brand:focus {
+        background-color: #01448E !important; /* Darker blue when hovered */
+        border-color: #01448E !important;
+        transform: translateY(-1px); /* Hover effect */
+    }

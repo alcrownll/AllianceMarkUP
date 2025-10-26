@@ -123,7 +123,7 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Citizenship).HasMaxLength(50);
             });
 
-            // COURSE
+             // COURSE
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.HasKey(e => e.CourseId);

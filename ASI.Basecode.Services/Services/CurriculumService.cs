@@ -191,6 +191,8 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
+        // Replace the UpdateProgram method in your CurriculumService.cs with this:
+
         public bool UpdateProgram(int id, string code, string name, bool isActive)
         {
             // Load tracked entity
@@ -206,7 +208,9 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(nameNorm))
                 throw new InvalidOperationException("Program name is required.");
 
+            // Use AsNoTracking to avoid duplicate tracking
             var duplicate = _programs.GetPrograms()
+                .AsNoTracking()
                 .Any(p => p.ProgramId != id &&
                           p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
             if (duplicate)
