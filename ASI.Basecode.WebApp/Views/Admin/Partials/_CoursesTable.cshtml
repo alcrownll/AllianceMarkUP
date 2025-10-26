@@ -46,14 +46,12 @@ else
                             <td class="text-center">
                                 <div class="row-actions">
                                     <button class="btn btn-outline-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#addCourseModal"
-                                            data-edit="true"
-                                            data-id="@c.CourseId"
-                                            data-code="@c.CourseCode"
-                                            data-desc="@c.Description"
-                                            data-lec="@c.LecUnits"
-                                            data-lab="@c.LabUnits">
+                                            data-action="course-edit"
+                                            data-course-id="@c.CourseId"
+                                            data-course-code="@c.CourseCode"
+                                            data-course-description="@c.Description"
+                                            data-course-lec-units="@c.LecUnits"
+                                            data-course-lab-units="@c.LabUnits">
                                         Edit
                                     </button>
 
