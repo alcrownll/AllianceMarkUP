@@ -224,24 +224,31 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BulkUploadStudents(
-            IFormFile file, string? defaultAccountStatus, string? defaultStudentStatus, CancellationToken ct)
+        public async Task<IActionResult> BulkUploadStudents(IFormFile file, string? defaultAccountStatus, string? defaultStudentStatus, string? status, CancellationToken ct)
         {
-            var result = await _create.ImportStudentsAsync(
-                file,
-                new ImportUserDefaults
+            var result = await _create.ImportStudentsAsync(file, new ImportUserDefaults
+            {
+                DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
+                DefaultStudentStatus = string.IsNullOrWhiteSpace(defaultStudentStatus) ? "Enrolled" : defaultStudentStatus!
+            }, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new
                 {
-                    DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
-                    DefaultStudentStatus = string.IsNullOrWhiteSpace(defaultStudentStatus) ? "Enrolled" : defaultStudentStatus!
-                },
-                ct);
+                    success = result.IsSuccess,
+                    message = result.GetMessage()
+                });
+            }
 
-            TempData[result.HasErrors ? "ImportErr" : "ImportOk"] =
-                result.HasErrors
-                ? $"{(result.InsertedCount > 0 ? $"Imported {result.InsertedCount}. " : "")}{result.FailedCount} row(s) failed. First error: {result.FirstError}"
-                : $"Imported {result.InsertedCount} student(s) successfully.";
-
-            return RedirectToAction("Index", new { tab = "students" });
+            if (result.IsSuccess)
+            {
+                TempData["BulkUploadSuccess"] = result.GetMessage();
+                return RedirectToAction(nameof(Index), new { tab = "students", status = status ?? "active" });
+            }
+            TempData["BulkUploadStudentsError"] = result.GetMessage();
+            TempData["KeepStudentsModalOpen"] = "true";
+            return RedirectToAction(nameof(Index), new { tab = "students", status = status ?? "active" });
         }
 
         // excel (teachers):
@@ -254,24 +261,31 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BulkUploadTeachers(
-            IFormFile file, string? defaultAccountStatus, string? defaultPosition, CancellationToken ct)
+        public async Task<IActionResult> BulkUploadTeachers(IFormFile file, string? defaultAccountStatus, string? defaultTeacherPosition, string? status, CancellationToken ct)
         {
-            var result = await _create.ImportTeachersAsync(
-                file,
-                new ImportUserDefaults
+            var result = await _create.ImportTeachersAsync(file, new ImportUserDefaults
+            {
+                DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
+                DefaultTeacherPosition = string.IsNullOrWhiteSpace(defaultTeacherPosition) ? "Instructor" : defaultTeacherPosition!
+            }, ct);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new
                 {
-                    DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
-                    DefaultTeacherPosition = string.IsNullOrWhiteSpace(defaultPosition) ? "Instructor" : defaultPosition!
-                },
-                ct);
+                    success = result.IsSuccess,
+                    message = result.GetMessage()
+                });
+            }
 
-            TempData[result.HasErrors ? "ImportErr" : "ImportOk"] =
-                result.HasErrors
-                ? $"{(result.InsertedCount > 0 ? $"Imported {result.InsertedCount}. " : "")}{result.FailedCount} row(s) failed. First error: {result.FirstError}"
-                : $"Imported {result.InsertedCount} teacher(s) successfully.";
-
-            return RedirectToAction("Index", new { tab = "teachers" });
+            if (result.IsSuccess)
+            {
+                TempData["BulkUploadSuccess"] = result.GetMessage();
+                return RedirectToAction(nameof(Index), new { tab = "teachers", status = status ?? "active" });
+            }
+            TempData["BulkUploadTeachersError"] = result.GetMessage();
+            TempData["KeepTeachersModalOpen"] = "true";
+            return RedirectToAction(nameof(Index), new { tab = "teachers", status = status ?? "active" });
         }
     }
 }

@@ -7,7 +7,6 @@
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["PageHeader"] = "Manage Accounts";
 
-    // status helpers for toggle
     var currentTab = vm.ActiveTab == ManageTab.Teachers ? "teachers" : "students";
     var currentStatus = vm?.Filters?.Status ?? "Active";
     var isInactive = string.Equals(currentStatus, "Inactive", StringComparison.OrdinalIgnoreCase);
@@ -15,31 +14,49 @@
     var toggleText = isInactive ? "Back to Active Accounts" : "View Suspended Accounts";
 }
 
-<link rel="stylesheet" href="~/css/admin-accounts.css" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-accounts.css?v=4" />
+}
 
 <div class="admin-accounts-container">
+    @* Toast for success after non-AJAX path *@
+    @if (TempData["BulkUploadSuccess"] != null)
+    {
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+            <div class="toast show align-items-center text-white bg-success border-0" role="alert" aria-live="assertive"
+                 aria-atomic="true" id="successToast">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        @TempData["BulkUploadSuccess"]
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="card admin-accounts-card">
         <div class="card-header bg-white border-0 pt-3 pb-0">
             <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
-                <!-- Tabs (underline style, not filled buttons) -->
+                <!-- Tabs -->
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link @(vm.ActiveTab == ManageTab.Students ? "active" : "")"
-                           asp-controller="AdminAccounts" asp-action="Index"
-                           asp-route-tab="students"
+                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students"
                            asp-route-status="@(currentStatus.Equals("Inactive", StringComparison.OrdinalIgnoreCase) ? "inactive" : "active")"
                            role="tab">Student’s List</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link @(vm.ActiveTab == ManageTab.Teachers ? "active" : "")"
-                           asp-controller="AdminAccounts" asp-action="Index"
-                           asp-route-tab="teachers"
+                           asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="teachers"
                            asp-route-status="@(currentStatus.Equals("Inactive", StringComparison.OrdinalIgnoreCase) ? "inactive" : "active")"
                            role="tab">Teacher List</a>
                     </li>
                 </ul>
 
-                <!-- Actions (right side) -->
+                <!-- Actions -->
                 <div class="d-flex align-items-center ms-auto" style="gap:.5rem;">
                     @if (vm.ActiveTab == ManageTab.Students)
                     {
@@ -53,8 +70,8 @@
                                     Single Record
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <button type="button" class="dropdown-item"
-                                        data-bs-toggle="modal" data-bs-target="#bulkUploadStudentsModal">
+                                <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                        data-bs-target="#bulkUploadStudentsModal">
                                     Student List (Bulk Upload)
                                 </button>
                             </div>
@@ -72,8 +89,8 @@
                                     Single Record
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <button type="button" class="dropdown-item"
-                                        data-bs-toggle="modal" data-bs-target="#bulkUploadTeachersModal">
+                                <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                        data-bs-target="#bulkUploadTeachersModal">
                                     Teacher List (Bulk Upload)
                                 </button>
                             </div>
@@ -81,15 +98,10 @@
                     }
 
                     <!-- Toggle Active <-> Inactive -->
-                    <a class="btn btn-primary rounded-pill px-4"
-                       asp-controller="AdminAccounts"
-                       asp-action="Index"
-                       asp-route-tab="@currentTab"
-                       asp-route-status="@toggleStatus"
-                       asp-route-program="@(vm.Filters?.Program)"
-                       asp-route-yearLevel="@(vm.Filters?.YearLevel)"
-                       asp-route-name="@(vm.Filters?.Name)"
-                       asp-route-idNumber="@(vm.Filters?.IdNumber)">
+                    <a class="btn btn-primary rounded-pill px-4" asp-controller="AdminAccounts" asp-action="Index"
+                       asp-route-tab="@currentTab" asp-route-status="@toggleStatus"
+                       asp-route-program="@(vm.Filters?.Program)" asp-route-yearLevel="@(vm.Filters?.YearLevel)"
+                       asp-route-name="@(vm.Filters?.Name)" asp-route-idNumber="@(vm.Filters?.IdNumber)">
                         @toggleText
                     </a>
                 </div>
@@ -97,22 +109,13 @@
         </div>
 
         <div class="card-body">
-            @if (TempData["ImportOk"] != null)
-            {
-                <div class="alert alert-success">@TempData["ImportOk"]</div>
-            }
-            @if (TempData["ImportErr"] != null)
-            {
-                <div class="alert alert-danger">@TempData["ImportErr"]</div>
-            }
-
             <div class="table-wrap">
+                @* --- Students Table --- *@
                 @if (vm.ActiveTab == ManageTab.Students)
                 {
                     <form id="studentFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                         <input type="hidden" name="tab" value="students" />
                         <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
-
                         <table class="accounts-table table align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -122,7 +125,6 @@
                                     <th>ID Number</th>
                                     <th></th>
                                 </tr>
-
                                 <tr class="filters-row">
                                     <th>
                                         <select name="program" class="form-select" onchange="this.form.submit()">
@@ -142,26 +144,15 @@
                                             }
                                         </select>
                                     </th>
-                                    <th>
-                                        <input name="name" class="form-control"
-                                               value="@(vm.Filters?.Name ?? "")"
-                                               placeholder="Search by Name" />
-                                    </th>
-                                    <th>
-                                        <input name="idNumber" class="form-control"
-                                               value="@(vm.Filters?.IdNumber ?? "")"
-                                               placeholder="Search by ID Number" />
-                                    </th>
+                                    <th><input name="name" class="form-control" value="@(vm.Filters?.Name ?? "")" placeholder="Search by Name" /></th>
+                                    <th><input name="idNumber" class="form-control" value="@(vm.Filters?.IdNumber ?? "")" placeholder="Search by ID Number" /></th>
                                     <th class="text-end">
                                         <button type="submit" class="btn btn-outline btn-xs">Search</button>
-                                        <a class="btn btn-link btn-xs"
-                                           asp-controller="AdminAccounts" asp-action="Index"
-                                           asp-route-tab="students"
-                                           asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
+                                        <a class="btn btn-link btn-xs" asp-controller="AdminAccounts" asp-action="Index"
+                                           asp-route-tab="students" asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
                                     </th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 @if (vm.Students != null && vm.Students.Count > 0)
                                 {
@@ -175,34 +166,20 @@
                                             <td class="text-end">
                                                 <div class="row-actions">
                                                     <a class="btn btn-primary btn-sm rounded-pill"
-                                                       asp-controller="AdminAccounts" asp-action="Student"
-                                                       asp-route-userId="@s.UserId">
-                                                        View
-                                                    </a>
+                                                       asp-controller="AdminAccounts" asp-action="Student" asp-route-userId="@s.UserId">View</a>
                                                     @if (!isInactive)
                                                     {
-                                                        <button type="button"
-                                                                class="btn btn-danger btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@s.UserId"
-                                                                data-tab="students"
-                                                                data-name="@s.FullName"
-                                                                data-status="Inactive">
+                                                        <button type="button" class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@s.UserId" data-tab="students" data-name="@s.FullName" data-status="Inactive">
                                                             Suspend
                                                         </button>
                                                     }
                                                     else
                                                     {
-                                                        <button type="button"
-                                                                class="btn btn-success btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@s.UserId"
-                                                                data-tab="students"
-                                                                data-name="@s.FullName"
-                                                                data-status="Active">
-
+                                                        <button type="button" class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@s.UserId" data-tab="students" data-name="@s.FullName" data-status="Active">
                                                             Lift Suspension
                                                         </button>
                                                     }
@@ -213,9 +190,7 @@
                                 }
                                 else
                                 {
-                                    <tr>
-                                        <td colspan="5" class="empty-row">No results found.</td>
-                                    </tr>
+                                    <tr><td colspan="5" class="empty-row">No results found.</td></tr>
                                 }
                             </tbody>
                         </table>
@@ -223,10 +198,10 @@
                 }
                 else
                 {
+                    @* --- Teachers Table --- *@
                     <form id="teacherFilterForm" method="get" asp-controller="AdminAccounts" asp-action="Index">
                         <input type="hidden" name="tab" value="teachers" />
                         <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
-
                         <table class="accounts-table table align-middle">
                             <thead class="table-light">
                                 <tr>
@@ -234,24 +209,16 @@
                                     <th>Position</th>
                                     <th></th>
                                 </tr>
-
                                 <tr class="filters-row">
-                                    <th>
-                                        <input name="name" class="form-control"
-                                               value="@(vm.Filters?.Name ?? "")"
-                                               placeholder="Search by Name" />
-                                    </th>
+                                    <th><input name="name" class="form-control" value="@(vm.Filters?.Name ?? "")" placeholder="Search by Name" /></th>
                                     <th></th>
                                     <th class="text-end">
                                         <button type="submit" class="btn btn-outline btn-xs">Search</button>
-                                        <a class="btn btn-link btn-xs"
-                                           asp-controller="AdminAccounts" asp-action="Index"
-                                           asp-route-tab="teachers"
-                                           asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
+                                        <a class="btn btn-link btn-xs" asp-controller="AdminAccounts" asp-action="Index"
+                                           asp-route-tab="teachers" asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
                                     </th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 @if (vm.Teachers != null && vm.Teachers.Count > 0)
                                 {
@@ -263,33 +230,20 @@
                                             <td class="text-end">
                                                 <div class="row-actions">
                                                     <a class="btn btn-primary btn-sm rounded-pill"
-                                                       asp-controller="AdminAccounts" asp-action="Teacher"
-                                                       asp-route-userId="@t.UserId">
-                                                        View
-                                                    </a>
+                                                       asp-controller="AdminAccounts" asp-action="Teacher" asp-route-userId="@t.UserId">View</a>
                                                     @if (!isInactive)
                                                     {
-                                                        <button type="button"
-                                                                class="btn btn-danger btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@t.UserId"
-                                                                data-tab="teachers"
-                                                                data-name="@t.FullName"
-                                                                data-status="Inactive">
+                                                        <button type="button" class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId" data-tab="teachers" data-name="@t.FullName" data-status="Inactive">
                                                             Suspend
                                                         </button>
                                                     }
                                                     else
                                                     {
-                                                        <button type="button"
-                                                                class="btn btn-success btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@t.UserId"
-                                                                data-tab="teachers"
-                                                                data-name="@t.FullName"
-                                                                data-status="Active">
+                                                        <button type="button" class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId" data-tab="teachers" data-name="@t.FullName" data-status="Active">
                                                             Lift Suspension
                                                         </button>
                                                     }
@@ -300,9 +254,7 @@
                                 }
                                 else
                                 {
-                                    <tr>
-                                        <td colspan="3" class="empty-row">No results found.</td>
-                                    </tr>
+                                    <tr><td colspan="3" class="empty-row">No results found.</td></tr>
                                 }
                             </tbody>
                         </table>
@@ -313,43 +265,184 @@
     </div>
 </div>
 
+@* Modals *@
 @await Html.PartialAsync("~/Views/Admin/Partials/_SuspendAccountModal.cshtml")
 @await Html.PartialAsync("~/Views/Admin/Partials/_BulkUploadModals.cshtml")
 
 @section Scripts {
     <script>
         (function () {
-          document.addEventListener('click', function (e) {
-            const btn = e.target.closest('.js-status-btn');
-            if (!btn) return;
+            // ---------- Bulk Upload wiring (moved from partial so it actually runs) ----------
+            function bindUpload(formId, btnId, ctxIds) {
+                const formEl = document.getElementById(formId);
+                const btnEl  = document.getElementById(btnId);
+                if (!formEl || !btnEl) return;
 
-            const userId   = btn.getAttribute('data-user-id');
-            const tab      = btn.getAttribute('data-tab') || 'students';
-            const name     = btn.getAttribute('data-name') || 'this account';
-            const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim(); 
+                const ctx = {
+                    progressRow:   document.getElementById(ctxIds.progress),
+                    resultsRow:    document.getElementById(ctxIds.results),
+                    resultAlert:   document.getElementById(ctxIds.resultAlert),
+                    resultMsg:     document.getElementById(ctxIds.resultMsg),
+                    errorListWrap: document.getElementById(ctxIds.errorWrap),
+                    errorsUl:      document.getElementById(ctxIds.errorsUl)
+                };
 
-            document.getElementById('suspendUserId').value = userId;
-            document.getElementById('suspendTab').value    = tab;
-            document.getElementById('statusToSet').value   = statusTo;
-            document.getElementById('viewStatus').value    = '@(((vm?.Filters?.Status ?? "Active").Equals("Inactive", StringComparison.OrdinalIgnoreCase)) ? "inactive" : "active")';
+                formEl.addEventListener('submit', async function (e) {
+                    e.preventDefault();
 
-            const lifting = statusTo.toLowerCase() === 'active';
-            const titleEl  = document.getElementById('confirmActionTitle');
-            const promptEl = document.getElementById('confirmActionPrompt');
-            const nameEl   = document.getElementById('suspendUserName');
-            const actionEl = document.getElementById('confirmActionBtn');
+                    // Reset results UI
+                    ctx.resultsRow.style.display = 'none';
+                    ctx.resultAlert.className = 'alert';
+                    ctx.resultMsg.innerHTML = '';
+                    ctx.errorListWrap.style.display = 'none';
+                    ctx.errorsUl.innerHTML = '';
 
-            titleEl.textContent  = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
-            promptEl.textContent = lifting ? 'Are you sure you want to lift the suspension for' : 'Are you sure you want to suspend';
-            nameEl.textContent   = name;
+                    const fileInput = formEl.querySelector('input[type="file"]');
+                    if (!fileInput || fileInput.files.length === 0) return;
 
-            actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
-            actionEl.classList.remove('btn-danger', 'btn-success');
-            actionEl.classList.add(lifting ? 'btn-success' : 'btn-danger');
-          });
+                    // Show progress
+                    ctx.progressRow.style.display = '';
+
+                    // Disable button + spinner
+                    const originalBtnHtml = btnEl.innerHTML;
+                    btnEl.disabled = true;
+                    btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...';
+
+                    try {
+                        const fd = new FormData(formEl);
+                        const token = formEl.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+
+                        const res = await fetch(formEl.action, {
+                            method: "POST",
+                            body: fd,
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest",
+                                "RequestVerificationToken": token
+                            },
+                            credentials: "same-origin"
+                        });
+
+                        const text = await res.text();
+                        let data;
+                        try { data = JSON.parse(text); } 
+                        catch { data = { success: false, message: "Upload failed. Please try again." }; }
+
+                        // Hide progress
+                        ctx.progressRow.style.display = 'none';
+
+                        if (data.success) {
+                            if (window.showToast) window.showToast(data.message || "Uploaded successfully.", "success");
+                            // Clear input and close modal
+                            fileInput.value = "";
+                            const modalEl = formEl.closest('.modal');
+                            if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                        } else {
+                            // KEEP MODAL OPEN and show errors
+                            ctx.resultsRow.style.display = '';
+                            ctx.resultAlert.classList.add('alert-danger');
+                            ctx.resultMsg.innerHTML = `
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-exclamation-circle-fill fs-5 me-2 flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-semibold mb-1">We couldn’t complete the upload</div>
+                                        <div class="mb-1">${data.message || 'Please check your file and try again.'}</div>
+                                        <div class="small text-muted">
+                                            <strong>Quick tips:</strong>
+                                            <ul class="mb-0 mt-1 ps-3">
+                                                <li>Ensure all mandatory columns are present and filled.</li>
+                                                <li>Use valid email addresses and the <strong>MM/DD/YYYY</strong> date format.</li>
+                                                <li>Do not rename or remove column headers from the template.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            if (Array.isArray(data.errors) && data.errors.length > 0) {
+                                ctx.errorListWrap.style.display = '';
+                                data.errors.forEach(e => {
+                                    const li = document.createElement('li');
+                                    li.textContent = e;
+                                    ctx.errorsUl.appendChild(li);
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        ctx.progressRow.style.display = 'none';
+                        ctx.resultsRow.style.display  = '';
+                        ctx.resultAlert.classList.add('alert-danger');
+                        ctx.resultMsg.innerHTML = `
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-exclamation-triangle-fill fs-5 me-2 flex-shrink-0"></i>
+                                <div>
+                                    <div class="fw-semibold mb-1">Upload failed</div>
+                                    <div class="mb-0">Please try again in a moment.</div>
+                                </div>
+                            </div>`;
+                    } finally {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = originalBtnHtml;
+                    }
+                });
+            }
+
+            // Students
+            bindUpload('studentUploadForm', 'studentUploadBtn', {
+                progress:    'studentUploadProgress',
+                results:     'studentUploadResults',
+                resultAlert: 'studentUploadResultAlert',
+                resultMsg:   'studentUploadResultMessage',
+                errorWrap:   'studentUploadErrorList',
+                errorsUl:    'studentUploadErrors'
+            });
+
+            // Teachers
+            bindUpload('teacherUploadForm', 'teacherUploadBtn', {
+                progress:    'teacherUploadProgress',
+                results:     'teacherUploadResults',
+                resultAlert: 'teacherUploadResultAlert',
+                resultMsg:   'teacherUploadResultMessage',
+                errorWrap:   'teacherUploadErrorList',
+                errorsUl:    'teacherUploadErrors'
+            });
+
+            // ---------- Your existing page scripts (kept) ----------
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.js-status-btn');
+                if (!btn) return;
+
+                const userId = btn.getAttribute('data-user-id');
+                const tab = btn.getAttribute('data-tab') || 'students';
+                const name = btn.getAttribute('data-name') || 'this account';
+                const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim();
+
+                document.getElementById('suspendUserId').value = userId;
+                document.getElementById('suspendTab').value = tab;
+                document.getElementById('statusToSet').value = statusTo;
+                document.getElementById('viewStatus').value = '@(((vm?.Filters?.Status ?? "Active").Equals("Inactive", StringComparison.OrdinalIgnoreCase)) ? "inactive" : "active")';
+
+                const lifting = statusTo.toLowerCase() === 'active';
+                const titleEl = document.getElementById('confirmActionTitle');
+                const promptEl = document.getElementById('confirmActionPrompt');
+                const nameEl = document.getElementById('suspendUserName');
+                const actionEl = document.getElementById('confirmActionBtn');
+
+                titleEl.textContent = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
+                promptEl.textContent = lifting ? 'Are you sure you want to lift the suspension for' : 'Are you sure you want to suspend';
+                nameEl.textContent = name;
+
+                actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
+                actionEl.classList.remove('btn-danger', 'btn-success');
+                actionEl.classList.add(lifting ? 'btn-success' : 'btn-danger');
+            });
+
+            $(document).ready(function () {
+                var successToast = document.getElementById('successToast');
+                if (successToast) {
+                    setTimeout(function () {
+                        var bsToast = new bootstrap.Toast(successToast);
+                        bsToast.hide();
+                    }, 5000);
+                }
+            });
         })();
     </script>
 }
-
-}
-
