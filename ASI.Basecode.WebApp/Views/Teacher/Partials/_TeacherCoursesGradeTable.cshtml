@@ -5,7 +5,7 @@
     string GetGradeBadgeClass(decimal? gradeValue)
     {
         if (!gradeValue.HasValue) return "";
-        return gradeValue <= 3.0m ? "bg-success" : gradeValue <= 4.0m ? "bg-warning" : "bg-danger";
+        return gradeValue <= 2.9m ? "bg-success" : gradeValue <= 3.9m ? "bg-warning" : "bg-danger";
     }
 
     IHtmlContent RenderGradeCell(decimal? gradeValue)
