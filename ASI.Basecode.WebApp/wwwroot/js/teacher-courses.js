@@ -1,8 +1,7 @@
-// TeacherCourses JavaScript - Grade Management and Print Functionality
-// Global variables for UI state management
+// TeacherCourses JS for UI stuff and AJAX calls to backend
 let currentAssignedCourseId = 0;
 
-// UI-only functions for panel management
+// Panel
 function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
     currentAssignedCourseId = assignedCourseId;
     
@@ -45,7 +44,7 @@ function loadStudentsForCourse(assignedCourseId) {
         });
 }
 
-// UI-only function for rendering students table
+// Rendering students table
 function renderStudentsTable(students) {
     const tbody = document.getElementById('studentsTableBody');
     tbody.innerHTML = '';
@@ -101,7 +100,7 @@ function renderStudentsTable(students) {
     });
 }
 
-// Saving grades
+// Save grades
 function saveGrades() {
     const gradeInputs = document.querySelectorAll('.grade-input');
     const grades = [];
@@ -137,7 +136,7 @@ function saveGrades() {
         return;
     }
 
-    // Send data to C# controller
+    // Send data to controller
     fetch('/Teacher/UpdateGrades', {
         method: 'POST',
         headers: {
@@ -166,29 +165,23 @@ function saveGrades() {
     });
 }
 
-// UI-only utility functions for user feedback
+// Success and Error Messages
 function showSuccessMessage(message) {
-    // You can replace this with a more sophisticated notification system
     alert(message);
 }
 
 function showErrorMessage(message) {
-    // You can replace this with a more sophisticated notification system
     alert(message);
 }
 
-// Print to PDF - Server-side approach
+// Print to PDF
 function printGrades(edpCode, subject, schedule, assignedCourseId) {
     console.log('Opening print page for:', edpCode, subject, schedule, assignedCourseId);
     
-    // Build URL with parameters for the server-side print action
     const printUrl = `/Teacher/PrintGrades?assignedCourseId=${assignedCourseId}&edpCode=${encodeURIComponent(edpCode)}&subject=${encodeURIComponent(subject)}&schedule=${encodeURIComponent(schedule)}`;
     
-    // Open in new window/tab
     window.open(printUrl, '_blank');
 }
-
-// Note: populatePrintTable function removed - now using server-side rendering like student version
 
 // Excel Upload Functions
 let currentUploadAssignedCourseId = 0;
