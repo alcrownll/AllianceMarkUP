@@ -343,7 +343,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.Students = students;
                 ViewBag.TotalStudents = students.Count;
 
-                return View("PrintGrades", students);
+                return View("Partials/_TeacherCoursesPrintGrades", students);
             }
             catch (Exception)
             {
