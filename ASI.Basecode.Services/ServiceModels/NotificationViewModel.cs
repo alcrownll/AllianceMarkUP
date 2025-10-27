@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ASI.Basecode.Data.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,10 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Title { get; set; }
         public string Message { get; set; }
         public bool IsRead { get; set; }
-        public string When { get; set; } 
+        public string When { get; set; }
+
+        public NotificationKind Kind { get; set; }
+        public string Category { get; set; }
     }
 
     // Payload for the page
@@ -26,7 +30,7 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public string Title { get; set; } = "";
         public string? Description { get; set; }
-        public string When { get; set; } = ""; // or DateTime if you prefer
-        public string? ActionType { get; set; } // for icon routing (optional)
+        public string When { get; set; } = "";
+        public string? ActionType { get; set; } 
     }
 }

@@ -157,13 +157,13 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-                // If no new file and no inbound URL, leave null; MapProfile won’t overwrite later.
+                
                 MapProfile(profile, input);
                 _profiles.AddUserProfile(profile);
             }
             else
             {
-                // Preserve current URL unless a new file is uploaded or inbound URL is non-empty
+                
                 MapProfile(profile, input);
                 _profiles.UpdateUserProfile(profile);
             }
@@ -244,7 +244,7 @@ namespace ASI.Basecode.Services.Services
                 // Teachers
                 TeacherId = teacher.TeacherId,
                 Position = teacher.Position,
-                Department = "Computer Studies" // temporary
+                Department = "Computer Studies"
             };
         }
 
@@ -262,7 +262,7 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-                MapProfile(profile, input);                  // won’t null out URL anymore
+                MapProfile(profile, input);          
                 _profiles.AddUserProfile(profile);
             }
             else
@@ -291,6 +291,7 @@ namespace ASI.Basecode.Services.Services
                 _teachers.UpdateTeacher(teacher);
             }
 
+            _notifications.NotifyProfileUpdated(userId);
             await Task.CompletedTask;
         }
 

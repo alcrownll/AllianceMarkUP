@@ -33,5 +33,14 @@ namespace ASI.Basecode.Data.Repositories
                 UnitOfWork.SaveChanges();
             }
         }
+
+        public IQueryable<Notification> GetByUserAndKind(int userId, NotificationKind kind) =>
+           GetByUser(userId).Where(n => n.Kind == kind);
+
+        public int CountUnreadByKind(int userId, NotificationKind kind) =>
+            GetByUser(userId).Where(n => n.Kind == kind && !n.IsRead).Count();
+
+        public IQueryable<Notification> GetByUserAndCategory(int userId, string category) =>
+            GetByUser(userId).Where(n => n.Category == category);
     }
 }
