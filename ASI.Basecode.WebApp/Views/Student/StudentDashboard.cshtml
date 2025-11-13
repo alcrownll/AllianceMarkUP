@@ -8,12 +8,10 @@
     var gwa = Model.CumulativeGwa ?? 0m;      // 1.00–5.00 (1.00 best)
     var gwaMax = Model.GwaScaleMax;           // 5.00
     var gwaBest = Model.GwaBest;              // 1.00
-    // Fill percent for donut: 1.00 -> 100% fill, 5.00 -> 0% fill
     var fill = (double)Math.Max(0m, Math.Min(1m, (gwaMax - gwa) / (gwaMax - gwaBest)));
 }
 
 @section Styles {
-    <!-- Load Bootstrap Icons (safe to include even if already in layout) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/student-dashboard.css" />
 }

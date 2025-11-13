@@ -30,7 +30,6 @@ namespace ASI.Basecode.Services.Services
 
         public async Task<StudentGradesViewModel> BuildAsync(int userId, string schoolYear, string semester, CancellationToken ct = default)
         {
-            // Resolve user + student
             var user = await _users.GetUsers()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == userId, ct);
@@ -53,7 +52,6 @@ namespace ASI.Basecode.Services.Services
             vm.Department = student.Department;
             vm.YearLevel = FormatYearLevel(student.YearLevel);
 
-            // Pull all grades with required joins; project to lightweight shape
             var rows = await _grades.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
                 .Select(g => new
@@ -71,8 +69,8 @@ namespace ASI.Basecode.Services.Services
 
             var gradeRows = rows.Select(r =>
             {
-                var rowSemester = r.AC?.Semester ?? "N/A";       // "1st Semester"
-                var rowSchoolYear = r.AC?.SchoolYear ?? defaultSchoolYear; // "2025-2026"
+                var rowSemester = r.AC?.Semester ?? "N/A";
+                var rowSchoolYear = r.AC?.SchoolYear ?? defaultSchoolYear;
                 var remarks = CalculateRemarksFromGrades(r.Prelims, r.Midterm, r.SemiFinal, r.Final);
 
                 return new StudentGradeRowViewModel
@@ -81,7 +79,12 @@ namespace ASI.Basecode.Services.Services
                     Description = r.Course?.Description,
                     Instructor = r.TeacherUser != null ? $"{r.TeacherUser.FirstName} {r.TeacherUser.LastName}" : "N/A",
                     Type = r.AC?.Type,
-                    Units = r.Course?.TotalUnits ?? r.AC?.Units ?? 0,
+                    Units = UnitsForType(
+                                r.AC?.Type,
+                                r.AC?.Units,
+                                r.Course?.LecUnits,
+                                r.Course?.LabUnits,
+                                r.Course?.TotalUnits),
                     Prelims = r.Prelims,
                     Midterm = r.Midterm,
                     SemiFinal = r.SemiFinal,
@@ -95,7 +98,6 @@ namespace ASI.Basecode.Services.Services
             if (!gradeRows.Any())
                 return vm;
 
-            // Build filters (school years / semesters)
             var availableSchoolYears = gradeRows
                 .Select(r => r.SchoolYear)
                 .Where(sy => !string.IsNullOrWhiteSpace(sy))
@@ -155,7 +157,23 @@ namespace ASI.Basecode.Services.Services
             return vm;
         }
 
-        // -------- helpers (kept here so controller stays thin) --------
+        // Helpers
+        private static int UnitsForType(string type, int? acUnits, int? lecUnits, int? labUnits, int? totalUnits)
+        {
+            var t = (type ?? "").Trim().ToLowerInvariant();
+
+            // Prefer precise split by row type
+            if (t == "lecture")
+                return lecUnits ?? // e.g., Courses.LecUnits
+                       (totalUnits.HasValue && labUnits.HasValue ? totalUnits.Value - labUnits.Value : acUnits ?? 0);
+
+            if (t == "laboratory" || t == "lab")
+                return labUnits ?? // e.g., Courses.LabUnits
+                       (totalUnits.HasValue && lecUnits.HasValue ? totalUnits.Value - lecUnits.Value : acUnits ?? 0);
+
+            // Fallback: show total if type is unknown
+            return totalUnits ?? acUnits ?? 0;
+        }
 
         private static string GetCurrentSchoolYear()
         {

@@ -25,7 +25,6 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Sem1Label { get; set; } = "1st Semester";
         public string Sem2Label { get; set; } = "2nd Semester";
 
-        // For your donut math in the Razor
         public decimal GwaScaleMax { get; set; } = 5.00m;
         public decimal GwaBest { get; set; } = 1.00m;
     }

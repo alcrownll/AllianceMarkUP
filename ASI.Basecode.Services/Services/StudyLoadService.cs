@@ -31,9 +31,7 @@ namespace ASI.Basecode.Services.Services
             if (student == null)
                 return new StudyLoadViewModel { SelectedTerm = termValue, Terms = new List<TermItem>() };
 
-            // -----------------------
-            // 1) Build term list from DB (AssignedCourses joined via Grades)
-            // -----------------------
+            // term list from AssignedCourses joined via Grades
             var rawTerms = await _ctx.Grades
                 .Where(g => g.StudentId == student.StudentId && g.AssignedCourse != null)
                 .Select(g => new
@@ -45,7 +43,7 @@ namespace ASI.Basecode.Services.Services
                 .Distinct()
                 .ToListAsync();
 
-            // Map to value "YYYY-YYYY-<1|2>" but keep Text from DB
+            // Map to value "YYYY-YYYY-<1|2>
             var terms = rawTerms
                 .Select(x => new
                 {
@@ -58,13 +56,12 @@ namespace ASI.Basecode.Services.Services
                 .ThenBy(x => x.SemesterNum)
                 .Select(x => new TermItem
                 {
-                    Value = $"{x.SchoolYear}-{x.SemesterNum}",                    // used in querystring
+                    Value = $"{x.SchoolYear}-{x.SemesterNum}",                    
                     Text = $"S.Y. {x.SchoolYear} - {x.SemesterText}",
                     Selected = false
                 })
                 .ToList();
 
-            // If student has no data yet, return basic shell
             if (terms.Count == 0)
             {
                 return new StudyLoadViewModel
@@ -78,14 +75,8 @@ namespace ASI.Basecode.Services.Services
                 };
             }
 
-            // -----------------------
-            // 2) Pick selected term
-            // -----------------------
-            string selected = termValue;
 
-            // If the query param is empty or not among the available terms, choose:
-            // - current SY + current sem if it exists; otherwise
-            // - the latest term by SY then sem number.
+            string selected = termValue;
             if (string.IsNullOrWhiteSpace(selected) || !terms.Any(t => t.Value.Equals(selected, StringComparison.OrdinalIgnoreCase)))
             {
                 var currentSy = GetCurrentSchoolYear();
@@ -98,14 +89,9 @@ namespace ASI.Basecode.Services.Services
             }
 
             foreach (var t in terms) t.Selected = t.Value.Equals(selected, StringComparison.OrdinalIgnoreCase);
-
-            // Parse "YYYY-YYYY-<n>"
             var (sy, semNum) = ParseTerm(selected);
             var semText = SemNumToText(semNum);
 
-            // -----------------------
-            // 3) Load courses for the selected term
-            // -----------------------
             var acIds = await _ctx.Grades
                 .Where(g => g.StudentId == student.StudentId
                          && g.AssignedCourse != null
@@ -158,8 +144,8 @@ namespace ASI.Basecode.Services.Services
                 StudentName = $"{student.User.FirstName} {student.User.LastName}",
                 Program = student.Program,
                 YearLevel = student.YearLevel?.ToString(),
-                SelectedTerm = selected,       // "2025-2026-1"
-                Terms = terms,                 // built from DB
+                SelectedTerm = selected,      
+                Terms = terms,               
                 Rows = rows.OrderBy(r => r.Subject).ThenBy(r => r.Type).ToList()
             };
         }
@@ -168,7 +154,6 @@ namespace ASI.Basecode.Services.Services
 
         private static (string sy, int semNum) ParseTerm(string value)
         {
-            // "2025-2026-1" => ("2025-2026", 1)
             if (string.IsNullOrWhiteSpace(value)) return (null, 1);
             var parts = value.Split('-');
             if (parts.Length < 3) return (value, 1);
@@ -178,8 +163,8 @@ namespace ASI.Basecode.Services.Services
         private static int GetCurrentSemesterNum()
         {
             var now = DateTime.Now;
-            if (now.Month is >= 6 and <= 10) return 1;      // Jun–Oct
-            if (now.Month is >= 11 || now.Month <= 3) return 2; // Nov–Mar
+            if (now.Month is >= 6 and <= 10) return 1;    
+            if (now.Month is >= 11 || now.Month <= 3) return 2; 
             return 1;
         }
 
