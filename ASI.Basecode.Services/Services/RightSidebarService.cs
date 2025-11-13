@@ -1,7 +1,9 @@
 ﻿using ASI.Basecode.Data.Interfaces;
+using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -34,7 +36,7 @@ namespace ASI.Basecode.Services.Services
         {
             var vm = new RightSidebarViewModel();
 
-         
+            // Resolve userId from claims or db
             int userId = 0;
             var idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(idStr, out userId) || userId <= 0)
@@ -77,12 +79,12 @@ namespace ASI.Basecode.Services.Services
                         ?? "Unknown";
 
                 vm.ProfilePictureUrl = _profiles.GetUserProfiles()
-                .Where(p => p.UserId == userId)
-                .Select(p => p.ProfilePictureUrl)
-                .FirstOrDefault();
+                    .Where(p => p.UserId == userId)
+                    .Select(p => p.ProfilePictureUrl)
+                    .FirstOrDefault();
 
-                // Notifications
-                vm.Notifications = _notifs.GetByUser(userId)
+                // Recent Activities (Activity only)
+                vm.Notifications = _notifs.GetByUserAndKind(userId, NotificationKind.Activity)
                     .OrderByDescending(n => n.CreatedAt)
                     .Take(takeNotifications)
                     .Select(n => new NotificationItemVm
@@ -90,18 +92,25 @@ namespace ASI.Basecode.Services.Services
                         Id = n.NotificationId,
                         Title = n.Title,
                         Snippet = n.Message,
-                        When = n.CreatedAt.ToString("MM/dd/yy"),
+                        When = n.CreatedAt.ToLocalTime().ToString("MM/dd/yy"),
                         IsRead = n.IsRead
                     })
                     .ToList();
 
-                // Upcoming events — ALWAYS use UTC for timestamptz parameters
-                var fromUtc = DateTime.UtcNow;
-                var toUtc = fromUtc.AddDays(30);
+                // Unread system updates count for bell dot
+                vm.UnreadUpdatesCount = _notifs.CountUnreadByKind(userId, NotificationKind.System);
 
-                vm.UpcomingEvents = _calendar
+                // Pull events (user + global) for the mini calendar + upcoming list
+                var fromUtc = DateTime.UtcNow.AddMonths(-1);
+                var toUtc = DateTime.UtcNow.AddMonths(3);
+
+                var evs = _calendar
                     .GetByUserInRange(userId, fromUtc, toUtc, includeGlobal: true)
+                    .ToList();
+
+                vm.UpcomingEvents = evs
                     .OrderBy(e => e.StartUtc)
+                    .Where(e => e.StartUtc >= DateTime.UtcNow)
                     .Take(takeEvents)
                     .Select(e => new UpcomingEventItemVm
                     {
@@ -109,18 +118,53 @@ namespace ASI.Basecode.Services.Services
                         Title = e.Title,
                         When = e.StartUtc.ToLocalTime().ToString("MM/dd/yy"),
                         WhenLocal = e.StartUtc.ToLocalTime(),
-                        Location = e.Location
+                        Location = e.Location,
+                        IsGlobal = e.IsGlobal
                     })
                     .ToList();
+
+                // === Fill both sets with EVERY local date in each event's range (supports multi-day + all-day) ===
+                foreach (var e in evs)
+                {
+                    DateTime startLocalDate;
+                    DateTime endLocalDate;
+
+                    // Prefer all-day's LocalStart/End if present
+                    if (e.IsAllDay && e.LocalStartDate.HasValue)
+                    {
+                        var lsd = e.LocalStartDate.Value;
+                        var led = (e.LocalEndDate ?? e.LocalStartDate).GetValueOrDefault(lsd);
+
+                        startLocalDate = new DateTime(lsd.Year, lsd.Month, lsd.Day);
+                        endLocalDate = new DateTime(led.Year, led.Month, led.Day);
+                    }
+                    else
+                    {
+                        var sLocal = e.StartUtc.ToLocalTime();
+                        var eLocal = (e.EndUtc == default ? e.StartUtc : e.EndUtc).ToLocalTime();
+
+                        startLocalDate = sLocal.Date;
+                        endLocalDate = eLocal.Date;
+                    }
+
+                    if (endLocalDate < startLocalDate)
+                        endLocalDate = startLocalDate;
+
+                    for (var d = startLocalDate; d <= endLocalDate; d = d.AddDays(1))
+                    {
+                        var iso = d.ToString("yyyy-MM-dd");
+                        if (e.IsGlobal) vm.GlobalEventDates.Add(iso);
+                        else vm.UserEventDates.Add(iso);
+                    }
+                }
             }
             else
             {
+                // Anonymous fallback
                 vm.LastName = user.FindFirst(ClaimTypes.Surname)?.Value
                            ?? user.FindFirst("LastName")?.Value
                            ?? "User";
                 vm.Role = user.FindFirst(ClaimTypes.Role)?.Value ?? "Unknown";
-                vm.Notifications = new System.Collections.Generic.List<NotificationItemVm>();
-                vm.UpcomingEvents = new System.Collections.Generic.List<UpcomingEventItemVm>();
             }
 
             return Task.FromResult(vm);

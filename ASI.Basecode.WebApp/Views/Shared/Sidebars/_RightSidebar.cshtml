@@ -1,134 +1,157 @@
 ﻿@model ASI.Basecode.Services.ServiceModels.RightSidebarViewModel
+@using System.Text.Json
+
+@{
+    var baseNotifUrl =
+        User.IsInRole("Admin") ? Url.RouteUrl("AdminNotifications") :
+        User.IsInRole("Teacher") ? Url.RouteUrl("TeacherNotifications") :
+                                   Url.RouteUrl("StudentNotifications");
+
+    var baseCalUrl =
+        User.IsInRole("Admin") ? Url.RouteUrl("AdminCalendar") :
+        User.IsInRole("Teacher") ? Url.RouteUrl("TeacherCalendar") :
+                                   Url.RouteUrl("StudentCalendar");
+
+    var updatesLink = (baseNotifUrl ?? "/Notifications") + "#pane-updates";
+    var allLink = (baseNotifUrl ?? "/Notifications") + "#pane-all";
+
+    var userDatesJson = JsonSerializer.Serialize(Model.UserEventDates ?? new HashSet<string>());
+    var globalDatesJson = JsonSerializer.Serialize(Model.GlobalEventDates ?? new HashSet<string>());
+}
 
 <div class="rs">
-
-  <!-- Profile -->
-  <section class="rs-card rs-profile">
-    <div class="rs-profile-main">
-      <div class="rs-avatar">
-        @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl)) {
-          <img src="@Model.ProfilePictureUrl" alt="Profile photo" />
-        } else {
-          <div class="rs-avatar-fallback" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
-        }
-      </div>
-
-      <div class="rs-id">
-        <div class="rs-name">@Model.LastName</div>
-        <div class="rs-role">@Model.Role</div>
-      </div>
-
-      <a href="@Url.Action("Index","Notifications")" class="rs-icon-btn" aria-label="Notifications">
-        <i class="fa-solid fa-bell"></i>
-      </a>
-    </div>
-  </section>
-
-  <!-- Mini Calendar -->
-  <section class="rs-card rs-calendar">
-    <div class="rs-cal-wrap">
-      <input id="miniCalendar" type="text" aria-label="Mini calendar" />
-    </div>
-
-    <div class="rs-legend">
-      <span class="legend-item"><span class="dot today"></span>Today</span>
-      <span class="legend-item"><span class="dot event"></span>Has event</span>
-    </div>
-  </section>
-
-  <!-- Upcoming Events (MATCHES Recent Activities format) -->
-  <section class="rs-card">
-    <div class="rs-head">
-      <h6>Upcoming Events</h6>
-      <a class="rs-link" href="@Url.Action("Calendar","Student")">View All</a>
-    </div>
-
-    @if (Model.UpcomingEvents?.Any() == true) {
-      <ul class="rs-list">
-        @foreach (var e in Model.UpcomingEvents) {
-          <li class="rs-item rs-item--event">
-            <!-- Date upper-right -->
-            <div class="rs-when">@e.When</div>
-
-            <div class="rs-item-l">
-              <div class="rs-icon-pill"><i class="fa-solid fa-location-dot"></i></div>
-              <div class="rs-item-text">
-                <div class="rs-item-title" title="@e.Title">@e.Title</div>
-
-                <!-- Same layout as Recent Activities: Details under title -->
-                <a class="rs-details"
-                   href="@Url.Action("Calendar","Student")"
-                   aria-label="View details in Upcoming Events">
-                  Details
-                  <span class="rs-details-arrow"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
-                </a>
-              </div>
+    <!-- Profile -->
+    <section class="rs-card rs-profile">
+        <div class="rs-profile-main">
+            <div class="rs-avatar">
+                @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl))
+                {
+                    <img src="@Model.ProfilePictureUrl" alt="Profile photo" />
+                }
+                else
+                {
+                    <div class="rs-avatar-fallback" aria-hidden="true">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                }
             </div>
-          </li>
-        }
-      </ul>
-    } else {
-      <div class="rs-empty">No upcoming events.</div>
-    }
-  </section>
 
-  <!-- Recent Activities -->
-  <section class="rs-card">
-    <div class="rs-head">
-      <h6>Recent Activities</h6>
-      <a class="rs-link" href="@Url.Action("Index","Notifications")">View All</a>
-    </div>
-
-    @if (Model.Notifications?.Any() == true) {
-      <ul class="rs-list">
-        @foreach (var n in Model.Notifications) {
-          var t = (n.Title ?? string.Empty).ToLowerInvariant();
-          var icon = t.Contains("grade") ? "fa-book-open"
-                   : t.Contains("profile") ? "fa-user-pen"
-                   : t.Contains("schedule") ? "fa-calendar-days"
-                   : "fa-bell";
-
-          <li class="rs-item rs-item--notif">
-            <!-- Date upper-right -->
-            <div class="rs-when">@n.When</div>
-
-            <div class="rs-item-l">
-              <div class="rs-icon-pill"><i class="fa-solid @icon"></i></div>
-              <div class="rs-item-text">
-                <div class="rs-item-title" title="@n.Title">@n.Title</div>
-
-                <!-- Details under title -->
-                <a class="rs-details"
-                   href="@Url.Action("Index","Notifications")"
-                   aria-label="View details in Recent Activities">
-                  Details
-                  <span class="rs-details-arrow"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
-                </a>
-              </div>
+            <div class="rs-id">
+                <div class="rs-name">@Model.LastName</div>
+                <div class="rs-role">@Model.Role</div>
             </div>
-          </li>
-        }
-      </ul>
-    } else {
-      <div class="rs-empty">No notifications.</div>
-    }
-  </section>
 
+            <a href="@updatesLink" class="rs-icon-btn rs-bell" aria-label="Notifications (Updates)">
+                <i class="fa-solid fa-bell"></i>
+                @if (Model.UnreadUpdatesCount > 0)
+                {
+                    <span class="rs-dot" aria-hidden="true"></span>
+                }
+            </a>
+        </div>
+    </section>
+
+    <!-- Mini Calendar -->
+    <section class="rs-card rs-calendar">
+        <div class="rs-cal-wrap">
+            <input id="miniCalendar"
+                   type="text"
+                   aria-label="Mini calendar"
+                   data-userdates='@Html.Raw(userDatesJson)'
+                   data-globaldates='@Html.Raw(globalDatesJson)' />
+        </div>
+
+        <div class="rs-legend">
+            <span class="legend-item"><span class="dot today"></span>Today</span>
+            <span class="legend-item"><span class="dot global"></span>Global Events</span>
+            <span class="legend-item"><span class="dot user"></span>My Events</span>
+            <span class="legend-item"><span class="dot both"></span>Both</span>
+        </div>
+    </section>
+
+    <!-- Upcoming Events -->
+    <section class="rs-card">
+        <div class="rs-head">
+            <h6>Upcoming Events</h6>
+            <a class="rs-link" href="@(baseCalUrl ?? Url.Action("Calendar", "Student"))">View All</a>
+        </div>
+
+        @if (Model.UpcomingEvents?.Any() == true)
+        {
+            <ul class="rs-list">
+                @foreach (var e in Model.UpcomingEvents)
+                {
+                    <li class="rs-item rs-item--event">
+                        <div class="rs-when">@e.When</div>
+                        <div class="rs-item-l">
+                            <div class="rs-icon-pill"><i class="fa-solid fa-location-dot"></i></div>
+                            <div class="rs-item-text">
+                                <div class="rs-item-title" title="@e.Title">
+                                    @if (e.IsGlobal)
+                                    {
+                                        <span class="rs-tag rs-tag--global" title="Global event">GLOBAL</span>
+                                    }
+                                    @e.Title
+                                </div>
+                                <a class="rs-details"
+                                   href="@(baseCalUrl ?? Url.Action("Calendar", "Student"))"
+                                   aria-label="View details in Upcoming Events">
+                                    Details
+                                    <span class="rs-details-arrow">
+                                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="rs-empty">No upcoming events.</div>
+        }
+    </section>
+
+    <!-- Recent Activities -->
+    <section class="rs-card">
+        <div class="rs-head">
+            <h6>Recent Activities</h6>
+            <a class="rs-link" href="@allLink">View All</a>
+        </div>
+
+        @if (Model.Notifications?.Any() == true)
+        {
+            <ul class="rs-list">
+                @foreach (var n in Model.Notifications)
+                {
+                    var t = (n.Title ?? string.Empty).ToLowerInvariant();
+                    var icon = t.Contains("grade") ? "fa-book-open"
+                    : t.Contains("profile") ? "fa-user-pen"
+                    : t.Contains("schedule") ? "fa-calendar-days"
+                    : "fa-bell";
+
+                    <li class="rs-item rs-item--notif">
+                        <div class="rs-when">@n.When</div>
+                        <div class="rs-item-l">
+                            <div class="rs-icon-pill"><i class="fa-solid @icon"></i></div>
+                            <div class="rs-item-text">
+                                <div class="rs-item-title" title="@n.Title">@n.Title</div>
+                                <a class="rs-details" href="@allLink" aria-label="Open Notifications">
+                                    Details
+                                    <span class="rs-details-arrow">
+                                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="rs-empty">No recent activity.</div>
+        }
+    </section>
 </div>
-
-@section Scripts {
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  if (!window.flatpickr) return;
-  flatpickr('#miniCalendar', {
-    inline: true,
-    dateFormat: 'Y-m-d',
-    defaultDate: new Date(),
-    weekNumbers: false,
-    locale: { weekdays: { shorthand: ['SU','MO','TU','WE','TH','FR','SA'] } },
-    prevArrow: '‹',
-    nextArrow: '›'
-  });
-});
-</script>
-}

@@ -24,9 +24,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _calendarService = calendarService;
         }
 
-        // ------------------------------------------------------------
-        // Canonical GET routes per role (Student / Teacher / Admin)
-        // ------------------------------------------------------------
         [HttpGet("/Student/Calendar", Name = "StudentCalendar")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> StudentIndex(DateTime? from = null, DateTime? to = null)
@@ -42,7 +39,6 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> AdminIndex(DateTime? from = null, DateTime? to = null)
             => await BuildCalendarViewAsync(from, to);
 
-        // A universal landing that redirects to the correct role route.
         [HttpGet("/Calendar")]
         public IActionResult Index()
         {
@@ -51,14 +47,10 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToRoute("StudentCalendar");
         }
 
-        // ------------------------------------------------------------
-        // Shared builder used by all three
-        // ------------------------------------------------------------
         private async Task<IActionResult> BuildCalendarViewAsync(DateTime? from, DateTime? to)
         {
             ViewData["PageHeader"] = "Calendar";
 
-            // Default range = ±30 days
             var start = from ?? DateTime.UtcNow.AddDays(-30);
             var end = to ?? DateTime.UtcNow.AddDays(30);
 
@@ -66,11 +58,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Calendar.cshtml", model);
         }
 
-        // ------------------------------------------------------------
-        // JSON Feed for FullCalendar
-        // ------------------------------------------------------------
-        // IMPORTANT: FullCalendar sends ISO strings with timezone. Accept string, parse robustly,
-        // and return objects with keys: id, title, start, end, allDay, extendedProps.
         [HttpGet("/Calendar/Feed")]
         public async Task<IActionResult> Feed(string start, string end)
         {
@@ -88,7 +75,7 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 id = ev.Id.ToString(),
                 title = ev.Title,
-                start = ev.StartUtc, // UTC timestamps are fine; FC renders in local (timeZone:'local')
+                start = ev.StartUtc,
                 end = ev.EndUtc,
                 allDay = ev.IsAllDay,
                 extendedProps = new
@@ -102,12 +89,9 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(events);
         }
 
-        // ------------------------------------------------------------
-        // CRUD: Create / Update / Delete
-        // ------------------------------------------------------------
         [HttpPost("/Calendar/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CalendarEventCreateVm input)
+        public async Task<IActionResult> Create([FromForm] CalendarEventCreateVm input)
         {
             try
             {
@@ -123,7 +107,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost("/Calendar/Update")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Update(CalendarEventUpdateVm input)
+        public async Task<IActionResult> Update([FromForm] CalendarEventUpdateVm input)
         {
             try
             {

@@ -33,7 +33,7 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        // --- Canonical GET routes per role (named) --------------------------
+        // Canonical GET routes per role (named)
         [HttpGet("/Student/Notifications", Name = "StudentNotifications")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> StudentIndex() => await BuildIndexViewAsync();
@@ -46,12 +46,15 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminIndex() => await BuildIndexViewAsync();
 
-        // Shared builder used by all three
+        // 🔹 Fallback: /Notifications -> redirect to the correct role route
+        [HttpGet("/Notifications")]
+        public IActionResult Index() => RedirectToRoleNotifications();
+
+        // Shared builder
         private async Task<IActionResult> BuildIndexViewAsync()
         {
             ViewData["PageHeader"] = "Notifications";
 
-            // ✅ SSR the right sidebar here as well
             await SetRightSidebarAsync();
 
             var userId = _profileService.GetCurrentUserId();
@@ -66,7 +69,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Notifications.cshtml", vm);
         }
 
-        // --- POST actions (role-agnostic) -----------------------------------
+        // POST actions
         [HttpPost("/Notifications/MarkRead")]
         [ValidateAntiForgeryToken]
         public IActionResult MarkRead(int id)
