@@ -126,7 +126,21 @@
             setFormEditable(false);
 
             btnEdit.addEventListener('click', () => setFormEditable(true));
-            btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
+
+            btnCancel.addEventListener('click', () => {
+                resetToInitial();
+                setFormEditable(false);
+
+                form.querySelectorAll('[data-valmsg-for]').forEach(span => {
+                    span.innerHTML = '';
+                    span.classList.remove('field-validation-error');
+                    span.classList.add('field-validation-valid');
+                });
+
+                form.querySelectorAll('.input-validation-error').forEach(input => {
+                    input.classList.remove('input-validation-error');
+                });
+            });
 
             if (avatarInput && avatarPreview) {
                 avatarPreview.addEventListener('keydown', function (e) {
