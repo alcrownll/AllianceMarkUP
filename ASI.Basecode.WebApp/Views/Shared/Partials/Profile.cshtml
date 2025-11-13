@@ -5,7 +5,8 @@
 <div class="row g-4">
     <!-- LEFT: Profile -->
     <div class="col-md-3 d-flex flex-column align-items-start">
-        <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button" aria-label="Upload profile photo"></label>
+        <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button"
+            aria-label="Upload profile photo"></label>
         <input class="sr-only" type="file" id="avatarInput" name="ProfilePhotoFile" accept="image/*">
         <small class="tiny-hint mt-1">Click the photo to upload</small>
     </div>
@@ -18,12 +19,14 @@
             <!-- LEFT: Family Name (top) + First Name (bottom) -->
             <div class="col-md-6">
                 <div class="mb-3">
-                    <input class="form-control" asp-for="LastName" />
+                    <input class="form-control" asp-for="LastName" required />
                     <div class="caption">(Family Name)</div>
+                    <span asp-validation-for="LastName" class="text-danger"></span>
                 </div>
                 <div>
-                    <input class="form-control" asp-for="FirstName" />
+                    <input class="form-control" asp-for="FirstName" required />
                     <div class="caption">(First Name)</div>
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
                 </div>
             </div>
 
@@ -79,7 +82,8 @@
 <div class="row g-3 uniform-row">
     <div class="col-md-3">
         <label class="form-label">Date of Birth</label>
-        <input type="date" class="form-control" asp-for="DateOfBirth" />
+        <input type="date" class="form-control" asp-for="DateOfBirth" required />
+        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
     </div>
     <div class="col-md-3">
         <label class="form-label">Place of Birth</label>
@@ -87,7 +91,8 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">Age</label>
-        <input class="form-control" asp-for="Age" />
+        <input class="form-control" asp-for="Age" required />
+        <span asp-validation-for="Age" class="text-danger"></span>
     </div>
     <div class="col-md-3">
         <label class="form-label">Marital Status</label>
@@ -102,7 +107,8 @@
     </div>
     <div class="col-md-3">
         <label class="form-label">Email</label>
-        <input type="email" class="form-control" asp-for="Email" />
+        <input type="email" class="form-control" asp-for="Email" required />
+        <span asp-validation-for="Email" class="text-danger"></span>
     </div>
     <div class="col-md-3">
         <label class="form-label">Religion</label>

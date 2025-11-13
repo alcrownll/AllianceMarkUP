@@ -13,9 +13,13 @@ namespace ASI.Basecode.Services.ServiceModels
         // Users table
         public int UserId { get; set; }
         public string IdNumber { get; set; }
-        public string Role { get; set; } 
+        public string Role { get; set; }
+        [Required(ErrorMessage = "First name is required.")]
         public string FirstName { get; set; }
+        [Required(ErrorMessage = "Last name is required.")]
         public string LastName { get; set; }
+        [Required(ErrorMessage = "Email address is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; }
 
         // UserProfiles table
@@ -28,8 +32,12 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Province { get; set; }
         public string Municipality { get; set; }
         public string Barangay { get; set; }
+        [Required(ErrorMessage = "Please enter your date of birth.")]
+        [DataType(DataType.Date)]
         public DateOnly? DateOfBirth { get; set; }
         public string PlaceOfBirth { get; set; }
+        [Required(ErrorMessage = "Age is required.")]
+        [Range(1, 120, ErrorMessage = "Please enter a valid age.")]
         public int? Age { get; set; }
         public string MaritalStatus { get; set; }
         public string Gender { get; set; }
@@ -42,6 +50,7 @@ namespace ASI.Basecode.Services.ServiceModels
         // Students table
         public int StudentId { get; set; }
         public string AdmissionTypeDb { get; set; }
+        [Required(ErrorMessage = "Please select an admission type.")]
         public string AdmissionType
         {
             get
@@ -66,6 +75,7 @@ namespace ASI.Basecode.Services.ServiceModels
             }
         }
         public string ProgramDb { get; set; }
+        [Required(ErrorMessage = "Please select a program.")]
         public string Program
         {
             get
@@ -89,8 +99,11 @@ namespace ASI.Basecode.Services.ServiceModels
                 };
             }
         }
+        [Required(ErrorMessage = "Please select a department.")]
         public string Department { get; set; }
+        [Required(ErrorMessage = "Please select a year level.")]
         public string YearLevel { get; set; }
+        [Required(ErrorMessage = "Section is required.")]
         public string Section { get; set; }
     }
 
@@ -98,7 +111,9 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         // Teachers table
         public int TeacherId { get; set; }
+        [Required(ErrorMessage = "Please select a faculty position.")]
         public string Position { get; set; }
+        [Required(ErrorMessage = "Please select a department.")]
         public string Department { get; set; }
     }
 }

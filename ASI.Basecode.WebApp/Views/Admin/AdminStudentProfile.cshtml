@@ -23,10 +23,8 @@
             <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
         }
 
-        <form asp-action="@postAct"
-              asp-controller="@postCtrl"
-              asp-route-userId="@(isCreate ? null : Model.UserId)"
-              method="post" enctype="multipart/form-data">
+        <form asp-action="@postAct" asp-controller="@postCtrl" asp-route-userId="@(isCreate ? null : Model.UserId)"
+            method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -37,7 +35,7 @@
                 <div class="row g-3 uniform-row">
                     <div class="col-md-3">
                         <label class="form-label" asp-for="AdmissionType"></label>
-                        <select class="form-select" asp-for="AdmissionType">
+                        <select class="form-select" asp-for="AdmissionType" required>
                             <option value="">-- Select --</option>
                             <option>New</option>
                             <option>Old</option>
@@ -48,7 +46,7 @@
 
                     <div class="col-md-3">
                         <label class="form-label" asp-for="Department"></label>
-                        <select class="form-select" asp-for="Department">
+                        <select class="form-select" asp-for="Department" required>
                             <option value="">-- Select --</option>
                             <option>Arts & Sciences</option>
                             <option>Computer Studies</option>
@@ -59,7 +57,7 @@
 
                     <div class="col-md-3">
                         <label class="form-label" asp-for="Program"></label>
-                        <select class="form-select" asp-for="Program">
+                        <select class="form-select" asp-for="Program" required>
                             <option value="">-- Select --</option>
                             <option>Computer Science</option>
                             <option>Information Technology</option>
@@ -70,7 +68,7 @@
 
                     <div class="col-md-3">
                         <label class="form-label" asp-for="YearLevel"></label>
-                        <select class="form-select" asp-for="YearLevel">
+                        <select class="form-select" asp-for="YearLevel" required>
                             <option value="">-- Select --</option>
                             <option>1st Year</option>
                             <option>2nd Year</option>
@@ -86,37 +84,52 @@
 
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">@((isCreate) ? "Create" : "Update")</button>
-                <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index" asp-route-tab="students">Back</a>
+                <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index"
+                    asp-route-tab="students">Back</a>
             </div>
         </form>
     </div>
 </div>
 
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
     <script>
-        (function(){
-          const input = document.getElementById('avatarInput');
-          const preview = document.getElementById('avatarPreview');
-          if (input && preview) {
-            preview.addEventListener('keydown', function(e){
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
-            });
-            input.addEventListener('change', function (e) {
-              const file = e.target.files && e.target.files[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = function (ev) {
-                preview.style.backgroundImage = `url('${ev.target.result}')`;
-                preview.classList.add('has-image');
-              };
-              reader.readAsDataURL(file);
-            });
-            var url = '@(Model.ProfilePictureUrl ?? "")';
-            if (url) {
-              preview.style.backgroundImage = `url('${url}')`;
-              preview.classList.add('has-image');
+        (function () {
+            const input = document.getElementById('avatarInput');
+            const preview = document.getElementById('avatarPreview');
+            if (input && preview) {
+                preview.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+                });
+                input.addEventListener('change', function (e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        preview.style.backgroundImage = `url('${ev.target.result}')`;
+                        preview.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                });
+                var url = '@(Model.ProfilePictureUrl ?? "")';
+                if (url) {
+                    preview.style.backgroundImage = `url('${url}')`;
+                    preview.classList.add('has-image');
+                }
             }
-          }
+        })();
+
+        (function () {
+            'use strict';
+            document.querySelectorAll('.needs-validation').forEach(form => {
+                form.addEventListener('submit', e => {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
         })();
     </script>
 }

@@ -1,247 +1,261 @@
 ﻿/* ============= PROFILE PAGE STYLES ====================== */
 body {
-    background: #eef3f9;
+  background: #eef3f9;
 }
 
 .profile-card {
-    background: #fff;
-    border-radius: .75rem;
-    padding: 2rem;
-    max-width: 950px;
-    margin: auto;
-    border: 1px solid rgba(0, 0, 0, 0.04) !important;
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20) !important;
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  max-width: 950px;
+  margin: auto;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Optional: dim controls when in read-only for UX clarity */
 .is-readonly .form-control,
 .is-readonly .form-select,
 .is-readonly textarea {
-    background-color: #f8fafc;
-    pointer-events: none; /* keep keyboard focus off */
+  background-color: #f8fafc;
+  pointer-events: none; /* keep keyboard focus off */
 }
 
 /* Meta rows */
 .meta-info {
-    color: #4b5563;
-    font-size: .95rem;
-    margin-bottom: .25rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
 }
 
-    .meta-info span {
-        font-weight: 600;
-    }
+.meta-info span {
+  font-weight: 600;
+}
 
 .section-title {
-    font-weight: 700;
-    font-size: 1.125rem;
-    margin: 1.25rem 0 1rem;
-    color: #0f172a;
-    text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin: 1.25rem 0 1rem;
+  color: #0f172a;
+  text-transform: uppercase;
 }
 
 /* Blue form labels */
 .profile-card .form-label {
-    color: #0252A9;
-    font-weight: 700;
+  color: #0252a9;
+  font-weight: 700;
 }
 
-.form-select, .form-control {
-    display: block;
-    width: 100%;
+.form-select,
+.form-control {
+  display: block;
+  width: 100%;
 }
 
 /* Equal columns for rows with 4 fields */
 .uniform-row .col-md-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
+  flex: 0 0 25%;
+  max-width: 25%;
 }
 
 @media (max-width: 767.98px) {
-    .uniform-row .col-md-3 {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
+  .uniform-row .col-md-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
 }
 
 /* Clickable Avatar */
 .avatar {
-    width: 180px;
-    height: 170px;
-    border-radius: .75rem;
-    background: #4a86c5;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+  width: 180px;
+  height: 170px;
+  border-radius: 0.75rem;
+  background: #4a86c5;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
-    .avatar:focus {
-        outline: 3px solid #2563eb;
-        outline-offset: 3px;
-    }
+.avatar:focus {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
 
-    .avatar svg {
-        width: 55%;
-        height: 55%;
-    }
+.avatar svg {
+  width: 55%;
+  height: 55%;
+}
 
-    .avatar.has-image svg {
-        display: none;
-    }
+.avatar.has-image svg {
+  display: none;
+}
 
-    .avatar.has-image {
-        background-size: cover;
-        background-position: center;
-    }
+.avatar.has-image {
+  background-size: cover;
+  background-position: center;
+}
 
 .tiny-hint {
-    font-size: .82rem;
-    color: #6b7280;
+  font-size: 0.82rem;
+  color: #6b7280;
 }
 
 .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0,0,0,0);
-    white-space: nowrap;
-    border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .caption {
-    font-size: .85rem;
-    color: #0d47a1;
-    margin-top: .35rem;
-    font-weight: 600;
+  font-size: 0.85rem;
+  color: #0d47a1;
+  margin-top: 0.35rem;
+  font-weight: 600;
 }
 
 /* Divider line between sections */
 .section-divider {
-    border: 0;
-    border-top: 3px solid #69737F;
+  border: 0;
+  border-top: 3px solid #69737f;
 }
 
 /* Safety for large avatar vs global circle utilities */
 .profile-card .avatar.rounded-circle {
-    border-radius: 12px !important;
+  border-radius: 12px !important;
 }
 
 /* ========== Read-only Student Info block (matches page look) ========== */
 .student-info.readonly-block {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px 18px;
 }
 
 /* 4-up responsive grid, same spacing rhythm */
 .si-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
 @media (max-width: 991.98px) {
-    .si-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .si-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 575.98px) {
-    .si-grid {
-        grid-template-columns: 1fr;
-    }
+  .si-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Each item reads like a compact field group */
 .si-item {
-    background: #fff;
-    border: 1px solid #eef2f7;
-    border-radius: 12px;
-    padding: 12px 14px;
-    min-height: 74px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Reuse the same label tone as your form labels */
 .si-label {
-    /* inherits .profile-card .form-label color/weight */
-    font-size: .82rem; /* slightly smaller than inputs */
-    margin: 0 0 4px;
+  /* inherits .profile-card .form-label color/weight */
+  font-size: 0.82rem; /* slightly smaller than inputs */
+  margin: 0 0 4px;
 }
 
 /* Value styling aligns with your body text hierarchy */
 .si-value {
-    font-size: 1.02rem;
-    color: #0f172a;
-    font-weight: 700;
-    line-height: 1.25;
-    word-break: break-word;
+  font-size: 1.02rem;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
 }
 
 /* Optional hover hint (still read-only) */
 .student-info.readonly-block .si-item:hover {
-    background: #f9fbff;
-    border-color: #dfe7f3;
+  background: #f9fbff;
+  border-color: #dfe7f3;
 }
 
 .pending-sep td {
-    border-top: 2px dashed #9eb7ff !important;
-    background: #f6f9ff;
-    color: #1e3a8a;
-    font-weight: 600;
-    letter-spacing: .02em;
-    font-size: .85rem;
+  border-top: 2px dashed #9eb7ff !important;
+  background: #f6f9ff;
+  color: #1e3a8a;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 0.85rem;
 }
 
 .pending-add td {
-    background: rgba(37, 99, 235, .065);
-    border-top: 0 !important;
+  background: rgba(37, 99, 235, 0.065);
+  border-top: 0 !important;
 }
 
 .chip-soft-primary {
-    display: inline-block;
-    padding: .2rem .5rem;
-    border-radius: 9999px;
-    background: #e8f0ff;
-    border: 1px solid #cfe0ff;
-    font-size: .75rem;
-    line-height: 1;
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background: #e8f0ff;
+  border: 1px solid #cfe0ff;
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 #removeNames {
-    margin-top: .25rem;
+  margin-top: 0.25rem;
 }
 
-    #removeNames .pill {
-        display: inline-block;
-        padding: .25rem .55rem;
-        border-radius: 9999px;
-        background: #fff;
-        border: 1px solid #f3b2b2;
-        color: #7f1d1d;
-        font-size: .82rem;
-        margin: .15rem .25rem .15rem 0;
-        white-space: nowrap;
-    }
+#removeNames .pill {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid #f3b2b2;
+  color: #7f1d1d;
+  font-size: 0.82rem;
+  margin: 0.15rem 0.25rem 0.15rem 0;
+  white-space: nowrap;
+}
 
 table.table.table-sm.align-middle td,
 table.table.table-sm.align-middle th {
-    padding-top: .6rem;
-    padding-bottom: .55rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.55rem;
 }
 
 .day-btn {
-    min-width: 110px;
+  min-width: 110px;
 }
 
-    .day-btn.active {
-        color: #fff !important;
-    }
+.day-btn.active {
+  color: #fff !important;
+}
+
+/* di mo gana pero ari rani kay for the impact */
+input.input-validation-error,
+select.input-validation-error,
+textarea.input-validation-error {
+  border-color: #dc3545 !important; /* Red border */
+}
+
+input.input-validation-error:focus,
+select.input-validation-error:focus,
+textarea.input-validation-error:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important; /* Red glow */
+}

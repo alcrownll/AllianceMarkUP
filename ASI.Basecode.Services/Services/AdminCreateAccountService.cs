@@ -44,6 +44,9 @@ namespace ASI.Basecode.Services.Services
         ImportUserDefaults defaults,
         CancellationToken ct)
         {
+            TrimStringProperties(vm);
+            if (vm == null) throw new ArgumentNullException(nameof(vm));
+
             if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
@@ -129,6 +132,9 @@ namespace ASI.Basecode.Services.Services
             ImportUserDefaults defaults,
             CancellationToken ct)
         {
+            TrimStringProperties(vm);
+            if (vm == null) throw new ArgumentNullException(nameof(vm));
+
             if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
@@ -509,6 +515,19 @@ namespace ASI.Basecode.Services.Services
             catch
             {
                 return false;
+            }
+        }
+
+        private static void TrimStringProperties(object model)
+        {
+            if (model == null) return;
+            var stringProps = model.GetType().GetProperties()
+                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
+            foreach (var p in stringProps)
+            {
+                var val = (string)p.GetValue(model);
+                if (val != null)
+                    p.SetValue(model, val.Trim());
             }
         }
 

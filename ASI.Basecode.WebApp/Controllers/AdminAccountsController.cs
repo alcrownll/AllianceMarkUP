@@ -72,7 +72,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Admin/AdminAccounts.cshtml", vm);
         }
 
-        // View and Edit Profiles:
         [HttpGet]
         public async Task<IActionResult> Student(int userId)
         {
@@ -80,7 +79,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (vm == null) return NotFound();
             ViewData["PageHeader"] = "Student Profile";
 
-            // FIXED: correct view path under /Views/Admin/
             return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
         }
 
@@ -106,7 +104,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (vm == null) return NotFound();
             ViewData["PageHeader"] = "Teacher Profile";
 
-            // FIXED: correct view path AND filename
             return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
         }
 
@@ -135,7 +132,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 ? "Account has been suspended."
                 : "User not found or already inactive.";
 
-            // Go back to whichever tab the button came from
             return RedirectToAction(nameof(Index), new { tab = string.IsNullOrWhiteSpace(tab) ? "students" : tab });
         }
 
@@ -175,8 +171,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Index), new { tab = "students" });
         }
 
-
-        // ===== SINGLE CREATE (TEACHER) =====
 
         [HttpGet]
         public IActionResult CreateTeacher()

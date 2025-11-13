@@ -45,7 +45,7 @@ namespace ASI.Basecode.Services.Services
             var session = http.Session;
 
             var idNumber = session.GetString("IdNumber")
-                ?? http.User?.FindFirst("IdNumber")?.Value; 
+                ?? http.User?.FindFirst("IdNumber")?.Value;
 
             if (string.IsNullOrWhiteSpace(idNumber))
                 throw new InvalidOperationException("No IdNumber found in session/claims. Set it at login.");
@@ -77,7 +77,7 @@ namespace ASI.Basecode.Services.Services
                 // Get teacher ID from the teachers repository
                 var teacher = _teachers.GetTeachers()
                     .FirstOrDefault(t => t.UserId == userId);
-                
+
                 return teacher?.TeacherId ?? 0;
             }
             catch
@@ -143,6 +143,8 @@ namespace ASI.Basecode.Services.Services
 
         public async Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input)
         {
+            TrimStringProperties(input);
+
             // Users
             var user = _users.GetUserById(userId);
             if (user == null) return;
@@ -157,13 +159,13 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-                
+
                 MapProfile(profile, input);
                 _profiles.AddUserProfile(profile);
             }
             else
             {
-                
+
                 MapProfile(profile, input);
                 _profiles.UpdateUserProfile(profile);
             }
@@ -250,6 +252,8 @@ namespace ASI.Basecode.Services.Services
 
         public async Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input)
         {
+            TrimStringProperties(input);
+
             var user = _users.GetUserById(userId);
             if (user == null) return;
 
@@ -262,7 +266,7 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-                MapProfile(profile, input);          
+                MapProfile(profile, input);
                 _profiles.AddUserProfile(profile);
             }
             else
@@ -299,28 +303,37 @@ namespace ASI.Basecode.Services.Services
         // ------------------------------------------------------------
         // Helper
         // ------------------------------------------------------------
-        private static void MapProfile(ASI.Basecode.Data.Models.UserProfile db, ProfileViewModel vm)
+        private static void TrimStringProperties(object model)
         {
-
-            if (!string.IsNullOrWhiteSpace(vm.ProfilePictureUrl))
-                db.ProfilePictureUrl = vm.ProfilePictureUrl;
-
-            db.MiddleName = vm.MiddleName;
-            db.Suffix = vm.Suffix;
-            db.MobileNo = vm.MobileNo;
-            db.HomeAddress = vm.HomeAddress;
-            db.Province = vm.Province;
-            db.Municipality = vm.Municipality;
-            db.Barangay = vm.Barangay;
-            db.DateOfBirth = vm.DateOfBirth;
-            db.PlaceOfBirth = vm.PlaceOfBirth;
-            db.Age = vm.Age ?? 0;
-            db.MaritalStatus = vm.MaritalStatus;
-            db.Gender = vm.Gender;
-            db.Religion = vm.Religion;
-            db.Citizenship = vm.Citizenship;
+            if (model == null) return;
+            var stringProps = model.GetType().GetProperties()
+                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
+            foreach (var p in stringProps)
+            {
+                var val = (string)p.GetValue(model);
+                if (val != null) p.SetValue(model, val.Trim());
+            }
         }
 
+
+        private static void MapProfile(ASI.Basecode.Data.Models.UserProfile db, ProfileViewModel vm)
+        {
+            if (!string.IsNullOrWhiteSpace(vm.ProfilePictureUrl)) db.ProfilePictureUrl = vm.ProfilePictureUrl;
+            if (!string.IsNullOrWhiteSpace(vm.MiddleName)) db.MiddleName = vm.MiddleName;
+            if (!string.IsNullOrWhiteSpace(vm.Suffix)) db.Suffix = vm.Suffix;
+            if (!string.IsNullOrWhiteSpace(vm.MobileNo)) db.MobileNo = vm.MobileNo;
+            if (!string.IsNullOrWhiteSpace(vm.HomeAddress)) db.HomeAddress = vm.HomeAddress;
+            if (!string.IsNullOrWhiteSpace(vm.Province)) db.Province = vm.Province;
+            if (!string.IsNullOrWhiteSpace(vm.Municipality)) db.Municipality = vm.Municipality;
+            if (!string.IsNullOrWhiteSpace(vm.Barangay)) db.Barangay = vm.Barangay;
+            if (vm.DateOfBirth.HasValue) db.DateOfBirth = vm.DateOfBirth;
+            if (!string.IsNullOrWhiteSpace(vm.PlaceOfBirth)) db.PlaceOfBirth = vm.PlaceOfBirth;
+            if (vm.Age.HasValue && vm.Age.Value > 0) db.Age = vm.Age.Value;
+            if (!string.IsNullOrWhiteSpace(vm.MaritalStatus)) db.MaritalStatus = vm.MaritalStatus;
+            if (!string.IsNullOrWhiteSpace(vm.Gender)) db.Gender = vm.Gender;
+            if (!string.IsNullOrWhiteSpace(vm.Religion)) db.Religion = vm.Religion;
+            if (!string.IsNullOrWhiteSpace(vm.Citizenship)) db.Citizenship = vm.Citizenship;
+        }
         // ------------------------------------------------------------
         // Avatar helpers
         // ------------------------------------------------------------

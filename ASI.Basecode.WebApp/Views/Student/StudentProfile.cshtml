@@ -20,7 +20,8 @@
         <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
         <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
 
-        <form id="profileForm" asp-action="SaveProfile" asp-controller="Student" method="post" enctype="multipart/form-data">
+        <form id="profileForm" asp-action="SaveProfile" asp-controller="Student" method="post"
+            enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -33,25 +34,29 @@
                 <div class="row g-3 uniform-row">
                     <div class="col-md-3">
                         <label class="form-label">Admission Type</label>
-                        <input class="form-control" value="@Model.AdmissionType" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
+                        <input class="form-control" value="@Model.AdmissionType" disabled aria-disabled="true"
+                            tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="AdmissionType" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Department</label>
-                        <input class="form-control" value="@Model.Department" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
+                        <input class="form-control" value="@Model.Department" disabled aria-disabled="true"
+                            tabindex="-1" data-locked="true" />
                         <input type="hidden" asp-for="Department" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Program</label>
-                        <input class="form-control" value="@Model.Program" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
+                        <input class="form-control" value="@Model.Program" disabled aria-disabled="true" tabindex="-1"
+                            data-locked="true" />
                         <input type="hidden" asp-for="Program" data-locked="true" />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label">Year Level</label>
-                        <input class="form-control" value="@Model.YearLevel" disabled aria-disabled="true" tabindex="-1" data-locked="true" />
+                        <input class="form-control" value="@Model.YearLevel" disabled aria-disabled="true" tabindex="-1"
+                            data-locked="true" />
                         <input type="hidden" asp-for="YearLevel" data-locked="true" />
                     </div>
                 </div>
@@ -67,10 +72,8 @@
                     <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
                 </div>
 
-                <button type="button"
-                        class="btn btn-primary ms-auto"
-                        data-bs-toggle="modal"
-                        data-bs-target="#changePasswordModal">
+                <button type="button" class="btn btn-primary ms-auto" data-bs-toggle="modal"
+                    data-bs-target="#changePasswordModal">
                     Change Password
                 </button>
             </div>
@@ -79,6 +82,7 @@
 </div>
 
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
             const form = document.getElementById('profileForm');
@@ -125,7 +129,7 @@
             btnCancel.addEventListener('click', () => { resetToInitial(); setFormEditable(false); });
 
             if (avatarInput && avatarPreview) {
-                avatarPreview.addEventListener('keydown', function(e){
+                avatarPreview.addEventListener('keydown', function (e) {
                     if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
                         e.preventDefault(); avatarInput.click();
                     }
@@ -147,6 +151,19 @@
                     avatarPreview.classList.add('has-image');
                 }
             }
+        })();
+
+        (function () {
+            'use strict';
+            document.querySelectorAll('.needs-validation').forEach(form => {
+                form.addEventListener('submit', e => {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
         })();
     </script>
 }
