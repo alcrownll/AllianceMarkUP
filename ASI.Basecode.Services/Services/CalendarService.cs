@@ -27,7 +27,6 @@ namespace ASI.Basecode.Services.Services
             return e.IsGlobal == false && e.UserId == actorId;
         }
 
-        // --- Queries ---
         public Task<CalendarViewModel> GetUserCalendarAsync(ClaimsPrincipal principal, DateTime fromUtc, DateTime toUtc)
         {
             int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
@@ -50,7 +49,6 @@ namespace ASI.Basecode.Services.Services
             return Task.FromResult(new CalendarViewModel { Events = items });
         }
 
-        // --- Commands ---
         public Task<CalendarEventVm> CreateAsync(ClaimsPrincipal principal, CalendarEventCreateVm input)
         {
             int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var actorId);
@@ -89,7 +87,6 @@ namespace ASI.Basecode.Services.Services
 
             _notificationService.AddNotification(actorId, "New Event Added", "A new event has been added to the calendar.");
 
-
             return Task.FromResult(new CalendarEventVm
             {
                 Id = entity.CalendarEventId,
@@ -102,7 +99,6 @@ namespace ASI.Basecode.Services.Services
                 CanEdit = true
             });
         }
-
 
         public Task<CalendarEventVm> UpdateAsync(ClaimsPrincipal principal, CalendarEventUpdateVm input)
         {
@@ -128,7 +124,7 @@ namespace ASI.Basecode.Services.Services
             if (isAdmin)
             {
                 e.IsGlobal = input.IsGlobal;
-                e.UserId = e.IsGlobal ? (int?)null : (e.UserId ?? actorId);
+                e.UserId = e.IsGlobal ? (int?)null : actorId;
             }
 
             e.TimeZoneId = string.IsNullOrWhiteSpace(input.TimeZoneId) ? (e.TimeZoneId ?? "Asia/Manila") : input.TimeZoneId;
@@ -149,7 +145,6 @@ namespace ASI.Basecode.Services.Services
 
             _notificationService.AddNotification(actorId, "Event Updated", "An existing event has been updated in the calendar.");
 
-
             return Task.FromResult(new CalendarEventVm
             {
                 Id = e.CalendarEventId,
@@ -162,7 +157,6 @@ namespace ASI.Basecode.Services.Services
                 CanEdit = true
             });
         }
-
 
         public Task DeleteAsync(ClaimsPrincipal principal, int id)
         {

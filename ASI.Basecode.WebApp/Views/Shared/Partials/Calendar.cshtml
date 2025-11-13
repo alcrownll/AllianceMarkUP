@@ -35,7 +35,7 @@
          data-is-admin="@(isAdmin ? "true" : "false")"></div>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Add/Edit/View Modal -->
 <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-3">
@@ -51,6 +51,13 @@
                 <!-- Hidden UTC fields the server binds to -->
                 <input type="hidden" name="StartUtc" id="startUtc" />
                 <input type="hidden" name="EndUtc" id="endUtc" />
+
+                <!-- Hidden bools the server binds to (JS will set these) -->
+                <input type="hidden" name="IsAllDay" id="isAllDayHidden" value="false" />
+                @if (isAdmin)
+                {
+                    <input type="hidden" name="IsGlobal" id="isGlobalHidden" value="false" />
+                }
 
                 <div class="modal-body">
                     <div class="mb-3">
@@ -69,8 +76,9 @@
                         </div>
                     </div>
 
+                    <!-- Display checkboxes WITHOUT name; JS mirrors state into hidden fields -->
                     <div class="form-check mt-2">
-                        <input class="form-check-input" type="checkbox" name="IsAllDay" id="allDay" />
+                        <input class="form-check-input" type="checkbox" id="allDay" />
                         <label class="form-check-label" for="allDay">All day</label>
                     </div>
 
@@ -81,8 +89,8 @@
 
                     @if (isAdmin)
                     {
-                        <div class="form-check mt-3">
-                            <input class="form-check-input" type="checkbox" name="IsGlobal" id="isGlobal" />
+                        <div class="form-check mt-3" id="isGlobalGroup">
+                            <input class="form-check-input" type="checkbox" id="isGlobal" />
                             <label class="form-check-label" for="isGlobal">Make Global (visible to everyone)</label>
                         </div>
                     }
@@ -90,13 +98,10 @@
 
                 <div class="modal-footer justify-content-between">
                     <div>
-                        <button type="button" id="btnDelete" class="btn btn-outline-danger d-none"
-                                data-delete-action="/Calendar/Delete">
-                            Delete
-                        </button>
+                        <button type="button" id="btnDelete" class="btn btn-outline-danger d-none">Delete</button>
                     </div>
                     <div>
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-primary" id="btnSave">Save</button>
                     </div>
                 </div>
@@ -108,7 +113,7 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script>
-        // local datetime-local -> UTC ISO (Z)
+        // Helpers
         function toUtcISOString(localValue) {
             if (!localValue) return "";
             const d = new Date(localValue);
@@ -117,8 +122,6 @@
                 d.getHours(), d.getMinutes(), 0, 0
             )).toISOString();
         }
-
-        // Date -> yyyy-MM-ddTHH:mm
         function toInputValue(date) {
             if (!date) return "";
             const pad = (n) => (n < 10 ? "0" + n : n);
@@ -135,6 +138,41 @@
             const feedUrl = calEl.dataset.feedUrl || '/Calendar/Feed';
             const isAdmin = calEl.dataset.isAdmin === 'true';
 
+            // --- read-only toggle for modal ---
+            const form = document.getElementById('eventForm');
+            const titleEl = document.getElementById('title');
+            const locEl = document.getElementById('location');
+            const startLocalEl = document.getElementById('startLocal');
+            const endLocalEl = document.getElementById('endLocal');
+            const allDayEl = document.getElementById('allDay');
+            const isGlobalEl = document.getElementById('isGlobal'); // may be null
+            const btnSave = document.getElementById('btnSave');
+            const btnDelete = document.getElementById('btnDelete');
+            const isGlobalGroup = document.getElementById('isGlobalGroup');
+
+            function setReadOnlyMode(ro) {
+                // Disable inputs
+                titleEl.disabled = ro;
+                locEl.disabled = ro;
+                startLocalEl.disabled = ro;
+                endLocalEl.disabled = ro;
+                allDayEl.disabled = ro;
+                if (isGlobalEl) isGlobalEl.disabled = ro;
+
+                // Hide/Show actions
+                if (ro) {
+                    btnSave.classList.add('d-none');
+                    btnDelete.classList.add('d-none');
+                } else {
+                    btnSave.classList.remove('d-none');
+                    // Delete shown only if server says canEdit in click handler
+                }
+
+                // For non-admin viewers, never show Global checkbox UI
+                if (!isAdmin && isGlobalGroup) isGlobalGroup.classList.add('d-none');
+                if (isAdmin && isGlobalGroup) isGlobalGroup.classList.remove('d-none');
+            }
+
             const calendar = new FullCalendar.Calendar(calEl, {
                 initialView: 'dayGridMonth',
                 height: 'auto',
@@ -142,13 +180,16 @@
                 headerToolbar: false,
                 selectable: true,
                 dayMaxEvents: true,
-                slotEventOverlap: true,
 
-                // Card-like content (title + chips)
+                // Prevent drag/resize of non-editable events
+                editable: true,
+                eventStartEditable: (arg) => (arg.event.extendedProps?.canEdit === true),
+                eventDurationEditable: (arg) => (arg.event.extendedProps?.canEdit === true),
+                eventAllow: (dropInfo, draggedEvent) => draggedEvent.extendedProps?.canEdit === true,
+
                 eventContent: (arg) => {
                     const ev = arg.event;
                     const x  = ev.extendedProps || {};
-
                     const root = document.createElement('div');
                     root.className = 'evt-card';
 
@@ -159,19 +200,16 @@
                     const row = document.createElement('div');
                     row.className = 'evt-row';
 
-                    // Color dot (matches background strip color index)
                     const hashKey = (x.category || x.calendarId || x.program || ev.id || ev.title || '');
                     let h = 0; for (let i = 0; i < hashKey.length; i++) h = (h * 31 + hashKey.charCodeAt(i)) | 0;
                     const idx = Math.abs(h) % 10;
 
-                    // time chip
                     const chip = document.createElement('span');
                     chip.className = 'evt-chip';
                     const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     chip.innerHTML = `<span class="evt-dot evt-dot-${idx}"></span>${ev.allDay ? 'All day' : (ev.start ? (ev.end ? (fmt(ev.start) + ' – ' + fmt(ev.end)) : fmt(ev.start)) : '')}`;
                     row.appendChild(chip);
 
-                    // location chip
                     if (x.location) {
                         const loc = document.createElement('span');
                         loc.className = 'evt-chip';
@@ -179,7 +217,6 @@
                         row.appendChild(loc);
                     }
 
-                    // global badge
                     if (x.isGlobal) {
                         const pill = document.createElement('span');
                         pill.className = 'evt-pill';
@@ -189,38 +226,56 @@
 
                     root.appendChild(title);
                     root.appendChild(row);
-
                     return { domNodes: [root] };
                 },
 
                 select: (info) => {
                     document.getElementById('eventModalTitle').innerText = 'Add Event';
-                    document.getElementById('eventForm').setAttribute('action', '/Calendar/Create');
+                    form.setAttribute('action', '/Calendar/Create');
                     document.getElementById('eventId').value = '';
-                    document.getElementById('title').value = '';
-                    document.getElementById('location').value = '';
-                    document.getElementById('allDay').checked = info.allDay;
-                    document.getElementById('startLocal').value = toInputValue(info.start);
-                    document.getElementById('endLocal').value   = toInputValue(info.end || info.start);
-                    const delBtn = document.getElementById('btnDelete');
-                    delBtn.classList.add('d-none');
-                    if (isAdmin) document.getElementById('isGlobal').checked = false;
+                    titleEl.value = '';
+                    locEl.value = '';
+                    allDayEl.checked = info.allDay;
+                    startLocalEl.value = toInputValue(info.start);
+                    endLocalEl.value   = toInputValue(info.end || info.start);
+
+                    // Reset hidden bools
+                    document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
+                    const igHidden = document.getElementById('isGlobalHidden');
+                    if (igHidden) igHidden.value = 'false';
+                    if (isGlobalEl) isGlobalEl.checked = false;
+
+                    // Add mode is always editable
+                    setReadOnlyMode(false);
+                    btnDelete.classList.add('d-none');
+
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
                 },
 
                 eventClick: (info) => {
-                    const e = info.event.extendedProps;
-                    document.getElementById('eventModalTitle').innerText = 'Edit Event';
-                    document.getElementById('eventForm').setAttribute('action', '/Calendar/Update');
+                    const x = info.event.extendedProps || {};
+                    document.getElementById('eventModalTitle').innerText = x.canEdit ? 'Edit Event' : 'View Event';
+                    form.setAttribute('action', x.canEdit ? '/Calendar/Update' : '#');
                     document.getElementById('eventId').value = info.event.id;
-                    document.getElementById('title').value = info.event.title || '';
-                    document.getElementById('location').value = e.location || '';
-                    document.getElementById('allDay').checked = info.event.allDay || false;
-                    document.getElementById('startLocal').value = toInputValue(info.event.start);
-                    document.getElementById('endLocal').value   = toInputValue(info.event.end || info.event.start);
-                    const delBtn = document.getElementById('btnDelete');
-                    if (e.canEdit) delBtn.classList.remove('d-none'); else delBtn.classList.add('d-none');
-                    if (isAdmin) document.getElementById('isGlobal').checked = !!e.isGlobal;
+                    titleEl.value = info.event.title || '';
+                    locEl.value = x.location || '';
+                    allDayEl.checked = info.event.allDay || false;
+                    startLocalEl.value = toInputValue(info.event.start);
+                    endLocalEl.value   = toInputValue(info.event.end || info.event.start);
+
+                    // Mirror to hiddens now too (so read-only view shows accurate state if submitted accidentally)
+                    document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
+                    const igHidden = document.getElementById('isGlobalHidden');
+                    if (igHidden) igHidden.value = x.isGlobal ? 'true' : 'false';
+                    if (isGlobalEl) isGlobalEl.checked = !!x.isGlobal;
+
+                    if (x.canEdit) {
+                        setReadOnlyMode(false);
+                        btnDelete.classList.remove('d-none');
+                    } else {
+                        setReadOnlyMode(true);     // <- key line: view-only mode
+                    }
+
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
                 },
 
@@ -232,7 +287,6 @@
                         .catch(err => failure(err));
                 },
 
-                // Add color class + global flag for styling
                 eventClassNames: (arg) => {
                     const e = arg.event.extendedProps || {};
                     const key = e.category || e.calendarId || e.program || arg.event.id || arg.event.title || '';
@@ -266,43 +320,61 @@
             // Add button
             document.getElementById('btnAdd').addEventListener('click', () => {
                 document.getElementById('eventModalTitle').innerText = 'Add Event';
-                document.getElementById('eventForm').setAttribute('action', '/Calendar/Create');
+                form.setAttribute('action', '/Calendar/Create');
                 document.getElementById('eventId').value = '';
-                document.getElementById('title').value = '';
-                document.getElementById('location').value = '';
-                document.getElementById('allDay').checked = false;
+                titleEl.value = '';
+                locEl.value = '';
+                allDayEl.checked = false;
+
                 const now = new Date();
-                document.getElementById('startLocal').value = toInputValue(now);
-                document.getElementById('endLocal').value   = toInputValue(new Date(now.getTime() + 60*60*1000));
-                const delBtn = document.getElementById('btnDelete');
-                delBtn.classList.add('d-none');
-                if (isAdmin) document.getElementById('isGlobal').checked = false;
+                startLocalEl.value = toInputValue(now);
+                endLocalEl.value   = toInputValue(new Date(now.getTime() + 60*60*1000));
+
+                // reset hiddens
+                document.getElementById('isAllDayHidden').value = 'false';
+                const igHidden = document.getElementById('isGlobalHidden');
+                if (igHidden) igHidden.value = 'false';
+                if (isGlobalEl) isGlobalEl.checked = false;
+
+                setReadOnlyMode(false);
+                btnDelete.classList.add('d-none');
+
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
             });
 
-            // Delete button
-            document.getElementById('btnDelete').addEventListener('click', () => {
+            // Delete button (only appears when canEdit)
+            btnDelete.addEventListener('click', () => {
                 const id = document.getElementById('eventId').value;
                 if (!id) return;
                 if (!confirm('Delete this event?')) return;
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/Calendar/Delete';
-                form.innerHTML = `
+                const delForm = document.createElement('form');
+                delForm.method = 'post';
+                delForm.action = '/Calendar/Delete';
+                delForm.innerHTML = `
                     <input name="id" value="${id}" type="hidden" />
                     ${document.querySelector('#eventForm input[name="__RequestVerificationToken"]').outerHTML}
                 `;
-                document.body.appendChild(form);
-                form.submit();
+                document.body.appendChild(delForm);
+                delForm.submit();
             });
 
-            // Before submit: copy local -> UTC hidden fields
-            document.getElementById('eventForm').addEventListener('submit', () => {
-                const startLocal = document.getElementById('startLocal').value;
-                const endLocal   = document.getElementById('endLocal').value;
-                document.getElementById('startUtc').value = toUtcISOString(startLocal);
-                document.getElementById('endUtc').value   = toUtcISOString(endLocal);
+            // Before submit: copy local -> UTC, and checkboxes -> hidden fields
+            form.addEventListener('submit', (e) => {
+                // If we’re in view-only mode (btnSave hidden), block submits
+                if (btnSave.classList.contains('d-none')) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                document.getElementById('startUtc').value = toUtcISOString(startLocalEl.value);
+                document.getElementById('endUtc').value   = toUtcISOString(endLocalEl.value);
+
+                document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
+                const igHidden = document.getElementById('isGlobalHidden');
+                if (igHidden) igHidden.value = (isGlobalEl && isGlobalEl.checked) ? 'true' : 'false';
             });
+
+            function syncTitle(){ document.getElementById('calTitle').innerText = calendar.view.title; }
         });
     </script>
 }

@@ -13,5 +13,10 @@ namespace ASI.Basecode.Data.Interfaces
         IQueryable<Notification> GetByUser(int userId);
         void Add(Notification n);
         void MarkRead(int notificationId);
+
+
+        IQueryable<Notification> GetByUserAndKind(int userId, NotificationKind kind);
+        int CountUnreadByKind(int userId, NotificationKind kind);
+        IQueryable<Notification> GetByUserAndCategory(int userId, string category);
     }
 }

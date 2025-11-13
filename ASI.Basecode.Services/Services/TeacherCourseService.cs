@@ -184,66 +184,67 @@ namespace ASI.Basecode.Services.Services
         {
             try
             {
-                // List of students whose grades have been updated
-                List<int> affectedStudentIds = new List<int>();
+                var affectedStudentIds = new List<int>();
+                int? assignedCourseIdFromPayload = null;
 
                 foreach (var gradeUpdate in grades)
                 {
                     var existingGrade = await _ctx.Grades
                         .FirstOrDefaultAsync(g => g.GradeId == gradeUpdate.GradeId);
 
-                    if (existingGrade != null)
-                    {
-                        // Check and update grades, and mark which students were affected
-                        if (gradeUpdate.Prelims.HasValue)
-                        {
-                            existingGrade.Prelims = gradeUpdate.Prelims;
-                            affectedStudentIds.Add(existingGrade.StudentId);
-                        }
-                        if (gradeUpdate.Midterm.HasValue)
-                        {
-                            existingGrade.Midterm = gradeUpdate.Midterm;
-                            affectedStudentIds.Add(existingGrade.StudentId);
-                        }
-                        if (gradeUpdate.SemiFinal.HasValue)
-                        {
-                            existingGrade.SemiFinal = gradeUpdate.SemiFinal;
-                            affectedStudentIds.Add(existingGrade.StudentId);
-                        }
-                        if (gradeUpdate.Final.HasValue)
-                        {
-                            existingGrade.Final = gradeUpdate.Final;
-                            affectedStudentIds.Add(existingGrade.StudentId);
-                        }
+                    if (existingGrade == null) continue;
 
+                    if (assignedCourseIdFromPayload == null)
+                        assignedCourseIdFromPayload = existingGrade.AssignedCourseId;
+
+                    // Only record student if something actually changes
+                    bool anyChange = false;
+
+                    if (gradeUpdate.Prelims.HasValue && existingGrade.Prelims != gradeUpdate.Prelims)
+                    {
+                        existingGrade.Prelims = gradeUpdate.Prelims;
+                        anyChange = true;
+                    }
+                    if (gradeUpdate.Midterm.HasValue && existingGrade.Midterm != gradeUpdate.Midterm)
+                    {
+                        existingGrade.Midterm = gradeUpdate.Midterm;
+                        anyChange = true;
+                    }
+                    if (gradeUpdate.SemiFinal.HasValue && existingGrade.SemiFinal != gradeUpdate.SemiFinal)
+                    {
+                        existingGrade.SemiFinal = gradeUpdate.SemiFinal;
+                        anyChange = true;
+                    }
+                    if (gradeUpdate.Final.HasValue && existingGrade.Final != gradeUpdate.Final)
+                    {
+                        existingGrade.Final = gradeUpdate.Final;
+                        anyChange = true;
+                    }
+
+                    if (anyChange)
+                    {
                         _gradeRepository.UpdateGrade(existingGrade);
+                        affectedStudentIds.Add(existingGrade.StudentId);
                     }
                 }
 
+                // Persist once
                 await _unitOfWork.SaveChangesAsync();
 
-                // After updating grades, notify students
-                foreach (var studentId in affectedStudentIds.Distinct())
+                // Notify only if we actually changed something and we can resolve the course
+                if (assignedCourseIdFromPayload.HasValue && affectedStudentIds.Count > 0)
                 {
-                    var student = await _studentRepository.GetByIdAsync(studentId); // Get student details
-                    if (student != null)
-                    {
-                        // Notify the student
-                        _notificationService.AddNotification(
-                            student.UserId, // Assuming the student has a UserId property
-                            "Grade updated",
-                            $"Your grade for a course has been uploaded."
-                        );
-                    }
+                    await NotifyGradeUploadAsync(assignedCourseIdFromPayload.Value, affectedStudentIds.Distinct());
                 }
 
                 return true;
             }
-            catch (Exception)
+            catch
             {
                 return false;
             }
         }
+
 
 
 
@@ -293,7 +294,7 @@ namespace ASI.Basecode.Services.Services
             return intYearLevels.Distinct().OrderBy(y => y).ToList();
         }
 
-        public async Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchName = null, 
+        public async Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchName = null,
             string searchId = null, string program = null, int? yearLevel = null)
         {
             // Get all grades for students in teacher's courses
@@ -306,8 +307,8 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrEmpty(searchName))
             {
                 var searchNameLower = searchName.ToLower();
-                gradesQuery = gradesQuery.Where(g => 
-                    g.Student.User.FirstName.ToLower().Contains(searchNameLower) || 
+                gradesQuery = gradesQuery.Where(g =>
+                    g.Student.User.FirstName.ToLower().Contains(searchNameLower) ||
                     g.Student.User.LastName.ToLower().Contains(searchNameLower));
             }
 
@@ -323,7 +324,7 @@ namespace ASI.Basecode.Services.Services
 
             // Execute query and get results (apply year level filter in memory for flexibility)
             var allGrades = await gradesQuery.AsNoTracking().ToListAsync();
-            
+
             // Apply year level filter in memory for more flexible matching
             if (yearLevel.HasValue)
             {
@@ -340,22 +341,22 @@ namespace ASI.Basecode.Services.Services
             foreach (var group in studentGroups)
             {
                 var student = group.First().Student;
-                
+
                 // Calculate average grades across all records for this student
                 var studentGradeRecords = group.ToList();
                 var firstGrade = studentGradeRecords.First(); // Use first record for non-grade fields
-                
+
                 // Calculate averages for each grade component
                 var prelimsValues = studentGradeRecords.Where(g => g.Prelims.HasValue).Select(g => g.Prelims.Value).ToList();
                 var midtermValues = studentGradeRecords.Where(g => g.Midterm.HasValue).Select(g => g.Midterm.Value).ToList();
                 var semiFinalValues = studentGradeRecords.Where(g => g.SemiFinal.HasValue).Select(g => g.SemiFinal.Value).ToList();
                 var finalValues = studentGradeRecords.Where(g => g.Final.HasValue).Select(g => g.Final.Value).ToList();
-                
+
                 var avgPrelims = prelimsValues.Any() ? (decimal?)Math.Round(prelimsValues.Average(), 2) : null;
                 var avgMidterm = midtermValues.Any() ? (decimal?)Math.Round(midtermValues.Average(), 2) : null;
                 var avgSemiFinal = semiFinalValues.Any() ? (decimal?)Math.Round(semiFinalValues.Average(), 2) : null;
                 var avgFinal = finalValues.Any() ? (decimal?)Math.Round(finalValues.Average(), 2) : null;
-                
+
                 // Calculate weighted GPA and determine remarks based on student's performance
                 var remarks = CalculateRemarks(avgPrelims, avgMidterm, avgSemiFinal, avgFinal);
 
@@ -418,7 +419,7 @@ namespace ASI.Basecode.Services.Services
             }
 
             var gpa = Math.Round(weightedTotal / weightSum, 2);
-            
+
             // Determine pass/fail based on GPA (assuming 3.0 is passing grade)
             return gpa <= 3.0m ? "PASSED" : "FAILED";
         }
@@ -429,12 +430,12 @@ namespace ASI.Basecode.Services.Services
                 return false;
 
             var normalizedYearLevel = dbYearLevel.Trim().ToLowerInvariant();
-            
+
             // Handle various year level formats
             var yearLevelPatterns = new[]
             {
                 $"{selectedYearLevel}st",
-                $"{selectedYearLevel}nd", 
+                $"{selectedYearLevel}nd",
                 $"{selectedYearLevel}rd",
                 $"{selectedYearLevel}th",
                 $"year {selectedYearLevel}",
@@ -442,7 +443,7 @@ namespace ASI.Basecode.Services.Services
                 selectedYearLevel.ToString()
             };
 
-            return yearLevelPatterns.Any(pattern => 
+            return yearLevelPatterns.Any(pattern =>
                 normalizedYearLevel.Contains(pattern.ToLowerInvariant()) ||
                 normalizedYearLevel == pattern.ToLowerInvariant());
         }
@@ -454,7 +455,7 @@ namespace ASI.Basecode.Services.Services
                 .Select(ac => ac.Semester)
                 .Where(s => !string.IsNullOrEmpty(s))
                 .FirstOrDefault();
-            
+
             return semester ?? "--"; // Default fallback if no semester found
         }
 
@@ -505,7 +506,7 @@ namespace ASI.Basecode.Services.Services
             return program switch
             {
                 "BSCS" => "4A",
-                "BSIT" => "4B", 
+                "BSIT" => "4B",
                 "BSECE" => "4C",
                 _ => "1A"
             };
@@ -591,8 +592,8 @@ namespace ASI.Basecode.Services.Services
                 result.ProcessedCount = excelGrades.Count;
                 result.ErrorCount = result.Errors.Count;
                 result.Success = result.Errors.Count == 0;
-                result.Message = result.Success 
-                    ? $"Successfully parsed {result.ProcessedCount} records" 
+                result.Message = result.Success
+                    ? $"Successfully parsed {result.ProcessedCount} records"
                     : $"Parsed {result.ProcessedCount} records with {result.ErrorCount} errors";
             }
             catch (Exception ex)
@@ -638,8 +639,8 @@ namespace ASI.Basecode.Services.Services
                         // Validate student name matches (optional but recommended for data integrity)
                         var studentFullName = $"{gradeRecord.Student.User.FirstName} {gradeRecord.Student.User.LastName}".ToLower();
                         var excelFullName = $"{excelGrade.FirstName} {excelGrade.LastName}".ToLower();
-                        
-                        if (!studentFullName.Contains(excelGrade.FirstName.ToLower()) || 
+
+                        if (!studentFullName.Contains(excelGrade.FirstName.ToLower()) ||
                             !studentFullName.Contains(excelGrade.LastName.ToLower()))
                         {
                             result.Errors.Add($"Name mismatch for ID '{excelGrade.IdNumber}': Expected '{studentFullName}', Excel has '{excelFullName}'");
@@ -692,8 +693,8 @@ namespace ASI.Basecode.Services.Services
                 result.ProcessedCount = successCount;
                 result.ErrorCount = errorCount;
                 result.Success = errorCount == 0 && successCount > 0;
-                result.Message = result.Success 
-                    ? $"Successfully updated {successCount} student grades" 
+                result.Message = result.Success
+                    ? $"Successfully updated {successCount} student grades"
                     : $"Updated {successCount} grades with {errorCount} errors";
             }
             catch (Exception ex)
@@ -707,5 +708,56 @@ namespace ASI.Basecode.Services.Services
         }
 
         #endregion
+
+        //for notification
+        private async Task NotifyGradeUploadAsync(int assignedCourseId, IEnumerable<int> updatedStudentIds)
+        {
+            // Get course + teacher + term in one go
+            var ac = await _assignedCourseRepository.GetAssignedCourses()
+                .Where(x => x.AssignedCourseId == assignedCourseId)
+                .Include(x => x.Course)
+                .Include(x => x.Teacher)  
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (ac == null) return;
+
+            var courseCode = ac.Course?.CourseCode ?? "Unknown";
+            var termLabel = string.IsNullOrWhiteSpace(ac.Semester) ? GetCurrentSemester() : ac.Semester;
+
+            // Resolve teacher's UserId (depending on your model)
+            var teacherUserId = 0;
+            if (ac.Teacher?.UserId > 0)
+                teacherUserId = ac.Teacher.UserId;
+            else
+                teacherUserId = await _ctx.Teachers
+                    .Where(t => t.TeacherId == ac.TeacherId)
+                    .Select(t => t.UserId)
+                    .FirstOrDefaultAsync();
+
+            // --- Notify the TEACHER once ---
+            if (teacherUserId > 0)
+            {
+
+                _notificationService.NotifyTeacherGradeUploaded(teacherUserId, courseCode, termLabel);
+            }
+
+            if (updatedStudentIds != null)
+            {
+                // Translate StudentId -> UserId
+                var studentUserIds = await _ctx.Students
+                    .Where(s => updatedStudentIds.Contains(s.StudentId))
+                    .Select(s => s.UserId)
+                    .Where(uid => uid > 0)
+                    .Distinct()
+                    .ToListAsync();
+
+                foreach (var uid in studentUserIds)
+                {
+                    _notificationService.NotifyGradesPosted(uid, courseCode, termLabel);
+                }
+            }
+        }
+
     }
 }

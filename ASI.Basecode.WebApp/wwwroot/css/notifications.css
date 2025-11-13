@@ -1,5 +1,4 @@
-﻿/* ========== NOTIFICATION PAGE STYLES ========== */
-
+﻿/* ===== NOTIFICATION PAGE ===== */
 .notifications-page {
     max-width: 960px;
     margin: 2rem auto;
@@ -10,33 +9,75 @@
     background: #fff;
     border-radius: 16px;
     padding: 1.5rem 2rem;
-    border: 1px solid rgba(0, 0, 0, 0.04) !important;
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 5px 7px rgba(0, 0, 0, 0.15);
 }
 
 /* Header */
 .n-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 1.25rem;
 }
 
 .n-title {
     font-weight: 800;
+    font-size: 1.5rem;
     color: #0f172a;
-    margin: 0;
     display: flex;
     align-items: center;
-    font-size: 1.5rem;
 }
 
-.n-actions {
+/* Tabs */
+.n-tabs {
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
-    gap: 10px;
+    gap: .25rem;
 }
 
-/* Main list layout */
+    .n-tabs .nav-link {
+        border: 0;
+        border-bottom: 2px solid transparent;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+        .n-tabs .nav-link.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+/* ===== Unread/Read Button Filters ===== */
+.n-filters {
+    display: inline-flex;
+    gap: .5rem;
+    margin: .75rem 0 1.25rem;
+}
+
+.n-filter-btn {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: .4rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    .n-filter-btn:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+    }
+
+    .n-filter-btn.active {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+/* ===== Notification List ===== */
 .n-list {
     display: flex;
     flex-direction: column;
@@ -47,29 +88,32 @@
 }
 
 .n-item {
-    position: relative;
     border: 1px solid #e2e8f0;
-    border-left: 5px solid transparent;
+    border-left: 4px solid transparent;
     border-radius: 12px;
     padding: 1rem 1.25rem;
     background: #fafcff;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease;
 }
 
     .n-item:hover {
-        transform: translateY(-1px);
         background: #f1f6ff;
         border-color: #c7d8ff;
     }
 
     .n-item.unread {
-        border-left-color: #2563eb;
         background: linear-gradient(180deg, #eef4ff, #f9fbff);
     }
 
-/* Structure inside each notification */
+    .n-item.n-kind-updates {
+        border-left-color: #ef4444;
+    }
+
+    .n-item.n-kind-activity {
+        border-left-color: #10b981;
+    }
+
+/* Layout */
 .n-main {
     display: flex;
     align-items: flex-start;
@@ -97,7 +141,6 @@
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 4px;
 }
 
 .n-title-sm {
@@ -116,16 +159,11 @@
     margin-top: 4px;
     color: #334155;
     font-size: 0.95rem;
-    line-height: 1.4;
 }
 
-/* Read button */
-.n-action {
-    margin-top: 0.75rem;
-    text-align: right;
-}
-
+/* Mark Read Button */
 .n-btn-small {
+    margin-top: .75rem;
     border: 1px solid #dbe7fb;
     background: #fff;
     color: #2563eb;
@@ -134,42 +172,17 @@
     padding: 5px 10px;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease;
 }
 
     .n-btn-small:hover {
         background: #eef5ff;
         border-color: #bcd2ff;
-        transform: translateY(-1px);
     }
 
-/* Mark All button */
-.n-btn {
-    border: none;
-    padding: 8px 14px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-    transition: all 0.25s ease;
-}
-
-    .n-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
-        background: linear-gradient(135deg, #2563eb, #1e40af);
-    }
-
-/* Empty state */
+/* Empty State */
 .n-empty {
     text-align: center;
-    padding: 40px 20px;
     color: #6b7280;
+    padding: 2rem 0;
 }
-
-    .n-empty p {
-        margin-top: 8px;
-        font-size: 1rem;
-    }

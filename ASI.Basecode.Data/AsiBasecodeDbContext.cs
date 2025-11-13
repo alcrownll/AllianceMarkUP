@@ -202,9 +202,11 @@ namespace ASI.Basecode.Data
                       .WithMany(u => u.Notifications)
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.UserId, e.Kind, e.IsRead, e.CreatedAt });
+                entity.HasIndex(e => new { e.UserId, e.Category, e.CreatedAt });
             });
 
-            // UTC converter for DateTime (used below)
             var utcConv = new ValueConverter<DateTime, DateTime>(
                 v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
                 v => DateTime.SpecifyKind(v, DateTimeKind.Utc));

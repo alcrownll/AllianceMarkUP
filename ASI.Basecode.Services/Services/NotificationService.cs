@@ -10,6 +10,7 @@ namespace ASI.Basecode.Services.Services
 {
     public class NotificationService : INotificationService
     {
+
         private readonly INotificationRepository _repo;
         private readonly IUnitOfWork _uow;
 
@@ -20,41 +21,70 @@ namespace ASI.Basecode.Services.Services
         }
 
         public void NotifyProfileUpdated(int userId)
-            => AddNotification(userId, "Profile updated", "Your profile information has been updated.");
-
-
-
-        public void AddNotification(int userId, string title, string message)
         {
-            // Ensure you're adding notifications correctly
+            AddNotification(
+                userId: userId,
+                title: "Profile updated",
+                message: "Your profile information has been updated.",
+                kind: NotificationKind.Activity,
+                category: "Profile",
+                actorUserId: userId
+            );
+        }
+
+        public void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel /* , int? teacherUserId = null */)
+        {
+            AddNotification(
+                userId: studentUserId,
+                title: "Grade uploaded",
+                message: $"Your grade for the course {courseCode} has been uploaded for {termLabel}.",
+                kind: NotificationKind.System,
+                category: "Grades",
+                actorUserId: null // or pass teacher userId if you have it
+            );
+        }
+
+        public void NotifyTeacherGradeUploaded(int userId, string courseCode, string termLabel)
+        {
+            AddNotification(
+                userId: userId,
+                title: "Grade uploaded",
+                message: $"You have uploaded grades for the course {courseCode} for the {termLabel} term.",
+                kind: NotificationKind.Activity,
+                category: "Grades",
+                actorUserId: userId
+            );
+        }
+
+        public void AddNotification(
+     int userId,
+     string title,
+     string message,
+     NotificationKind kind = NotificationKind.System,
+     string? category = null,
+     int? actorUserId = null)
+        {
             _repo.Add(new Notification
             {
                 UserId = userId,
                 Title = title,
                 Message = message,
                 IsRead = false,
+                Kind = kind,
+                Category = category,
+                ActorUserId = actorUserId,
                 CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
             });
 
-            _uow.SaveChanges();  // Ensure SaveChanges is called to persist the notification
         }
 
 
-        public void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel)
-        {
-            AddNotification(studentUserId, "Grade uploaded", $"Your grade for the course {courseCode} has been uploaded for {termLabel}.");
-        }
 
-        public void NotifyTeacherGradeUploaded(int teacherUserId, string courseCode, string termLabel)
-        {
-            AddNotification(teacherUserId, "Grade uploaded", $"You have uploaded grades for the course {courseCode} for the {termLabel} term.");
-        }
 
 
         public List<NotificationListItemVm> GetLatest(int userId, int page = 1, int pageSize = 50)
         {
             CleanupOldNotificationsCore(userId, retentionDays: 90, keepLast: 100);
-
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 50;
 
@@ -68,10 +98,14 @@ namespace ASI.Basecode.Services.Services
                     Title = n.Title,
                     Message = n.Message,
                     IsRead = n.IsRead,
-                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt")
+                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+
+                    Kind = n.Kind,
+                    Category = n.Category
                 })
                 .ToList();
         }
+
 
         public void MarkRead(int userId, int notificationId)
         {
@@ -112,5 +146,49 @@ namespace ASI.Basecode.Services.Services
             _uow.SaveChanges();
             return oldOnes.Count + overQuota.Count;
         }
+
+        public int GetBellUnreadCount(int userId)
+        {
+            // was: StartsWith(SYS)
+            return _repo.CountUnreadByKind(userId, NotificationKind.System);
+        }
+
+        public List<NotificationListItemVm> GetLatestSystem(int userId, int take = 10)
+        {
+            return _repo.GetByUserAndKind(userId, NotificationKind.System)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(take)
+                .Select(n => new NotificationListItemVm
+                {
+                    Id = n.NotificationId,
+                    Title = n.Title,
+                    Message = n.Message,
+                    IsRead = n.IsRead,
+                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+                    Kind = n.Kind,
+                    Category = n.Category
+                })
+                .ToList();
+        }
+
+
+        public List<NotificationListItemVm> GetLatestActivity(int userId, int take = 10)
+        {
+            return _repo.GetByUserAndKind(userId, NotificationKind.Activity)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(take)
+                .Select(n => new NotificationListItemVm
+                {
+                    Id = n.NotificationId,
+                    Title = n.Title,
+                    Message = n.Message,
+                    IsRead = n.IsRead,
+                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+                    Kind = n.Kind,
+                    Category = n.Category
+                })
+                .ToList();
+        }
+
     }
 }

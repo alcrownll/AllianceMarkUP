@@ -1,2 +1,366 @@
 ﻿@model ASI.Basecode.Services.ServiceModels.RightSidebarViewModel
-@await Html.PartialAsync("Sidebars/_RightSidebar", Model)
+
+<div class="right-sidebar__host">
+    @await Html.PartialAsync("Sidebars/_RightSidebar", Model)
+</div>
+
+<script>
+    (function () {
+        // --- Utilities ---
+        const ISO = (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isoFromDate = (d) => ISO(d.getFullYear(), d.getMonth() + 1, d.getDate());
+
+        function isoFromAria(node) {
+            const label = node.getAttribute('aria-label'); // e.g. "November 15, 2025"
+            if (!label) return null;
+            const dt = new Date(label);
+            return isNaN(dt) ? null : isoFromDate(dt);
+        }
+
+        function isoPrev(iso) {
+            const d = new Date(iso + 'T00:00:00');
+            d.setDate(d.getDate() - 1);
+            return isoFromDate(d);
+        }
+        function isoNext(iso) {
+            const d = new Date(iso + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            return isoFromDate(d);
+        }
+
+        function initMiniCalendar() {
+            if (!window.flatpickr) return false;
+
+            const el = document.getElementById('miniCalendar');
+            if (!el) return false;
+
+            // Parse yyyy-MM-dd arrays from data attributes
+            let userDates = new Set(), globalDates = new Set();
+            try {
+                const ud = el.dataset.userdates   ? JSON.parse(el.dataset.userdates)   : [];
+                const gd = el.dataset.globaldates ? JSON.parse(el.dataset.globaldates) : [];
+                ud.forEach(d => userDates.add(d));
+                gd.forEach(d => globalDates.add(d));
+            } catch { }
+
+            // Clean previous instance on re-renders
+            if (el._flatpickr) { try { el._flatpickr.destroy(); } catch { } }
+
+            function classifyCell(fp, node) {
+                node.classList.remove(
+                    'u-only', 'g-only', 'both',
+                    'u-single', 'g-single',
+                    'u-start', 'u-mid', 'u-end',
+                    'g-start', 'g-mid', 'g-end'
+                );
+
+                const iso = isoFromAria(node);
+                if (!iso) return;
+
+                const u = userDates.has(iso);
+                const g = globalDates.has(iso);
+                if (!u && !g) return;
+
+                const prevIso = isoPrev(iso);
+                const nextIso = isoNext(iso);
+
+                const uPrev = userDates.has(prevIso);
+                const uNext = userDates.has(nextIso);
+                const gPrev = globalDates.has(prevIso);
+                const gNext = globalDates.has(nextIso);
+
+                if (u && g) {
+                    // BOTH: user span as pill, global can still be single/multi
+                    node.classList.add('both');
+
+                    // User span (pill)
+                    if (!uPrev && !uNext) {
+                        node.classList.add('u-single');
+                    } else if (!uPrev && uNext) {
+                        node.classList.add('u-start');
+                    } else if (uPrev && uNext) {
+                        node.classList.add('u-mid');
+                    } else if (uPrev && !uNext) {
+                        node.classList.add('u-end');
+                    }
+
+                    // Global adjacency (for circle / spans)
+                    if (!gPrev && !gNext) {
+                        node.classList.add('g-single');
+                    } else if (!gPrev && gNext) {
+                        node.classList.add('g-start');
+                    } else if (gPrev && gNext) {
+                        node.classList.add('g-mid');
+                    } else if (gPrev && !gNext) {
+                        node.classList.add('g-end');
+                    }
+                }
+                else if (u) {
+                    node.classList.add('u-only');
+
+                    if (!uPrev && !uNext) {
+                        node.classList.add('u-single');
+                    } else if (!uPrev && uNext) {
+                        node.classList.add('u-start');
+                    } else if (uPrev && uNext) {
+                        node.classList.add('u-mid');
+                    } else if (uPrev && !uNext) {
+                        node.classList.add('u-end');
+                    }
+                }
+                else if (g) {
+                    node.classList.add('g-only');
+
+                    if (!gPrev && !gNext) {
+                        node.classList.add('g-single');
+                    } else if (!gPrev && gNext) {
+                        node.classList.add('g-start');
+                    } else if (gPrev && gNext) {
+                        node.classList.add('g-mid');
+                    } else if (gPrev && !gNext) {
+                        node.classList.add('g-end');
+                    }
+                }
+            }
+
+            function markDays(fp) {
+                const c = fp?.daysContainer || fp?.innerContainer || fp?.calendarContainer;
+                if (!c) return;
+                c.querySelectorAll('.flatpickr-day').forEach(node => classifyCell(fp, node));
+            }
+
+            // Flatpickr init
+            const fp = flatpickr(el, {
+                inline: true,
+                dateFormat: 'Y-m-d',
+                defaultDate: new Date(),
+                disableMobile: true,
+                onDayCreate: (_, __, inst, dayElem) => classifyCell(inst, dayElem),
+                onReady:       (_, __, inst) => markDays(inst),
+                onMonthChange: (_, __, inst) => markDays(inst),
+                onYearChange:  (_, __, inst) => markDays(inst),
+                onOpen:        (_, __, inst) => markDays(inst),
+                onValueUpdate: (_, __, inst) => markDays(inst)
+            });
+
+            // Re-mark on DOM mutations
+            const grid = fp.daysContainer || fp.innerContainer || fp.calendarContainer;
+            if (window.MutationObserver && grid) {
+                const mo = new MutationObserver(() => markDays(fp));
+                mo.observe(grid, { childList: true, subtree: true });
+            }
+
+            requestAnimationFrame(() => markDays(fp));
+            setTimeout(() => markDays(fp), 0);
+
+            return true;
+        }
+
+        // Boot after DOM & load
+        function boot() { if (!initMiniCalendar()) setTimeout(boot, 80); }
+        document.addEventListener('DOMContentLoaded', boot, { once: true });
+        window.addEventListener('load', boot, { once: true });
+
+        // Expose manual hook for re-renders
+        window.__reinitRightSidebarMiniCalendar = initMiniCalendar;
+    })();
+</script>
+
+<style>
+    /* ========= COLOR PALETTE (3 blues) ========= */
+    :root {
+        --u-fill: #0091FE; /* My events (lightest) */
+        --g-fill: #004AF5; /* Global events (mid)  */
+        --both-dot: #0091FE; /* overlap dot          */
+        --today-ring: #002B7C; /* Today (darkest)      */
+        --span-gap-fix: 4px; /* stretch pills to avoid gaps */
+    }
+
+    .rs-calendar .flatpickr-day {
+        position: relative;
+        overflow: visible;
+    }
+
+        /* =========================================================
+           MULTI-DAY SPANS (pills) – continuous, rounded ends
+           Pills are the BACKGROUND layer (z:-1)
+           ========================================================= */
+
+        /* USER pill (my events + both) */
+        .rs-calendar .flatpickr-day.u-only.u-start::before,
+        .rs-calendar .flatpickr-day.u-only.u-mid::before,
+        .rs-calendar .flatpickr-day.u-only.u-end::before,
+        .rs-calendar .flatpickr-day.both.u-start::before,
+        .rs-calendar .flatpickr-day.both.u-mid::before,
+        .rs-calendar .flatpickr-day.both.u-end::before {
+            content: "";
+            position: absolute;
+            z-index: -1; /* behind circles & text */
+            top: 4px;
+            bottom: 4px;
+            left: calc(-1 * var(--span-gap-fix));
+            right: calc(-1 * var(--span-gap-fix));
+            pointer-events: none;
+            background: var(--u-fill);
+            border-radius: 999px;
+        }
+
+        .rs-calendar .flatpickr-day.u-only.u-mid::before,
+        .rs-calendar .flatpickr-day.both.u-mid::before {
+            border-radius: 0;
+        }
+
+        .rs-calendar .flatpickr-day.u-only.u-start::before,
+        .rs-calendar .flatpickr-day.both.u-start::before {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .rs-calendar .flatpickr-day.u-only.u-end::before,
+        .rs-calendar .flatpickr-day.both.u-end::before {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        /* GLOBAL pill only when it's a pure global span (no user events) */
+        .rs-calendar .flatpickr-day.g-only.g-start::before,
+        .rs-calendar .flatpickr-day.g-only.g-mid::before,
+        .rs-calendar .flatpickr-day.g-only.g-end::before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: 4px;
+            bottom: 4px;
+            left: calc(-1 * var(--span-gap-fix));
+            right: calc(-1 * var(--span-gap-fix));
+            pointer-events: none;
+            background: var(--g-fill);
+            border-radius: 999px;
+        }
+
+        .rs-calendar .flatpickr-day.g-only.g-mid::before {
+            border-radius: 0;
+        }
+
+        .rs-calendar .flatpickr-day.g-only.g-start::before {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .rs-calendar .flatpickr-day.g-only.g-end::before {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        /* =========================================================
+           SINGLE-DAY CIRCLES (events + today)
+           Circles are just background on the cell, so text is always visible.
+           Precedence: today > global single > my single
+           ========================================================= */
+
+        /* My event, single-day */
+        .rs-calendar .flatpickr-day.u-single {
+            background: var(--u-fill) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* Global event, single-day (overrides my single when both) */
+        .rs-calendar .flatpickr-day.g-single {
+            background: var(--g-fill) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* TODAY has highest precedence for the circle color */
+        .rs-calendar .flatpickr-day.today {
+            background: var(--today-ring) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* BOTH indicator: tiny dot in the corner (for any date with both) */
+        .rs-calendar .flatpickr-day.both::after {
+            content: "";
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            right: 6px;
+            bottom: 6px;
+            border-radius: 999px;
+            background: var(--both-dot);
+            pointer-events: none;
+        }
+
+        /* Make sure any filled state keeps the text readable */
+        .rs-calendar .flatpickr-day.u-only,
+        .rs-calendar .flatpickr-day.g-only,
+        .rs-calendar .flatpickr-day.both,
+        .rs-calendar .flatpickr-day.today {
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+            /* Flatpickr selected state still works (click/tap) */
+            .rs-calendar .flatpickr-day.selected,
+            .rs-calendar .flatpickr-day.startRange,
+            .rs-calendar .flatpickr-day.endRange,
+            .rs-calendar .flatpickr-day.today.selected {
+                background: var(--today-ring) !important;
+                color: #fff !important;
+            }
+
+    /* ---- Legend: small text, darker -> lighter ---- */
+    .right-sidebar .rs-legend {
+        font-size: 0.7rem;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+        .right-sidebar .rs-legend .legend-item {
+            font-size: 0.7rem;
+        }
+
+    .rs-legend .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        border: 2px solid #cbd5e1;
+        background: #fff;
+    }
+
+        .rs-legend .dot.today {
+            background: var(--today-ring);
+            border-color: transparent;
+        }
+
+        .rs-legend .dot.global {
+            background: var(--g-fill);
+            border-color: transparent;
+        }
+
+        .rs-legend .dot.user {
+            background: var(--u-fill);
+            border-color: transparent;
+        }
+
+        .rs-legend .dot.both {
+            background: var(--u-fill);
+            position: relative;
+            border-color: transparent;
+        }
+
+            .rs-legend .dot.both::after {
+                content: "";
+                position: absolute;
+                width: 5px;
+                height: 5px;
+                border-radius: 999px;
+                right: -2px;
+                bottom: -2px;
+                background: var(--both-dot);
+            }
+</style>

@@ -122,301 +122,269 @@
             background: #eaf1ff;
         }
 
-    /* ============== MINI CALENDAR (uniform scale) ============== */
-    .right-sidebar .rs-calendar {
-        margin-top: 4px;
+/* red dot on bell */
+.rs-bell {
+    position: relative;
+}
+
+    .rs-bell .rs-dot {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 9px;
+        height: 9px;
+        background: #ef4444;
+        border-radius: 999px;
+        box-shadow: 0 0 0 2px #fff;
     }
 
-        .right-sidebar .rs-calendar .rs-cal-wrap {
-            border: none !important;
-            background: transparent !important;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            overflow: visible;
-        }
+/* ============== MINI CALENDAR (uniform scale) ============== */
+.right-sidebar .rs-calendar {
+    margin-top: 4px;
+}
 
-        .right-sidebar .rs-calendar .flatpickr-input {
-            display: none;
-        }
-
-        .right-sidebar .rs-calendar .flatpickr-calendar {
-            border: 0 !important;
-            box-shadow: none !important;
-            background: transparent !important;
-            transform: scale(var(--rs-cal-scale));
-            transform-origin: top center;
-            will-change: transform;
-        }
-
-        .right-sidebar .rs-calendar .flatpickr-weekdays {
-            background: transparent !important;
-            border: none !important;
-            margin: 0;
-        }
-
-        .right-sidebar .rs-calendar .flatpickr-weekday {
-            color: #6b7280;
-            font-weight: 600;
-        }
-
-        .right-sidebar .rs-calendar .flatpickr-day.today:not(.selected) {
-            border: 2px solid #0252A9 !important;
-            color: #0252A9 !important;
-            background: transparent !important;
-        }
-
-            .right-sidebar .rs-calendar .flatpickr-day.today:not(.selected):hover {
-                border-color: #0252A9 !important;
-                background: #E5EFFB !important;
-                color: #0252A9 !important;
-            }
-
-        .right-sidebar .rs-calendar .flatpickr-day.today {
-            background: #0252A9 !important;
-            border-color: #0252A9 !important; 
-            color: #fff !important; 
-        }
-
-            .right-sidebar .rs-calendar .flatpickr-day.today:hover {
-                background: #013f87 !important; 
-                border-color: #013f87 !important;
-                color: #fff !important;
-            }
-
-        
-        .right-sidebar .rs-calendar .flatpickr-day.today {
-            background: #0252A9 !important;
-            border-color: #0252A9 !important;
-            color: #fff !important;
-        }
-
-            .right-sidebar .rs-calendar .flatpickr-day.today:hover {
-                background: #014587 !important;
-                border-color: #014587 !important;
-            }
-
-            
-            .right-sidebar .rs-calendar .flatpickr-day.selected,
-            .right-sidebar .rs-calendar .flatpickr-day.startRange,
-            .right-sidebar .rs-calendar .flatpickr-day.endRange,
-            .right-sidebar .rs-calendar .flatpickr-day.today.selected {
-                background: #0252A9 !important;
-                border-color: #0252A9 !important;
-                color: #fff !important;
-            }
-
-                .right-sidebar .rs-calendar .flatpickr-day.selected:hover,
-                .right-sidebar .rs-calendar .flatpickr-day.startRange:hover,
-                .right-sidebar .rs-calendar .flatpickr-day.endRange:hover,
-                .right-sidebar .rs-calendar .flatpickr-day.today.selected:hover {
-                    background: #014587 !important;
-                    border-color: #014587 !important;
-                }
-
-        .right-sidebar .rs-calendar .flatpickr-day.inRange {
-            background: rgba(2, 82, 169, 0.15) !important; 
-            border-color: transparent !important;
-            color: var(--rs-ink);
-        }
-
-    /* ============== LEGEND ============== */
-    .right-sidebar .rs-legend {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin: 6px 2px 16px;
-    }
-
-        .right-sidebar .rs-legend .legend-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: .78rem;
-            color: var(--rs-muted);
-        }
-
-        .right-sidebar .rs-legend .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-            .right-sidebar .rs-legend .dot.event {
-                background: var(--rs-brand);
-            }
-
-            .right-sidebar .rs-legend .dot.today {
-                background: transparent;
-                box-shadow: inset 0 0 0 2px var(--rs-brand);
-            }
-
-    /* ============== LIST / ITEM BASE ============== */
-    .right-sidebar .rs-list {
-        list-style: none;
-        margin: 0;
+    .right-sidebar .rs-calendar .rs-cal-wrap {
+        border: none !important;
+        background: transparent !important;
         padding: 0;
         display: flex;
-        flex-direction: column;
-        gap: 10px;
+        justify-content: center;
+        overflow: visible;
     }
 
-    .right-sidebar .rs-item {
-        position: relative;
-        display: flex;
+    .right-sidebar .rs-calendar .flatpickr-input {
+        display: none;
+    }
+
+    .right-sidebar .rs-calendar .flatpickr-calendar {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        transform: scale(var(--rs-cal-scale));
+        transform-origin: top center;
+        will-change: transform;
+    }
+
+    .right-sidebar .rs-calendar .flatpickr-weekdays {
+        background: transparent !important;
+        border: none !important;
+        margin: 0;
+    }
+
+    .right-sidebar .rs-calendar .flatpickr-weekday {
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+/* We intentionally do NOT style .flatpickr-day here;
+   all event/today visuals are handled in Default.cshtml */
+
+/* ============== LEGEND ============== */
+.right-sidebar .rs-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 2px 16px;
+}
+
+    .right-sidebar .rs-legend .legend-item {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 18px;
-        border: none;
-        border-radius: 12px;
-        background: transparent;
-        transition: background .1s ease;
-    }
-
-    .right-sidebar .rs-item-l {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-    }
-
-    .right-sidebar .rs-item-text {
-        min-width: 0;
-    }
-
-    .right-sidebar .rs-item-title {
-        font-weight: 700;
-        color: var(--rs-ink);
-        font-size: .92rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 180px;
-    }
-
-    .right-sidebar .rs-sub {
-        color: var(--rs-muted);
+        gap: 6px;
         font-size: .78rem;
+        color: var(--rs-muted);
+    }
+
+    .right-sidebar .rs-legend .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+/* ============== LIST / ITEM BASE ============== */
+.right-sidebar .rs-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.right-sidebar .rs-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    transition: background .1s ease;
+}
+
+.right-sidebar .rs-item-l {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.right-sidebar .rs-item-text {
+    min-width: 0;
+}
+
+.right-sidebar .rs-item-title {
+    font-weight: 700;
+    color: var(--rs-ink);
+    font-size: .92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.right-sidebar .rs-sub {
+    color: var(--rs-muted);
+    font-size: .78rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.right-sidebar .rs-when {
+    font-size: .78rem;
+    color: var(--rs-muted);
+    white-space: nowrap;
+}
+
+.right-sidebar .rs-icon-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: var(--rs-brand);
+    background: transparent;
+    margin-top: -21px;
+}
+
+/* ============== NOTIFICATIONS ============== */
+.right-sidebar .rs-item--notif {
+    background: var(--rs-soft);
+    padding: 22px 96px 16px 18px;
+    min-height: 64px;
+}
+
+    .right-sidebar .rs-item--notif .rs-icon-pill {
+        color: var(--rs-brand);
+    }
+
+    .right-sidebar .rs-item--notif .rs-when {
+        position: absolute;
+        top: 20px;
+        right: 16px;
+        font-size: .76rem;
+        color: var(--rs-muted);
+    }
+
+    .right-sidebar .rs-item--notif .rs-item-text {
         display: flex;
-        align-items: center;
+        flex-direction: column;
         gap: 6px;
     }
 
-    .right-sidebar .rs-when {
-        font-size: .78rem;
-        color: var(--rs-muted);
-        white-space: nowrap;
+/* ============== EVENTS (Upcoming) ============== */
+.right-sidebar .rs-item--event {
+    background: var(--rs-event);
+    color: #fff;
+    padding: 22px 96px 16px 18px;
+    min-height: 64px;
+}
+
+    .right-sidebar .rs-item--event .rs-when {
+        position: absolute;
+        top: 20px;
+        right: 16px;
+        font-size: .76rem;
+        color: rgba(255, 255, 255, .85);
     }
 
-    .right-sidebar .rs-icon-pill {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        color: var(--rs-brand);
-        background: transparent;
-        margin-top: -21px;
-    }
-
-    /* ============== NOTIFICATIONS ============== */
-    .right-sidebar .rs-item--notif {
-        background: var(--rs-soft);
-        padding: 22px 96px 16px 18px;
-        min-height: 64px;
-    }
-
-        .right-sidebar .rs-item--notif .rs-icon-pill {
-            color: var(--rs-brand);
-        }
-
-        .right-sidebar .rs-item--notif .rs-when {
-            position: absolute;
-            top: 20px;
-            right: 16px;
-            font-size: .76rem;
-            color: var(--rs-muted);
-        }
-
-        .right-sidebar .rs-item--notif .rs-item-text {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-    /* ============== EVENTS (Upcoming) ============== */
-    .right-sidebar .rs-item--event {
-        background: var(--rs-event);
-        color: #fff;
-        padding: 22px 96px 16px 18px;
-        min-height: 64px;
-    }
-
-        .right-sidebar .rs-item--event .rs-when {
-            position: absolute;
-            top: 20px;
-            right: 16px;
-            font-size: .76rem;
-            color: rgba(255,255,255,.85);
-        }
-
-        .right-sidebar .rs-item--event .rs-item-title {
-            color: #fff;
-        }
-
-        .right-sidebar .rs-item--event .rs-item-text {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .right-sidebar .rs-item--event .rs-icon-pill {
-            color: #fff;
-        }
-
-    /* ============== Details Link ============== */
-    .right-sidebar .rs-details {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 700;
-        font-size: .82rem;
-        color: var(--rs-brand);
-        text-decoration: none;
-        transition: color .15s ease;
-    }
-
-        .right-sidebar .rs-details:hover {
-            text-decoration: underline;
-            color: #1d4ed8;
-        }
-
-    .right-sidebar .rs-details-arrow i {
-        font-size: .7rem;
-        line-height: 1;
-        transition: transform .2s ease;
-    }
-
-    .right-sidebar .rs-details:hover .rs-details-arrow i {
-        transform: translateX(3px);
-    }
-
-    .right-sidebar .rs-item--event .rs-details {
+    .right-sidebar .rs-item--event .rs-item-title {
         color: #fff;
     }
 
-        .right-sidebar .rs-item--event .rs-details:hover {
-            color: #fff;
-            text-decoration: underline;
-        }
-
-    /* ============== EMPTY STATE ============== */
-    .right-sidebar .rs-empty {
-        padding: 12px;
-        color: var(--rs-muted);
-        text-align: center;
-        border: 1px dashed var(--rs-line);
-        border-radius: 10px;
-        background: #f9fafb;
+    .right-sidebar .rs-item--event .rs-item-text {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
+
+    .right-sidebar .rs-item--event .rs-icon-pill {
+        color: #fff;
+    }
+
+/* GLOBAL pill in upcoming list */
+.rs-tag {
+    display: inline-block;
+    font-size: .65rem;
+    line-height: 1;
+    padding: .2rem .4rem;
+    border-radius: .4rem;
+    margin-right: .35rem;
+    vertical-align: 1px;
+    font-weight: 700;
+}
+
+.rs-tag--global {
+    background: #0EA5E9;
+    color: #ffffff;
+    border: 1px solid #0EA5E9;
+}
+
+/* ============== Details Link ============== */
+.right-sidebar .rs-details {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: .82rem;
+    color: var(--rs-brand);
+    text-decoration: none;
+    transition: color .15s ease;
+}
+
+    .right-sidebar .rs-details:hover {
+        text-decoration: underline;
+        color: #1d4ed8;
+    }
+
+.right-sidebar .rs-details-arrow i {
+    font-size: .7rem;
+    line-height: 1;
+    transition: transform .2s ease;
+}
+
+.right-sidebar .rs-details:hover .rs-details-arrow i {
+    transform: translateX(3px);
+}
+
+.right-sidebar .rs-item--event .rs-details {
+    color: #fff;
+}
+
+    .right-sidebar .rs-item--event .rs-details:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+
+/* ============== EMPTY STATE ============== */
+.right-sidebar .rs-empty {
+    padding: 12px;
+    color: var(--rs-muted);
+    text-align: center;
+    border: 1px dashed var(--rs-line);
+    border-radius: 10px;
+    background: #f9fafb;
+}
