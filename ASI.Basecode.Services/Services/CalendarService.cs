@@ -13,11 +13,16 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly ICalendarEventRepository _events;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _users;   // 👈 NEW: for global recipients
 
-        public CalendarService(ICalendarEventRepository eventsRepo, INotificationService notificationService)
+        public CalendarService(
+            ICalendarEventRepository eventsRepo,
+            INotificationService notificationService,
+            IUserRepository users)
         {
             _events = eventsRepo;
             _notificationService = notificationService;
+            _users = users;
         }
 
         private static bool CanEdit(ClaimsPrincipal principal, CalendarEvent e, int actorId)
@@ -64,6 +69,8 @@ namespace ASI.Basecode.Services.Services
             var endUtc = DateTime.SpecifyKind(input.EndUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
 
             var tz = string.IsNullOrWhiteSpace(input.TimeZoneId) ? "Asia/Manila" : input.TimeZoneId;
+
+            // ADMIN can decide if it's global; others always create personal events
             var willBeGlobal = isAdmin && input.IsGlobal;
             var ownerUserId = willBeGlobal ? (int?)null : actorId;
 
@@ -85,7 +92,63 @@ namespace ASI.Basecode.Services.Services
 
             _events.Add(entity);
 
-            _notificationService.AddNotification(actorId, "New Event Added", "A new event has been added to the calendar.");
+            // Build a safe DateTime representation for notifications
+            DateTime startLocalForNotif;
+            if (entity.IsAllDay && entity.LocalStartDate.HasValue)
+            {
+                var d = entity.LocalStartDate.Value;  // DateOnly or DateTime, both support Year/Month/Day
+                startLocalForNotif = new DateTime(d.Year, d.Month, d.Day);
+            }
+            else
+            {
+                startLocalForNotif = entity.StartUtc.ToLocalTime();
+            }
+
+            // ---------- NOTIFICATIONS ----------
+            if (willBeGlobal && isAdmin)
+            {
+                // 1) Admin's own "My Activity" (optional but nice)
+                if (actorId > 0)
+                {
+                    _notificationService.NotifyUserEventCreated(
+                        ownerUserId: actorId,
+                        title: entity.Title,
+                        startLocal: startLocalForNotif,
+                        actorUserId: actorId
+                    );
+                }
+
+                // 2) System Updates for all Students + Teachers
+                var recipients = _users.GetUsers()
+                    .Where(u => (u.Role == "Student" || u.Role == "Teacher") && u.UserId != actorId)
+                    .Select(u => u.UserId)
+                    .ToList();
+
+                foreach (var uid in recipients)
+                {
+                    _notificationService.AddNotification(
+                        userId: uid,
+                        title: "New global event",
+                        message: $"A new global event \"{entity.Title}\" is scheduled on {startLocalForNotif:MMM dd, yyyy}.",
+                        kind: NotificationKind.System,        // stays in Updates
+                        category: "Events",
+                        actorUserId: actorId                  // admin is the actor
+                    );
+                }
+            }
+            else
+            {
+                // Non-global event: this is the actor's own personal event → My Activity
+                if (ownerUserId.HasValue && ownerUserId.Value > 0)
+                {
+                    _notificationService.NotifyUserEventCreated(
+                        ownerUserId: ownerUserId.Value,
+                        title: entity.Title,
+                        startLocal: startLocalForNotif,
+                        actorUserId: actorId
+                    );
+                }
+            }
 
             return Task.FromResult(new CalendarEventVm
             {
@@ -127,7 +190,9 @@ namespace ASI.Basecode.Services.Services
                 e.UserId = e.IsGlobal ? (int?)null : actorId;
             }
 
-            e.TimeZoneId = string.IsNullOrWhiteSpace(input.TimeZoneId) ? (e.TimeZoneId ?? "Asia/Manila") : input.TimeZoneId;
+            e.TimeZoneId = string.IsNullOrWhiteSpace(input.TimeZoneId)
+                ? (e.TimeZoneId ?? "Asia/Manila")
+                : input.TimeZoneId;
 
             if (input.IsAllDay)
             {
@@ -143,7 +208,25 @@ namespace ASI.Basecode.Services.Services
             e.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             _events.Update(e);
 
-            _notificationService.AddNotification(actorId, "Event Updated", "An existing event has been updated in the calendar.");
+            // For now, only notify the actor about their own activity.
+            // (You can later add global update broadcasts if you want.)
+            DateTime startLocalForNotif;
+            if (e.IsAllDay && e.LocalStartDate.HasValue)
+            {
+                var d = e.LocalStartDate.Value;
+                startLocalForNotif = new DateTime(d.Year, d.Month, d.Day);
+            }
+            else
+            {
+                startLocalForNotif = e.StartUtc.ToLocalTime();
+            }
+
+            _notificationService.NotifyUserEventUpdated(
+                ownerUserId: actorId,
+                title: e.Title,
+                startLocal: startLocalForNotif,
+                actorUserId: actorId
+            );
 
             return Task.FromResult(new CalendarEventVm
             {
@@ -165,7 +248,16 @@ namespace ASI.Basecode.Services.Services
             if (e == null) return Task.CompletedTask;
             if (!CanEdit(principal, e, actorId)) return Task.CompletedTask;
 
+            var title = e.Title; // capture before delete
             _events.Delete(id);
+
+            // Actor’s own My Activity
+            _notificationService.NotifyUserEventDeleted(
+                ownerUserId: actorId,
+                title: title,
+                actorUserId: actorId
+            );
+
             return Task.CompletedTask;
         }
     }

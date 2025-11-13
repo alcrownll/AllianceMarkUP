@@ -187,27 +187,59 @@
                 eventDurationEditable: (arg) => (arg.event.extendedProps?.canEdit === true),
                 eventAllow: (dropInfo, draggedEvent) => draggedEvent.extendedProps?.canEdit === true,
 
+                // ✅ Adjusted event card content (better title + multi-day handling)
                 eventContent: (arg) => {
                     const ev = arg.event;
-                    const x  = ev.extendedProps || {};
+                    const x = ev.extendedProps || {};
                     const root = document.createElement('div');
                     root.className = 'evt-card';
 
+                    // Safer title resolution
+                    const rawTitle =
+                        ev.title ||
+                        (ev._def && ev._def.title) ||
+                        (arg && arg.event && arg.event._def && arg.event._def.title) ||
+                        '(Untitled)';
+
                     const title = document.createElement('div');
                     title.className = 'evt-title';
-                    title.textContent = ev.title || '(Untitled)';
+                    title.textContent = rawTitle;
 
                     const row = document.createElement('div');
                     row.className = 'evt-row';
 
-                    const hashKey = (x.category || x.calendarId || x.program || ev.id || ev.title || '');
-                    let h = 0; for (let i = 0; i < hashKey.length; i++) h = (h * 31 + hashKey.charCodeAt(i)) | 0;
+                    const hashKey = (x.category || x.calendarId || x.program || ev.id || rawTitle || '');
+                    let h = 0;
+                    for (let i = 0; i < hashKey.length; i++) {
+                        h = (h * 31 + hashKey.charCodeAt(i)) | 0;
+                    }
                     const idx = Math.abs(h) % 10;
 
                     const chip = document.createElement('span');
                     chip.className = 'evt-chip';
-                    const fmt = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    chip.innerHTML = `<span class="evt-dot evt-dot-${idx}"></span>${ev.allDay ? 'All day' : (ev.start ? (ev.end ? (fmt(ev.start) + ' – ' + fmt(ev.end)) : fmt(ev.start)) : '')}`;
+
+                    const fmtTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    // Nice handling for all-day & multi-day
+                    let timeLabel = '';
+                    if (ev.allDay) {
+                        if (ev.start && ev.end && ev.start.toDateString() !== ev.end.toDateString()) {
+                            const s = ev.start.toLocaleDateString();
+                            const e = ev.end.toLocaleDateString();
+                            timeLabel = `${s} – ${e}`;
+                        } else {
+                            timeLabel = 'All day';
+                        }
+                    } else if (ev.start) {
+                        if (ev.end) {
+                            timeLabel = `${fmtTime(ev.start)} – ${fmtTime(ev.end)}`;
+                        } else {
+                            timeLabel = fmtTime(ev.start);
+                        }
+                    }
+
+                    chip.innerHTML =
+                        `<span class="evt-dot evt-dot-${idx}"></span>${timeLabel || ''}`;
                     row.appendChild(chip);
 
                     if (x.location) {
@@ -237,7 +269,7 @@
                     locEl.value = '';
                     allDayEl.checked = info.allDay;
                     startLocalEl.value = toInputValue(info.start);
-                    endLocalEl.value   = toInputValue(info.end || info.start);
+                    endLocalEl.value = toInputValue(info.end || info.start);
 
                     // Reset hidden bools
                     document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
@@ -261,9 +293,9 @@
                     locEl.value = x.location || '';
                     allDayEl.checked = info.event.allDay || false;
                     startLocalEl.value = toInputValue(info.event.start);
-                    endLocalEl.value   = toInputValue(info.event.end || info.event.start);
+                    endLocalEl.value = toInputValue(info.event.end || info.event.start);
 
-                    // Mirror to hiddens now too (so read-only view shows accurate state if submitted accidentally)
+                    // Mirror to hiddens now too
                     document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
                     const igHidden = document.getElementById('isGlobalHidden');
                     if (igHidden) igHidden.value = x.isGlobal ? 'true' : 'false';
@@ -273,7 +305,7 @@
                         setReadOnlyMode(false);
                         btnDelete.classList.remove('d-none');
                     } else {
-                        setReadOnlyMode(true);     // <- key line: view-only mode
+                        setReadOnlyMode(true);
                     }
 
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('eventModal')).show();
@@ -290,7 +322,8 @@
                 eventClassNames: (arg) => {
                     const e = arg.event.extendedProps || {};
                     const key = e.category || e.calendarId || e.program || arg.event.id || arg.event.title || '';
-                    let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+                    let h = 0;
+                    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
                     const idx = Math.abs(h) % 10;
                     const classes = ['evt-badge', `evt-color-${idx}`];
                     if (e.isGlobal) classes.push('evt-global');
@@ -299,23 +332,33 @@
 
                 eventTimeFormat: { hour: '2-digit', minute: '2-digit', meridiem: true }
             });
+
             calendar.render();
+
+            function syncTitle() {
+                document.getElementById('calTitle').innerText = calendar.view.title;
+            }
+            syncTitle();
 
             // toolbar actions
             document.getElementById('btnPrev').addEventListener('click', () => { calendar.prev(); syncTitle(); });
             document.getElementById('btnNext').addEventListener('click', () => { calendar.next(); syncTitle(); });
             document.getElementById('btnToday').addEventListener('click', () => { calendar.today(); syncTitle(); });
+
             const btnMonth = document.getElementById('btnMonth');
-            const btnWeek  = document.getElementById('btnWeek');
-            const btnDay   = document.getElementById('btnDay');
-            const btnList  = document.getElementById('btnList');
-            function setActive(btn){ [btnMonth, btnWeek, btnDay, btnList].forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+            const btnWeek = document.getElementById('btnWeek');
+            const btnDay = document.getElementById('btnDay');
+            const btnList = document.getElementById('btnList');
+
+            function setActive(btn) {
+                [btnMonth, btnWeek, btnDay, btnList].forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
             btnMonth.addEventListener('click', () => { calendar.changeView('dayGridMonth'); setActive(btnMonth); syncTitle(); });
-            btnWeek .addEventListener('click', () => { calendar.changeView('timeGridWeek'); setActive(btnWeek ); syncTitle(); });
-            btnDay  .addEventListener('click', () => { calendar.changeView('timeGridDay');  setActive(btnDay  ); syncTitle(); });
-            btnList .addEventListener('click', () => { calendar.changeView('listWeek');     setActive(btnList ); syncTitle(); });
-            function syncTitle(){ document.getElementById('calTitle').innerText = calendar.view.title; }
-            syncTitle();
+            btnWeek.addEventListener('click', () => { calendar.changeView('timeGridWeek'); setActive(btnWeek); syncTitle(); });
+            btnDay.addEventListener('click', () => { calendar.changeView('timeGridDay'); setActive(btnDay); syncTitle(); });
+            btnList.addEventListener('click', () => { calendar.changeView('listWeek'); setActive(btnList); syncTitle(); });
 
             // Add button
             document.getElementById('btnAdd').addEventListener('click', () => {
@@ -328,7 +371,7 @@
 
                 const now = new Date();
                 startLocalEl.value = toInputValue(now);
-                endLocalEl.value   = toInputValue(new Date(now.getTime() + 60*60*1000));
+                endLocalEl.value = toInputValue(new Date(now.getTime() + 60 * 60 * 1000));
 
                 // reset hiddens
                 document.getElementById('isAllDayHidden').value = 'false';
@@ -367,14 +410,12 @@
                 }
 
                 document.getElementById('startUtc').value = toUtcISOString(startLocalEl.value);
-                document.getElementById('endUtc').value   = toUtcISOString(endLocalEl.value);
+                document.getElementById('endUtc').value = toUtcISOString(endLocalEl.value);
 
                 document.getElementById('isAllDayHidden').value = allDayEl.checked ? 'true' : 'false';
                 const igHidden = document.getElementById('isGlobalHidden');
                 if (igHidden) igHidden.value = (isGlobalEl && isGlobalEl.checked) ? 'true' : 'false';
             });
-
-            function syncTitle(){ document.getElementById('calTitle').innerText = calendar.view.title; }
         });
     </script>
 }

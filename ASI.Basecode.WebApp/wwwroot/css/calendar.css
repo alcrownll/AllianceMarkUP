@@ -89,7 +89,9 @@
     text-decoration: none !important;
 }
 
-.fc .fc-scrollgrid, .fc .fc-theme-standard td, .fc .fc-theme-standard th {
+.fc .fc-scrollgrid,
+.fc .fc-theme-standard td,
+.fc .fc-theme-standard th {
     border-color: var(--cal-grid-border);
 }
 
@@ -97,7 +99,8 @@
     background: var(--cal-header-bg);
 }
 
-.fc .fc-col-header-cell, .fc .fc-col-header-cell-cushion {
+.fc .fc-col-header-cell,
+.fc .fc-col-header-cell-cushion {
     background: transparent !important;
     color: var(--cal-header-fg) !important;
 }
@@ -117,56 +120,79 @@
 }
 
 /* Hover feedback */
-.fc .fc-daygrid-day, .fc .fc-timegrid-slot {
+.fc .fc-daygrid-day,
+.fc .fc-timegrid-slot {
     transition: background .12s ease;
 }
 
-    .fc .fc-daygrid-day:hover, .fc .fc-timegrid-slot:hover {
+    .fc .fc-daygrid-day:hover,
+    .fc .fc-timegrid-slot:hover {
         background: #f8fafc;
     }
 
 /* Today highlight */
-.fc .fc-day-today, .fc .fc-timegrid-col.fc-day-today {
+.fc .fc-day-today,
+.fc .fc-timegrid-col.fc-day-today {
     background: var(--today-bg) !important;
     border: 0 !important;
 }
 
 /* Now indicator */
-.fc .fc-timegrid-now-indicator-line, .fc .fc-timegrid-now-indicator-arrow {
+.fc .fc-timegrid-now-indicator-line,
+.fc .fc-timegrid-now-indicator-arrow {
     border-color: #ef4444 !important;
 }
 
 /* ===========================
-   EVENT CARDS (new design)
+   FORCE EVENT COLORS (fix hidden titles)
    =========================== */
-.fc .fc-event.evt-badge {
+
+/* 🔥 Make *all* events use light background + dark text */
+.fc .fc-event {
     background: var(--evt-bg) !important;
     color: var(--evt-fg) !important;
-    border: 1px solid var(--evt-border) !important;
-    border-radius: .65rem;
-    padding: .35rem .55rem .45rem .65rem;
-    box-shadow: var(--evt-shadow);
-    position: relative;
-    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    border-color: var(--evt-border) !important;
 }
 
-    /* Hover */
-    .fc .fc-event.evt-badge:hover {
-        background: var(--evt-hover) !important;
-        box-shadow: var(--evt-shadow-hover);
-        transform: translateY(-1px);
+    /* Some variants (multi-day/all-day) use inner elements; force them too */
+    .fc .fc-event .fc-event-main,
+    .fc .fc-daygrid-block-event .fc-event-main,
+    .fc .fc-daygrid-block-event,
+    .fc .fc-daygrid-event-harness .fc-event {
+        color: var(--evt-fg) !important;
     }
 
-    /* Color strip (left) */
-    .fc .fc-event.evt-badge::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        border-radius: .65rem 0 0 .65rem;
+    /* ===========================
+   EVENT CARDS (new design)
+   =========================== */
+    .fc .fc-event.evt-badge {
+        background: var(--evt-bg) !important;
+        color: var(--evt-fg) !important;
+        border: 1px solid var(--evt-border) !important;
+        border-radius: .65rem;
+        padding: .35rem .55rem .45rem .65rem;
+        box-shadow: var(--evt-shadow);
+        position: relative;
+        transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
     }
+
+        /* Hover */
+        .fc .fc-event.evt-badge:hover {
+            background: var(--evt-hover) !important;
+            box-shadow: var(--evt-shadow-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Color strip (left) */
+        .fc .fc-event.evt-badge::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: .65rem 0 0 .65rem;
+        }
 
 /* Card content helpers */
 .evt-card {
@@ -174,15 +200,18 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    /* Make sure text inherits our dark color */
+    color: var(--evt-fg);
 }
 
+/* ✅ Titles can wrap; no more "invisible" names in narrow/multi-day cells */
 .evt-title {
     font-weight: 800;
     line-height: 1.15;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
     font-size: .92rem;
+    color: var(--evt-fg) !important;
 }
 
 .evt-row {
@@ -198,7 +227,7 @@
     align-items: center;
     gap: 6px;
     background: var(--chip-bg);
-    color: var(--chip-fg);
+    color: var(--chip-fg) !important;
     border-radius: .5rem;
     padding: .1rem .45rem;
     font-size: .72rem;
@@ -224,7 +253,7 @@
     font-weight: 700;
     letter-spacing: .2px;
     background: var(--badge-bg);
-    color: var(--badge-fg);
+    color: var(--badge-fg) !important;
 }
 
 /* Timegrid spacing */
@@ -234,7 +263,6 @@
 
 /* ===========================
    COLOR SYSTEM (10 hues)
-   Sets: strip (::before) + dot color
    =========================== */
 .fc .evt-color-0::before, .evt-dot-0 {
     background: #6366f1;

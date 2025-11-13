@@ -20,6 +20,9 @@
 
     var userDatesJson = JsonSerializer.Serialize(Model.UserEventDates ?? new HashSet<string>());
     var globalDatesJson = JsonSerializer.Serialize(Model.GlobalEventDates ?? new HashSet<string>());
+
+    // Only students/teachers should see the bell
+    var showBell = User.IsInRole("Student") || User.IsInRole("Teacher");
 }
 
 <div class="rs">
@@ -44,13 +47,17 @@
                 <div class="rs-role">@Model.Role</div>
             </div>
 
-            <a href="@updatesLink" class="rs-icon-btn rs-bell" aria-label="Notifications (Updates)">
-                <i class="fa-solid fa-bell"></i>
-                @if (Model.UnreadUpdatesCount > 0)
-                {
-                    <span class="rs-dot" aria-hidden="true"></span>
-                }
-            </a>
+            @* Bell only for Student / Teacher *@
+            @if (showBell)
+            {
+                <a href="@updatesLink" class="rs-icon-btn rs-bell" aria-label="Notifications (Updates)">
+                    <i class="fa-solid fa-bell"></i>
+                    @if (Model.UnreadUpdatesCount > 0)
+                    {
+                        <span class="rs-dot" aria-hidden="true"></span>
+                    }
+                </a>
+            }
         </div>
     </section>
 
