@@ -70,9 +70,10 @@
                 const gNext = globalDates.has(nextIso);
 
                 if (u && g) {
-                    // BOTH: visual base is "my events" pill + dot
+                    // BOTH: user span as pill, global can still be single/multi
                     node.classList.add('both');
 
+                    // User span (pill)
                     if (!uPrev && !uNext) {
                         node.classList.add('u-single');
                     } else if (!uPrev && uNext) {
@@ -82,7 +83,19 @@
                     } else if (uPrev && !uNext) {
                         node.classList.add('u-end');
                     }
-                } else if (u) {
+
+                    // Global adjacency (for circle / spans)
+                    if (!gPrev && !gNext) {
+                        node.classList.add('g-single');
+                    } else if (!gPrev && gNext) {
+                        node.classList.add('g-start');
+                    } else if (gPrev && gNext) {
+                        node.classList.add('g-mid');
+                    } else if (gPrev && !gNext) {
+                        node.classList.add('g-end');
+                    }
+                }
+                else if (u) {
                     node.classList.add('u-only');
 
                     if (!uPrev && !uNext) {
@@ -94,7 +107,8 @@
                     } else if (uPrev && !uNext) {
                         node.classList.add('u-end');
                     }
-                } else if (g) {
+                }
+                else if (g) {
                     node.classList.add('g-only');
 
                     if (!gPrev && !gNext) {
@@ -164,57 +178,15 @@
 
     .rs-calendar .flatpickr-day {
         position: relative;
-        z-index: 0;
         overflow: visible;
     }
 
-        /* TODAY ring only when there is NO event */
-        .rs-calendar .flatpickr-day.today:not(.selected):not(.u-only):not(.g-only):not(.both) {
-            box-shadow: inset 0 0 0 2px var(--today-ring) !important;
-            color: var(--today-ring) !important;
-            background: transparent !important;
-        }
-
-        /* =========================================================
-           SINGLE-DAY EVENTS (no neighbors)
-           ========================================================= */
-
-        /* my events only, single */
-        .rs-calendar .flatpickr-day.u-only.u-single,
-        /* both (my + global), single */
-        .rs-calendar .flatpickr-day.both.u-single {
-            background: var(--u-fill) !important;
-            border-radius: 999px !important;
-            color: #fff !important;
-            text-shadow: 0 1px 0 rgba(0,0,0,.25);
-        }
-
-        /* global only, single */
-        .rs-calendar .flatpickr-day.g-only.g-single {
-            background: var(--g-fill) !important;
-            border-radius: 999px !important;
-            color: #fff !important;
-            text-shadow: 0 1px 0 rgba(0,0,0,.25);
-        }
-
-        /* BOTH single-day: circle + small dot */
-        .rs-calendar .flatpickr-day.both.u-single::after {
-            content: "";
-            position: absolute;
-            right: 6px;
-            bottom: 6px;
-            width: 6px;
-            height: 6px;
-            border-radius: 999px;
-            background: var(--both-dot);
-            pointer-events: none;
-        }
-
         /* =========================================================
            MULTI-DAY SPANS (pills) – continuous, rounded ends
+           Pills are the BACKGROUND layer (z:-1)
            ========================================================= */
 
-        /* MY events (and BOTH use this pill as base) */
+        /* USER pill (my events + both) */
         .rs-calendar .flatpickr-day.u-only.u-start::before,
         .rs-calendar .flatpickr-day.u-only.u-mid::before,
         .rs-calendar .flatpickr-day.u-only.u-end::before,
@@ -223,7 +195,7 @@
         .rs-calendar .flatpickr-day.both.u-end::before {
             content: "";
             position: absolute;
-            z-index: -1;
+            z-index: -1; /* behind circles & text */
             top: 4px;
             bottom: 4px;
             left: calc(-1 * var(--span-gap-fix));
@@ -233,27 +205,24 @@
             border-radius: 999px;
         }
 
-        /* straight middle */
         .rs-calendar .flatpickr-day.u-only.u-mid::before,
         .rs-calendar .flatpickr-day.both.u-mid::before {
             border-radius: 0;
         }
 
-        /* rounded start */
         .rs-calendar .flatpickr-day.u-only.u-start::before,
         .rs-calendar .flatpickr-day.both.u-start::before {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
         }
 
-        /* rounded end */
         .rs-calendar .flatpickr-day.u-only.u-end::before,
         .rs-calendar .flatpickr-day.both.u-end::before {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
 
-        /* GLOBAL (mid blue) pills for global-only spans */
+        /* GLOBAL pill only when it's a pure global span (no user events) */
         .rs-calendar .flatpickr-day.g-only.g-start::before,
         .rs-calendar .flatpickr-day.g-only.g-mid::before,
         .rs-calendar .flatpickr-day.g-only.g-end::before {
@@ -283,11 +252,40 @@
             border-bottom-left-radius: 0;
         }
 
-        /* BOTH (overlap) indicator for spans as well */
-        .rs-calendar .flatpickr-day.both:not(.u-single)::after {
+        /* =========================================================
+           SINGLE-DAY CIRCLES (events + today)
+           Circles are just background on the cell, so text is always visible.
+           Precedence: today > global single > my single
+           ========================================================= */
+
+        /* My event, single-day */
+        .rs-calendar .flatpickr-day.u-single {
+            background: var(--u-fill) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* Global event, single-day (overrides my single when both) */
+        .rs-calendar .flatpickr-day.g-single {
+            background: var(--g-fill) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* TODAY has highest precedence for the circle color */
+        .rs-calendar .flatpickr-day.today {
+            background: var(--today-ring) !important;
+            border-radius: 999px !important;
+            color: #fff !important;
+            text-shadow: 0 1px 0 rgba(0,0,0,.25);
+        }
+
+        /* BOTH indicator: tiny dot in the corner (for any date with both) */
+        .rs-calendar .flatpickr-day.both::after {
             content: "";
             position: absolute;
-            z-index: 1;
             width: 6px;
             height: 6px;
             right: 6px;
@@ -297,30 +295,23 @@
             pointer-events: none;
         }
 
-        /* readable numbers on filled cells */
+        /* Make sure any filled state keeps the text readable */
         .rs-calendar .flatpickr-day.u-only,
         .rs-calendar .flatpickr-day.g-only,
-        .rs-calendar .flatpickr-day.both {
+        .rs-calendar .flatpickr-day.both,
+        .rs-calendar .flatpickr-day.today {
             color: #fff !important;
             text-shadow: 0 1px 0 rgba(0,0,0,.25);
         }
 
-        /* If today also has an event, use the fill instead of just a ring */
-        .rs-calendar .flatpickr-day.today.u-only,
-        .rs-calendar .flatpickr-day.today.g-only,
-        .rs-calendar .flatpickr-day.today.both {
-            box-shadow: none !important;
-            color: #fff !important;
-        }
-
-        /* Keep selected styling strong */
-        .rs-calendar .flatpickr-day.selected,
-        .rs-calendar .flatpickr-day.startRange,
-        .rs-calendar .flatpickr-day.endRange,
-        .rs-calendar .flatpickr-day.today.selected {
-            background: var(--today-ring) !important;
-            color: #fff !important;
-        }
+            /* Flatpickr selected state still works (click/tap) */
+            .rs-calendar .flatpickr-day.selected,
+            .rs-calendar .flatpickr-day.startRange,
+            .rs-calendar .flatpickr-day.endRange,
+            .rs-calendar .flatpickr-day.today.selected {
+                background: var(--today-ring) !important;
+                color: #fff !important;
+            }
 
     /* ---- Legend: small text, darker -> lighter ---- */
     .right-sidebar .rs-legend {

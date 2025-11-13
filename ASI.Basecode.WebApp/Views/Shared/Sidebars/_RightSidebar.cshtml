@@ -2,18 +2,21 @@
 @using System.Text.Json
 
 @{
-    var baseNotifUrl =
-        User.IsInRole("Admin") ? Url.RouteUrl("AdminNotifications") :
-        User.IsInRole("Teacher") ? Url.RouteUrl("TeacherNotifications") :
-                                   Url.RouteUrl("StudentNotifications");
+    // Notifications base URL: match nav behavior per role
+    var notifBaseUrl =
+        User.IsInRole("Admin") ? Url.Action("Notifications", "Admin") :
+        User.IsInRole("Teacher") ? Url.Action("Notifications", "Teacher") :
+                                   Url.Action("Notifications", "Student");
 
+    // Calendar base URL: match nav behavior per role
     var baseCalUrl =
-        User.IsInRole("Admin") ? Url.RouteUrl("AdminCalendar") :
-        User.IsInRole("Teacher") ? Url.RouteUrl("TeacherCalendar") :
-                                   Url.RouteUrl("StudentCalendar");
+        User.IsInRole("Admin") ? Url.Action("Calendar", "Admin") :
+        User.IsInRole("Teacher") ? Url.Action("Calendar", "Teacher") :
+                                   Url.Action("Calendar", "Student");
 
-    var updatesLink = (baseNotifUrl ?? "/Notifications") + "#pane-updates";
-    var allLink = (baseNotifUrl ?? "/Notifications") + "#pane-all";
+    // Tabs for notifications
+    var updatesLink = (notifBaseUrl ?? "/Notifications") + "#pane-updates";
+    var allLink = (notifBaseUrl ?? "/Notifications") + "#pane-all";
 
     var userDatesJson = JsonSerializer.Serialize(Model.UserEventDates ?? new HashSet<string>());
     var globalDatesJson = JsonSerializer.Serialize(Model.GlobalEventDates ?? new HashSet<string>());
@@ -73,7 +76,7 @@
     <section class="rs-card">
         <div class="rs-head">
             <h6>Upcoming Events</h6>
-            <a class="rs-link" href="@(baseCalUrl ?? Url.Action("Calendar", "Student"))">View All</a>
+            <a class="rs-link" href="@baseCalUrl">View All</a>
         </div>
 
         @if (Model.UpcomingEvents?.Any() == true)
@@ -94,7 +97,7 @@
                                     @e.Title
                                 </div>
                                 <a class="rs-details"
-                                   href="@(baseCalUrl ?? Url.Action("Calendar", "Student"))"
+                                   href="@baseCalUrl"
                                    aria-label="View details in Upcoming Events">
                                     Details
                                     <span class="rs-details-arrow">
@@ -137,7 +140,9 @@
                             <div class="rs-icon-pill"><i class="fa-solid @icon"></i></div>
                             <div class="rs-item-text">
                                 <div class="rs-item-title" title="@n.Title">@n.Title</div>
-                                <a class="rs-details" href="@allLink" aria-label="Open Notifications">
+                                <a class="rs-details"
+                                   href="@allLink"
+                                   aria-label="Open Notifications">
                                     Details
                                     <span class="rs-details-arrow">
                                         <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
