@@ -69,6 +69,7 @@ namespace ASI.Basecode.Services.Services
                     StudentName = $"{student.User.FirstName} {student.User.LastName}",
                     Program = student.Program,
                     YearLevel = student.YearLevel?.ToString(),
+                    Section = student.Section,  
                     SelectedTerm = termValue,
                     Terms = new List<TermItem>(),
                     Rows = new List<StudyLoadRow>()
@@ -144,8 +145,9 @@ namespace ASI.Basecode.Services.Services
                 StudentName = $"{student.User.FirstName} {student.User.LastName}",
                 Program = student.Program,
                 YearLevel = student.YearLevel?.ToString(),
-                SelectedTerm = selected,      
-                Terms = terms,               
+                Section = student.Section,  
+                SelectedTerm = selected,
+                Terms = terms,
                 Rows = rows.OrderBy(r => r.Subject).ThenBy(r => r.Type).ToList()
             };
         }

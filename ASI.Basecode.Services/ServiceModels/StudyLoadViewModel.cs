@@ -11,8 +11,9 @@ namespace ASI.Basecode.Services.ServiceModels
         public string StudentName { get; set; }
         public string Program { get; set; }
         public string YearLevel { get; set; }
+        public string Section { get; set; }  
 
-        public string SelectedTerm { get; set; } // e.g., "2025-2026-1"
+        public string SelectedTerm { get; set; } // e.g., 
         public List<TermItem> Terms { get; set; } = new();
 
         public List<StudyLoadRow> Rows { get; set; } = new();
@@ -32,7 +33,7 @@ namespace ASI.Basecode.Services.ServiceModels
     public class TermItem
     {
         public string Value { get; set; }  // "2025-2026-1"
-        public string Text { get; set; }  // "S.Y. 2025-2026 - First Semester"
+        public string Text { get; set; }   // "S.Y. 2025-2026 - First Semester"
         public bool Selected { get; set; }
     }
 
