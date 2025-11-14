@@ -368,6 +368,99 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
+        public async Task<ProfileViewModel> GetAdminProfileAsync(int userId)
+        {
+            var user = await _users.GetUsers()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            var profile = await _profiles.GetUserProfiles()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            if (user == null)
+                return null;
+
+            return new ProfileViewModel
+            {
+                // Users
+                UserId = user.UserId,
+                IdNumber = user.IdNumber,
+                Role = user.Role,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+
+                // Profiles
+                ProfilePictureUrl = profile?.ProfilePictureUrl,
+                MiddleName = profile?.MiddleName,
+                Suffix = profile?.Suffix,
+                MobileNo = profile?.MobileNo,
+                HomeAddress = profile?.HomeAddress,
+                Province = profile?.Province,
+                Municipality = profile?.Municipality,
+                Barangay = profile?.Barangay,
+                DateOfBirth = profile?.DateOfBirth,
+                PlaceOfBirth = profile?.PlaceOfBirth,
+                Age = profile?.Age,
+                MaritalStatus = profile?.MaritalStatus,
+                Gender = profile?.Gender,
+                Religion = profile?.Religion,
+                Citizenship = profile?.Citizenship
+            };
+        }
+
+        public async Task UpdateAdminProfileAsync(int userId, ProfileViewModel input)
+        {
+            ApplyAdminProfileChanges(userId, input);
+
+            _notifications.NotifyProfileUpdated(userId);
+
+            await Task.CompletedTask;
+        }
+
+        private void ApplyAdminProfileChanges(int userId, ProfileViewModel input)
+        {
+            TrimStringProperties(input);
+
+            // Users
+            var user = _users.GetUserById(userId);
+            if (user == null) return;
+
+            user.FirstName = input.FirstName;
+            user.LastName = input.LastName;
+            user.Email = input.Email;
+            _users.UpdateUser(user);
+
+            // Profile
+            var profile = _profiles.GetUserProfileById(userId);
+            if (profile == null)
+            {
+                profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
+                MapProfile(profile, input);
+                _profiles.AddUserProfile(profile);
+            }
+            else
+            {
+                MapProfile(profile, input);
+                _profiles.UpdateUserProfile(profile);
+            }
+
+            if (input.ProfilePhotoFile != null && input.ProfilePhotoFile.Length > 0)
+            {
+                var oldUrl = profile.ProfilePictureUrl;
+                var newUrl = SaveAvatarFile(userId, input.ProfilePhotoFile);
+                if (!string.IsNullOrWhiteSpace(newUrl))
+                {
+                    profile.ProfilePictureUrl = newUrl;
+                    _profiles.UpdateUserProfile(profile);
+                    TryDeleteOldAvatar(oldUrl);
+                }
+            }
+
+        }
+
+
         // ------------------------------------------------------------
         // Helpers
         // ------------------------------------------------------------

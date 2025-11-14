@@ -1,0 +1,152 @@
+﻿@model ASI.Basecode.Services.ServiceModels.ProfileViewModel
+@{
+    Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
+    ViewData["Title"] = "Profile";
+    ViewData["PageHeader"] = "Profile";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/user-profile.css" />
+    <link rel="stylesheet" href="~/css/user-profile-modal.css" />
+}
+
+
+<div class="container my-4">
+    <div class="profile-card">
+        @if (TempData["ProfileUpdatedSuccess"] is string msg)
+        {
+            <div class="alert alert-success mb-3">@msg</div>
+        }
+
+        <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
+        <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
+
+        <form id="profileForm" asp-action="Profile" asp-controller="Admin" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <input type="hidden" asp-for="UserId" data-static="true" />
+            <input type="hidden" name="Role" value="Admin" data-static="true" />
+
+            @* Shared profile fields (name, email, address, DateOfBirth, avatar, etc.) *@
+            @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
+
+            <div class="mt-4 d-flex align-items-center w-100">
+                <div class="d-flex gap-2">
+                    <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
+                    <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
+                    <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
+                </div>
+
+                <button type="button" class="btn btn-primary ms-auto" data-bs-toggle="modal"
+                    data-bs-target="#changePasswordModal">
+                    Change Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const form = document.getElementById('profileForm');
+            const btnEdit = document.getElementById('btnEdit');
+            const btnSave = document.getElementById('btnSave');
+            const btnCancel = document.getElementById('btnCancel');
+
+            const avatarInput = document.getElementById('avatarInput');
+            const avatarPreview = document.getElementById('avatarPreview');
+
+            function setFormEditable(isEditable) {
+                const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
+                fields.forEach(el => {
+                    const isHidden = el.type === 'hidden';
+                    const isStatic = el.getAttribute('data-static') === 'true';
+                    const isLocked = el.getAttribute('data-locked') === 'true';
+                    if (isHidden || isStatic || isLocked) return;
+                    el.disabled = !isEditable;
+                });
+
+                btnEdit.classList.toggle('d-none', isEditable);
+                btnSave.classList.toggle('d-none', !isEditable);
+                btnCancel.classList.toggle('d-none', !isEditable);
+                form.classList.toggle('is-readonly', !isEditable);
+            }
+
+            function resetToInitial() {
+                form.reset();
+                if (avatarPreview) {
+                    const existing = '@(Model.ProfilePictureUrl ?? "")';
+                    if (existing) {
+                        avatarPreview.style.backgroundImage = `url('${existing}')`;
+                        avatarPreview.classList.add('has-image');
+                    } else {
+                        avatarPreview.style.backgroundImage = '';
+                        avatarPreview.classList.remove('has-image');
+                    }
+                }
+            }
+
+            setFormEditable(false);
+
+            btnEdit.addEventListener('click', () => setFormEditable(true));
+
+            btnCancel.addEventListener('click', () => {
+                resetToInitial();
+                setFormEditable(false);
+
+                form.querySelectorAll('[data-valmsg-for]').forEach(span => {
+                    span.innerHTML = '';
+                    span.classList.remove('field-validation-error');
+                    span.classList.add('field-validation-valid');
+                });
+
+                form.querySelectorAll('.input-validation-error').forEach(input => {
+                    input.classList.remove('input-validation-error');
+                });
+            });
+
+            if (avatarInput && avatarPreview) {
+                avatarPreview.addEventListener('keydown', function (e) {
+                    if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
+                        e.preventDefault(); avatarInput.click();
+                    }
+                });
+                avatarInput.addEventListener('change', function (e) {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        avatarPreview.style.backgroundImage = `url('${ev.target.result}')`;
+                        avatarPreview.classList.add('has-image');
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                var url = '@(Model.ProfilePictureUrl ?? "")';
+                if (url) {
+                    avatarPreview.style.backgroundImage = `url('${url}')`;
+                    avatarPreview.classList.add('has-image');
+                }
+            }
+        })();
+
+        (function () {
+            'use strict';
+            document.querySelectorAll('.needs-validation').forEach(form => {
+                form.addEventListener('submit', e => {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}
+
+@section Modals {
+    @await Html.PartialAsync("~/Views/Shared/Partials/_ChangePasswordModal.cshtml")
+}

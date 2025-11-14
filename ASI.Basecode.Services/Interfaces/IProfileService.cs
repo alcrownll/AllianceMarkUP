@@ -34,5 +34,8 @@ namespace ASI.Basecode.Services.Interfaces
         /// Admin updates a teacher's profile (My Activity for admin + Updates for teacher).
         /// </summary>
         Task UpdateTeacherProfileByAdminAsync(int adminUserId, int targetUserId, TeacherProfileViewModel input);
+
+        Task<ProfileViewModel> GetAdminProfileAsync(int userId);
+        Task UpdateAdminProfileAsync(int userId, ProfileViewModel input);
     }
 }

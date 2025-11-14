@@ -15,11 +15,13 @@ namespace ASI.Basecode.WebApp.Controllers
     {
         private readonly IAdminDashboardService _dashboardService;
         private readonly IAdminReportsService _reportsService;
+        private readonly IProfileService _profileService;
 
-        public AdminController(IAdminDashboardService dashboardService, IAdminReportsService reportsService)
+        public AdminController(IAdminDashboardService dashboardService, IAdminReportsService reportsService, IProfileService profileService)
         {
             _dashboardService = dashboardService;
             _reportsService = reportsService;
+            _profileService = profileService;
         }
 
         [HttpGet]
@@ -124,6 +126,42 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [Authorize(Roles = "Admin")]
         public IActionResult Notifications() => RedirectToAction("Index", "Notifications");
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Profile()
+        {
+            ViewData["PageHeader"] = "Profile";
+
+            int userId = _profileService.GetCurrentUserId();
+            var vm = await _profileService.GetAdminProfileAsync(userId);
+            if (vm == null) return NotFound();
+
+            return View("AdminProfile", vm);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(ProfileViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewData["PageHeader"] = "Profile";
+                return View("AdminProfile", model);
+            }
+
+            int userId = _profileService.GetCurrentUserId();
+
+            await _profileService.UpdateAdminProfileAsync(userId, model);
+
+            TempData["ProfileUpdatedSuccess"] = "Profile updated successfully.";
+
+            var vm = await _profileService.GetAdminProfileAsync(userId);
+
+            ViewData["PageHeader"] = "Profile";
+            return View("AdminProfile", vm);
+        }
+
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
