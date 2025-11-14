@@ -198,7 +198,11 @@
                     }
                 }
 
-                if (typeof loadProgramTable === 'function') await loadProgramTable();
+                // 🔑 refresh Programs table if the global loader exists
+                if (typeof window.loadProgramTable === 'function') {
+                    await window.loadProgramTable();
+                }
+
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
                 if (window.showToast) showToast(MODE === 'add' ? 'Program created.' : 'Program updated.');
             } catch (err) {

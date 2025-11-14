@@ -10,22 +10,25 @@ using System.Threading.Tasks;
 namespace ASI.Basecode.WebApp.Controllers
 {
     [Authorize(Roles = "Admin")]
-    [Route("admin/courses")] // 🔹 add a route prefix so URLs are /admin/courses/...
+    [Route("admin/courses")]
     public class AdminCoursesController : Controller
     {
         private readonly ICourseService _service;
 
-        // Primary constructor with simplified initialization
         public AdminCoursesController(ICourseService service) => _service = service;
 
-        [HttpGet("")] // GET /admin/courses
+        // Helper method to detect AJAX requests
+        private bool IsAjaxRequest() =>
+            Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+            || Request.Headers["Accept"].ToString().Contains("application/json");
+
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var courses = await _service.GetAllAsync() ?? Enumerable.Empty<Course>();
             return View("~/Views/Admin/AdminCourses.cshtml", courses);
         }
 
-        // 🔹 JSON for the course picker: GET /admin/courses/all
         [HttpGet("all")]
         public async Task<IActionResult> All()
         {
@@ -40,7 +43,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { items });
         }
 
-        // GET /admin/courses/get?id=123  (kept as-is, or you can change to [HttpGet("{id:int}")])
         [HttpGet("get")]
         public async Task<IActionResult> Get(int id)
         {
@@ -61,23 +63,73 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
+            // Always return JSON for this endpoint
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync() ?? Enumerable.Empty<Course>());
+            {
+                var firstError = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .FirstOrDefault() ?? "Validation failed.";
 
-            await _service.CreateAsync(course);
-            return RedirectToAction(nameof(Index));
+                // 400 with JSON body
+                return BadRequest(new { ok = false, message = firstError });
+            }
+
+            try
+            {
+                await _service.CreateAsync(course);
+
+                // 200 with JSON body
+                return Ok(new
+                {
+                    ok = true,
+                    courseId = course.CourseId,
+                    code = course.CourseCode,
+                    description = course.Description
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // e.g. duplicate course code, etc.
+                return Conflict(new { ok = false, message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { ok = false, message = "An error occurred while creating the course." });
+            }
         }
 
         [HttpPost("edit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit([Bind("CourseId,CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
+            // Always return JSON for this endpoint
             if (!ModelState.IsValid)
-                return View("~/Views/Admin/AdminCourses.cshtml", await _service.GetAllAsync() ?? Enumerable.Empty<Course>());
+            {
+                var firstError = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .FirstOrDefault() ?? "Validation failed.";
 
-            await _service.UpdateAsync(course);
-            return RedirectToAction(nameof(Index));
+                return BadRequest(new { ok = false, message = firstError });
+            }
+
+            try
+            {
+                await _service.UpdateAsync(course);
+
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { ok = false, message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { ok = false, message = "An error occurred while updating the course." });
+            }
         }
+
 
         [HttpPost("delete")]
         [ValidateAntiForgeryToken]
@@ -85,39 +137,38 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             try
             {
-                // Attempt to delete the course
                 await _service.DeleteAsync(id);
-                // If no error, pass a success message to be displayed
                 return Json(new { success = true, message = "Course deleted successfully." });
             }
             catch (DbUpdateException ex)
             {
-                // Debugging: Log or inspect the inner exception message
                 if (ex.InnerException != null)
                 {
                     Console.WriteLine($"Error message: {ex.InnerException.Message}");
                 }
 
-                // Check for foreign key violation
                 if (ex.InnerException?.Message.Contains("ProgramCourses_CourseId_fkey") == true)
                 {
-                    // Foreign key violation error
                     return Json(new { success = false, message = "This course cannot be deleted because it is referenced in ProgramCourses or AssignedCourses." });
                 }
                 else
                 {
-                    // Handle other database exceptions
                     return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
                 }
             }
             catch (Exception)
             {
-                // General exception handling (unexpected errors)
                 return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
             }
         }
 
-
+        [HttpGet("list")]
+        public async Task<IActionResult> List()
+        {
+            var courses = await _service.GetAllAsync() ?? Enumerable.Empty<Course>();
+            // Return just the table markup
+            return PartialView("~/Views/Admin/Partials/_CoursesTable.cshtml", courses.ToList());
+        }
 
     }
 }
