@@ -86,7 +86,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (teacherId == 0)
                 {
                     TempData["Error"] = $"Unable to identify teacher. UserId: {userId}, TeacherId: {teacherId}. Please check if you have a Teacher record.";
-                    ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
                     ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                     return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
                 }
@@ -118,7 +117,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.SearchId = searchId;
                 ViewBag.FilteredStudents = filteredStudents;
                 ViewBag.HasFilters = hasFilters;
-                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
 
                 return View("TeacherCourses", classSchedules);
@@ -127,7 +125,6 @@ namespace ASI.Basecode.WebApp.Controllers
             {
                 TempData["Error"] = $"An error occurred while loading courses: {ex.Message}";
                 // Set ViewBag values even in error case for proper view rendering
-                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                 return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
             }
@@ -238,7 +235,6 @@ namespace ASI.Basecode.WebApp.Controllers
                     return BadRequest("Teacher not found");
 
                 var students = await _teacherCourseService.GetStudentGradesForClassAsync(assignedCourseId);
-
                 var courses = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId);
                 var course = courses.FirstOrDefault(c => c.AssignedCourseId == assignedCourseId);
                 var teacherProfile = await _profileService.GetTeacherProfileAsync(_profileService.GetCurrentUserId());
@@ -335,7 +331,7 @@ namespace ASI.Basecode.WebApp.Controllers
                     return NotFound("Course not found");
 
                 // Prepare ViewBag data for the print view
-                ViewBag.CurrentSchoolYear = GetCurrentSchoolYear();
+                ViewBag.CurrentSchoolYear = await _teacherCourseService.GetCurrentSchoolYearAsync();
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                 ViewBag.EDPCode = course.EDPCode;
                 ViewBag.Subject = course.Subject;
@@ -379,13 +375,6 @@ namespace ASI.Basecode.WebApp.Controllers
             // Optional: if you also store it in claims
             var claim = User?.Claims?.FirstOrDefault(c => c.Type == "IdNumber")?.Value;
             return claim ?? string.Empty;
-        }
-
-        private static string GetCurrentSchoolYear()
-        {
-            var now = DateTime.Now;
-            var startYear = now.Month >= 6 ? now.Year : now.Year - 1;
-            return $"{startYear}-{startYear + 1}";
         }
 
         #endregion

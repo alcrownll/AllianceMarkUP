@@ -27,6 +27,9 @@ namespace ASI.Basecode.Services.Interfaces
         // For semester functionality
         string GetCurrentSemesterName();
 
+        // For school year functionality
+        Task<string> GetCurrentSchoolYearAsync();
+
         // For Excel upload functionality
         Task<ExcelUploadResultModel> ProcessExcelGradeUploadAsync(int assignedCourseId, List<ExcelGradeUploadModel> excelGrades);
         ExcelUploadResultModel ParseExcelFile(byte[] fileBytes);

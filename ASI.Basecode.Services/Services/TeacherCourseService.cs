@@ -179,7 +179,6 @@ namespace ASI.Basecode.Services.Services
             return students;
         }
 
-
         public async Task<bool> UpdateStudentGradesAsync(List<StudentGradeUpdateModel> grades)
         {
             try
@@ -244,9 +243,6 @@ namespace ASI.Basecode.Services.Services
                 return false;
             }
         }
-
-
-
 
         public async Task<List<string>> GetTeacherProgramsAsync(int teacherId)
         {
@@ -386,7 +382,15 @@ namespace ASI.Basecode.Services.Services
             return GetCurrentSemester();
         }
 
+        public async Task<string> GetCurrentSchoolYearAsync()
+        {
+            // Fetch the school year directly from the AssignedCourses table
+            var schoolYear = await _assignedCourseRepository.GetAssignedCourses()
+                .Select(ac => ac.SchoolYear)
+                .FirstOrDefaultAsync();
 
+            return schoolYear ?? "Unknown";
+        }
 
         #region Private Helper Methods
 
