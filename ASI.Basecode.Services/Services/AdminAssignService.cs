@@ -469,59 +469,66 @@ namespace ASI.Basecode.Services.Services
             var ac = await _assigned.GetAssignedCourses()
                 .FirstOrDefaultAsync(a => a.AssignedCourseId == posted.AssignedCourseId, ct);
 
-            if (ac == null) throw new InvalidOperationException("Assigned course not found.");
+            if (ac == null)
+            {
 
-            ac.EDPCode = posted.EDPCode?.Trim();
-            ac.CourseId = posted.CourseId;
-            ac.Type = posted.Type;
-            ac.Units = posted.Units;
-            ac.ProgramId = posted.ProgramId;
-            ac.TeacherId = posted.TeacherId;
-            ac.Semester = posted.Semester;
-            ac.SchoolYear = posted.SchoolYear;
+                throw new InvalidOperationException("Assigned course not found.");
+            }
 
             _assigned.UpdateAssignedCourse(ac);
+            await _assigned.SaveChangesAsync(ct);
 
-            // Remove students
-            if (removeStudentIds != null)
+            var removeSet = new HashSet<int>(removeStudentIds ?? Enumerable.Empty<int>());
+            var addSet = new HashSet<int>((addStudentIds ?? Enumerable.Empty<int>()).Where(i => i > 0));
+
+            var currentGrades = await _grades.GetGrades()
+                .Where(g => g.AssignedCourseId == ac.AssignedCourseId)
+                .ToListAsync(ct);
+
+            var currentIds = currentGrades.Select(g => g.StudentId).ToHashSet();
+
+            var finalIds = currentIds
+                .Except(removeSet)
+                .Union(addSet)
+                .ToHashSet();
+
+            var toDelete = currentGrades.Where(g => !finalIds.Contains(g.StudentId)).ToList();
+
+            foreach (var g in toDelete)
+                _grades.DeleteGrade(g.GradeId);
+
+            if (toDelete.Count > 0)
+                await _grades.SaveChangesAsync(ct);
+
+            var missingToAdd = finalIds.Except(currentIds).ToList();
+
+            if (missingToAdd.Count > 0)
             {
-                var toRemove = await _grades.GetGrades()
-                    .Where(g => g.AssignedCourseId == ac.AssignedCourseId && removeStudentIds.Contains(g.StudentId))
-                    .ToListAsync(ct);
-
-                foreach (var g in toRemove) _grades.DeleteGrade(g.GradeId);
-                if (toRemove.Count > 0)
-                    await _grades.SaveChangesAsync(ct);
-            }
-
-            // Add students (avoid dupes)
-            if (addStudentIds != null)
-            {
-                var existing = await _grades.GetGrades()
-                    .AsNoTracking()
-                    .Where(g => g.AssignedCourseId == ac.AssignedCourseId && addStudentIds.Contains(g.StudentId))
-                    .Select(g => g.StudentId)
-                    .ToListAsync(ct);
-
-                var newIds = addStudentIds.Except(existing).Distinct().ToList();
-                if (newIds.Count > 0)
+                var rows = missingToAdd.Select(sid => new Grade
                 {
-                    var rows = newIds.Select(sid => new Grade
-                    {
-                        StudentId = sid,
-                        AssignedCourseId = ac.AssignedCourseId,
-                        Prelims = null,
-                        Midterm = null,
-                        SemiFinal = null,
-                        Final = null
-                    });
-                    _grades.AddGradesNoSave(rows);
-                    await _grades.SaveChangesAsync(ct);
-                }
+                    StudentId = sid,
+                    AssignedCourseId = ac.AssignedCourseId,
+                    Prelims = null,
+                    Midterm = null,
+                    SemiFinal = null,
+                    Final = null
+                });
+
+                _grades.AddGradesNoSave(rows);
+                await _grades.SaveChangesAsync(ct);
+            }
+            else
+            {
+                Console.WriteLine("No grade rows to add.");
             }
 
-            // Upsert schedules (lenient)
-            await UpsertSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
+            await UpsertSchedulesLenientAsync(
+                ac.AssignedCourseId,
+                scheduleRoom,
+                scheduleStartHHmm,
+                scheduleEndHHmm,
+                scheduleDaysCsv,
+                ct);
         }
 
         // ===================== Delete =====================

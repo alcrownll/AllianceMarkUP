@@ -680,7 +680,7 @@
       }
 
       const existingHidden = new Set(
-        $$('#addStudentsContainer input[name="AddStudentIds"]').map((i) =>
+        $$('#addStudentsContainer input[name="SelectedStudentIds"]').map((i) =>
           toInt(i.value, NaN)
         )
       );
@@ -691,7 +691,7 @@
         if (Number.isFinite(sid) && !existingHidden.has(sid)) {
           const h = document.createElement("input");
           h.type = "hidden";
-          h.name = "AddStudentIds";
+          h.name = "SelectedStudentIds";
           h.value = String(sid);
           addBucket?.appendChild(h);
 

@@ -128,32 +128,21 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
-            AssignedCourse model,
-            int[] RemoveStudentIds,
-            int[] AddStudentIds,
-            // SCHEDULE (raw; service will parse/validate/leniently handle)
-            [FromForm] string ScheduleRoom,
-            [FromForm] string ScheduleStart,
-            [FromForm] string ScheduleEnd,
-            [FromForm] string ScheduleDaysCsv,
-            CancellationToken ct)
+    AssignedCourse model,
+    [FromForm] int[] RemoveStudentIds,
+    [FromForm] int[] SelectedStudentIds,
+    [FromForm] string ScheduleRoom,
+    [FromForm] string ScheduleStart,
+    [FromForm] string ScheduleEnd,
+    [FromForm] string ScheduleDaysCsv,
+    CancellationToken ct)
         {
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Courses = await _service.GetCoursesAsync();
-                ViewBag.Programs = await _service.GetProgramsAsync();
-                ViewBag.Teachers = await _service.GetTeachersWithUsersAsync();
-                ViewBag.EnrolledStudents = await _service.GetEnrolledStudentsAsync(model.AssignedCourseId, ct);
-                ViewBag.Schedules = await _service.GetSchedulesAsync(model.AssignedCourseId, ct);
-                return View("~/Views/Admin/AdminAssignView.cshtml", model);
-            }
-
             try
             {
                 await _service.UpdateAssignedCourseAsync(
                     model,
                     RemoveStudentIds,
-                    AddStudentIds,
+                    SelectedStudentIds,
                     ScheduleRoom,
                     ScheduleStart,
                     ScheduleEnd,
@@ -161,7 +150,7 @@ namespace ASI.Basecode.WebApp.Controllers
                     ct);
 
                 TempData["Ok"] = "Assigned course updated.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(View), new { id = model.AssignedCourseId });
             }
             catch (System.Exception ex)
             {
