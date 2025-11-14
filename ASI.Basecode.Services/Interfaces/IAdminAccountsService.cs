@@ -10,12 +10,8 @@ namespace ASI.Basecode.Services.Interfaces
         Task<AccountsFilterResult> GetTeachersAsync(AccountsFilters filters, CancellationToken ct);
 
         /// <summary>
-        /// Suspends a user account and logs a My Activity notification for the acting admin.
+        /// Changes a user's account status (e.g. Active / Inactive) and logs a My Activity notification.
         /// </summary>
-        /// <param name="adminUserId">The admin performing the action.</param>
-        /// <param name="userId">The user being suspended.</param>
-        /// <param name="status">Target status (e.g. "Inactive").</param>
-        /// <param name="roleLabel">"student", "teacher", etc. (for message wording).</param>
         Task<bool> SuspendAccount(
             int adminUserId,
             int userId,

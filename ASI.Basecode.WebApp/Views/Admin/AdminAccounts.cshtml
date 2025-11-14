@@ -272,7 +272,7 @@
 @section Scripts {
     <script>
         (function () {
-            // ---------- Bulk Upload wiring (moved from partial so it actually runs) ----------
+            // ---------- Bulk Upload wiring ----------
             function bindUpload(formId, btnId, ctxIds) {
                 const formEl = document.getElementById(formId);
                 const btnEl  = document.getElementById(btnId);
@@ -324,7 +324,7 @@
 
                         const text = await res.text();
                         let data;
-                        try { data = JSON.parse(text); } 
+                        try { data = JSON.parse(text); }
                         catch { data = { success: false, message: "Upload failed. Please try again." }; }
 
                         // Hide progress
@@ -404,30 +404,43 @@
                 errorsUl:    'teacherUploadErrors'
             });
 
-            // ---------- Your existing page scripts (kept) ----------
+            // ---------- Suspend / Reactivate modal wiring ----------
             document.addEventListener('click', function (e) {
                 const btn = e.target.closest('.js-status-btn');
                 if (!btn) return;
 
-                const userId = btn.getAttribute('data-user-id');
-                const tab = btn.getAttribute('data-tab') || 'students';
-                const name = btn.getAttribute('data-name') || 'this account';
-                const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim();
+                const userId   = btn.getAttribute('data-user-id');
+                const tab      = btn.getAttribute('data-tab') || 'students';
+                const name     = btn.getAttribute('data-name') || 'this account';
+                const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim(); // "Inactive" or "Active"
 
-                document.getElementById('suspendUserId').value = userId;
-                document.getElementById('suspendTab').value = tab;
-                document.getElementById('statusToSet').value = statusTo;
-                document.getElementById('viewStatus').value = '@(((vm?.Filters?.Status ?? "Active").Equals("Inactive", StringComparison.OrdinalIgnoreCase)) ? "inactive" : "active")';
+                const lifting = statusTo.toLowerCase() === 'active'; // true when clicking "Lift Suspension"
 
-                const lifting = statusTo.toLowerCase() === 'active';
-                const titleEl = document.getElementById('confirmActionTitle');
+                const userIdInput  = document.getElementById('suspendUserId');
+                const tabInput     = document.getElementById('suspendTab');
+                const statusInput  = document.getElementById('statusToSet');
+                const viewStatusEl = document.getElementById('viewStatus');
+
+                const titleEl  = document.getElementById('confirmActionTitle');
                 const promptEl = document.getElementById('confirmActionPrompt');
-                const nameEl = document.getElementById('suspendUserName');
+                const nameEl   = document.getElementById('suspendUserName');
                 const actionEl = document.getElementById('confirmActionBtn');
 
-                titleEl.textContent = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
-                promptEl.textContent = lifting ? 'Are you sure you want to lift the suspension for' : 'Are you sure you want to suspend';
-                nameEl.textContent = name;
+                if (!userIdInput || !tabInput || !statusInput || !viewStatusEl) return;
+
+                // Fill hidden fields
+                userIdInput.value  = userId;
+                tabInput.value     = tab;
+                statusInput.value  = statusTo;
+                // After action: show active list if we just lifted, otherwise show suspended
+                viewStatusEl.value = lifting ? 'active' : 'inactive';
+
+                // Update modal text + button style
+                titleEl.textContent  = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
+                promptEl.textContent = lifting
+                    ? 'Are you sure you want to lift the suspension for'
+                    : 'Are you sure you want to suspend';
+                nameEl.textContent   = name;
 
                 actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
                 actionEl.classList.remove('btn-danger', 'btn-success');

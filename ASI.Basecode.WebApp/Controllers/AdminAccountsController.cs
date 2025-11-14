@@ -148,25 +148,56 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Teacher), new { userId });
         }
 
+        /// <summary>
+        /// Changes account status (suspend or reactivate) and logs a My Activity notification.
+        /// </summary>
+        /// <param name="userId">The user being changed.</param>
+        /// <param name="tab">students/teachers (for redirect + wording).</param>
+        /// <param name="status">
+        /// New status for the account ("Inactive" to suspend, "Active" to reactivate).
+        /// </param>
+        /// <param name="viewStatus">
+        /// Which list to show after redirect ("active" or "inactive").
+        /// </param>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SuspendUser(int userId, string? tab, CancellationToken ct)
+        public async Task<IActionResult> SuspendUser(
+            int userId,
+            string? tab,
+            string? status,
+            string? viewStatus,
+            CancellationToken ct)
         {
             var adminUserId = _profile.GetCurrentUserId();
             var roleLabel = (tab?.ToLower() == "teachers") ? "teacher" : "student";
 
+            // Default to "Inactive" if nothing is posted (shouldn't happen with our JS)
+            var targetStatus = string.IsNullOrWhiteSpace(status) ? "Inactive" : status.Trim();
+
             var ok = await _adminacc.SuspendAccount(
                 adminUserId: adminUserId,
                 userId: userId,
-                status: "Inactive",
+                status: targetStatus,
                 roleLabel: roleLabel,
                 ct: ct);
 
-            TempData[ok ? "ImportOk" : "ImportErr"] = ok
-                ? "Account has been suspended."
-                : "User not found or already inactive.";
+            if (targetStatus.Equals("Active", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData[ok ? "ImportOk" : "ImportErr"] = ok
+                    ? "Account has been reactivated."
+                    : "User not found or already active.";
+            }
+            else
+            {
+                TempData[ok ? "ImportOk" : "ImportErr"] = ok
+                    ? "Account has been suspended."
+                    : "User not found or already inactive.";
+            }
 
-            return RedirectToAction(nameof(Index), new { tab = string.IsNullOrWhiteSpace(tab) ? "students" : tab });
+            var normalizedTab = string.IsNullOrWhiteSpace(tab) ? "students" : tab;
+            var normalizedStatus = string.IsNullOrWhiteSpace(viewStatus) ? "active" : viewStatus;
+
+            return RedirectToAction(nameof(Index), new { tab = normalizedTab, status = normalizedStatus });
         }
 
         [HttpGet]

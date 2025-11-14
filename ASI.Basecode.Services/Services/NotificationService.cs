@@ -68,7 +68,7 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
-        // ACCOUNTS: CREATE / IMPORT / SUSPEND
+        // ACCOUNTS: CREATE / IMPORT / STATUS CHANGES
         // ======================================================
         public void NotifyAdminCreatedStudent(
             int adminUserId,
@@ -154,23 +154,50 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // 🔹 NEW: Admin suspended account
-        public void NotifyAdminSuspendedUser(
+        // 🔹 Admin changed a user's account status (suspend / reactivate / other)
+        public void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
             string targetLabel,
-            string roleLabel)
+            string roleLabel,
+            string newStatus)
         {
-            var roleText = string.IsNullOrWhiteSpace(roleLabel) ? "user" : roleLabel.Trim().ToLower();
+            var roleText = string.IsNullOrWhiteSpace(roleLabel)
+                ? "user"
+                : roleLabel.Trim().ToLower();
 
             var label = string.IsNullOrWhiteSpace(targetLabel)
                 ? $"User #{targetUserId}"
                 : targetLabel.Trim();
 
+            var status = (newStatus ?? string.Empty).Trim();
+
+            string title;
+            string message;
+
+            if (status.Equals("Inactive", StringComparison.OrdinalIgnoreCase))
+            {
+                // Suspended
+                title = "Suspended account";
+                message = $"You suspended the {roleText} account of {label}.";
+            }
+            else if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
+            {
+                // Reactivated / lifted suspension
+                title = "Reactivated account";
+                message = $"You reactivated the {roleText} account of {label}.";
+            }
+            else
+            {
+                // Generic fallback for any other statuses
+                title = "Updated account status";
+                message = $"You changed the {roleText} account status of {label} to {status}.";
+            }
+
             AddNotification(
                 userId: adminUserId,
-                title: "Suspended account",
-                message: $"You suspended the {roleText} account of {label}.",
+                title: title,
+                message: message,
                 kind: NotificationKind.Activity,
                 category: "Accounts",
                 actorUserId: adminUserId

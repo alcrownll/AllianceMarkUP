@@ -42,12 +42,13 @@ namespace ASI.Basecode.Services.Interfaces
             string summaryMessage
         );
 
-        // 🔹 NEW: Admin suspended account
-        void NotifyAdminSuspendedUser(
+        // 🔹 Admin changed a user's account status (suspend / reactivate / other)
+        void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
-            string targetLabel,   // e.g. "Juan Dela Cruz (ID: 23-0001)"
-            string roleLabel      // e.g. "student" or "teacher"
+            string targetLabel,  
+            string roleLabel,   
+            string newStatus     
         );
 
         // Grades

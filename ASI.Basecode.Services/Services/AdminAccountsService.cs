@@ -161,12 +161,13 @@ namespace ASI.Basecode.Services.Services
                 ? "user"
                 : roleLabel.Trim().ToLowerInvariant();
 
-            // Notification: My Activity for admin
-            _notifications.NotifyAdminSuspendedUser(
+            // Notification: My Activity for admin (status-aware)
+            _notifications.NotifyAdminChangedUserStatus(
                 adminUserId: adminUserId,
                 targetUserId: userId,
                 targetLabel: targetLabel,
-                roleLabel: roleText
+                roleLabel: roleText,
+                newStatus: status
             );
 
             // Persist notification

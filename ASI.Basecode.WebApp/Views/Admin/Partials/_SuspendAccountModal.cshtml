@@ -1,15 +1,23 @@
-﻿<div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
+﻿@* Views/Admin/Partials/_SuspendAccountModal.cshtml *@
+<div class="modal fade" id="confirmSuspendModal" tabindex="-1" aria-labelledby="confirmSuspendLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post">
+            <form asp-controller="AdminAccounts" asp-action="SuspendUser" method="post" id="suspendForm">
                 @Html.AntiForgeryToken()
+
                 <input type="hidden" name="userId" id="suspendUserId" />
                 <input type="hidden" name="tab" id="suspendTab" />
-                <input type="hidden" name="status" id="statusToSet" />     
-                <input type="hidden" name="viewStatus" id="viewStatus" />  
+
+                @* This is the new status to set on the user: "Inactive" or "Active" *@
+                <input type="hidden" name="status" id="statusToSet" />
+
+                @* This controls which list (active / inactive) the Index page will show after redirect *@
+                <input type="hidden" name="viewStatus" id="viewStatus" />
 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="confirmSuspendLabel"><span id="confirmActionTitle">Confirm action</span></h5>
+                    <h5 class="modal-title" id="confirmSuspendLabel">
+                        <span id="confirmActionTitle">Confirm action</span>
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
