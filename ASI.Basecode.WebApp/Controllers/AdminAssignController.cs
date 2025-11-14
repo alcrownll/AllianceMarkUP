@@ -82,7 +82,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 ScheduleDaysCsv,
                 ct);
 
-            TempData["Ok"] = $"Assigned course created (ID #{id}).";
+            TempData["Ok"] = $"Assigned course created.";
             return RedirectToAction(nameof(Index));
         }
 
