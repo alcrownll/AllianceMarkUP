@@ -11,7 +11,17 @@ namespace ASI.Basecode.WebApp.Controllers
     public class AdminAssignController : Controller
     {
         private readonly IAdminAssignService _service;
-        public AdminAssignController(IAdminAssignService service) => _service = service;
+        private readonly IProfileService _profileService;
+
+        public AdminAssignController(
+            IAdminAssignService service,
+            IProfileService profileService)
+        {
+            _service = service;
+            _profileService = profileService;
+        }
+
+        private int CurrentAdminUserId() => _profileService.GetCurrentUserId();
 
         public async Task<IActionResult> Index(string q, CancellationToken ct = default)
         {
@@ -68,9 +78,12 @@ namespace ASI.Basecode.WebApp.Controllers
             [FromForm] string ScheduleDaysCsv,
             CancellationToken ct)
         {
+            var adminUserId = CurrentAdminUserId();
+
             IEnumerable<int> extras = SelectedStudentIds ?? new int[0];
 
             var id = await _service.CreateAssignedCourseAsync(
+                adminUserId,
                 model,
                 blockProgram,
                 blockYear,
@@ -128,18 +141,21 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
-    AssignedCourse model,
-    [FromForm] int[] RemoveStudentIds,
-    [FromForm] int[] SelectedStudentIds,
-    [FromForm] string ScheduleRoom,
-    [FromForm] string ScheduleStart,
-    [FromForm] string ScheduleEnd,
-    [FromForm] string ScheduleDaysCsv,
-    CancellationToken ct)
+            AssignedCourse model,
+            [FromForm] int[] RemoveStudentIds,
+            [FromForm] int[] SelectedStudentIds,
+            [FromForm] string ScheduleRoom,
+            [FromForm] string ScheduleStart,
+            [FromForm] string ScheduleEnd,
+            [FromForm] string ScheduleDaysCsv,
+            CancellationToken ct)
         {
+            var adminUserId = CurrentAdminUserId();
+
             try
             {
                 await _service.UpdateAssignedCourseAsync(
+                    adminUserId,
                     model,
                     RemoveStudentIds,
                     SelectedStudentIds,
@@ -191,7 +207,9 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var (ok, message) = await _service.DeleteAssignedCourseAsync(id, ct);
+            var adminUserId = CurrentAdminUserId();
+
+            var (ok, message) = await _service.DeleteAssignedCourseAsync(adminUserId, id, ct);
             if (ok) TempData["Ok"] = message;
             else TempData["Error"] = message;
 

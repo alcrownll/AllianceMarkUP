@@ -18,11 +18,15 @@ namespace ASI.Basecode.Services.Interfaces
             string program, string yearLevel, string section, string status,
             int page, int pageSize, CancellationToken ct);
 
-        Task<string> GenerateEdpCodeAsync(int courseId, string semester, string schoolYear, CancellationToken ct = default);
+        Task<string> GenerateEdpCodeAsync(
+            int courseId,
+            string semester,
+            string schoolYear,
+            CancellationToken ct = default);
 
         // ===== Creation (assigned course + optional schedule + optional student seeding) =====
-        // **(NEW)** Combine creation + schedule (lenient) + grade seeding like your working Grades behavior.
         Task<int> CreateAssignedCourseAsync(
+            int adminUserId,
             AssignedCourse form,
             string blockProgram,
             string blockYear,
@@ -37,6 +41,7 @@ namespace ASI.Basecode.Services.Interfaces
         Task<AssignedCourse> GetAssignedCourseAsync(int id, CancellationToken ct);
         Task<IReadOnlyList<Student>> GetEnrolledStudentsAsync(int assignedCourseId, CancellationToken ct);
         Task<IReadOnlyList<ClassSchedule>> GetSchedulesAsync(int assignedCourseId, CancellationToken ct);
+
         Task<(IReadOnlyList<Student> Items, int Total)> GetAddableStudentsPageAsync(
             int assignedCourseId,
             string blockProgram,
@@ -46,7 +51,9 @@ namespace ASI.Basecode.Services.Interfaces
             int page,
             int pageSize,
             CancellationToken ct);
+
         Task UpdateAssignedCourseAsync(
+            int adminUserId,
             AssignedCourse posted,
             IEnumerable<int> removeStudentIds,
             IEnumerable<int> addStudentIds,
@@ -56,6 +63,9 @@ namespace ASI.Basecode.Services.Interfaces
             string scheduleDaysCsv,
             CancellationToken ct);
 
-        Task<(bool ok, string message)> DeleteAssignedCourseAsync(int assignedCourseId, CancellationToken ct);
+        Task<(bool ok, string message)> DeleteAssignedCourseAsync(
+            int adminUserId,
+            int assignedCourseId,
+            CancellationToken ct);
     }
 }

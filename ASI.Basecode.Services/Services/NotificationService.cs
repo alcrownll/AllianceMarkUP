@@ -154,7 +154,7 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // 🔹 Admin changed a user's account status (suspend / reactivate / other)
+        // Admin changed a user's account status (suspend / reactivate / other)
         public void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
@@ -414,6 +414,162 @@ namespace ASI.Basecode.Services.Services
                 message: $"You deleted your event \"{title}\".",
                 category: "Events",
                 actorUserId: actorUserId
+            );
+        }
+
+        // ======================================================
+        // ASSIGNED COURSES & ENROLLMENTS
+        // ======================================================
+        // Admin: My Activity when creating an assigned course
+        public void NotifyAdminCreatedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            string teacherLabel)
+        {
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+            var teacherPart = string.IsNullOrWhiteSpace(teacherLabel) ? "" : $" (Teacher: {teacherLabel.Trim()})";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Created assigned course",
+                message: $"You created assigned course {edpPart} – {coursePart}{teacherPart}.",
+                kind: NotificationKind.Activity,
+                category: "AssignedCourses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // Teacher: Updates when admin assigns them
+        public void NotifyTeacherAssignedToCourse(
+            int adminUserId,
+            int teacherUserId,
+            string edpCode,
+            string courseCode,
+            string? semester,
+            string? schoolYear)
+        {
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+            var termPart = (!string.IsNullOrWhiteSpace(semester) || !string.IsNullOrWhiteSpace(schoolYear))
+                ? $" for {semester} {schoolYear}".Trim()
+                : string.Empty;
+
+            AddNotification(
+                userId: teacherUserId,
+                title: "New teaching assignment",
+                message: $"You have been assigned to {edpPart} – {coursePart}{termPart}.",
+                kind: NotificationKind.System,         // Updates tab
+                category: "AssignedCourses",
+                actorUserId: adminUserId              // admin is actor
+            );
+        }
+
+        // Admin: My Activity when adding students
+        public void NotifyAdminAddedStudentsToAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            int count)
+        {
+            if (count <= 0) return;
+
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Added students to assigned course",
+                message: $"You added {count} student(s) to {edpPart} – {coursePart}.",
+                kind: NotificationKind.Activity,
+                category: "AssignedCourses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // Student: Updates when admin assigns them into an assigned course
+        public void NotifyStudentAddedToAssignedCourse(
+            int adminUserId,
+            int studentUserId,
+            string edpCode,
+            string courseCode,
+            string? semester,
+            string? schoolYear)
+        {
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+            var termPart = (!string.IsNullOrWhiteSpace(semester) || !string.IsNullOrWhiteSpace(schoolYear))
+                ? $" for {semester} {schoolYear}".Trim()
+                : string.Empty;
+
+            AddNotification(
+                userId: studentUserId,
+                title: "New course enrollment",
+                message: $"You have been enrolled in {edpPart} – {coursePart}{termPart}.",
+                kind: NotificationKind.System,         // Updates tab
+                category: "AssignedCourses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // Admin: My Activity when updating assigned course (general)
+        public void NotifyAdminUpdatedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode)
+        {
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Updated assigned course",
+                message: $"You updated assigned course {edpPart} – {coursePart}.",
+                kind: NotificationKind.Activity,
+                category: "AssignedCourses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // Admin: My Activity when removing students from assigned course
+        public void NotifyAdminRemovedStudentsFromAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            int count)
+        {
+            if (count <= 0) return;
+
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Removed students from assigned course",
+                message: $"You removed {count} student(s) from {edpPart} – {coursePart}.",
+                kind: NotificationKind.Activity,
+                category: "AssignedCourses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // Admin: My Activity when deleting assigned course
+        public void NotifyAdminDeletedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode)
+        {
+            var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
+            var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Deleted assigned course",
+                message: $"You deleted assigned course {edpPart} – {coursePart}.",
+                kind: NotificationKind.Activity,
+                category: "AssignedCourses",
+                actorUserId: adminUserId
             );
         }
 

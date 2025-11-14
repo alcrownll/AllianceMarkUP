@@ -20,6 +20,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IStudentRepository _students;
         private readonly IGradeRepository _grades;
         private readonly IClassScheduleRepository _classSchedules;
+        private readonly INotificationService _notifications;
 
         public AdminAssignService(
             IAssignedCourseRepository assigned,
@@ -28,7 +29,8 @@ namespace ASI.Basecode.Services.Services
             IProgramRepository programs,
             IStudentRepository students,
             IGradeRepository grades,
-            IClassScheduleRepository classSchedules)
+            IClassScheduleRepository classSchedules,
+            INotificationService notifications)
         {
             _assigned = assigned;
             _courses = courses;
@@ -37,6 +39,7 @@ namespace ASI.Basecode.Services.Services
             _students = students;
             _grades = grades;
             _classSchedules = classSchedules;
+            _notifications = notifications;
         }
 
         public async Task<IReadOnlyList<AssignedCourse>> GetListAsync(string q = null)
@@ -334,16 +337,17 @@ namespace ASI.Basecode.Services.Services
         // ===================== Create (Assigned + optional Schedules + optional Grades) =====================
 
         public async Task<int> CreateAssignedCourseAsync(
-            AssignedCourse form,
-            string blockProgram,
-            string blockYear,
-            string blockSection,
-            IEnumerable<int> extraStudentIds,
-            string scheduleRoom,
-            string scheduleStartHHmm,
-            string scheduleEndHHmm,
-            string scheduleDaysCsv,
-            CancellationToken ct = default)
+     int adminUserId,
+     AssignedCourse form,
+     string blockProgram,
+     string blockYear,
+     string blockSection,
+     IEnumerable<int> extraStudentIds,
+     string scheduleRoom,
+     string scheduleStartHHmm,
+     string scheduleEndHHmm,
+     string scheduleDaysCsv,
+     CancellationToken ct = default)
         {
             // Assigned course base creation
             var ac = new AssignedCourse
@@ -363,12 +367,86 @@ namespace ASI.Basecode.Services.Services
             _assigned.AddAssignedCourseNoSave(ac);
             await _assigned.SaveChangesAsync(ct);
 
-            // Seed grades like your working flow (no error if 0 students)
+            // Load course code for notifications
+            var course = await _courses.GetCourses()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CourseId == ac.CourseId, ct);
+            var courseCode = course?.CourseCode ?? "N/A";
+
+            // Collect target students (block + extra)
             var targets = await CollectTargetStudentIdsAsync(blockProgram, blockYear, blockSection, extraStudentIds, ct);
+
+            // Seed grades like your working flow (no error if 0 students)
             await SeedGradesForTargetsAsync(ac.AssignedCourseId, targets, ct);
 
             // Try schedules (lenient): only writes when complete; silent no-op otherwise
             await TryCreateSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
+
+            // ================= NOTIFICATIONS =================
+
+            // 1) Teacher notifications: Admin = My Activity, Teacher = Updates
+            if (ac.TeacherId > 0)
+            {
+                var teacher = await _teachers.GetTeachers()
+                    .Include(t => t.User)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(t => t.TeacherId == ac.TeacherId, ct);
+
+                if (teacher?.User != null)
+                {
+                    var teacherName = $"{teacher.User.FirstName} {teacher.User.LastName}".Trim();
+
+                    // Admin: My Activity
+                    _notifications.NotifyAdminCreatedAssignedCourse(
+                        adminUserId,
+                        ac.EDPCode,
+                        courseCode,
+                        teacherName
+                    );
+
+                    // Teacher: Updates
+                    _notifications.NotifyTeacherAssignedToCourse(
+                        adminUserId,
+                        teacher.User.UserId,
+                        ac.EDPCode,
+                        courseCode,
+                        ac.Semester,
+                        ac.SchoolYear
+                    );
+                }
+            }
+
+            // 2) Students notifications: Admin = My Activity, Students = Updates
+            if (targets.Count > 0)
+            {
+                // Admin: My Activity
+                _notifications.NotifyAdminAddedStudentsToAssignedCourse(
+                    adminUserId,
+                    ac.EDPCode,
+                    courseCode,
+                    targets.Count
+                );
+
+                var students = await _students.GetStudentsWithUser()
+                    .AsNoTracking()
+                    .Include(s => s.User)
+                    .Where(s => targets.Contains(s.StudentId))
+                    .ToListAsync(ct);
+
+                foreach (var s in students)
+                {
+                    if (s.User == null) continue;
+
+                    _notifications.NotifyStudentAddedToAssignedCourse(
+                        adminUserId,
+                        s.User.UserId,
+                        ac.EDPCode,
+                        courseCode,
+                        ac.Semester,
+                        ac.SchoolYear
+                    );
+                }
+            }
 
             return ac.AssignedCourseId;
         }
@@ -417,12 +495,12 @@ namespace ASI.Basecode.Services.Services
             int pageSize,
             CancellationToken ct)
         {
-            var enrolledIds = await _grades.GetGrades()
+            var ids = await _grades.GetGrades()
                                    .AsNoTracking()
                                    .Where(g => g.AssignedCourseId == assignedCourseId)
                                    .Select(g => g.StudentId)
                                    .ToListAsync(ct);
-            var enrolledSet = enrolledIds.ToHashSet();
+            var enrolledSet = ids.ToHashSet();
 
             var q = _students.GetStudentsWithUser();
 
@@ -457,6 +535,7 @@ namespace ASI.Basecode.Services.Services
         // ===================== Update (Assigned + Students + Schedules) =====================
 
         public async Task UpdateAssignedCourseAsync(
+            int adminUserId,
             AssignedCourse posted,
             IEnumerable<int> removeStudentIds,
             IEnumerable<int> addStudentIds,
@@ -471,9 +550,10 @@ namespace ASI.Basecode.Services.Services
 
             if (ac == null)
             {
-
                 throw new InvalidOperationException("Assigned course not found.");
             }
+
+            // We keep your existing behavior: you can map other fields here if needed.
 
             _assigned.UpdateAssignedCourse(ac);
             await _assigned.SaveChangesAsync(ct);
@@ -529,11 +609,71 @@ namespace ASI.Basecode.Services.Services
                 scheduleEndHHmm,
                 scheduleDaysCsv,
                 ct);
+
+            // Load course code for notifications
+            var course = await _courses.GetCourses()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CourseId == ac.CourseId, ct);
+            var courseCode = course?.CourseCode ?? "N/A";
+
+            // ================= NOTIFICATIONS (UPDATE) =================
+
+            // General update
+            _notifications.NotifyAdminUpdatedAssignedCourse(
+                adminUserId,
+                ac.EDPCode,
+                courseCode
+            );
+
+            // Added students: Admin + Students
+            if (missingToAdd.Count > 0)
+            {
+                _notifications.NotifyAdminAddedStudentsToAssignedCourse(
+                    adminUserId,
+                    ac.EDPCode,
+                    courseCode,
+                    missingToAdd.Count
+                );
+
+                var addedStudents = await _students.GetStudentsWithUser()
+                    .AsNoTracking()
+                    .Include(s => s.User)
+                    .Where(s => missingToAdd.Contains(s.StudentId))
+                    .ToListAsync(ct);
+
+                foreach (var s in addedStudents)
+                {
+                    if (s.User == null) continue;
+
+                    _notifications.NotifyStudentAddedToAssignedCourse(
+                        adminUserId,
+                        s.User.UserId,
+                        ac.EDPCode,
+                        courseCode,
+                        ac.Semester,
+                        ac.SchoolYear
+                    );
+                }
+            }
+
+            // Removed students: Admin only (My Activity)
+            if (toDelete.Count > 0)
+            {
+                _notifications.NotifyAdminRemovedStudentsFromAssignedCourse(
+                    adminUserId,
+                    ac.EDPCode,
+                    courseCode,
+                    toDelete.Count
+                );
+            }
         }
 
         // ===================== Delete =====================
 
-        public async Task<(bool ok, string message)> DeleteAssignedCourseAsync(int assignedCourseId, CancellationToken ct)
+        public async Task<(bool ok, string message)> DeleteAssignedCourseAsync(
+            int adminUserId,
+            int assignedCourseId,
+            CancellationToken ct)
         {
             var ac = await _assigned.GetAssignedCourses()
                 .Include(a => a.Course)
@@ -560,6 +700,13 @@ namespace ASI.Basecode.Services.Services
 
             _assigned.DeleteAssignedCourse(assignedCourseId);
             await _assigned.SaveChangesAsync(ct);
+
+            // ================= NOTIFICATION (DELETE) =================
+            _notifications.NotifyAdminDeletedAssignedCourse(
+                adminUserId,
+                ac.EDPCode,
+                ac.Course?.CourseCode ?? "N/A"
+            );
 
             return (true, $"{friendly} was successfully deleted.");
         }

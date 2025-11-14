@@ -95,11 +95,77 @@ namespace ASI.Basecode.Services.Interfaces
             string courseTitle
         );
 
-        // Grades
+        // ============================
+        // ASSIGNED COURSES & ENROLLMENTS
+        // ============================
+
+        // Admin: My Activity when creating assigned course
+        void NotifyAdminCreatedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            string teacherLabel
+        );
+
+        // Teacher: Updates when admin assigns them
+        void NotifyTeacherAssignedToCourse(
+            int adminUserId,
+            int teacherUserId,
+            string edpCode,
+            string courseCode,
+            string? semester,
+            string? schoolYear
+        );
+
+        // Admin: My Activity when adding students
+        void NotifyAdminAddedStudentsToAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            int count
+        );
+
+        // Student: Updates when admin assigns them into an assigned course
+        void NotifyStudentAddedToAssignedCourse(
+            int adminUserId,
+            int studentUserId,
+            string edpCode,
+            string courseCode,
+            string? semester,
+            string? schoolYear
+        );
+
+        // Admin: My Activity when updating assigned course (general)
+        void NotifyAdminUpdatedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode
+        );
+
+        // Admin: My Activity when removing students
+        void NotifyAdminRemovedStudentsFromAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode,
+            int count
+        );
+
+        // Admin: My Activity when deleting assigned course
+        void NotifyAdminDeletedAssignedCourse(
+            int adminUserId,
+            string edpCode,
+            string courseCode
+        );
+
+        // ============================
+        // GRADES
+        // ============================
         void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel);
         void NotifyTeacherGradeUploaded(int teacherUserId, string courseCode, string termLabel);
 
-        // Events (user’s own actions on their calendar)
+        // ============================
+        // EVENTS (user’s own actions on their calendar)
+        // ============================
         void NotifyUserEventCreated(int ownerUserId, string title, DateTime startLocal, int actorUserId);
         void NotifyUserEventUpdated(int ownerUserId, string title, DateTime? startLocal, int actorUserId);
         void NotifyUserEventDeleted(int ownerUserId, string title, int actorUserId);
