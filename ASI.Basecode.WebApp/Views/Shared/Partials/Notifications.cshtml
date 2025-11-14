@@ -33,6 +33,8 @@
     var items = (Model?.Items ?? new List<ASI.Basecode.Services.ServiceModels.NotificationListItemVm>()).ToList();
     var updates = items.Where(IsUpdates).ToList();
     var activity = items.Where(IsActivity).ToList();
+
+    var isAdmin = User.IsInRole("Admin");
 }
 
 @section Styles {
@@ -41,33 +43,54 @@
 
 <div class="notifications-page">
     <div class="n-card">
-        <div class="n-header">
-            <h3 class="n-title">
-                <i class="fa-solid fa-bell me-2"></i>@(ViewData["PageHeader"] ?? "Notifications")
-            </h3>
-        </div>
+        @* Top bar: tabs on the left, Mark all as read on the right *@
+        <div class="n-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <!-- Main Tabs -->
+            <ul class="nav n-tabs mb-0" id="notifTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#pane-all"
+                            type="button" role="tab" aria-controls="pane-all" aria-selected="true">
+                        All
+                    </button>
+                </li>
 
-        <!-- Main Tabs -->
-        <ul class="nav n-tabs" id="notifTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#pane-all"
-                        type="button" role="tab" aria-controls="pane-all" aria-selected="true">
-                    All
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-updates" data-bs-toggle="tab" data-bs-target="#pane-updates"
-                        type="button" role="tab" aria-controls="pane-updates" aria-selected="false">
-                    Updates
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-activity" data-bs-toggle="tab" data-bs-target="#pane-activity"
-                        type="button" role="tab" aria-controls="pane-activity" aria-selected="false">
-                    My Activity
-                </button>
-            </li>
-        </ul>
+                @* Show Updates tab only for non-admin roles *@
+                @if (!isAdmin)
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-updates" data-bs-toggle="tab" data-bs-target="#pane-updates"
+                                type="button" role="tab" aria-controls="pane-updates" aria-selected="false">
+                            Updates
+                        </button>
+                    </li>
+                }
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-activity" data-bs-toggle="tab" data-bs-target="#pane-activity"
+                            type="button" role="tab" aria-controls="pane-activity" aria-selected="false">
+                        My Activity
+                    </button>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center">
+                @if (Model?.UnreadCount > 0)
+                {
+                    <form method="post" action="/Notifications/MarkAllRead" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-primary n-markall-btn">
+                            <i class="fa-solid fa-check-double me-1"></i>Mark all as read
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-secondary n-markall-btn" disabled>
+                        <i class="fa-regular fa-circle-check me-1"></i>All caught up
+                    </button>
+                }
+            </div>
+        </div>
 
         <div class="tab-content mt-3">
             <!-- ========== ALL TAB ========== -->
@@ -112,47 +135,50 @@
                 <div class="n-empty-scope" data-empty-for="all"></div>
             </div>
 
-            <!-- ========== UPDATES TAB (System) ========== -->
-            <div class="tab-pane fade" id="pane-updates" role="tabpanel" aria-labelledby="tab-updates">
-                <div class="n-filters" data-scope="updates">
-                    <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
-                    <button type="button" class="n-filter-btn" data-filter="read">Read</button>
-                </div>
+            @* ========== UPDATES TAB (System) — hidden entirely for Admins ========== *@
+            @if (!isAdmin)
+            {
+                <div class="tab-pane fade" id="pane-updates" role="tabpanel" aria-labelledby="tab-updates">
+                    <div class="n-filters" data-scope="updates">
+                        <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
+                        <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+                    </div>
 
-                <ul class="n-list" data-list="updates">
-                    @foreach (var item in updates)
-                    {
-                        var icon = IconFor(item.Category);
-                        var status = item.IsRead ? "read" : "unread";
-                        <li class="n-item n-kind-updates @(item.IsRead ? "" : "unread")" data-status="@status">
-                            <div class="n-main">
-                                <div class="n-icon"><i class="fa-solid @icon"></i></div>
-                                <div class="n-content">
-                                    <div class="n-row">
-                                        <div class="n-title-sm">@item.Title</div>
-                                        <div class="n-when">@item.When</div>
+                    <ul class="n-list" data-list="updates">
+                        @foreach (var item in updates)
+                        {
+                            var icon = IconFor(item.Category);
+                            var status = item.IsRead ? "read" : "unread";
+                            <li class="n-item n-kind-updates @(item.IsRead ? "" : "unread")" data-status="@status">
+                                <div class="n-main">
+                                    <div class="n-icon"><i class="fa-solid @icon"></i></div>
+                                    <div class="n-content">
+                                        <div class="n-row">
+                                            <div class="n-title-sm">@item.Title</div>
+                                            <div class="n-when">@item.When</div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(item.Message))
+                                        {
+                                            <div class="n-sub">@item.Message</div>
+                                        }
                                     </div>
-                                    @if (!string.IsNullOrWhiteSpace(item.Message))
-                                    {
-                                        <div class="n-sub">@item.Message</div>
-                                    }
                                 </div>
-                            </div>
-                            @if (!item.IsRead)
-                            {
-                                <form method="post" action="/Notifications/MarkRead" class="n-action">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="n-btn-small">
-                                        <i class="fa-solid fa-circle-check me-1"></i>Mark Read
-                                    </button>
-                                </form>
-                            }
-                        </li>
-                    }
-                </ul>
-                <div class="n-empty-scope" data-empty-for="updates"></div>
-            </div>
+                                @if (!item.IsRead)
+                                {
+                                    <form method="post" action="/Notifications/MarkRead" class="n-action">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="n-btn-small">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Mark Read
+                                        </button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    <div class="n-empty-scope" data-empty-for="updates"></div>
+                </div>
+            }
 
             <!-- ========== MY ACTIVITY TAB ========== -->
             <div class="tab-pane fade" id="pane-activity" role="tabpanel" aria-labelledby="tab-activity">
