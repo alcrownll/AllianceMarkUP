@@ -228,7 +228,7 @@ namespace ASI.Basecode.Services.Services
                 student.Program = input.ProgramDb;
                 student.Department = input.Department;
                 student.YearLevel = input.YearLevel;
-                student.Section = "4A"; // temporary
+                student.Section = input.Section;
                 _students.UpdateStudent(student);
             }
         }
