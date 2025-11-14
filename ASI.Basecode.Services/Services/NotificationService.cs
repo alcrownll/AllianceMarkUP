@@ -205,6 +205,152 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
+        // CURRICULUM: PROGRAMS & COURSES
+        // ======================================================
+
+        // -------- Programs --------
+        public void NotifyAdminCreatedProgram(
+            int adminUserId,
+            string programCode,
+            string programName)
+        {
+            var code = (programCode ?? "").Trim();
+            var name = (programName ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(name)
+                ? code
+                : $"{code} - {name}";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Added program",
+                message: $"You created a new program {label}.",
+                kind: NotificationKind.Activity,
+                category: "Programs",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminUpdatedProgram(
+            int adminUserId,
+            string programCode,
+            string programName,
+            bool isActive)
+        {
+            var code = (programCode ?? "").Trim();
+            var name = (programName ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(name)
+                ? code
+                : $"{code} - {name}";
+
+            var statusText = isActive ? "Active" : "Inactive";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Updated program",
+                message: $"You updated program {label} (Status: {statusText}).",
+                kind: NotificationKind.Activity,
+                category: "Programs",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminDeletedProgram(
+            int adminUserId,
+            string programCode,
+            string programName,
+            bool forceDelete)
+        {
+            var code = (programCode ?? "").Trim();
+            var name = (programName ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(name)
+                ? code
+                : $"{code} - {name}";
+
+            var extra = forceDelete
+                ? " Program courses, assigned courses, schedules, and grades linked to this program were also removed."
+                : string.Empty;
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Deleted program",
+                message: $"You deleted program {label}.{extra}",
+                kind: NotificationKind.Activity,
+                category: "Programs",
+                actorUserId: adminUserId
+            );
+        }
+
+        // -------- Courses --------
+        public void NotifyAdminCreatedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle)
+        {
+            var code = (courseCode ?? "").Trim();
+            var title = (courseTitle ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(title)
+                ? code
+                : $"{code} - {title}";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Added course",
+                message: $"You created a new course {label}.",
+                kind: NotificationKind.Activity,
+                category: "Courses",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminUpdatedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle)
+        {
+            var code = (courseCode ?? "").Trim();
+            var title = (courseTitle ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(title)
+                ? code
+                : $"{code} - {title}";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Updated course",
+                message: $"You updated course {label}.",
+                kind: NotificationKind.Activity,
+                category: "Courses",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminDeletedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle)
+        {
+            var code = (courseCode ?? "").Trim();
+            var title = (courseTitle ?? "").Trim();
+
+            var label = string.IsNullOrWhiteSpace(title)
+                ? code
+                : $"{code} - {title}";
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Deleted course",
+                message: $"You deleted course {label}.",
+                kind: NotificationKind.Activity,
+                category: "Courses",
+                actorUserId: adminUserId
+            );
+        }
+
+        // ======================================================
         // GRADES
         // ======================================================
         public void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel)
@@ -304,7 +450,6 @@ namespace ASI.Basecode.Services.Services
                 IsDeleted = false
             });
 
-            // SaveChanges left to outer unit of work, same pattern as original.
         }
 
         // ======================================================

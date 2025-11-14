@@ -1,8 +1,7 @@
-﻿using ASI.Basecode.Data.Models;            // Program, ProgramCourse
-// ✅ add the repo interface namespace (adjust if yours differs)
-// e.g., IProgramRepository namespace
+﻿// ASI.Basecode.WebApp/Controllers/AdminProgramsController.cs
+using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
-using ASI.Basecode.Services.ServiceModels;  // if other endpoints need service models
+using ASI.Basecode.Services.ServiceModels;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
@@ -15,34 +14,48 @@ namespace ASI.Basecode.WebApp.Controllers
     public class AdminProgramsController : Controller
     {
         private readonly ICurriculumService _svc;
-        public AdminProgramsController(ICurriculumService svc) => _svc = svc;
+        private readonly IProfileService _profileService;
 
-        // GET /admin/programs/list
+        public AdminProgramsController(
+            ICurriculumService svc,
+            IProfileService profileService)
+        {
+            _svc = svc;
+            _profileService = profileService;
+        }
+
+        private int CurrentAdminUserId() => _profileService.GetCurrentUserId();
+
         [HttpGet("list")]
         public IActionResult List([FromQuery] string q = null)
         {
-            var items = _svc.ListPrograms(q); // IEnumerable<Program>
+            var items = _svc.ListPrograms(q);
             return PartialView("~/Views/Admin/Partials/_ProgramsTable.cshtml", items);
         }
 
-        // POST /admin/programs/create
         [HttpPost("create")]
+        [ValidateAntiForgeryToken]
         public IActionResult Create([FromForm] string code, [FromForm] string name, [FromForm] string notes)
         {
-            var p = _svc.CreateProgram(code, name, notes);
+            var adminUserId = CurrentAdminUserId();
+            var p = _svc.CreateProgram(code, name, notes, adminUserId);
+
             return Json(new { ok = true, programId = p.ProgramId, code = p.ProgramCode, name = p.ProgramName });
         }
 
-        // POST /admin/programs/add-course
         [HttpPost("add-course")]
-        public IActionResult AddCourse([FromForm] int programId, [FromForm] int year, [FromForm] int term,
-                                       [FromForm] int courseId, [FromForm] int prereqCourseId)
+        [ValidateAntiForgeryToken]
+        public IActionResult AddCourse(
+            [FromForm] int programId,
+            [FromForm] int year,
+            [FromForm] int term,
+            [FromForm] int courseId,
+            [FromForm] int prereqCourseId)
         {
             _svc.AddCourseToTerm(programId, year, term, courseId, prereqCourseId);
             return Json(new { ok = true });
         }
 
-        // GET /admin/programs/{programId}/term?year=1&term=2
         [HttpGet("{programId}/term")]
         public IActionResult GetTerm(int programId, [FromQuery] int year, [FromQuery] int term)
         {
@@ -59,15 +72,14 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { ok = true, items });
         }
 
-        // (legacy) POST /admin/programs/remove-course
         [HttpPost("remove-course")]
+        [ValidateAntiForgeryToken]
         public IActionResult RemoveCourse([FromForm] int programCourseId)
         {
             _svc.RemoveProgramCourse(programCourseId);
             return Json(new { ok = true });
         }
 
-        // POST /admin/programs/{programId}/term/item/{programCourseId}/remove
         [ValidateAntiForgeryToken]
         [HttpPost("{programId:int}/term/item/{programCourseId:int}/remove")]
         public IActionResult RemoveTermItem(int programId, int programCourseId)
@@ -76,8 +88,8 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { ok = true });
         }
 
-        // POST /admin/programs/cancel
         [HttpPost("cancel")]
+        [ValidateAntiForgeryToken]
         public IActionResult Cancel(
             [FromForm] int programId,
             [FromServices] ICurriculumService svc,
@@ -89,11 +101,11 @@ namespace ASI.Basecode.WebApp.Controllers
             if (hasCourses && !force)
                 return Json(new { ok = true, hasCourses = true });
 
+            // Cancel draft program – no notification needed; use legacy DiscardProgram
             svc.DiscardProgram(programId);
             return Json(new { ok = true, deleted = true });
         }
 
-        // POST /admin/programs/{programId}/term/bulk-add
         [ValidateAntiForgeryToken]
         [HttpPost("{programId:int}/term/bulk-add")]
         public IActionResult BulkAddToTerm(
@@ -129,10 +141,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return Json(new { ok });
         }
 
-        // ===========================
-        // NEW: POST /admin/programs/{id}/delete
-        // Safe delete with guard + AJAX/Non-AJAX responses.
-        // ===========================
         [HttpPost("{id:int}/delete")]
         [ValidateAntiForgeryToken]
         public IActionResult Delete(int id, [FromForm] bool force = false)
@@ -140,7 +148,6 @@ namespace ASI.Basecode.WebApp.Controllers
             if (id <= 0)
                 return BadRequest(new { ok = false, message = "Invalid program id." });
 
-            // Safety guard: block if program still has courses unless force is explicitly true.
             var hasCourses = _svc.HasAnyCourses(id);
             if (hasCourses && !force)
             {
@@ -151,7 +158,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 return Redirect(Request.Headers["Referer"].ToString() ?? "/admin/programs");
             }
 
-            _svc.DiscardProgram(id);
+            var adminUserId = CurrentAdminUserId();
+            _svc.DiscardProgram(id, adminUserId);
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 return Json(new { ok = true, deleted = true, id });
@@ -163,20 +171,20 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpPost("{id:int}/update")]
         [ValidateAntiForgeryToken]
         public IActionResult Update(
-       [FromRoute] int id,
-       [FromForm] string ProgramCode,
-       [FromForm] string ProgramName,
-       [FromForm] bool IsActive)
+            [FromRoute] int id,
+            [FromForm] string ProgramCode,
+            [FromForm] string ProgramName,
+            [FromForm] bool IsActive)
         {
             try
             {
-                var ok = _svc.UpdateProgram(id, ProgramCode, ProgramName, IsActive);
+                var adminUserId = CurrentAdminUserId();
+                var ok = _svc.UpdateProgram(id, ProgramCode, ProgramName, IsActive, adminUserId);
                 if (!ok) return NotFound(new { message = "Program not found." });
                 return Ok(new { ok = true });
             }
             catch (InvalidOperationException ex)
             {
-                // e.g., validation or duplicate code
                 return StatusCode(409, new { message = ex.Message });
             }
             catch
