@@ -21,33 +21,29 @@ namespace ASI.Basecode.Services.Services
         private readonly ITeacherRepository _teachers;
         private readonly IUserRepository _users;
         private readonly IUserProfileRepository _profiles;
-        private readonly IUnitOfWork _uow;
 
         public AdminCreateAccountService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
-            IUserProfileRepository profiles,
-            IUnitOfWork uow)
+            IUserProfileRepository profiles)
         {
             _students = students;
             _teachers = teachers;
             _users = users;
             _profiles = profiles;
-            _uow = uow;
         }
 
-        // add singe record:
+        // add single record:
 
         public async Task<(int UserId, string IdNumber)> CreateSingleStudentAsync(
-        StudentProfileViewModel vm,
-        ImportUserDefaults defaults,
-        CancellationToken ct)
+            StudentProfileViewModel vm,
+            ImportUserDefaults defaults,
+            CancellationToken ct)
         {
             TrimStringProperties(vm);
             if (vm == null) throw new ArgumentNullException(nameof(vm));
 
-            if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
             if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
@@ -55,8 +51,6 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(vm.Section)) throw new Exception("Section is required.");
             if (string.IsNullOrWhiteSpace(vm.Program) || string.IsNullOrWhiteSpace(vm.YearLevel))
                 throw new Exception("Program and YearLevel are required.");
-
-            await _uow.BeginTransactionAsync(ct);
 
             try
             {
@@ -77,8 +71,8 @@ namespace ASI.Basecode.Services.Services
                     UpdatedAt = now
                 };
 
+                // Repository will SaveChanges internally
                 _users.AddUser(user);
-                await _uow.SaveChangesAsync(ct); // get UserId
 
                 var profile = new UserProfile
                 {
@@ -100,7 +94,7 @@ namespace ASI.Basecode.Services.Services
                 };
 
                 _profiles.AddUserProfile(profile);
-                await _uow.SaveChangesAsync(ct);
+
                 var program = ProgramShortcut(vm.Program);
                 var admissionType = AdmissionTypeShortcut(vm.AdmissionType);
 
@@ -115,14 +109,12 @@ namespace ASI.Basecode.Services.Services
                 };
 
                 _students.AddStudent(student);
-                await _uow.SaveChangesAsync(ct);
 
-                await _uow.CommitAsync(ct);
                 return (user.UserId, idNumber);
             }
             catch
             {
-                await _uow.RollbackAsync(ct);
+                // No transaction to roll back here, just rethrow
                 throw;
             }
         }
@@ -135,12 +127,9 @@ namespace ASI.Basecode.Services.Services
             TrimStringProperties(vm);
             if (vm == null) throw new ArgumentNullException(nameof(vm));
 
-            if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
             if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
-
-            await _uow.BeginTransactionAsync(ct);
 
             try
             {
@@ -162,7 +151,6 @@ namespace ASI.Basecode.Services.Services
                 };
 
                 _users.AddUser(user);
-                await _uow.SaveChangesAsync(ct);
 
                 var profile = new UserProfile
                 {
@@ -184,7 +172,6 @@ namespace ASI.Basecode.Services.Services
                 };
 
                 _profiles.AddUserProfile(profile);
-                await _uow.SaveChangesAsync(ct);
 
                 var teacher = new Teacher
                 {
@@ -195,14 +182,11 @@ namespace ASI.Basecode.Services.Services
                 };
 
                 _teachers.AddTeacher(teacher);
-                await _uow.SaveChangesAsync(ct);
 
-                await _uow.CommitAsync(ct);
                 return (user.UserId, idNumber);
             }
             catch
             {
-                await _uow.RollbackAsync(ct);
                 throw;
             }
         }
@@ -217,7 +201,7 @@ namespace ASI.Basecode.Services.Services
                 "Barangay", "Date Of Birth", "Age", "Place Of Birth", "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
-            using var wb = new ClosedXML.Excel.XLWorkbook();
+            using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("StudentsTemplate");
 
             for (int c = 0; c < headers.Length; c++)
@@ -245,7 +229,7 @@ namespace ASI.Basecode.Services.Services
 
             ws.Columns().AdjustToContents();
 
-            using var ms = new System.IO.MemoryStream();
+            using var ms = new MemoryStream();
             wb.SaveAs(ms);
             return (ms.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -261,7 +245,7 @@ namespace ASI.Basecode.Services.Services
                 "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
-            using var wb = new ClosedXML.Excel.XLWorkbook();
+            using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("TeachersTemplate");
 
             for (int c = 0; c < headers.Length; c++)
@@ -289,13 +273,12 @@ namespace ASI.Basecode.Services.Services
 
             ws.Columns().AdjustToContents();
 
-            using var ms = new System.IO.MemoryStream();
+            using var ms = new MemoryStream();
             wb.SaveAs(ms);
             return (ms.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     "Teachers_Bulk_Template.xlsx");
         }
-
 
         // imports:
         public async Task<ImportResult> ImportStudentsAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
@@ -332,7 +315,7 @@ namespace ASI.Basecode.Services.Services
 
                 var requiredHeaders = new[]
                 {
-                     "First Name", "Last Name", "Email", "Admission Type", "Program", "Year Level", "Section", "Date Of Birth", "Age"
+                    "First Name", "Last Name", "Email", "Admission Type", "Program", "Year Level", "Section", "Date Of Birth", "Age"
                 };
 
                 var missingHeaders = requiredHeaders.Where(h => !map.ContainsKey(h)).ToList();
@@ -409,8 +392,6 @@ namespace ASI.Basecode.Services.Services
                         if (emailExists)
                             throw new Exception($"Row {r}: A student with email '{email}' already exists in the system.");
 
-                        await _uow.BeginTransactionAsync(ct);
-
                         var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
@@ -430,7 +411,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _users.AddUser(user);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Profile
                         var profile = new UserProfile
@@ -453,7 +433,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _profiles.AddUserProfile(profile);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Student
                         var student = new Student
@@ -467,14 +446,11 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _students.AddStudent(student);
-                        await _uow.SaveChangesAsync(ct);
 
-                        await _uow.CommitAsync(ct);
                         result.InsertedCount++;
                     }
                     catch (Exception ex)
                     {
-                        await _uow.RollbackAsync(ct);
                         result.FailedCount++;
                         if (result.FirstError == null)
                             result.FirstError = ex.Message;
@@ -499,36 +475,6 @@ namespace ASI.Basecode.Services.Services
             }
 
             return result;
-        }
-
-        // Add email validation helper
-        private static bool IsValidEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-                return false;
-
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void TrimStringProperties(object model)
-        {
-            if (model == null) return;
-            var stringProps = model.GetType().GetProperties()
-                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
-            foreach (var p in stringProps)
-            {
-                var val = (string)p.GetValue(model);
-                if (val != null)
-                    p.SetValue(model, val.Trim());
-            }
         }
 
         public async Task<ImportResult> ImportTeachersAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
@@ -635,8 +581,6 @@ namespace ASI.Basecode.Services.Services
                         if (emailExists)
                             throw new Exception($"Row {r}: A teacher with email '{email}' already exists in the system.");
 
-                        await _uow.BeginTransactionAsync(ct);
-
                         var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
@@ -656,7 +600,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _users.AddUser(user);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Profile
                         var profile = new UserProfile
@@ -679,7 +622,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _profiles.AddUserProfile(profile);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Teacher
                         var teacher = new Teacher
@@ -689,14 +631,11 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _teachers.AddTeacher(teacher);
-                        await _uow.SaveChangesAsync(ct);
 
-                        await _uow.CommitAsync(ct);
                         result.InsertedCount++;
                     }
                     catch (Exception ex)
                     {
-                        await _uow.RollbackAsync(ct);
                         result.FailedCount++;
                         if (result.FirstError == null)
                             result.FirstError = ex.Message;
@@ -749,7 +688,8 @@ namespace ASI.Basecode.Services.Services
 
         private static string NormalizeHeaderName(string header)
         {
-            var normalizedHeader = System.Text.RegularExpressions.Regex.Replace(header, "([a-z])([A-Z])", "$1 $2");
+            var normalizedHeader =
+                System.Text.RegularExpressions.Regex.Replace(header, "([a-z])([A-Z])", "$1 $2");
             return normalizedHeader;
         }
 
@@ -847,6 +787,35 @@ namespace ASI.Basecode.Services.Services
             s = s.Trim().Trim('<', '>');
 
             return s;
+        }
+
+        private static bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TrimStringProperties(object model)
+        {
+            if (model == null) return;
+            var stringProps = model.GetType().GetProperties()
+                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
+            foreach (var p in stringProps)
+            {
+                var val = (string)p.GetValue(model);
+                if (val != null)
+                    p.SetValue(model, val.Trim());
+            }
         }
 
         private static string ProgramShortcut(string? value)
