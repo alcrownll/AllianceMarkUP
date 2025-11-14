@@ -1,6 +1,6 @@
-﻿using ASI.Basecode.Data.Interfaces;
+﻿// ASI.Basecode.Services/Services/CurriculumService.cs
+using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
-using ASI.Basecode.Data.Repositories;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using Microsoft.EntityFrameworkCore;
@@ -17,17 +17,30 @@ namespace ASI.Basecode.Services.Services
         private readonly IProgramRepository _programs;
         private readonly IProgramCourseRepository _progCourses;
         private readonly IYearTermRepository _yearTerms;
+        private readonly INotificationService _notif;
 
-        public CurriculumService(IProgramRepository programs,
-                                 IProgramCourseRepository progCourses,
-                                 IYearTermRepository yearTerms)
+        public CurriculumService(
+            IProgramRepository programs,
+            IProgramCourseRepository progCourses,
+            IYearTermRepository yearTerms,
+            INotificationService notif)
         {
             _programs = programs;
             _progCourses = progCourses;
             _yearTerms = yearTerms;
+            _notif = notif;
         }
 
+        // =====================================================
+        // PROGRAM CREATE
+        // =====================================================
+
+        // Legacy
         public Program CreateProgram(string code, string name, string notes)
+            => CreateProgram(code, name, notes, adminUserId: 0);
+
+        // =With admin id, triggers My Activity
+        public Program CreateProgram(string code, string name, string notes, int adminUserId)
         {
             var entity = new Program
             {
@@ -35,7 +48,18 @@ namespace ASI.Basecode.Services.Services
                 ProgramName = (name ?? "").Trim(),
                 IsActive = false
             };
+
             _programs.AddProgram(entity);
+
+            if (adminUserId > 0)
+            {
+                _notif.NotifyAdminCreatedProgram(
+                    adminUserId: adminUserId,
+                    programCode: entity.ProgramCode,
+                    programName: entity.ProgramName
+                );
+            }
+
             return entity;
         }
 
@@ -48,95 +72,89 @@ namespace ASI.Basecode.Services.Services
             return p;
         }
 
-        public ProgramCourse AddCourseToTerm(int programId, int year, int term, int courseId, int prereqCourseId)
+        // =====================================================
+        // PROGRAM UPDATE
+        // =====================================================
+
+        // Legacy
+        public bool UpdateProgram(int id, string code, string name, bool isActive)
+            => UpdateProgram(id, code, name, isActive, adminUserId: 0);
+
+        public bool UpdateProgram(int id, string code, string name, bool isActive, int adminUserId)
         {
-            var yt = _yearTerms.GetYearTerm(year, term);
-            var pc = new ProgramCourse
+            var entity = _programs.GetProgramById(id);
+            if (entity == null) return false;
+
+            var codeNorm = (code ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codeNorm))
+                throw new InvalidOperationException("Program code is required.");
+
+            var nameNorm = (name ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nameNorm))
+                throw new InvalidOperationException("Program name is required.");
+
+            var duplicate = _programs.GetPrograms()
+                .AsNoTracking()
+                .Any(p => p.ProgramId != id &&
+                          p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
+            if (duplicate)
+                throw new InvalidOperationException("A program with the same code already exists.");
+
+            entity.ProgramCode = codeNorm;
+            entity.ProgramName = nameNorm;
+            entity.IsActive = isActive;
+
+            _programs.UpdateProgram(entity);
+
+            if (adminUserId > 0)
             {
-                ProgramId = programId,
-                CourseId = courseId,
-                YearTermId = yt.YearTermId,
-                Prerequisite = prereqCourseId
-            };
-            _progCourses.AddProgramCourse(pc);
-            return pc;
-        }
+                _notif.NotifyAdminUpdatedProgram(
+                    adminUserId: adminUserId,
+                    programCode: entity.ProgramCode,
+                    programName: entity.ProgramName,
+                    isActive: isActive
+                );
+            }
 
-        public Task<bool> SetProgramActiveAsync(int id, bool isActive)
-           => _programs.SetActiveAsync(id, isActive);
-
-        public IEnumerable<ProgramCourse> GetTerm(int programId, int year, int term)
-        {
-            return _progCourses.GetByProgramAndYearTerm(programId, year, term);
-        }
-
-        public void RemoveProgramCourse(int programCourseId)
-        {
-            // Legacy, ID-only delete
-            _progCourses.DeleteProgramCourse(programCourseId);
-        }
-
-        // ---------- program-scoped safety helpers ----------
-        public bool ProgramOwnsProgramCourse(int programId, int programCourseId)
-        {
-            return _progCourses
-                .GetProgramCourses()
-                .Any(pc => pc.ProgramCourseId == programCourseId &&
-                           pc.ProgramId == programId);
-        }
-
-        public bool TryRemoveProgramCourse(int programId, int programCourseId)
-        {
-            var belongs = ProgramOwnsProgramCourse(programId, programCourseId);
-            if (!belongs) return false;
-
-            _progCourses.DeleteProgramCourse(programCourseId);
             return true;
         }
-        // ---------------------------------------------------
+
+        // =====================================================
+        // PROGRAM DELETE (DISCARD)
+        // =====================================================
+
+        // Legacy
+        public void DiscardProgram(int programId)
+            => DiscardProgram(programId, adminUserId: 0);
+
+        public void DiscardProgram(int programId, int adminUserId)
+        {
+            var p = _programs.GetProgramById(programId);
+            if (p == null) return;
+
+            var hadCourses = HasAnyCourses(programId);
+
+            _programs.DeleteProgram(programId);
+
+            if (adminUserId > 0)
+            {
+                _notif.NotifyAdminDeletedProgram(
+                    adminUserId: adminUserId,
+                    programCode: p.ProgramCode,
+                    programName: p.ProgramName,
+                    forceDelete: hadCourses  // true if deleted while having courses (or via force)
+                );
+            }
+        }
+
+        // =====================================================
+        // OTHER PROGRAM METHODS
+        // =====================================================
 
         public bool HasAnyCourses(int programId)
         {
             return _progCourses.GetByProgram(programId).Any();
         }
-
-        public void DiscardProgram(int programId)
-        {
-            // Assumes FK Program → ProgramCourses is Cascade
-            _programs.DeleteProgram(programId);
-        }
-
-        public Program CreateProgramWithCurriculum(ComposeProgramDto dto)
-        {
-            if (dto == null) throw new ArgumentNullException(nameof(dto));
-            if (string.IsNullOrWhiteSpace(dto.Code)) throw new ArgumentException("Program code is required.");
-            if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Program name is required.");
-
-            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
-
-            var program = CreateProgram(dto.Code.Trim(), dto.Name.Trim(), dto.Notes);
-
-            foreach (var y in dto.Years ?? Enumerable.Empty<ComposeYearDto>())
-            {
-                foreach (var t in y.Terms ?? Enumerable.Empty<ComposeTermDto>())
-                {
-                    if (t.Term is < 1 or > 2) throw new ArgumentException($"Invalid term number {t.Term} for year {y.Year}.");
-
-                    foreach (var c in t.Courses ?? Enumerable.Empty<ComposeCourseDto>())
-                    {
-                        var yt = _yearTerms.GetYearTerm(y.Year, t.Term)
-                                 ?? throw new InvalidOperationException($"YearTerm not found for Year={y.Year}, Term={t.Term}. Seed your lookup table.");
-
-                        AddCourseToTerm(program.ProgramId, y.Year, t.Term, c.CourseId, c.PrereqCourseId);
-                    }
-                }
-            }
-
-            scope.Complete();
-            return program;
-        }
-
-        // ===== EF-translatable search for Programs (PostgreSQL ILIKE) =====
 
         public IEnumerable<Program> ListPrograms(string q = null)
         {
@@ -157,7 +175,54 @@ namespace ASI.Basecode.Services.Services
                 .Take(500)
                 .ToList();
         }
-        // ================================================================
+
+        public Task<bool> SetProgramActiveAsync(int id, bool isActive)
+           => _programs.SetActiveAsync(id, isActive);
+
+        // =====================================================
+        // PROGRAM COURSE METHODS
+        // =====================================================
+
+        public ProgramCourse AddCourseToTerm(int programId, int year, int term, int courseId, int prereqCourseId)
+        {
+            var yt = _yearTerms.GetYearTerm(year, term);
+            var pc = new ProgramCourse
+            {
+                ProgramId = programId,
+                CourseId = courseId,
+                YearTermId = yt.YearTermId,
+                Prerequisite = prereqCourseId
+            };
+            _progCourses.AddProgramCourse(pc);
+            return pc;
+        }
+
+        public IEnumerable<ProgramCourse> GetTerm(int programId, int year, int term)
+        {
+            return _progCourses.GetByProgramAndYearTerm(programId, year, term);
+        }
+
+        public void RemoveProgramCourse(int programCourseId)
+        {
+            _progCourses.DeleteProgramCourse(programCourseId);
+        }
+
+        public bool ProgramOwnsProgramCourse(int programId, int programCourseId)
+        {
+            return _progCourses
+                .GetProgramCourses()
+                .Any(pc => pc.ProgramCourseId == programCourseId &&
+                           pc.ProgramId == programId);
+        }
+
+        public bool TryRemoveProgramCourse(int programId, int programCourseId)
+        {
+            var belongs = ProgramOwnsProgramCourse(programId, programCourseId);
+            if (!belongs) return false;
+
+            _progCourses.DeleteProgramCourse(programCourseId);
+            return true;
+        }
 
         public void AddCoursesToTermBulk(int programId, int year, int term, int[] courseIds, int[] prereqIds)
         {
@@ -191,38 +256,35 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
-        // Replace the UpdateProgram method in your CurriculumService.cs with this:
-
-        public bool UpdateProgram(int id, string code, string name, bool isActive)
+        // CreateProgramWithCurriculum stays using the legacy CreateProgram
+        public Program CreateProgramWithCurriculum(ComposeProgramDto dto)
         {
-            // Load tracked entity
-            var entity = _programs.GetProgramById(id);
-            if (entity == null) return false;
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            if (string.IsNullOrWhiteSpace(dto.Code)) throw new ArgumentException("Program code is required.");
+            if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Program name is required.");
 
-            // Unique ProgramCode (case-insensitive, trim)
-            var codeNorm = (code ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(codeNorm))
-                throw new InvalidOperationException("Program code is required.");
+            using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
-            var nameNorm = (name ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(nameNorm))
-                throw new InvalidOperationException("Program name is required.");
+            var program = CreateProgram(dto.Code.Trim(), dto.Name.Trim(), dto.Notes);
 
-            // Use AsNoTracking to avoid duplicate tracking
-            var duplicate = _programs.GetPrograms()
-                .AsNoTracking()
-                .Any(p => p.ProgramId != id &&
-                          p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
-            if (duplicate)
-                throw new InvalidOperationException("A program with the same code already exists.");
+            foreach (var y in dto.Years ?? Enumerable.Empty<ComposeYearDto>())
+            {
+                foreach (var t in y.Terms ?? Enumerable.Empty<ComposeTermDto>())
+                {
+                    if (t.Term is < 1 or > 2) throw new ArgumentException($"Invalid term number {t.Term} for year {y.Year}.");
 
-            // Apply updates
-            entity.ProgramCode = codeNorm;
-            entity.ProgramName = nameNorm;
-            entity.IsActive = isActive;
+                    foreach (var c in t.Courses ?? Enumerable.Empty<ComposeCourseDto>())
+                    {
+                        var yt = _yearTerms.GetYearTerm(y.Year, t.Term)
+                                 ?? throw new InvalidOperationException($"YearTerm not found for Year={y.Year}, Term={t.Term}. Seed your lookup table.");
 
-            _programs.UpdateProgram(entity);
-            return true;
+                        AddCourseToTerm(program.ProgramId, y.Year, t.Term, c.CourseId, c.PrereqCourseId);
+                    }
+                }
+            }
+
+            scope.Complete();
+            return program;
         }
     }
 }

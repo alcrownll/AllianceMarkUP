@@ -42,13 +42,57 @@ namespace ASI.Basecode.Services.Interfaces
             string summaryMessage
         );
 
-        // 🔹 Admin changed a user's account status (suspend / reactivate / other)
+        // Admin changed a user's account status (suspend / reactivate / other)
         void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
-            string targetLabel,  
-            string roleLabel,   
-            string newStatus     
+            string targetLabel,
+            string roleLabel,
+            string newStatus
+        );
+
+        // ============================
+        // CURRICULUM: PROGRAMS & COURSES
+        // ============================
+
+        // Programs
+        void NotifyAdminCreatedProgram(
+            int adminUserId,
+            string programCode,
+            string programName
+        );
+
+        void NotifyAdminUpdatedProgram(
+            int adminUserId,
+            string programCode,
+            string programName,
+            bool isActive
+        );
+
+        void NotifyAdminDeletedProgram(
+            int adminUserId,
+            string programCode,
+            string programName,
+            bool forceDelete
+        );
+
+        // Courses
+        void NotifyAdminCreatedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle
+        );
+
+        void NotifyAdminUpdatedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle
+        );
+
+        void NotifyAdminDeletedCourse(
+            int adminUserId,
+            string courseCode,
+            string courseTitle
         );
 
         // Grades
