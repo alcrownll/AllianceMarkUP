@@ -9,7 +9,9 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="courseForm" novalidate>
+            <form id="courseForm" method="post" novalidate>
+                @Html.AntiForgeryToken()
+
                 <div class="modal-body p-4">
                     <p class="text-muted small mb-4" id="cfHelp">
                         Fill in the course details. Units will be automatically calculated.
@@ -64,20 +66,23 @@
 
 <script>
     (function () {
-        const modalEl       = document.getElementById('courseFormModal');
-        const form          = document.getElementById('courseForm');
-        const errEl         = document.getElementById('courseFormError');
-        const titleEl       = document.getElementById('cfTitle');
-        const helpEl        = document.getElementById('cfHelp');
-        const idEl          = document.getElementById('cfCourseId');
-        const codeEl        = document.getElementById('cfCode');
-        const descEl        = document.getElementById('cfDescription');
-        const lecUnitsEl    = document.getElementById('cfLecUnits');
-        const labUnitsEl    = document.getElementById('cfLabUnits');
-        const primary       = document.getElementById('cfPrimaryBtn');
+        const modalEl    = document.getElementById('courseFormModal');
+        const form       = document.getElementById('courseForm');
+        const errEl      = document.getElementById('courseFormError');
+        const titleEl    = document.getElementById('cfTitle');
+        const helpEl     = document.getElementById('cfHelp');
+        const idEl       = document.getElementById('cfCourseId');
+        const codeEl     = document.getElementById('cfCode');
+        const descEl     = document.getElementById('cfDescription');
+        const lecUnitsEl = document.getElementById('cfLecUnits');
+        const labUnitsEl = document.getElementById('cfLabUnits');
+        const primary    = document.getElementById('cfPrimaryBtn');
 
         let MODE = 'add';
-        const showErr = msg => { errEl.textContent = msg || ''; errEl.style.display = msg ? 'block' : 'none'; };
+        const showErr = msg => {
+            errEl.textContent = msg || '';
+            errEl.style.display = msg ? 'block' : 'none';
+        };
 
         // Open "Add"
         window.openAddCourseModal = function () {
@@ -122,17 +127,21 @@
         // Button openers
         document.addEventListener('click', (e) => {
             const addBtn = e.target.closest('[data-action="course-add"]');
-            if (addBtn) { e.preventDefault(); window.openAddCourseModal(); return; }
+            if (addBtn) {
+                e.preventDefault();
+                window.openAddCourseModal();
+                return;
+            }
 
             const editBtn = e.target.closest('[data-action="course-edit"]');
             if (editBtn) {
                 e.preventDefault();
                 window.openEditCourseModal({
-                    id: editBtn.getAttribute('data-course-id'),
-                    code: editBtn.getAttribute('data-course-code'),
+                    id:        editBtn.getAttribute('data-course-id'),
+                    code:      editBtn.getAttribute('data-course-code'),
                     description: editBtn.getAttribute('data-course-description'),
-                    lecUnits: editBtn.getAttribute('data-course-lec-units'),
-                    labUnits: editBtn.getAttribute('data-course-lab-units')
+                    lecUnits:  editBtn.getAttribute('data-course-lec-units'),
+                    labUnits:  editBtn.getAttribute('data-course-lab-units')
                 });
             }
         });
@@ -155,54 +164,80 @@
             try {
                 const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
 
+                const payload = new URLSearchParams();
+                if (token) payload.append('__RequestVerificationToken', token);
+
                 if (MODE === 'add') {
-                    // CREATE
-                    const fd = new FormData();
-                    if (token) fd.append('__RequestVerificationToken', token);
-                    fd.append('CourseCode', codeEl.value.trim());
-                    fd.append('Description', descEl.value.trim());
-                    fd.append('LecUnits', lecUnitsEl.value || '0');
-                    fd.append('LabUnits', labUnitsEl.value || '0');
+                    payload.append('CourseCode', codeEl.value.trim());
+                    payload.append('Description', descEl.value.trim());
+                    payload.append('LecUnits', lecUnitsEl.value || '0');
+                    payload.append('LabUnits', labUnitsEl.value || '0');
 
                     const res = await fetch('/admin/courses/create', {
                         method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: fd
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: payload.toString()
                     });
-                    const data = await res.json().catch(() => ({}));
-                    if (!res.ok || data.ok !== true) throw new Error(data.message || 'Create failed.');
+
+                    const text = await res.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch {
+                        console.error('Non-JSON response:', text);
+                        throw new Error('Server returned invalid response.');
+                    }
+
+                    if (!res.ok || data.ok !== true) {
+                        throw new Error(data.message || 'Create failed.');
+                    }
                 } else {
                     // UPDATE
-                    const id = idEl.value;
-                    const fd = new FormData();
-                    if (token) fd.append('__RequestVerificationToken', token);
-                    fd.append('CourseId', id);
-                    fd.append('CourseCode', codeEl.value.trim());
-                    fd.append('Description', descEl.value.trim());
-                    fd.append('LecUnits', lecUnitsEl.value || '0');
-                    fd.append('LabUnits', labUnitsEl.value || '0');
+                    payload.append('CourseId', idEl.value);
+                    payload.append('CourseCode', codeEl.value.trim());
+                    payload.append('Description', descEl.value.trim());
+                    payload.append('LecUnits', lecUnitsEl.value || '0');
+                    payload.append('LabUnits', labUnitsEl.value || '0');
 
                     const res = await fetch('/admin/courses/edit', {
                         method: 'POST',
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        body: fd
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: payload.toString()
                     });
 
-                    if (!res.ok) {
-                        const c = await res.json().catch(() => ({}));
-                        throw new Error(c.message || 'Update failed.');
+                    const text = await res.text();
+                    let data = {};
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch {
+                        console.error('Non-JSON response:', text);
+                        throw new Error('Server returned invalid response.');
                     }
-                    const data = await res.json().catch(() => ({}));
-                    if (data.ok !== true && !res.redirected) {
+
+                    if (!res.ok || data.ok !== true) {
                         throw new Error(data.message || 'Update failed.');
                     }
                 }
 
-                if (typeof window.loadCourseTable === 'function') await window.loadCourseTable();
+                if (typeof window.loadCourseTable === 'function') {
+                    await window.loadCourseTable();
+                }
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-                if (window.showToast) showToast(MODE === 'add' ? 'Course created.' : 'Course updated.');
+                if (window.showToast) {
+                    showToast(MODE === 'add' ? 'Course created.' : 'Course updated.');
+                }
             } catch (err) {
-                console.error(err);
+                console.error('Error details:', err);
                 showErr(err.message || 'An unexpected error occurred. Please try again.');
             } finally {
                 primary.disabled = false;

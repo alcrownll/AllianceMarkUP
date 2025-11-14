@@ -26,6 +26,9 @@
         }
     }
 
+    // 🔑 make it globally accessible so _ProgramFormModal.cshtml can call it
+    window.loadProgramTable = loadProgramTable;
+
     // ===== Client-side filter for Courses tab =====
     window.filterCoursesTable = function (query) {
         const tab = document.getElementById('courses');
@@ -399,18 +402,37 @@
             spinner?.classList.add('d-none');
         }
     });
-
     // ===== Course table AJAX loader =====
-    window.loadCourseTable = async function () {
-        const coursesTab = document.querySelector('#courses .table-responsive');
-        if (!coursesTab) return;
+    let coursesLoaded = false;
+
+    window.loadCourseTable = async function (force = false) {
+        const host = document.getElementById('coursesTableHost');
+        if (!host) {
+            console.warn('coursesTableHost not found');
+            return;
+        }
+
+        // Avoid reloading if already loaded unless forced
+        if (coursesLoaded && !force) return;
+
+        host.innerHTML = '<div class="text-center text-muted py-5">Loading courses...</div>';
 
         try {
             const res = await fetch('/admin/courses/list', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
+
             const html = await res.text();
-            coursesTab.innerHTML = html;
+            console.log('loadCourseTable status:', res.status);
+
+            if (!res.ok) {
+                console.error('Error HTML:', html);
+                host.innerHTML = '<div class="text-danger text-center py-5">Failed to load courses.</div>';
+                return;
+            }
+
+            host.innerHTML = html;
+            coursesLoaded = true;
 
             // Reapply current search filter if function exists
             const searchVal = document.getElementById('globalSearch')?.value || '';
@@ -419,7 +441,29 @@
             }
         } catch (err) {
             console.error('Failed to reload courses:', err);
+            host.innerHTML = '<div class="text-danger text-center py-5">Failed to load courses.</div>';
             if (window.showToast) window.showToast('Failed to reload courses.', 'error');
         }
     };
+
+    (function () {
+        const coursesTabLink = document.querySelector('a[data-bs-target="#courses"]');
+
+        if (!coursesTabLink) return;
+
+        // When user switches to Courses tab
+        coursesTabLink.addEventListener('shown.bs.tab', () => {
+            if (typeof window.loadCourseTable === 'function') {
+                window.loadCourseTable();
+            }
+        });
+
+        // If the Courses tab is already active (UI loaded directly on it)
+        if (coursesTabLink.classList.contains('active')) {
+            if (typeof window.loadCourseTable === 'function') {
+                window.loadCourseTable();
+            }
+        }
+    })();
+
 })();

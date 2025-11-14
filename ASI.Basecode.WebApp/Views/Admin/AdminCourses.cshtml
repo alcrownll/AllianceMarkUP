@@ -62,26 +62,22 @@
 
                 <!-- COURSES TAB -->
                 <div class="tab-pane fade" id="courses" role="tabpanel">
-                    <div class="table-responsive">
-                        <div class="mt-3 d-flex justify-content-end">
-                            <button class="btn btn-primary rounded-pill px-4" data-action="course-add">
-                                <span class="me-2">+</span> Add Course
-                            </button>
-                        </div>
+                    <div class="mt-3 d-flex justify-content-end">
+                        <button class="btn btn-primary rounded-pill px-4" data-action="course-add">
+                            <span class="me-2">+</span> Add Course
+                        </button>
+                    </div>
 
-                        @if (Model == null || !Model.Any())
-                        {
-                            <div class="text-center text-muted py-5">No courses found.</div>
-                        }
-                        else
-                        {
-                            @await Html.PartialAsync("~/Views/Admin/Partials/_CoursesTable.cshtml", Model)
-                        }
+                    <div class="table-responsive mt-3">
+                        <div id="coursesTableHost">
+                            <div class="text-center text-muted py-5">Loading courses...</div>
+                        </div>
 
                         <!-- Client-side "no matches" indicator (hidden by default) -->
                         <div id="coursesNoMatches" class="no-matches d-none">No matching courses.</div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
