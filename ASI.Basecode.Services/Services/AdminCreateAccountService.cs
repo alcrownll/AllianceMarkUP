@@ -21,33 +21,34 @@ namespace ASI.Basecode.Services.Services
         private readonly ITeacherRepository _teachers;
         private readonly IUserRepository _users;
         private readonly IUserProfileRepository _profiles;
-        private readonly IUnitOfWork _uow;
+        private readonly INotificationService _notifications;
 
         public AdminCreateAccountService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
             IUserProfileRepository profiles,
-            IUnitOfWork uow)
+            INotificationService notifications)
         {
             _students = students;
             _teachers = teachers;
             _users = users;
             _profiles = profiles;
-            _uow = uow;
+            _notifications = notifications;
         }
 
-        // add singe record:
-
+        // ======================================================
+        // SINGLE CREATE: STUDENT
+        // ======================================================
         public async Task<(int UserId, string IdNumber)> CreateSingleStudentAsync(
-        StudentProfileViewModel vm,
-        ImportUserDefaults defaults,
-        CancellationToken ct)
+            int adminUserId,
+            StudentProfileViewModel vm,
+            ImportUserDefaults defaults,
+            CancellationToken ct)
         {
             TrimStringProperties(vm);
             if (vm == null) throw new ArgumentNullException(nameof(vm));
 
-            if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
             if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
@@ -56,78 +57,84 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(vm.Program) || string.IsNullOrWhiteSpace(vm.YearLevel))
                 throw new Exception("Program and YearLevel are required.");
 
-            await _uow.BeginTransactionAsync(ct);
+            int userId;
+            string idNumber;
 
-            try
+            idNumber = await GenerateUniqueIdNumberAsync('2', ct);
+            var password = GenerateHashPassword(vm.LastName, idNumber);
+            var now = DateTime.Now;
+
+            // User
+            var user = new User
             {
-                var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
-                var password = GenerateHashPassword(vm.LastName, idNumber);
-                var now = DateTime.Now;
+                FirstName = vm.FirstName,
+                LastName = vm.LastName,
+                Email = vm.Email,
+                IdNumber = idNumber,
+                Password = password,
+                Role = "Student",
+                AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
+                CreatedAt = now,
+                UpdatedAt = now
+            };
 
-                var user = new User
-                {
-                    FirstName = vm.FirstName,
-                    LastName = vm.LastName,
-                    Email = vm.Email,
-                    IdNumber = idNumber,
-                    Password = password,
-                    Role = "Student",
-                    AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
+            _users.AddUser(user);            // repo saves internally
+            userId = user.UserId;            // populated after SaveChanges in repo
 
-                _users.AddUser(user);
-                await _uow.SaveChangesAsync(ct); // get UserId
-
-                var profile = new UserProfile
-                {
-                    UserId = user.UserId,
-                    MiddleName = vm.MiddleName,
-                    Suffix = vm.Suffix,
-                    MobileNo = vm.MobileNo,
-                    HomeAddress = vm.HomeAddress,
-                    Province = vm.Province,
-                    Municipality = vm.Municipality,
-                    Barangay = vm.Barangay,
-                    DateOfBirth = vm.DateOfBirth,
-                    PlaceOfBirth = vm.PlaceOfBirth,
-                    Age = vm.Age ?? 0,
-                    MaritalStatus = vm.MaritalStatus,
-                    Gender = vm.Gender,
-                    Religion = vm.Religion,
-                    Citizenship = vm.Citizenship
-                };
-
-                _profiles.AddUserProfile(profile);
-                await _uow.SaveChangesAsync(ct);
-                var program = ProgramShortcut(vm.Program);
-                var admissionType = AdmissionTypeShortcut(vm.AdmissionType);
-
-                var student = new Student
-                {
-                    UserId = user.UserId,
-                    AdmissionType = admissionType,
-                    Program = program,
-                    Department = vm.Department,
-                    YearLevel = vm.YearLevel,
-                    Section = vm.Section
-                };
-
-                _students.AddStudent(student);
-                await _uow.SaveChangesAsync(ct);
-
-                await _uow.CommitAsync(ct);
-                return (user.UserId, idNumber);
-            }
-            catch
+            // Profile
+            var profile = new UserProfile
             {
-                await _uow.RollbackAsync(ct);
-                throw;
-            }
+                UserId = user.UserId,
+                MiddleName = vm.MiddleName,
+                Suffix = vm.Suffix,
+                MobileNo = vm.MobileNo,
+                HomeAddress = vm.HomeAddress,
+                Province = vm.Province,
+                Municipality = vm.Municipality,
+                Barangay = vm.Barangay,
+                DateOfBirth = vm.DateOfBirth,
+                PlaceOfBirth = vm.PlaceOfBirth,
+                Age = vm.Age ?? 0,
+                MaritalStatus = vm.MaritalStatus,
+                Gender = vm.Gender,
+                Religion = vm.Religion,
+                Citizenship = vm.Citizenship
+            };
+
+            _profiles.AddUserProfile(profile);   // repo saves
+
+            // Student
+            var program = ProgramShortcut(vm.Program);
+            var admissionType = AdmissionTypeShortcut(vm.AdmissionType);
+
+            var student = new Student
+            {
+                UserId = user.UserId,
+                AdmissionType = admissionType,
+                Program = program,
+                Department = vm.Department,
+                YearLevel = vm.YearLevel,
+                Section = vm.Section
+            };
+
+            _students.AddStudent(student);       // repo saves
+
+            // Notify admin: My Activity
+            var fullName = $"{vm.FirstName} {vm.LastName}".Trim();
+            _notifications.NotifyAdminCreatedStudent(
+                adminUserId: adminUserId,
+                studentFullName: fullName,
+                idNumber: idNumber
+            );                                   // notification service handles saving
+
+            return (userId, idNumber);
         }
 
+        // ======================================================
+        // SINGLE CREATE: TEACHER
+        // ======================================================
         public async Task<(int UserId, string IdNumber)> CreateSingleTeacherAsync(
+            int adminUserId,
             TeacherProfileViewModel vm,
             ImportUserDefaults defaults,
             CancellationToken ct)
@@ -135,79 +142,81 @@ namespace ASI.Basecode.Services.Services
             TrimStringProperties(vm);
             if (vm == null) throw new ArgumentNullException(nameof(vm));
 
-            if (vm == null) throw new ArgumentNullException(nameof(vm));
             if (string.IsNullOrWhiteSpace(vm.LastName)) throw new Exception("Last Name is required.");
             if (string.IsNullOrWhiteSpace(vm.FirstName)) throw new Exception("First Name is required.");
             if (string.IsNullOrWhiteSpace(vm.Email)) throw new Exception("Email is required.");
 
-            await _uow.BeginTransactionAsync(ct);
+            int userId;
+            string idNumber;
 
-            try
+            idNumber = await GenerateUniqueIdNumberAsync('1', ct);
+            var password = GenerateHashPassword(vm.LastName, idNumber);
+            var now = DateTime.Now;
+
+            // User
+            var user = new User
             {
-                var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
-                var password = GenerateHashPassword(vm.LastName, idNumber);
-                var now = DateTime.Now;
+                FirstName = vm.FirstName,
+                LastName = vm.LastName,
+                Email = vm.Email,
+                IdNumber = idNumber,
+                Password = password,
+                Role = "Teacher",
+                AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
+                CreatedAt = now,
+                UpdatedAt = now
+            };
 
-                var user = new User
-                {
-                    FirstName = vm.FirstName,
-                    LastName = vm.LastName,
-                    Email = vm.Email,
-                    IdNumber = idNumber,
-                    Password = password,
-                    Role = "Teacher",
-                    AccountStatus = defaults?.DefaultAccountStatus ?? "Active",
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
+            _users.AddUser(user);
+            userId = user.UserId;
 
-                _users.AddUser(user);
-                await _uow.SaveChangesAsync(ct);
-
-                var profile = new UserProfile
-                {
-                    UserId = user.UserId,
-                    MiddleName = vm.MiddleName,
-                    Suffix = vm.Suffix,
-                    MobileNo = vm.MobileNo,
-                    HomeAddress = vm.HomeAddress,
-                    Province = vm.Province,
-                    Municipality = vm.Municipality,
-                    Barangay = vm.Barangay,
-                    DateOfBirth = vm.DateOfBirth,
-                    PlaceOfBirth = vm.PlaceOfBirth,
-                    Age = vm.Age ?? 0,
-                    MaritalStatus = vm.MaritalStatus,
-                    Gender = vm.Gender,
-                    Religion = vm.Religion,
-                    Citizenship = vm.Citizenship
-                };
-
-                _profiles.AddUserProfile(profile);
-                await _uow.SaveChangesAsync(ct);
-
-                var teacher = new Teacher
-                {
-                    UserId = user.UserId,
-                    Position = string.IsNullOrWhiteSpace(vm.Position)
-                        ? (defaults?.DefaultTeacherPosition ?? "Instructor")
-                        : vm.Position
-                };
-
-                _teachers.AddTeacher(teacher);
-                await _uow.SaveChangesAsync(ct);
-
-                await _uow.CommitAsync(ct);
-                return (user.UserId, idNumber);
-            }
-            catch
+            // Profile
+            var profile = new UserProfile
             {
-                await _uow.RollbackAsync(ct);
-                throw;
-            }
+                UserId = user.UserId,
+                MiddleName = vm.MiddleName,
+                Suffix = vm.Suffix,
+                MobileNo = vm.MobileNo,
+                HomeAddress = vm.HomeAddress,
+                Province = vm.Province,
+                Municipality = vm.Municipality,
+                Barangay = vm.Barangay,
+                DateOfBirth = vm.DateOfBirth,
+                PlaceOfBirth = vm.PlaceOfBirth,
+                Age = vm.Age ?? 0,
+                MaritalStatus = vm.MaritalStatus,
+                Gender = vm.Gender,
+                Religion = vm.Religion,
+                Citizenship = vm.Citizenship
+            };
+
+            _profiles.AddUserProfile(profile);
+
+            // Teacher
+            var teacher = new Teacher
+            {
+                UserId = user.UserId,
+                Position = string.IsNullOrWhiteSpace(vm.Position)
+                    ? (defaults?.DefaultTeacherPosition ?? "Instructor")
+                    : vm.Position
+            };
+
+            _teachers.AddTeacher(teacher);
+
+            // Notify admin: My Activity
+            var fullName = $"{vm.FirstName} {vm.LastName}".Trim();
+            _notifications.NotifyAdminCreatedTeacher(
+                adminUserId: adminUserId,
+                teacherFullName: fullName,
+                idNumber: idNumber
+            );
+
+            return (userId, idNumber);
         }
 
-        // generating templates:
+        // ======================================================
+        // TEMPLATES
+        // ======================================================
         public (byte[] Content, string ContentType, string FileName) GenerateStudentsTemplate()
         {
             var headers = new[]
@@ -217,7 +226,7 @@ namespace ASI.Basecode.Services.Services
                 "Barangay", "Date Of Birth", "Age", "Place Of Birth", "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
-            using var wb = new ClosedXML.Excel.XLWorkbook();
+            using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("StudentsTemplate");
 
             for (int c = 0; c < headers.Length; c++)
@@ -245,7 +254,7 @@ namespace ASI.Basecode.Services.Services
 
             ws.Columns().AdjustToContents();
 
-            using var ms = new System.IO.MemoryStream();
+            using var ms = new MemoryStream();
             wb.SaveAs(ms);
             return (ms.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -261,7 +270,7 @@ namespace ASI.Basecode.Services.Services
                 "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
-            using var wb = new ClosedXML.Excel.XLWorkbook();
+            using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("TeachersTemplate");
 
             for (int c = 0; c < headers.Length; c++)
@@ -289,16 +298,21 @@ namespace ASI.Basecode.Services.Services
 
             ws.Columns().AdjustToContents();
 
-            using var ms = new System.IO.MemoryStream();
+            using var ms = new MemoryStream();
             wb.SaveAs(ms);
             return (ms.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     "Teachers_Bulk_Template.xlsx");
         }
 
-
-        // imports:
-        public async Task<ImportResult> ImportStudentsAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
+        // ======================================================
+        // BULK IMPORT: STUDENTS
+        // ======================================================
+        public async Task<ImportResult> ImportStudentsAsync(
+            int adminUserId,
+            IFormFile file,
+            ImportUserDefaults defaults,
+            CancellationToken ct)
         {
             var result = new ImportResult();
 
@@ -332,7 +346,7 @@ namespace ASI.Basecode.Services.Services
 
                 var requiredHeaders = new[]
                 {
-                     "First Name", "Last Name", "Email", "Admission Type", "Program", "Year Level", "Section", "Date Of Birth", "Age"
+                    "First Name", "Last Name", "Email", "Admission Type", "Program", "Year Level", "Section", "Date Of Birth", "Age"
                 };
 
                 var missingHeaders = requiredHeaders.Where(h => !map.ContainsKey(h)).ToList();
@@ -409,8 +423,7 @@ namespace ASI.Basecode.Services.Services
                         if (emailExists)
                             throw new Exception($"Row {r}: A student with email '{email}' already exists in the system.");
 
-                        await _uow.BeginTransactionAsync(ct);
-
+                        // --- Create entities ---
                         var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
@@ -430,7 +443,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _users.AddUser(user);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Profile
                         var profile = new UserProfile
@@ -453,7 +465,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _profiles.AddUserProfile(profile);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Student
                         var student = new Student
@@ -467,14 +478,11 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _students.AddStudent(student);
-                        await _uow.SaveChangesAsync(ct);
 
-                        await _uow.CommitAsync(ct);
                         result.InsertedCount++;
                     }
                     catch (Exception ex)
                     {
-                        await _uow.RollbackAsync(ct);
                         result.FailedCount++;
                         if (result.FirstError == null)
                             result.FirstError = ex.Message;
@@ -498,40 +506,27 @@ namespace ASI.Basecode.Services.Services
                 }
             }
 
+            // Notify admin (My Activity) if at least one record was inserted
+            if (result.InsertedCount > 0)
+            {
+                var summary = result.GetMessage();
+                _notifications.NotifyAdminBulkUploadStudents(
+                    adminUserId: adminUserId,
+                    summaryMessage: summary
+                );
+            }
+
             return result;
         }
 
-        // Add email validation helper
-        private static bool IsValidEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-                return false;
-
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void TrimStringProperties(object model)
-        {
-            if (model == null) return;
-            var stringProps = model.GetType().GetProperties()
-                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
-            foreach (var p in stringProps)
-            {
-                var val = (string)p.GetValue(model);
-                if (val != null)
-                    p.SetValue(model, val.Trim());
-            }
-        }
-
-        public async Task<ImportResult> ImportTeachersAsync(IFormFile file, ImportUserDefaults defaults, CancellationToken ct)
+        // ======================================================
+        // BULK IMPORT: TEACHERS
+        // ======================================================
+        public async Task<ImportResult> ImportTeachersAsync(
+            int adminUserId,
+            IFormFile file,
+            ImportUserDefaults defaults,
+            CancellationToken ct)
         {
             var result = new ImportResult();
 
@@ -635,8 +630,7 @@ namespace ASI.Basecode.Services.Services
                         if (emailExists)
                             throw new Exception($"Row {r}: A teacher with email '{email}' already exists in the system.");
 
-                        await _uow.BeginTransactionAsync(ct);
-
+                        // --- Create entities ---
                         var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
@@ -656,7 +650,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _users.AddUser(user);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Profile
                         var profile = new UserProfile
@@ -679,7 +672,6 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _profiles.AddUserProfile(profile);
-                        await _uow.SaveChangesAsync(ct);
 
                         // Create Teacher
                         var teacher = new Teacher
@@ -689,14 +681,11 @@ namespace ASI.Basecode.Services.Services
                         };
 
                         _teachers.AddTeacher(teacher);
-                        await _uow.SaveChangesAsync(ct);
 
-                        await _uow.CommitAsync(ct);
                         result.InsertedCount++;
                     }
                     catch (Exception ex)
                     {
-                        await _uow.RollbackAsync(ct);
                         result.FailedCount++;
                         if (result.FirstError == null)
                             result.FirstError = ex.Message;
@@ -720,25 +709,35 @@ namespace ASI.Basecode.Services.Services
                 }
             }
 
+            // Notify admin (My Activity) if at least one record was inserted
+            if (result.InsertedCount > 0)
+            {
+                var summary = result.GetMessage();
+                _notifications.NotifyAdminBulkUploadTeachers(
+                    adminUserId: adminUserId,
+                    summaryMessage: summary
+                );
+            }
+
             return result;
         }
 
-        // helpers:
+        // ======================================================
+        // HELPERS
+        // ======================================================
         private static (IXLWorksheet ws, Dictionary<string, int> map) ReadWorksheetAndHeaderMap(IFormFile file)
         {
             var stream = file.OpenReadStream();
             var wb = new XLWorkbook(stream);
             var ws = wb.Worksheets.First();
 
-            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var map = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var lastCol = ws.LastColumnUsed().ColumnNumber();
 
             for (int c = 1; c <= lastCol; c++)
             {
                 var header = ws.Cell(1, c).GetString().Trim();
-
                 var normalizedHeader = NormalizeHeaderName(header);
-
                 if (!string.IsNullOrEmpty(normalizedHeader))
                 {
                     map[normalizedHeader] = c;
@@ -753,10 +752,10 @@ namespace ASI.Basecode.Services.Services
             return normalizedHeader;
         }
 
-        private static string Get(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        private static string Get(IXLWorksheet ws, int r, System.Collections.Generic.IDictionary<string, int> map, string name)
             => map.TryGetValue(name, out var c) ? ws.Cell(r, c).GetString().Trim() : string.Empty;
 
-        private static int? GetInt(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        private static int? GetInt(IXLWorksheet ws, int r, System.Collections.Generic.IDictionary<string, int> map, string name)
         {
             if (!map.TryGetValue(name, out var c)) return null;
             var s = ws.Cell(r, c).GetString().Trim();
@@ -790,7 +789,7 @@ namespace ASI.Basecode.Services.Services
             return PasswordManager.EncryptPassword(plain);
         }
 
-        private static string GetEmail(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        private static string GetEmail(IXLWorksheet ws, int r, System.Collections.Generic.IDictionary<string, int> map, string name)
         {
             if (!map.TryGetValue(name, out var c)) return string.Empty;
 
@@ -865,7 +864,7 @@ namespace ASI.Basecode.Services.Services
             return s;
         }
 
-        private static DateOnly? GetDateOnly(IXLWorksheet ws, int r, IDictionary<string, int> map, string name)
+        private static DateOnly? GetDateOnly(IXLWorksheet ws, int r, System.Collections.Generic.IDictionary<string, int> map, string name)
         {
             if (!map.TryGetValue(name, out var c)) return null;
 
@@ -890,6 +889,35 @@ namespace ASI.Basecode.Services.Services
             }
 
             return null;
+        }
+
+        private static bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TrimStringProperties(object model)
+        {
+            if (model == null) return;
+            var stringProps = model.GetType().GetProperties()
+                .Where(p => p.CanRead && p.CanWrite && p.PropertyType == typeof(string));
+            foreach (var p in stringProps)
+            {
+                var val = (string)p.GetValue(model);
+                if (val != null)
+                    p.SetValue(model, val.Trim());
+            }
         }
     }
 }

@@ -24,7 +24,7 @@
         }
 
         <form asp-action="@postAct" asp-controller="@postCtrl" asp-route-userId="@(isCreate ? null : Model.UserId)"
-            method="post" enctype="multipart/form-data">
+            method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -76,6 +76,14 @@
                             <option>4th Year</option>
                         </select>
                         <span asp-validation-for="YearLevel" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 uniform-row mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="Section"></label>
+                        <input class="form-control" asp-for="Section" />
+                        <span asp-validation-for="Section" class="text-danger"></span>
                     </div>
                 </div>
             </div>

@@ -28,7 +28,14 @@ namespace ASI.Basecode.WebApp.Controllers
 
         // TABS 
         [HttpGet]
-        public async Task<IActionResult> Index(string? tab, string? program, string? yearLevel, string? name, string? idNumber, string? status, CancellationToken ct)
+        public async Task<IActionResult> Index(
+            string? tab,
+            string? program,
+            string? yearLevel,
+            string? name,
+            string? idNumber,
+            string? status,
+            CancellationToken ct)
         {
             var normalizedStatus = string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase)
                 ? "Inactive"
@@ -86,13 +93,23 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveStudent(int userId, StudentProfileViewModel vm)
         {
+            // align route + hidden if needed
+            if (userId <= 0 && vm.UserId > 0)
+                userId = vm.UserId;
+
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Student Profile";
                 return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
             }
 
-            await _profile.UpdateStudentProfileAsync(userId, vm);
+            var adminUserId = _profile.GetCurrentUserId();
+
+            await _profile.UpdateStudentProfileByAdminAsync(
+                adminUserId: adminUserId,
+                targetUserId: userId,
+                input: vm);
+
             TempData["ProfileSaved"] = "Profile has been updated.";
             return RedirectToAction(nameof(Student), new { userId });
         }
@@ -111,13 +128,22 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveTeacher(int userId, TeacherProfileViewModel vm)
         {
+            if (userId <= 0 && vm.UserId > 0)
+                userId = vm.UserId;
+
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Teacher Profile";
                 return View("~/Views/Admin/AdminTeacherProfile.cshtml", vm);
             }
 
-            await _profile.UpdateTeacherProfileAsync(userId, vm);
+            var adminUserId = _profile.GetCurrentUserId();
+
+            await _profile.UpdateTeacherProfileByAdminAsync(
+                adminUserId: adminUserId,
+                targetUserId: userId,
+                input: vm);
+
             TempData["ProfileSaved"] = "Profile has been updated.";
             return RedirectToAction(nameof(Teacher), new { userId });
         }
@@ -126,7 +152,15 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SuspendUser(int userId, string? tab, CancellationToken ct)
         {
-            var ok = await _adminacc.SuspendAccount(userId, "Inactive", ct);
+            var adminUserId = _profile.GetCurrentUserId();
+            var roleLabel = (tab?.ToLower() == "teachers") ? "teacher" : "student";
+
+            var ok = await _adminacc.SuspendAccount(
+                adminUserId: adminUserId,
+                userId: userId,
+                status: "Inactive",
+                roleLabel: roleLabel,
+                ct: ct);
 
             TempData[ok ? "ImportOk" : "ImportErr"] = ok
                 ? "Account has been suspended."
@@ -165,12 +199,17 @@ namespace ASI.Basecode.WebApp.Controllers
                 DefaultStudentStatus = "Enrolled"
             };
 
-            var (_, idNumber) = await _create.CreateSingleStudentAsync(vm, defaults, ct);
+            var adminUserId = _profile.GetCurrentUserId();
+
+            var (userId, idNumber) = await _create.CreateSingleStudentAsync(
+                adminUserId: adminUserId,
+                vm: vm,
+                defaults: defaults,
+                ct: ct);
 
             TempData["ImportOk"] = $"Student created successfully. ID Number: {idNumber}";
             return RedirectToAction(nameof(Index), new { tab = "students" });
         }
-
 
         [HttpGet]
         public IActionResult CreateTeacher()
@@ -202,7 +241,13 @@ namespace ASI.Basecode.WebApp.Controllers
                 DefaultTeacherPosition = "Instructor"
             };
 
-            var (_, idNumber) = await _create.CreateSingleTeacherAsync(vm, defaults, ct);
+            var adminUserId = _profile.GetCurrentUserId();
+
+            var (userId, idNumber) = await _create.CreateSingleTeacherAsync(
+                adminUserId: adminUserId,
+                vm: vm,
+                defaults: defaults,
+                ct: ct);
 
             TempData["ImportOk"] = $"Teacher created successfully. ID Number: {idNumber}";
             return RedirectToAction(nameof(Index), new { tab = "teachers" });
@@ -218,13 +263,26 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BulkUploadStudents(IFormFile file, string? defaultAccountStatus, string? defaultStudentStatus, string? status, CancellationToken ct)
+        public async Task<IActionResult> BulkUploadStudents(
+            IFormFile file,
+            string? defaultAccountStatus,
+            string? defaultStudentStatus,
+            string? status,
+            CancellationToken ct)
         {
-            var result = await _create.ImportStudentsAsync(file, new ImportUserDefaults
+            var defaults = new ImportUserDefaults
             {
                 DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
                 DefaultStudentStatus = string.IsNullOrWhiteSpace(defaultStudentStatus) ? "Enrolled" : defaultStudentStatus!
-            }, ct);
+            };
+
+            var adminUserId = _profile.GetCurrentUserId();
+
+            var result = await _create.ImportStudentsAsync(
+                adminUserId: adminUserId,
+                file: file,
+                defaults: defaults,
+                ct: ct);
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
@@ -255,13 +313,26 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> BulkUploadTeachers(IFormFile file, string? defaultAccountStatus, string? defaultTeacherPosition, string? status, CancellationToken ct)
+        public async Task<IActionResult> BulkUploadTeachers(
+            IFormFile file,
+            string? defaultAccountStatus,
+            string? defaultTeacherPosition,
+            string? status,
+            CancellationToken ct)
         {
-            var result = await _create.ImportTeachersAsync(file, new ImportUserDefaults
+            var defaults = new ImportUserDefaults
             {
                 DefaultAccountStatus = string.IsNullOrWhiteSpace(defaultAccountStatus) ? "Active" : defaultAccountStatus!,
                 DefaultTeacherPosition = string.IsNullOrWhiteSpace(defaultTeacherPosition) ? "Instructor" : defaultTeacherPosition!
-            }, ct);
+            };
+
+            var adminUserId = _profile.GetCurrentUserId();
+
+            var result = await _create.ImportTeachersAsync(
+                adminUserId: adminUserId,
+                file: file,
+                defaults: defaults,
+                ct: ct);
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {

@@ -33,19 +33,24 @@
                 </select>
 
                 <button type="button" class="sl-iconbtn" title="Print Study Load" onclick="window.print()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
-                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        aria-hidden="true" focusable="false">
+                        <path
+                            d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
                     </svg>
                     <span class="sr-only">Print</span>
                 </button>
 
                 @if (!string.IsNullOrEmpty(prospectusFile))
                 {
-                    <a class="sl-iconbtn" href="~/prospectus/@prospectusFile" target="_blank" rel="noopener" title="View Prospectus">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path d="M12 5v10m0 0l-4-4m4 4l4-4M4 19h16" fill="none"
-                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <a class="sl-iconbtn" href="~/prospectus/@prospectusFile" target="_blank" rel="noopener"
+                        title="View Prospectus">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                            aria-hidden="true" focusable="false">
+                            <path d="M12 5v10m0 0l-4-4m4 4l4-4M4 19h16" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                         <span class="sr-only">View Prospectus</span>
                     </a>
@@ -54,10 +59,16 @@
         </div>
 
         <div class="sl-infogrid">
-            <div class="sl-label">Name</div><div class="sl-value">@Model.StudentName</div>
-            <div class="sl-label">School Year</div><div class="sl-value">@Model.SchoolYear</div>
-            <div class="sl-label">Program</div><div class="sl-value">@Model.Program</div>
-            <div class="sl-label">Year Level</div><div class="sl-value">@Model.YearLevel</div>
+            <div class="sl-label">Name</div>
+            <div class="sl-value">@Model.StudentName</div>
+            <div class="sl-label">School Year</div>
+            <div class="sl-value">@Model.SchoolYear</div>
+            <div class="sl-label">Program</div>
+            <div class="sl-value">@Model.Program</div>
+            <div class="sl-label">Section</div>
+            <div class="sl-value">@Model.Section</div>
+            <div class="sl-label">Year Level</div>
+            <div class="sl-value">@Model.YearLevel</div>
         </div>
 
         <table class="sl-table">
@@ -92,7 +103,9 @@
                 }
                 else
                 {
-                    <tr><td colspan="8" class="text-center text-muted">No subjects found for the selected term.</td></tr>
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No subjects found for the selected term.</td>
+                    </tr>
                 }
             </tbody>
         </table>
@@ -120,10 +133,16 @@
     <div class="sub-title">@Model.SemesterText, S.Y. @Model.SchoolYear</div>
 
     <div class="info-grid">
-        <div class="lbl">Name</div><div class="val">: @Model.StudentName</div>
-        <div class="lbl">School Year</div><div class="val">: @Model.SchoolYear</div>
-        <div class="lbl">Program</div><div class="val">: @Model.Program</div>
-        <div class="lbl">Year Level</div><div class="val">: @Model.YearLevel</div>
+        <div class="lbl">Name</div>
+        <div class="val">: @Model.StudentName</div>
+        <div class="lbl">School Year</div>
+        <div class="val">: @Model.SchoolYear</div>
+        <div class="lbl">Program</div>
+        <div class="val">: @Model.Program</div>
+        <div class="lbl">Section</div>
+        <div class="val">: @Model.Section</div>
+        <div class="lbl">Year Level</div>
+        <div class="val">: @Model.YearLevel</div>
     </div>
 
     <hr class="sep" />
@@ -171,7 +190,9 @@
             }
             else
             {
-                <tr><td colspan="8" class="no-rows">No subjects found.</td></tr>
+                <tr>
+                    <td colspan="8" class="no-rows">No subjects found.</td>
+                </tr>
             }
         </tbody>
     </table>

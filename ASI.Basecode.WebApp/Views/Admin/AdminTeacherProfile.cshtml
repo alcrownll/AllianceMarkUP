@@ -24,7 +24,7 @@
         }
 
         <form asp-action="@postAct" asp-controller="@postCtrl" asp-route-userId="@(isCreate ? null : Model.UserId)"
-            method="post" enctype="multipart/form-data">
+            method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 

@@ -16,17 +16,20 @@ namespace ASI.Basecode.Services.Services
         private readonly ITeacherRepository _teachers;
         private readonly IUserRepository _users;
         private readonly IUnitOfWork _uow;
+        private readonly INotificationService _notifications;
 
         public AdminAccountsService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
-            IUnitOfWork uow)
+            IUnitOfWork uow,
+            INotificationService notifications)
         {
             _students = students;
             _teachers = teachers;
             _users = users;
             _uow = uow;
+            _notifications = notifications;
         }
 
         // fetch data and filters
@@ -69,10 +72,6 @@ namespace ASI.Basecode.Services.Services
                     IdNumber = s.User.IdNumber,
                 })
                 .ToListAsync(ct);
-
-            var baseForLists = _students.GetStudentsWithUser()
-                .Where(s => s.User.AccountStatus == status);
-
 
             var programs = await _students.GetStudents()
                 .Select(s => s.Program)
@@ -129,7 +128,12 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
-        public async Task<bool> SuspendAccount(int userId, string status, CancellationToken ct)
+        public async Task<bool> SuspendAccount(
+            int adminUserId,
+            int userId,
+            string status,
+            string? roleLabel,
+            CancellationToken ct)
         {
             var user = await _users.GetUsers()
                 .FirstOrDefaultAsync(u => u.UserId == userId, ct);
@@ -139,7 +143,35 @@ namespace ASI.Basecode.Services.Services
             user.AccountStatus = status;
             _users.UpdateUser(user);
 
+            // Save the account status change
             await _uow.SaveChangesAsync(ct);
+
+            // Build label for notification
+            var fullName = $"{user.FirstName} {user.LastName}".Trim();
+            string targetLabel = !string.IsNullOrWhiteSpace(fullName)
+                ? fullName
+                : $"User #{userId}";
+
+            if (!string.IsNullOrWhiteSpace(user.IdNumber))
+            {
+                targetLabel = $"{targetLabel} (ID: {user.IdNumber})";
+            }
+
+            var roleText = string.IsNullOrWhiteSpace(roleLabel)
+                ? "user"
+                : roleLabel.Trim().ToLowerInvariant();
+
+            // Notification: My Activity for admin
+            _notifications.NotifyAdminSuspendedUser(
+                adminUserId: adminUserId,
+                targetUserId: userId,
+                targetLabel: targetLabel,
+                roleLabel: roleText
+            );
+
+            // Persist notification
+            await _uow.SaveChangesAsync(ct);
+
             return true;
         }
     }

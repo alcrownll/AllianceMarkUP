@@ -56,7 +56,7 @@ namespace ASI.Basecode.Services.Services
                 .ThenBy(x => x.SemesterNum)
                 .Select(x => new TermItem
                 {
-                    Value = $"{x.SchoolYear}-{x.SemesterNum}",                    
+                    Value = $"{x.SchoolYear}-{x.SemesterNum}",
                     Text = $"S.Y. {x.SchoolYear} - {x.SemesterText}",
                     Selected = false
                 })
@@ -69,6 +69,7 @@ namespace ASI.Basecode.Services.Services
                     StudentName = $"{student.User.FirstName} {student.User.LastName}",
                     Program = student.Program,
                     YearLevel = student.YearLevel?.ToString(),
+                    Section = student.Section,
                     SelectedTerm = termValue,
                     Terms = new List<TermItem>(),
                     Rows = new List<StudyLoadRow>()
@@ -144,8 +145,9 @@ namespace ASI.Basecode.Services.Services
                 StudentName = $"{student.User.FirstName} {student.User.LastName}",
                 Program = student.Program,
                 YearLevel = student.YearLevel?.ToString(),
-                SelectedTerm = selected,      
-                Terms = terms,               
+                Section = student.Section,
+                SelectedTerm = selected,
+                Terms = terms,
                 Rows = rows.OrderBy(r => r.Subject).ThenBy(r => r.Type).ToList()
             };
         }
@@ -163,8 +165,8 @@ namespace ASI.Basecode.Services.Services
         private static int GetCurrentSemesterNum()
         {
             var now = DateTime.Now;
-            if (now.Month is >= 6 and <= 10) return 1;    
-            if (now.Month is >= 11 || now.Month <= 3) return 2; 
+            if (now.Month is >= 6 and <= 10) return 1;
+            if (now.Month is >= 11 || now.Month <= 3) return 2;
             return 1;
         }
 
