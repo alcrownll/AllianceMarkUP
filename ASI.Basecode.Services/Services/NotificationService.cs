@@ -29,10 +29,151 @@ namespace ASI.Basecode.Services.Services
                 userId: userId,
                 title: "Profile updated",
                 message: "Your profile information has been updated.",
-                // leave kind as default (System),
-                // actorUserId == userId will convert it to Activity
                 category: "Profile",
                 actorUserId: userId
+            );
+        }
+
+        public void NotifyAdminUpdatedUserProfile(
+            int adminUserId,
+            int targetUserId,
+            string targetDisplayName,
+            string? targetIdNumber)
+        {
+            var label = targetDisplayName?.Trim() ?? $"User #{targetUserId}";
+            if (!string.IsNullOrWhiteSpace(targetIdNumber))
+            {
+                label = $"{label} ({targetIdNumber})";
+            }
+
+            // Admin: My Activity
+            AddNotification(
+                userId: adminUserId,
+                title: "Updated user profile",
+                message: $"You updated the profile of {label}.",
+                kind: NotificationKind.Activity,
+                category: "Profile",
+                actorUserId: adminUserId
+            );
+
+            // Target user: Updates
+            AddNotification(
+                userId: targetUserId,
+                title: "Profile updated",
+                message: "Your profile has been updated by an administrator.",
+                kind: NotificationKind.System,
+                category: "Profile",
+                actorUserId: adminUserId
+            );
+        }
+
+        // ======================================================
+        // ACCOUNTS: CREATE / IMPORT / SUSPEND
+        // ======================================================
+        public void NotifyAdminCreatedStudent(
+            int adminUserId,
+            string studentFullName,
+            string? idNumber)
+        {
+            var label = string.IsNullOrWhiteSpace(studentFullName)
+                ? "a student"
+                : studentFullName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(idNumber))
+            {
+                label = $"{label} (ID: {idNumber})";
+            }
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Added student account",
+                message: $"You created a new student account for {label}.",
+                kind: NotificationKind.Activity,
+                category: "Accounts",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminCreatedTeacher(
+            int adminUserId,
+            string teacherFullName,
+            string? idNumber)
+        {
+            var label = string.IsNullOrWhiteSpace(teacherFullName)
+                ? "a teacher"
+                : teacherFullName.Trim();
+
+            if (!string.IsNullOrWhiteSpace(idNumber))
+            {
+                label = $"{label} (ID: {idNumber})";
+            }
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Added teacher account",
+                message: $"You created a new teacher account for {label}.",
+                kind: NotificationKind.Activity,
+                category: "Accounts",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminBulkUploadStudents(
+            int adminUserId,
+            string summaryMessage)
+        {
+            var msg = string.IsNullOrWhiteSpace(summaryMessage)
+                ? "You imported student accounts."
+                : summaryMessage;
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Imported student accounts",
+                message: msg,
+                kind: NotificationKind.Activity,
+                category: "Accounts",
+                actorUserId: adminUserId
+            );
+        }
+
+        public void NotifyAdminBulkUploadTeachers(
+            int adminUserId,
+            string summaryMessage)
+        {
+            var msg = string.IsNullOrWhiteSpace(summaryMessage)
+                ? "You imported teacher accounts."
+                : summaryMessage;
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Imported teacher accounts",
+                message: msg,
+                kind: NotificationKind.Activity,
+                category: "Accounts",
+                actorUserId: adminUserId
+            );
+        }
+
+        // 🔹 NEW: Admin suspended account
+        public void NotifyAdminSuspendedUser(
+            int adminUserId,
+            int targetUserId,
+            string targetLabel,
+            string roleLabel)
+        {
+            var roleText = string.IsNullOrWhiteSpace(roleLabel) ? "user" : roleLabel.Trim().ToLower();
+
+            var label = string.IsNullOrWhiteSpace(targetLabel)
+                ? $"User #{targetUserId}"
+                : targetLabel.Trim();
+
+            AddNotification(
+                userId: adminUserId,
+                title: "Suspended account",
+                message: $"You suspended the {roleText} account of {label}.",
+                kind: NotificationKind.Activity,
+                category: "Accounts",
+                actorUserId: adminUserId
             );
         }
 
@@ -41,25 +182,22 @@ namespace ASI.Basecode.Services.Services
         // ======================================================
         public void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel)
         {
-            // Student receives an UPDATE (external to them)
             AddNotification(
                 userId: studentUserId,
                 title: "Grade uploaded",
                 message: $"Your grade for the course {courseCode} has been uploaded for {termLabel}.",
                 kind: NotificationKind.System,
                 category: "Grades",
-                actorUserId: null // teacher/system
+                actorUserId: null
             );
         }
 
         public void NotifyTeacherGradeUploaded(int teacherUserId, string courseCode, string termLabel)
         {
-            // Teacher receives MY ACTIVITY (they did the action)
             AddNotification(
                 userId: teacherUserId,
                 title: "Grade uploaded",
                 message: $"You have uploaded grades for the course {courseCode} for the {termLabel} term.",
-                // we can explicitly mark as Activity here
                 kind: NotificationKind.Activity,
                 category: "Grades",
                 actorUserId: teacherUserId
@@ -67,30 +205,19 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
-        // EVENTS (user's own calendar actions)
+        // EVENTS
         // ======================================================
-
-        /// <summary>
-        /// User (student/teacher) created their OWN event.
-        /// Should appear under "My Activity".
-        ///</summary>
         public void NotifyUserEventCreated(int ownerUserId, string title, DateTime startLocal, int actorUserId)
         {
             AddNotification(
                 userId: ownerUserId,
                 title: "Event created",
                 message: $"You created an event \"{title}\" on {startLocal:MMM dd, yyyy}.",
-                // kind left as default System; auto-converted to Activity
-                // because actorUserId == userId
                 category: "Events",
                 actorUserId: actorUserId
             );
         }
 
-        /// <summary>
-        /// User updated their OWN event.
-        /// Should appear under "My Activity".
-        ///</summary>
         public void NotifyUserEventUpdated(int ownerUserId, string title, DateTime? startLocal, int actorUserId)
         {
             var detail = startLocal.HasValue
@@ -106,10 +233,6 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        /// <summary>
-        /// User deleted their OWN event.
-        /// Should appear under "My Activity".
-        /// </summary>
         public void NotifyUserEventDeleted(int ownerUserId, string title, int actorUserId)
         {
             AddNotification(
@@ -122,7 +245,7 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
-        // CORE ADD LOGIC (AUTO My Activity vs Updates)
+        // CORE ADD LOGIC
         // ======================================================
         public void AddNotification(
             int userId,
@@ -132,10 +255,6 @@ namespace ASI.Basecode.Services.Services
             string? category = null,
             int? actorUserId = null)
         {
-            // 🔑 Rule:
-            // - If actorUserId == userId and kind is still System (default),
-            //   we treat this as "My Activity".
-            // - Otherwise we keep whatever kind was passed in.
             var finalKind = kind;
 
             if (actorUserId.HasValue &&
@@ -154,11 +273,11 @@ namespace ASI.Basecode.Services.Services
                 Kind = finalKind,
                 Category = category,
                 ActorUserId = actorUserId,
-                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                IsDeleted = false
             });
 
-            // Keep your existing pattern:
-            // SaveChanges is handled by the calling unit of work / service.
+            // SaveChanges left to outer unit of work, same pattern as original.
         }
 
         // ======================================================
@@ -270,11 +389,10 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
-        // (Optional extra) BELL DOT
+        // BELL
         // ======================================================
         public int GetBellUnreadCount(int userId)
         {
-            // Bell shows unread "Updates" only (System)
             return _repo.CountUnreadByKind(userId, NotificationKind.System);
         }
     }

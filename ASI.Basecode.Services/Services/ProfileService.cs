@@ -86,7 +86,6 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
-
         public async Task<StudentProfileViewModel> GetStudentProfileAsync(int userId)
         {
             var user = await _users.GetUsers()
@@ -141,7 +140,47 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
+        // ------------------------------------------------------------
+        // STUDENT PROFILE UPDATES
+        // ------------------------------------------------------------
+
+        /// <summary>
+        /// User updates their own student profile (My Activity only for that user).
+        /// </summary>
         public async Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input)
+        {
+            ApplyStudentProfileChanges(userId, input);
+
+            // Self update -> My Activity for that user only
+            _notifications.NotifyProfileUpdated(userId);
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Admin updates a student's profile (My Activity for admin + Updates for student).
+        /// </summary>
+        public async Task UpdateStudentProfileByAdminAsync(int adminUserId, int targetUserId, StudentProfileViewModel input)
+        {
+            ApplyStudentProfileChanges(targetUserId, input);
+
+            var targetDisplay = $"{input.FirstName} {input.LastName}".Trim();
+            var targetIdNumber = input.IdNumber;
+
+            _notifications.NotifyAdminUpdatedUserProfile(
+                adminUserId: adminUserId,
+                targetUserId: targetUserId,
+                targetDisplayName: targetDisplay,
+                targetIdNumber: targetIdNumber
+            );
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Shared student update logic, no notifications.
+        /// </summary>
+        private void ApplyStudentProfileChanges(int userId, StudentProfileViewModel input)
         {
             TrimStringProperties(input);
 
@@ -159,13 +198,11 @@ namespace ASI.Basecode.Services.Services
             if (profile == null)
             {
                 profile = new ASI.Basecode.Data.Models.UserProfile { UserId = userId };
-
                 MapProfile(profile, input);
                 _profiles.AddUserProfile(profile);
             }
             else
             {
-
                 MapProfile(profile, input);
                 _profiles.UpdateUserProfile(profile);
             }
@@ -194,10 +231,11 @@ namespace ASI.Basecode.Services.Services
                 student.Section = "4A"; // temporary
                 _students.UpdateStudent(student);
             }
-
-            _notifications.NotifyProfileUpdated(userId);
-            await Task.CompletedTask;
         }
+
+        // ------------------------------------------------------------
+        // TEACHER PROFILE UPDATES
+        // ------------------------------------------------------------
 
         public async Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId)
         {
@@ -250,7 +288,41 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
+        /// <summary>
+        /// User updates their own teacher profile (My Activity only for that user).
+        /// </summary>
         public async Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input)
+        {
+            ApplyTeacherProfileChanges(userId, input);
+
+            _notifications.NotifyProfileUpdated(userId);
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Admin updates a teacher's profile (My Activity for admin + Updates for teacher).
+        /// </summary>
+        public async Task UpdateTeacherProfileByAdminAsync(int adminUserId, int targetUserId, TeacherProfileViewModel input)
+        {
+            ApplyTeacherProfileChanges(targetUserId, input);
+
+            var targetDisplay = $"{input.FirstName} {input.LastName}".Trim();
+            var targetIdNumber = input.IdNumber;
+
+            _notifications.NotifyAdminUpdatedUserProfile(
+                adminUserId: adminUserId,
+                targetUserId: targetUserId,
+                targetDisplayName: targetDisplay,
+                targetIdNumber: targetIdNumber
+            );
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Shared teacher update logic, no notifications.
+        /// </summary>
+        private void ApplyTeacherProfileChanges(int userId, TeacherProfileViewModel input)
         {
             TrimStringProperties(input);
 
@@ -275,7 +347,7 @@ namespace ASI.Basecode.Services.Services
                 _profiles.UpdateUserProfile(profile);
             }
 
-            // 🔹 Avatar upload support for teachers too
+            // Avatar upload support for teachers too
             if (input.ProfilePhotoFile != null && input.ProfilePhotoFile.Length > 0)
             {
                 var oldUrl = profile.ProfilePictureUrl;
@@ -294,14 +366,10 @@ namespace ASI.Basecode.Services.Services
                 teacher.Position = input.Position;
                 _teachers.UpdateTeacher(teacher);
             }
-
-            _notifications.NotifyProfileUpdated(userId);
-            await Task.CompletedTask;
         }
 
-
         // ------------------------------------------------------------
-        // Helper
+        // Helpers
         // ------------------------------------------------------------
         private static void TrimStringProperties(object model)
         {
@@ -314,7 +382,6 @@ namespace ASI.Basecode.Services.Services
                 if (val != null) p.SetValue(model, val.Trim());
             }
         }
-
 
         private static void MapProfile(ASI.Basecode.Data.Models.UserProfile db, ProfileViewModel vm)
         {
@@ -334,6 +401,7 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrWhiteSpace(vm.Religion)) db.Religion = vm.Religion;
             if (!string.IsNullOrWhiteSpace(vm.Citizenship)) db.Citizenship = vm.Citizenship;
         }
+
         // ------------------------------------------------------------
         // Avatar helpers
         // ------------------------------------------------------------
@@ -391,8 +459,5 @@ namespace ASI.Basecode.Services.Services
                 // Swallow: deleting old files is best-effort
             }
         }
-
-
-
     }
 }

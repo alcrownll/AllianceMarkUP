@@ -167,13 +167,13 @@
 </script>
 
 <style>
-    /* ========= COLOR PALETTE (3 blues) ========= */
+    /* ========= COLOR PALETTE ========= */
     :root {
-        --u-fill: #0091FE; /* My events (lightest) */
-        --g-fill: #004AF5; /* Global events (mid)  */
-        --both-dot: #0091FE; /* overlap dot          */
-        --today-ring: #002B7C; /* Today (darkest)      */
-        --span-gap-fix: 4px; /* stretch pills to avoid gaps */
+        --u-fill: #0091FE; /* My events (light)          */
+        --g-fill: #004AF5; /* Global events (dominant)   */
+        --both-dot: #0091FE; /* Overlap indicator          */
+        --today-ring: #002B7C;
+        --span-gap-fix: 4px;
     }
 
     .rs-calendar .flatpickr-day {
@@ -182,20 +182,17 @@
     }
 
         /* =========================================================
-           MULTI-DAY SPANS (pills) – continuous, rounded ends
-           Pills are the BACKGROUND layer (z:-1)
+           MULTI-DAY SPANS (PILLS)
            ========================================================= */
 
-        /* USER pill (my events + both) */
+        /* USER pill – ONLY when there is NO global event that day.
+           (So overlap days won't draw a second pill.) */
         .rs-calendar .flatpickr-day.u-only.u-start::before,
         .rs-calendar .flatpickr-day.u-only.u-mid::before,
-        .rs-calendar .flatpickr-day.u-only.u-end::before,
-        .rs-calendar .flatpickr-day.both.u-start::before,
-        .rs-calendar .flatpickr-day.both.u-mid::before,
-        .rs-calendar .flatpickr-day.both.u-end::before {
+        .rs-calendar .flatpickr-day.u-only.u-end::before {
             content: "";
             position: absolute;
-            z-index: -1; /* behind circles & text */
+            z-index: -1;
             top: 4px;
             bottom: 4px;
             left: calc(-1 * var(--span-gap-fix));
@@ -205,27 +202,27 @@
             border-radius: 999px;
         }
 
-        .rs-calendar .flatpickr-day.u-only.u-mid::before,
-        .rs-calendar .flatpickr-day.both.u-mid::before {
+        .rs-calendar .flatpickr-day.u-only.u-mid::before {
             border-radius: 0;
         }
 
-        .rs-calendar .flatpickr-day.u-only.u-start::before,
-        .rs-calendar .flatpickr-day.both.u-start::before {
+        .rs-calendar .flatpickr-day.u-only.u-start::before {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
         }
 
-        .rs-calendar .flatpickr-day.u-only.u-end::before,
-        .rs-calendar .flatpickr-day.both.u-end::before {
+        .rs-calendar .flatpickr-day.u-only.u-end::before {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
 
-        /* GLOBAL pill only when it's a pure global span (no user events) */
-        .rs-calendar .flatpickr-day.g-only.g-start::before,
-        .rs-calendar .flatpickr-day.g-only.g-mid::before,
-        .rs-calendar .flatpickr-day.g-only.g-end::before {
+        /* GLOBAL pill – used for:
+             - pure global spans (g-only)
+             - AND days where both user + global exist (both)
+           This makes the blue band continuous across overlapping dates. */
+        .rs-calendar .flatpickr-day.g-start::before,
+        .rs-calendar .flatpickr-day.g-mid::before,
+        .rs-calendar .flatpickr-day.g-end::before {
             content: "";
             position: absolute;
             z-index: -1;
@@ -238,24 +235,22 @@
             border-radius: 999px;
         }
 
-        .rs-calendar .flatpickr-day.g-only.g-mid::before {
+        .rs-calendar .flatpickr-day.g-mid::before {
             border-radius: 0;
         }
 
-        .rs-calendar .flatpickr-day.g-only.g-start::before {
+        .rs-calendar .flatpickr-day.g-start::before {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
         }
 
-        .rs-calendar .flatpickr-day.g-only.g-end::before {
+        .rs-calendar .flatpickr-day.g-end::before {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
 
         /* =========================================================
-           SINGLE-DAY CIRCLES (events + today)
-           Circles are just background on the cell, so text is always visible.
-           Precedence: today > global single > my single
+           SINGLE-DAY CIRCLES (still useful for one-off events)
            ========================================================= */
 
         /* My event, single-day */
@@ -266,7 +261,7 @@
             text-shadow: 0 1px 0 rgba(0,0,0,.25);
         }
 
-        /* Global event, single-day (overrides my single when both) */
+        /* Global event, single-day */
         .rs-calendar .flatpickr-day.g-single {
             background: var(--g-fill) !important;
             border-radius: 999px !important;
@@ -274,7 +269,7 @@
             text-shadow: 0 1px 0 rgba(0,0,0,.25);
         }
 
-        /* TODAY has highest precedence for the circle color */
+        /* TODAY ring – highest precedence for circle style */
         .rs-calendar .flatpickr-day.today {
             background: var(--today-ring) !important;
             border-radius: 999px !important;
@@ -282,7 +277,8 @@
             text-shadow: 0 1px 0 rgba(0,0,0,.25);
         }
 
-        /* BOTH indicator: tiny dot in the corner (for any date with both) */
+        /* OVERLAP (both user + global): keep band as GLOBAL (from g-*)
+           and just add a tiny dot to signal "also my event". */
         .rs-calendar .flatpickr-day.both::after {
             content: "";
             position: absolute;
@@ -295,7 +291,7 @@
             pointer-events: none;
         }
 
-        /* Make sure any filled state keeps the text readable */
+        /* Ensure filled states keep text readable */
         .rs-calendar .flatpickr-day.u-only,
         .rs-calendar .flatpickr-day.g-only,
         .rs-calendar .flatpickr-day.both,
@@ -304,7 +300,7 @@
             text-shadow: 0 1px 0 rgba(0,0,0,.25);
         }
 
-            /* Flatpickr selected state still works (click/tap) */
+            /* Selected state still obvious when you click */
             .rs-calendar .flatpickr-day.selected,
             .rs-calendar .flatpickr-day.startRange,
             .rs-calendar .flatpickr-day.endRange,
@@ -313,7 +309,7 @@
                 color: #fff !important;
             }
 
-    /* ---- Legend: small text, darker -> lighter ---- */
+    /* ---- Legend (same as before, just synced with colors) ---- */
     .right-sidebar .rs-legend {
         font-size: 0.7rem;
         gap: 6px;

@@ -23,8 +23,13 @@
             <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
         }
 
-        <form asp-action="@postAct" asp-controller="@postCtrl" asp-route-userId="@(isCreate ? null : Model.UserId)"
-            method="post" enctype="multipart/form-data">
+        <form asp-action="@postAct"
+              asp-controller="@postCtrl"
+              asp-route-userId="@(isCreate ? null : Model.UserId)"
+              method="post"
+              enctype="multipart/form-data"
+              class="needs-validation"
+              novalidate>
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -78,6 +83,15 @@
                         <span asp-validation-for="YearLevel" class="text-danger"></span>
                     </div>
                 </div>
+
+                <!-- 🔹 Section (Required in StudentProfileViewModel) -->
+                <div class="row g-3 uniform-row mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label" asp-for="Section"></label>
+                        <input class="form-control" asp-for="Section" />
+                        <span asp-validation-for="Section" class="text-danger"></span>
+                    </div>
+                </div>
             </div>
 
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
@@ -85,7 +99,7 @@
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">@((isCreate) ? "Create" : "Update")</button>
                 <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index"
-                    asp-route-tab="students">Back</a>
+                   asp-route-tab="students">Back</a>
             </div>
         </form>
     </div>

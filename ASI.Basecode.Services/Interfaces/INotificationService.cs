@@ -10,6 +10,46 @@ namespace ASI.Basecode.Services.Interfaces
         // Profile
         void NotifyProfileUpdated(int userId);
 
+        // Admin updated another user's profile
+        void NotifyAdminUpdatedUserProfile(
+            int adminUserId,
+            int targetUserId,
+            string targetDisplayName,
+            string? targetIdNumber
+        );
+
+        // Admin created accounts (single)
+        void NotifyAdminCreatedStudent(
+            int adminUserId,
+            string studentFullName,
+            string? idNumber
+        );
+
+        void NotifyAdminCreatedTeacher(
+            int adminUserId,
+            string teacherFullName,
+            string? idNumber
+        );
+
+        // Admin imported accounts (bulk)
+        void NotifyAdminBulkUploadStudents(
+            int adminUserId,
+            string summaryMessage
+        );
+
+        void NotifyAdminBulkUploadTeachers(
+            int adminUserId,
+            string summaryMessage
+        );
+
+        // 🔹 NEW: Admin suspended account
+        void NotifyAdminSuspendedUser(
+            int adminUserId,
+            int targetUserId,
+            string targetLabel,   // e.g. "Juan Dela Cruz (ID: 23-0001)"
+            string roleLabel      // e.g. "student" or "teacher"
+        );
+
         // Grades
         void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel);
         void NotifyTeacherGradeUploaded(int teacherUserId, string courseCode, string termLabel);
@@ -36,5 +76,8 @@ namespace ASI.Basecode.Services.Interfaces
         // State changes
         void MarkRead(int userId, int notificationId);
         void MarkAllRead(int userId);
+
+        // Bell
+        int GetBellUnreadCount(int userId);
     }
 }
