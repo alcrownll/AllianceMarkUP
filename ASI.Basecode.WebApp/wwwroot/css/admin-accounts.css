@@ -176,6 +176,20 @@
   color: #fff !important;
   border-color: #dc3545 !important;
 }
+
+.row-actions .btn.btn-success {
+  background-color: transparent !important;
+  color: #198754 !important; /* Bootstrap success green */
+  border: 2px solid #198754 !important;
+}
+
+.row-actions .btn.btn-success:hover,
+.row-actions .btn.btn-success:focus {
+  background-color: #198754 !important;
+  color: #fff !important;
+  border-color: #198754 !important;
+}
+
 /* Optional: subtle lift on hover */
 .row-actions .btn:hover {
   transform: translateY(-1px);
@@ -291,12 +305,28 @@ body.modal-open {
 /* ========================= CONFIRM SUSPEND / ACTION MODAL ============================ */
 #confirmSuspendModal .modal-content {
   border-radius: 1rem;
-  border: 1px solid #f1c6ca; /* soft red border */
+  border: 1px solid transparent;
 }
 
-#confirmSuspendModal .modal-header {
-  background: #8b0e0e !important; /* dark red header */
+#confirmSuspendModal.suspend-mode .modal-content {
+  border-color: #f1c6ca;
+}
+
+#confirmSuspendModal.suspend-mode .modal-header {
+  background: #8b0e0e !important;
   color: #fff !important;
+  border: 0;
+  padding: 0.9rem 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+#confirmSuspendModal.lift-mode .modal-content {
+  border-color: #b9e6c1;
+}
+
+#confirmSuspendModal.lift-mode .modal-header {
+  background: #157347 !important;
   border: 0;
   padding: 0.9rem 1rem;
   border-top-left-radius: 1rem;
@@ -309,10 +339,9 @@ body.modal-open {
 }
 
 #confirmSuspendModal .btn-close {
-  filter: invert(1) grayscale(1) brightness(200%); /* white close icon */
+  filter: invert(1) grayscale(1) brightness(200%);
   opacity: 0.9;
 }
-
 #confirmSuspendModal .btn-close:hover {
   opacity: 1;
 }
@@ -322,7 +351,7 @@ body.modal-open {
   padding-top: 1rem;
   color: #1f2937;
 }
-/* Footer and buttons */
+
 #confirmSuspendModal .modal-footer {
   border-top: 0;
   padding-top: 0.25rem;
@@ -332,11 +361,8 @@ body.modal-open {
   border-radius: 999px;
   font-weight: 600;
 }
-/* Primary action button (Confirm) styled as red pill */
+
 #confirmSuspendModal #confirmActionBtn {
-  background-color: #b01616;
-  border-color: #b01616;
-  color: #fff;
   border-radius: 999px;
   font-weight: 700;
   padding: 0.45rem 1.1rem;
@@ -344,9 +370,26 @@ body.modal-open {
     box-shadow 0.15s ease;
 }
 
-#confirmSuspendModal #confirmActionBtn:hover,
-#confirmSuspendModal #confirmActionBtn:focus {
+#confirmSuspendModal.suspend-mode #confirmActionBtn {
+  background-color: #b01616;
+  border-color: #b01616;
+  color: #fff;
+}
+#confirmSuspendModal.suspend-mode #confirmActionBtn:hover,
+#confirmSuspendModal.suspend-mode #confirmActionBtn:focus {
   background-color: #8b0e0e;
   border-color: #8b0e0e;
+  transform: translateY(-1px);
+}
+
+#confirmSuspendModal.lift-mode #confirmActionBtn {
+  background-color: #198754; /* success green */
+  border-color: #198754;
+  color: #fff;
+}
+#confirmSuspendModal.lift-mode #confirmActionBtn:hover,
+#confirmSuspendModal.lift-mode #confirmActionBtn:focus {
+  background-color: #157347;
+  border-color: #157347;
   transform: translateY(-1px);
 }

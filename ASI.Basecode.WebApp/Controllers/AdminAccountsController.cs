@@ -35,6 +35,7 @@ namespace ASI.Basecode.WebApp.Controllers
             string? name,
             string? idNumber,
             string? status,
+            string? position,
             CancellationToken ct)
         {
             var normalizedStatus = string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase)
@@ -48,7 +49,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 YearLevel = yearLevel,
                 Name = name,
                 IdNumber = idNumber,
-                Status = normalizedStatus
+                Status = normalizedStatus,
+                Position = position
             };
 
             AdminAccountsViewModel vm;

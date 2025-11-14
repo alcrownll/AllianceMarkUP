@@ -203,61 +203,99 @@
                         <input type="hidden" name="tab" value="teachers" />
                         <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
                         <table class="accounts-table table align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Full Name</th>
-                                    <th>Position</th>
-                                    <th></th>
-                                </tr>
-                                <tr class="filters-row">
-                                    <th><input name="name" class="form-control" value="@(vm.Filters?.Name ?? "")" placeholder="Search by Name" /></th>
-                                    <th></th>
-                                    <th class="text-end">
-                                        <button type="submit" class="btn btn-outline btn-xs">Search</button>
-                                        <a class="btn btn-link btn-xs" asp-controller="AdminAccounts" asp-action="Index"
-                                           asp-route-tab="teachers" asp-route-status="@(vm.Filters?.Status ?? "Active")">Reset</a>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (vm.Teachers != null && vm.Teachers.Count > 0)
-                                {
-                                    foreach (var t in vm.Teachers)
-                                    {
-                                        <tr>
-                                            <td class="text-start">@t.FullName</td>
-                                            <td class="text-center">@t.Position</td>
-                                            <td class="text-end">
-                                                <div class="row-actions">
-                                                    <a class="btn btn-primary btn-sm rounded-pill"
-                                                       asp-controller="AdminAccounts" asp-action="Teacher" asp-route-userId="@t.UserId">View</a>
-                                                    @if (!isInactive)
-                                                    {
-                                                        <button type="button" class="btn btn-danger btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@t.UserId" data-tab="teachers" data-name="@t.FullName" data-status="Inactive">
-                                                            Suspend
-                                                        </button>
-                                                    }
-                                                    else
-                                                    {
-                                                        <button type="button" class="btn btn-success btn-sm rounded-pill js-status-btn"
-                                                                data-bs-toggle="modal" data-bs-target="#confirmSuspendModal"
-                                                                data-user-id="@t.UserId" data-tab="teachers" data-name="@t.FullName" data-status="Active">
-                                                            Lift Suspension
-                                                        </button>
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr><td colspan="3" class="empty-row">No results found.</td></tr>
-                                }
-                            </tbody>
-                        </table>
+    <thead class="table-light">
+        <tr>
+            <th>Full Name</th>
+            <th>Position</th>
+            <th>ID Number</th>
+            <th></th>
+        </tr>
+        <tr class="filters-row">
+            <th>
+                <input name="name"
+                       class="form-control"
+                       value="@(vm.Filters?.Name ?? "")"
+                       placeholder="Search by Name" />
+            </th>
+            <th>
+                <input name="position"
+                       class="form-control"
+                       value="@(vm.Filters?.Position ?? "")"
+                       placeholder="Search by Position" />
+            </th>
+            <th>
+                <input name="idNumber"
+                       class="form-control"
+                       value="@(vm.Filters?.IdNumber ?? "")"
+                       placeholder="Search by ID Number" />
+            </th>
+            <th class="text-end">
+                <button type="submit" class="btn btn-outline btn-xs">Search</button>
+                <a class="btn btn-link btn-xs"
+                   asp-controller="AdminAccounts"
+                   asp-action="Index"
+                   asp-route-tab="teachers"
+                   asp-route-status="@(vm.Filters?.Status ?? "Active")">
+                    Reset
+                </a>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (vm.Teachers != null && vm.Teachers.Count > 0)
+        {
+            foreach (var t in vm.Teachers)
+            {
+                <tr>
+                    <td class="text-start">@t.FullName</td>
+                    <td class="text-center">@t.Position</td>
+                    <td class="text-center">@t.IdNumber</td>   @* NEW column *@
+                    <td class="text-end">
+                        <div class="row-actions">
+                            <a class="btn btn-primary btn-sm rounded-pill"
+                               asp-controller="AdminAccounts"
+                               asp-action="Teacher"
+                               asp-route-userId="@t.UserId">
+                                View
+                            </a>
+                            @if (!isInactive)
+                            {
+                                <button type="button"
+                                        class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirmSuspendModal"
+                                        data-user-id="@t.UserId"
+                                        data-tab="teachers"
+                                        data-name="@t.FullName"
+                                        data-status="Inactive">
+                                    Suspend
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirmSuspendModal"
+                                        data-user-id="@t.UserId"
+                                        data-tab="teachers"
+                                        data-name="@t.FullName"
+                                        data-status="Active">
+                                    Lift Suspension
+                                </button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="4" class="empty-row">No results found.</td></tr>
+        }
+    </tbody>
+</table>
+
                     </form>
                 }
             </div>
@@ -406,46 +444,42 @@
 
             // ---------- Suspend / Reactivate modal wiring ----------
             document.addEventListener('click', function (e) {
-                const btn = e.target.closest('.js-status-btn');
-                if (!btn) return;
+            const btn = e.target.closest('.js-status-btn');
+            if (!btn) return;
 
-                const userId   = btn.getAttribute('data-user-id');
-                const tab      = btn.getAttribute('data-tab') || 'students';
-                const name     = btn.getAttribute('data-name') || 'this account';
-                const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim(); // "Inactive" or "Active"
+            const userId   = btn.getAttribute('data-user-id');
+            const tab      = btn.getAttribute('data-tab') || 'students';
+            const name     = btn.getAttribute('data-name') || 'this account';
+            const statusTo = (btn.getAttribute('data-status') || 'Inactive').trim();
 
-                const lifting = statusTo.toLowerCase() === 'active'; // true when clicking "Lift Suspension"
+            document.getElementById('suspendUserId').value = userId;
+            document.getElementById('suspendTab').value    = tab;
+            document.getElementById('statusToSet').value   = statusTo;
+            document.getElementById('viewStatus').value =
+                '@(((vm?.Filters?.Status ?? "Active").Equals("Inactive", StringComparison.OrdinalIgnoreCase)) ? "inactive" : "active")';
 
-                const userIdInput  = document.getElementById('suspendUserId');
-                const tabInput     = document.getElementById('suspendTab');
-                const statusInput  = document.getElementById('statusToSet');
-                const viewStatusEl = document.getElementById('viewStatus');
+            const lifting  = statusTo.toLowerCase() === 'active';
+            const modalEl  = document.getElementById('confirmSuspendModal'); // <-- ADD THIS
+            const titleEl  = document.getElementById('confirmActionTitle');
+            const promptEl = document.getElementById('confirmActionPrompt');
+            const nameEl   = document.getElementById('suspendUserName');
+            const actionEl = document.getElementById('confirmActionBtn');
 
-                const titleEl  = document.getElementById('confirmActionTitle');
-                const promptEl = document.getElementById('confirmActionPrompt');
-                const nameEl   = document.getElementById('suspendUserName');
-                const actionEl = document.getElementById('confirmActionBtn');
+            // toggle mode classes so CSS kicks in
+            modalEl.classList.toggle('lift-mode', lifting);
+            modalEl.classList.toggle('suspend-mode', !lifting);
 
-                if (!userIdInput || !tabInput || !statusInput || !viewStatusEl) return;
+            titleEl.textContent  = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
+            promptEl.textContent = lifting
+                ? 'Are you sure you want to lift the suspension for'
+                : 'Are you sure you want to suspend';
+            nameEl.textContent   = name;
 
-                // Fill hidden fields
-                userIdInput.value  = userId;
-                tabInput.value     = tab;
-                statusInput.value  = statusTo;
-                // After action: show active list if we just lifted, otherwise show suspended
-                viewStatusEl.value = lifting ? 'active' : 'inactive';
+            actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
+            actionEl.classList.remove('btn-danger', 'btn-success');
+            actionEl.classList.add(lifting ? 'btn-success' : 'btn-danger');
+        });
 
-                // Update modal text + button style
-                titleEl.textContent  = lifting ? 'Confirm lift of suspension' : 'Confirm suspension';
-                promptEl.textContent = lifting
-                    ? 'Are you sure you want to lift the suspension for'
-                    : 'Are you sure you want to suspend';
-                nameEl.textContent   = name;
-
-                actionEl.textContent = lifting ? 'Lift Suspension' : 'Suspend Account';
-                actionEl.classList.remove('btn-danger', 'btn-success');
-                actionEl.classList.add(lifting ? 'btn-success' : 'btn-danger');
-            });
 
             $(document).ready(function () {
                 var successToast = document.getElementById('successToast');

@@ -109,6 +109,18 @@ namespace ASI.Basecode.Services.Services
                 query = query.Where(t => (t.User.FirstName + " " + t.User.LastName).ToLower().Contains(name));
             }
 
+            if (!string.IsNullOrWhiteSpace(filters.Position))
+            {
+                var pos = filters.Position.Trim().ToLower();
+                query = query.Where(t => (t.Position ?? "").ToLower().Contains(pos));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.IdNumber))
+            {
+                var id = filters.IdNumber.Trim();
+                query = query.Where(t => t.User.IdNumber.Contains(id));
+            }
+
             var rows = await query
                 .OrderBy(t => t.User.LastName)
                 .ThenBy(t => t.User.FirstName)
@@ -117,7 +129,8 @@ namespace ASI.Basecode.Services.Services
                     TeacherId = t.TeacherId,
                     UserId = t.UserId,
                     FullName = t.User.FirstName + " " + t.User.LastName,
-                    Position = t.Position
+                    Position = t.Position,
+                    IdNumber = t.User.IdNumber
                 })
                 .ToListAsync(ct);
 

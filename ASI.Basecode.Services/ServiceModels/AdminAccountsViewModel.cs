@@ -14,6 +14,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string? Name { get; set; }
         public string? IdNumber { get; set; }
         public string? Status { get; set; }
+        public string? Position { get; set; }
     }
 
     public class StudentListItem
@@ -32,6 +33,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public int UserId { get; set; }
         public string FullName { get; set; } = "";
         public string Position { get; set; } = "";
+        public string IdNumber { get; set; } = "";
     }
 
     public class AccountsFilterResult
