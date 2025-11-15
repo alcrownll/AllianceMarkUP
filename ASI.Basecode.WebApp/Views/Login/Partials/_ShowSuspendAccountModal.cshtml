@@ -1,0 +1,80 @@
+@* Views/Login/Partials/_ShowSuspendAccountModal.cshtml *@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div id="suspendModal" class="yt-modal" hidden aria-hidden="true">
+    <div class="yt-modal__card" role="dialog" aria-modal="true" aria-labelledby="suspendTitle">
+        <button type="button" class="yt-modal__close" aria-label="Close" data-close-suspend>&times;</button>
+
+        <div class="yt-modal__header">
+            <h3 id="suspendTitle">Account Suspended</h3>
+            <p>Your account is currently suspended, so you cannot log in to the system.</p>
+        </div>
+
+        <div class="yt-modal__body">
+            <p class="mb-2">
+                Please contact your institution or system administrator to reactivate your account. Once your account is
+                reactivated, you will be able to access the system again.
+            </p>
+        </div>
+
+        <div class="yt-modal__footer">
+            <button type="button" class="yt-btn" data-close-suspend>Okay</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        // Prevent double-binding
+        if (window.__suspendModalBound) return;
+        window.__suspendModalBound = true;
+
+        const modal = document.getElementById('suspendModal');
+        const card = modal?.querySelector('.yt-modal__card');
+
+        function openSuspendModal() {
+            if (!modal) return;
+            modal.hidden = false;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeSuspendModal() {
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            modal.hidden = true;
+        }
+
+        // Close buttons
+        modal?.querySelectorAll('[data-close-suspend]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSuspendModal();
+            });
+        });
+
+        // Backdrop click: close (or keep open if you prefer)
+        modal?.addEventListener('click', (e) => {
+            if (!card?.contains(e.target)) {
+                closeSuspendModal();
+            }
+        });
+
+        // Escape key closes it
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal && !modal.hidden) {
+                e.preventDefault();
+                closeSuspendModal();
+            }
+        });
+
+        // Expose to global so server can trigger it
+        window.showSuspendModal = openSuspendModal;
+
+        // Auto-open if flag was set before this script ran
+        if (window.__openSuspendedModal === true) {
+            openSuspendModal();
+        }
+    })();
+</script>

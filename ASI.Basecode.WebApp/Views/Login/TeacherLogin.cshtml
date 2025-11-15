@@ -59,7 +59,8 @@
 
                 <button type="submit" class="btn-primary">
                     <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M10 17l5-5-5-5v10zM19 19H5V5h6V3H5c-1.1 0-2 .9-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-6h-2v6z" />
+                        <path
+                            d="M10 17l5-5-5-5v10zM19 19H5V5h6V3H5c-1.1 0-2 .9-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-6h-2v6z" />
                     </svg>
                     Login
                 </button>
@@ -71,15 +72,28 @@
                         <div class="val text-danger">@topErrors[0].ErrorMessage</div>
                     }
                 }
-    
+
             </form>
         </div>
     </div>
 </div>
 
-<!-- Reusable Forgot Password modal -->
 <partial name="Partials/_ForgotPasswordModal" />
+<partial name="Partials/_ShowSuspendAccountModal" />
+
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    @if (ViewData["ShowSuspendAccountModal"] as bool? == true)
+    {
+        <script>
+            // If the suspend modal JS is already loaded, open it now.
+            // Otherwise, the partial script will auto-open when it loads.
+            window.__openSuspendedModal = true;
+            if (window.showSuspendModal) {
+                window.showSuspendModal();
+            }
+        </script>
+    }
 }

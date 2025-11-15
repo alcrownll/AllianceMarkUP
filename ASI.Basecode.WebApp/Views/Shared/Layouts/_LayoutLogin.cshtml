@@ -1,21 +1,25 @@
 ﻿<!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MarkUP</title>
 
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
 
     @* views define: @section styles { ... } *@
     @RenderSection("styles", required: false)
 </head>
+
 <body>
     <div class="login-wrapper">
         @RenderBody()
     </div>
 
-    @* Render either Scripts *@
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @RenderSection("Scripts", required: false)
 </body>
+
 </html>

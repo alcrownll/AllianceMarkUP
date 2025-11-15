@@ -84,11 +84,6 @@ namespace ASI.Basecode.WebApp.Controllers
             _userService = userService;
         }
 
- 
-
-        // =======================
-        // STUDENT LOGIN
-        // =======================
         [HttpGet]
         [AllowAnonymous]
         public IActionResult StudentLogin()
@@ -106,6 +101,13 @@ namespace ASI.Basecode.WebApp.Controllers
             User user = null;
             var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
 
+            if (loginResult == LoginResult.Inactive && user != null)
+            {
+                ViewData["ShowSuspendAccountModal"] = true;
+                return View("~/Views/Login/StudentLogin.cshtml", model);
+            }
+
+
             if (loginResult == LoginResult.Success && user != null && user.Role == "Student")
             {
                 await SignInUserAsync(user, model.RememberMe);
@@ -116,9 +118,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Login/StudentLogin.cshtml", model);
         }
 
-        // =======================
-        // TEACHER LOGIN
-        // =======================
         [HttpGet]
         [AllowAnonymous]
         public IActionResult TeacherLogin()
@@ -136,6 +135,12 @@ namespace ASI.Basecode.WebApp.Controllers
             User user = null;
             var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
 
+            if (loginResult == LoginResult.Inactive && user != null)
+            {
+                ViewData["ShowSuspendAccountModal"] = true;
+                return View("~/Views/Login/TeacherLogin.cshtml", model);
+            }
+
             if (loginResult == LoginResult.Success && user != null && user.Role == "Teacher")
             {
                 await SignInUserAsync(user, model.RememberMe);
@@ -146,10 +151,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Login/TeacherLogin.cshtml", model);
         }
 
-
-        // =======================
-        // ADMIN LOGIN
-        // =======================
         [HttpGet]
         [AllowAnonymous]
         public IActionResult AdminLogin()
@@ -167,6 +168,12 @@ namespace ASI.Basecode.WebApp.Controllers
             User user = null;
             var loginResult = _userService.AuthenticateUser(model.IdNumber, model.Password, ref user);
 
+            if (loginResult == LoginResult.Inactive && user != null)
+            {
+                ViewData["ShowSuspendAccountModal"] = true;
+                return View("~/Views/Login/AdminLogin.cshtml", model);
+            }
+
             if (loginResult == LoginResult.Success && user != null && user.Role == "Admin")
             {
                 await SignInUserAsync(user, model.RememberMe);
@@ -177,10 +184,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Login/AdminLogin.cshtml", model);
         }
 
-
-        // =======================
-        // DASHBOARDS
-        // =======================
         [Authorize(Roles = "Student")]
         public IActionResult StudentDashboard()
         {
@@ -199,9 +202,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View();
         }
 
-        // =======================
-        // LOGOUTS
-        // =======================
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> StudentLogout()
         {
@@ -296,9 +296,5 @@ namespace ASI.Basecode.WebApp.Controllers
             ModelState.AddModelError("", "Could not update password. Try again.");
             return View("ResetPassword", vm);
         }
-
-
-
-
     }
 }

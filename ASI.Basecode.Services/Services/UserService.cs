@@ -25,20 +25,26 @@ namespace ASI.Basecode.Services.Services
             _email = email;
         }
 
-        // ===========================
-        // Authentication
-        // ===========================
         public LoginResult AuthenticateUser(string idNumber, string password, ref User user)
         {
             user = null;
 
             try
             {
-                var passwordKey = PasswordManager.EncryptPassword(password);
                 user = _repository.GetUsers()
-                                  .FirstOrDefault(x => x.IdNumber == idNumber && x.Password == passwordKey);
+                                  .FirstOrDefault(x => x.IdNumber == idNumber);
 
-                return user != null ? LoginResult.Success : LoginResult.Failed;
+                if (user == null)
+                    return LoginResult.Failed;
+
+                if (string.Equals(user.AccountStatus, "Inactive", StringComparison.OrdinalIgnoreCase))
+                    return LoginResult.Inactive;
+
+                var passwordKey = PasswordManager.EncryptPassword(password);
+                if (user.Password != passwordKey)
+                    return LoginResult.Failed;
+
+                return LoginResult.Success;
             }
             catch
             {
@@ -46,10 +52,6 @@ namespace ASI.Basecode.Services.Services
                 return LoginResult.Failed;
             }
         }
-
-        // ===========================
-        // Forgot / Reset Password
-        // ===========================
 
         public User FindByEmail(string email)
         {
@@ -61,7 +63,6 @@ namespace ASI.Basecode.Services.Services
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
 
-            // Generate a URL-safe random token
             var raw = RandomNumberGenerator.GetBytes(32);
             var token = Convert.ToBase64String(raw)
                                .Replace('+', '-')
@@ -76,7 +77,7 @@ namespace ASI.Basecode.Services.Services
                 ExpiresAt = DateTime.UtcNow.Add(ttl)
             };
 
-            _repository.AddPasswordResetToken(prt); // repository saves changes
+            _repository.AddPasswordResetToken(prt);
             return prt;
         }
 
@@ -86,7 +87,6 @@ namespace ASI.Basecode.Services.Services
 
             var now = DateTime.UtcNow;
 
-            // Include the user so the controller/service can access it
             var prt = _repository.PasswordResetTokens()
                                  .Include(t => t.User)
                                  .FirstOrDefault(t => t.Token == token &&
@@ -104,7 +104,7 @@ namespace ASI.Basecode.Services.Services
             if (user == null) return false;
 
             user.Password = PasswordManager.EncryptPassword(newPassword);
-            _repository.UpdateUser(user); // repository saves changes
+            _repository.UpdateUser(user);
             return true;
         }
 
@@ -117,15 +117,14 @@ namespace ASI.Basecode.Services.Services
         public async Task<ForgotPasswordResult> RequestPasswordResetAsync(
     string email,
     TimeSpan ttl,
-    Func<string, string> linkFactory)   // <-- add this
+    Func<string, string> linkFactory)
         {
             var user = FindByEmail(email);
             if (user == null) return ForgotPasswordResult.NotFound;
 
             var token = CreatePasswordResetToken(user, ttl);
 
-            // Build the exact URL using the controller’s factory
-            var link = linkFactory(token.Token);  // IMPORTANT: factory should URL-encode
+            var link = linkFactory(token.Token);
 
             var html = $@"
         <p>Use the link below to reset your password. It expires in {(int)ttl.TotalMinutes} minutes.</p>
