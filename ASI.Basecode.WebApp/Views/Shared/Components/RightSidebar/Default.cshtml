@@ -11,7 +11,7 @@
         const isoFromDate = (d) => ISO(d.getFullYear(), d.getMonth() + 1, d.getDate());
 
         function isoFromAria(node) {
-            const label = node.getAttribute('aria-label'); // e.g. "November 15, 2025"
+            const label = node.getAttribute('aria-label'); 
             if (!label) return null;
             const dt = new Date(label);
             return isNaN(dt) ? null : isoFromDate(dt);

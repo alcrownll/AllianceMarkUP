@@ -30,7 +30,7 @@ namespace ASI.Basecode.Services.ServiceModels
     public class CourseItem
     {
         public string Code { get; set; }          // e.g., CourseCode
-        public string Title { get; set; }         // we map from Course.Description in the service
+        public string Title { get; set; }         // map from Course.Description in the service
         public int Students { get; set; }         // distinct Student count from Grades
     }
 

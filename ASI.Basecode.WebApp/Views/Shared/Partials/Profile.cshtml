@@ -3,7 +3,7 @@
 <div class="section-title mt-3">Personal Information</div>
 
 <div class="row g-4">
-    <!-- LEFT: Profile -->
+    <!-- Profile -->
     <div class="col-md-3 d-flex flex-column align-items-start">
         <label for="avatarInput" class="avatar" id="avatarPreview" tabindex="0" role="button"
             aria-label="Upload profile photo"></label>
@@ -11,12 +11,12 @@
         <small class="tiny-hint mt-1">Click the photo to upload</small>
     </div>
 
-    <!-- RIGHT: Name -->
+    <!-- Name -->
     <div class="col-md-9">
         <label class="form-label">Name</label>
 
         <div class="row g-3">
-            <!-- LEFT: Family Name (top) + First Name (bottom) -->
+            <!-- Family Name + First Name -->
             <div class="col-md-6">
                 <div class="mb-3">
                     <input class="form-control" asp-for="LastName" required />
@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Middle Name (top) + Suffix (bottom) -->
+            <!-- Middle Name + Suffix -->
             <div class="col-md-6">
                 <div class="mb-3">
                     <input class="form-control" asp-for="MiddleName" />

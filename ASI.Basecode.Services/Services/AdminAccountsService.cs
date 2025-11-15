@@ -174,7 +174,7 @@ namespace ASI.Basecode.Services.Services
                 ? "user"
                 : roleLabel.Trim().ToLowerInvariant();
 
-            // Notification: My Activity for admin (status-aware)
+            // Notification: My Activity for admin
             _notifications.NotifyAdminChangedUserStatus(
                 adminUserId: adminUserId,
                 targetUserId: userId,

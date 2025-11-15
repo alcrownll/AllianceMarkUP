@@ -27,10 +27,8 @@ public class SmtpEmailSender : IEmailSender
             Timeout = 20000 // 20s
         };
 
-        // Do NOT set TargetName unless you’re certain. Wrong SPN breaks TLS handshake.
-        // client.TargetName = "STARTTLS/smtp-mail.outlook.com";
-
-        // Some tenants/servers require this
+    
+        
         client.DeliveryFormat = SmtpDeliveryFormat.International;
 
         using var msg = new MailMessage(from, to)

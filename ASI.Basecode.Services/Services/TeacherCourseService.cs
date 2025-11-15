@@ -32,7 +32,7 @@ namespace ASI.Basecode.Services.Services
             IClassScheduleRepository classScheduleRepository,
             IStudentRepository studentRepository,
             IUnitOfWork unitOfWork,
-            INotificationService notificationService)  // Injecting NotificationService
+            INotificationService notificationService) 
         {
             _ctx = ctx;
             _assignedCourseRepository = assignedCourseRepository;
@@ -40,7 +40,7 @@ namespace ASI.Basecode.Services.Services
             _classScheduleRepository = classScheduleRepository;
             _studentRepository = studentRepository;
             _unitOfWork = unitOfWork;
-            _notificationService = notificationService;  // Assigning to field
+            _notificationService = notificationService; 
         }
 
         public async Task<List<TeacherCourseViewModel>> GetTeacherAssignedCoursesAsync(int teacherId, string semester = null)
@@ -152,7 +152,7 @@ namespace ASI.Basecode.Services.Services
         {
             var students = await GetStudentsInCourseAsync(assignedCourseId);
 
-            // Apply exam type filtering logic if needed
+           
             if (!string.IsNullOrEmpty(examType))
             {
                 foreach (var student in students)
@@ -230,7 +230,6 @@ namespace ASI.Basecode.Services.Services
                 // Persist once
                 await _unitOfWork.SaveChangesAsync();
 
-                // Notify only if we actually changed something and we can resolve the course
                 if (assignedCourseIdFromPayload.HasValue && affectedStudentIds.Count > 0)
                 {
                     await NotifyGradeUploadAsync(assignedCourseIdFromPayload.Value, affectedStudentIds.Distinct());
@@ -729,7 +728,7 @@ namespace ASI.Basecode.Services.Services
             var courseCode = ac.Course?.CourseCode ?? "Unknown";
             var termLabel = string.IsNullOrWhiteSpace(ac.Semester) ? GetCurrentSemester() : ac.Semester;
 
-            // Resolve teacher's UserId (depending on your model)
+            // Resolve teacher's UserId 
             var teacherUserId = 0;
             if (ac.Teacher?.UserId > 0)
                 teacherUserId = ac.Teacher.UserId;
@@ -739,7 +738,7 @@ namespace ASI.Basecode.Services.Services
                     .Select(t => t.UserId)
                     .FirstOrDefaultAsync();
 
-            // --- Notify the TEACHER once ---
+            // --- Notify the TEACHER  ---
             if (teacherUserId > 0)
             {
 

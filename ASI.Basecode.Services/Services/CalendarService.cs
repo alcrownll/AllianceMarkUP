@@ -13,7 +13,7 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly ICalendarEventRepository _events;
         private readonly INotificationService _notificationService;
-        private readonly IUserRepository _users;   // 👈 NEW: for global recipients
+        private readonly IUserRepository _users;   
 
         public CalendarService(
             ICalendarEventRepository eventsRepo,
@@ -96,7 +96,7 @@ namespace ASI.Basecode.Services.Services
             DateTime startLocalForNotif;
             if (entity.IsAllDay && entity.LocalStartDate.HasValue)
             {
-                var d = entity.LocalStartDate.Value;  // DateOnly or DateTime, both support Year/Month/Day
+                var d = entity.LocalStartDate.Value; 
                 startLocalForNotif = new DateTime(d.Year, d.Month, d.Day);
             }
             else
@@ -107,7 +107,7 @@ namespace ASI.Basecode.Services.Services
             // ---------- NOTIFICATIONS ----------
             if (willBeGlobal && isAdmin)
             {
-                // 1) Admin's own "My Activity" (optional but nice)
+                // 1) Admin's own "My Activity"
                 if (actorId > 0)
                 {
                     _notificationService.NotifyUserEventCreated(
@@ -130,9 +130,9 @@ namespace ASI.Basecode.Services.Services
                         userId: uid,
                         title: "New global event",
                         message: $"A new global event \"{entity.Title}\" is scheduled on {startLocalForNotif:MMM dd, yyyy}.",
-                        kind: NotificationKind.System,        // stays in Updates
+                        kind: NotificationKind.System,      
                         category: "Events",
-                        actorUserId: actorId                  // admin is the actor
+                        actorUserId: actorId                  
                     );
                 }
             }
@@ -208,8 +208,7 @@ namespace ASI.Basecode.Services.Services
             e.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             _events.Update(e);
 
-            // For now, only notify the actor about their own activity.
-            // (You can later add global update broadcasts if you want.)
+            
             DateTime startLocalForNotif;
             if (e.IsAllDay && e.LocalStartDate.HasValue)
             {

@@ -123,7 +123,7 @@ namespace ASI.Basecode.Services.Services
                     })
                     .ToList();
 
-                // === Fill both sets with EVERY local date in each event's range (supports multi-day + all-day) ===
+                //DISCARDED DELETE LATER hehe  === Fill both sets with EVERY local date in each event's range (supports multi-day + all-day) ===
                 foreach (var e in evs)
                 {
                     DateTime startLocalDate;

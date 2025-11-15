@@ -21,14 +21,13 @@ namespace ASI.Basecode.WebApp.Controllers
             _calendar = calendar;
         }
 
-        // ===== Existing endpoints you already have =====
+        
         [HttpGet]
         public IActionResult RightSidebar()
         {
             return ViewComponent("RightSidebar", new { takeNotifications = 5, takeEvents = 5 });
         }
 
-        // You can keep this if some page still loads a calendar *partial*.
         [HttpGet]
         public async Task<IActionResult> Calendar(DateTime? fromUtc, DateTime? toUtc)
         {

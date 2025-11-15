@@ -48,7 +48,6 @@ namespace ASI.Basecode.Data.Repositories
             _ctx.SaveChanges();
         }
 
-        // Idempotent delete: treat "already deleted / not found" as success.
         public void DeleteProgramCourse(int programCourseId)
         {
             // Attach a stub to avoid a read, then delete.
@@ -57,12 +56,11 @@ namespace ASI.Basecode.Data.Repositories
 
             try
             {
-                _ctx.SaveChanges(); // If 0 rows affected, EF may throw DbUpdateConcurrencyException
+                _ctx.SaveChanges();
             }
             catch (DbUpdateConcurrencyException)
             {
-                // The row was already removed (or never existed). That's fine for idempotent deletes.
-                // Optional: log at Information level.
+              
             }
         }
     }

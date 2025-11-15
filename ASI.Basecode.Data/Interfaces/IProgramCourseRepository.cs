@@ -9,7 +9,7 @@ namespace ASI.Basecode.Data.Interfaces
         IQueryable<ProgramCourse> GetProgramCourses();
         ProgramCourse GetProgramCourseById(int programCourseId);
 
-        // Common queries for your UI
+
         IEnumerable<ProgramCourse> GetByProgram(int programId);
         IEnumerable<ProgramCourse> GetByProgramAndYearTerm(int programId, int yearLevel, int term);
 

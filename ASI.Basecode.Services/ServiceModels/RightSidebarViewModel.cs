@@ -14,7 +14,7 @@ namespace ASI.Basecode.Services.ServiceModels
 
         public List<UpcomingEventItemVm> UpcomingEvents { get; set; } = new();
 
-        // ✅ new properties used by the calendar highlighting
+      
         public HashSet<string> UserEventDates { get; set; } = new();
         public HashSet<string> GlobalEventDates { get; set; } = new();
     }
@@ -33,10 +33,10 @@ namespace ASI.Basecode.Services.ServiceModels
         public int Id { get; set; }
         public string Title { get; set; }
         public string When { get; set; }          // e.g., "11/13/25"
-        public DateTime WhenLocal { get; set; }
+        public DateTime WhenLocal { get; set; } //disregard later ig
         public string Location { get; set; }
 
-        // ✅ new flag used in the view to label global events
+   
         public bool IsGlobal { get; set; }
     }
 }

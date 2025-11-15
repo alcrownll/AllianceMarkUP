@@ -318,7 +318,7 @@ namespace ASI.Basecode.WebApp.Controllers
             var syMatch = Regex.IsMatch(assignedCourseSemester, Regex.Escape(currentSy));
             var semMatch = assignedCourseSemester.Contains(currentSemName, StringComparison.OrdinalIgnoreCase);
 
-            // Be forgiving: if either matches, count it.
+            
             return syMatch || semMatch;
         }
     }

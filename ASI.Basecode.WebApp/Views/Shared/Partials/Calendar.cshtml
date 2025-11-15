@@ -52,7 +52,7 @@
                 <input type="hidden" name="StartUtc" id="startUtc" />
                 <input type="hidden" name="EndUtc" id="endUtc" />
 
-                <!-- Hidden bools the server binds to (JS will set these) -->
+                <!-- Hidden bools the server binds to -->
                 <input type="hidden" name="IsAllDay" id="isAllDayHidden" value="false" />
                 @if (isAdmin)
                 {
@@ -116,12 +116,10 @@
         // Helpers
         function toUtcISOString(localValue) {
             if (!localValue) return "";
-            const d = new Date(localValue);
-            return new Date(Date.UTC(
-                d.getFullYear(), d.getMonth(), d.getDate(),
-                d.getHours(), d.getMinutes(), 0, 0
-            )).toISOString();
+            // Interpret the datetime-local value as local time and convert to UTC
+            return new Date(localValue).toISOString();
         }
+
         function toInputValue(date) {
             if (!date) return "";
             const pad = (n) => (n < 10 ? "0" + n : n);
@@ -145,7 +143,7 @@
             const startLocalEl = document.getElementById('startLocal');
             const endLocalEl = document.getElementById('endLocal');
             const allDayEl = document.getElementById('allDay');
-            const isGlobalEl = document.getElementById('isGlobal'); // may be null
+            const isGlobalEl = document.getElementById('isGlobal'); 
             const btnSave = document.getElementById('btnSave');
             const btnDelete = document.getElementById('btnDelete');
             const isGlobalGroup = document.getElementById('isGlobalGroup');
@@ -168,7 +166,7 @@
                     // Delete shown only if server says canEdit in click handler
                 }
 
-                // For non-admin viewers, never show Global checkbox UI
+                // For non-admi dont show Global checkbox UI
                 if (!isAdmin && isGlobalGroup) isGlobalGroup.classList.add('d-none');
                 if (isAdmin && isGlobalGroup) isGlobalGroup.classList.remove('d-none');
             }
@@ -187,7 +185,7 @@
                 eventDurationEditable: (arg) => (arg.event.extendedProps?.canEdit === true),
                 eventAllow: (dropInfo, draggedEvent) => draggedEvent.extendedProps?.canEdit === true,
 
-                // ✅ Adjusted event card content (better title + multi-day handling)
+                // Adjusted event card content (better title + multi-day handling)
                 eventContent: (arg) => {
                     const ev = arg.event;
                     const x = ev.extendedProps || {};
@@ -220,7 +218,7 @@
 
                     const fmtTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                    // Nice handling for all-day & multi-day
+                    // handling for all-day & multi-day
                     let timeLabel = '';
                     if (ev.allDay) {
                         if (ev.start && ev.end && ev.start.toDateString() !== ev.end.toDateString()) {
@@ -401,14 +399,30 @@
                 delForm.submit();
             });
 
-            // Before submit: copy local -> UTC, and checkboxes -> hidden fields
+            // Before submit: validate times, copy local -> UTC, and checkboxes -> hidden fields
             form.addEventListener('submit', (e) => {
-                // If we’re in view-only mode (btnSave hidden), block submits
+                
                 if (btnSave.classList.contains('d-none')) {
                     e.preventDefault();
                     return false;
                 }
 
+                const startVal = startLocalEl.value;
+                const endVal = endLocalEl.value;
+
+                // Client-side validation: End must not be earlier than Start
+                if (startVal && endVal) {
+                    const start = new Date(startVal);
+                    const end = new Date(endVal);
+
+                    if (end < start) {
+                        e.preventDefault();
+                        alert('End time must be after Start time.');
+                        return false;
+                    }
+                }
+
+                // If valid, push UTC values to hidden inputs
                 document.getElementById('startUtc').value = toUtcISOString(startLocalEl.value);
                 document.getElementById('endUtc').value = toUtcISOString(endLocalEl.value);
 

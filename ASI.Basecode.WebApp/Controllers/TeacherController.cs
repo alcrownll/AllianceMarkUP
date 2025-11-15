@@ -45,7 +45,7 @@ namespace ASI.Basecode.WebApp.Controllers
             // Build dynamic VM
             var vm = await _dashboardService.BuildAsync(idNumber);
 
-            return View("TeacherDashboard", vm); // uses your existing Razor view
+            return View("TeacherDashboard", vm);
         }
 
         public async Task<IActionResult> Profile()
@@ -124,7 +124,7 @@ namespace ASI.Basecode.WebApp.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"An error occurred while loading courses: {ex.Message}";
-                // Set ViewBag values even in error case for proper view rendering
+                
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                 return View("TeacherCourses", new List<TeacherClassScheduleViewModel>());
             }
@@ -368,11 +368,11 @@ namespace ASI.Basecode.WebApp.Controllers
 
         private string GetCurrentIdNumber()
         {
-            // Prefer session IdNumber; fall back to claim if needed
+           
             var id = HttpContext?.Session?.GetString("IdNumber");
             if (!string.IsNullOrWhiteSpace(id)) return id;
 
-            // Optional: if you also store it in claims
+            
             var claim = User?.Claims?.FirstOrDefault(c => c.Type == "IdNumber")?.Value;
             return claim ?? string.Empty;
         }

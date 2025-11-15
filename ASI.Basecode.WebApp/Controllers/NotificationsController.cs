@@ -46,7 +46,7 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminIndex() => await BuildIndexViewAsync();
 
-        // 🔹 Fallback: /Notifications -> redirect to the correct role route
+        // Fallback: /Notifications -> redirect to the correct role route
         [HttpGet("/Notifications")]
         public IActionResult Index() => RedirectToRoleNotifications();
 

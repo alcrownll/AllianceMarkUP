@@ -62,7 +62,7 @@ namespace ASI.Basecode.Services.Services
 
             // ===============================================
             // Fetch all assigned courses for this teacher
-            // NOTE: Program now comes from FK -> Program.ProgramCode
+            // Program comes from FK -> Program.ProgramCode
             // ===============================================
             var assignedRaw = await _assignedRepo.GetAssignedCourses()
                 .AsNoTracking()
@@ -85,7 +85,7 @@ namespace ASI.Basecode.Services.Services
                     Summary = new List<ProgramSummaryItem>()
                 };
 
-            // Keep original program codes instead of normalizing
+           
             var assigned = assignedRaw.Select(a => new
             {
                 a.AssignedCourseId,

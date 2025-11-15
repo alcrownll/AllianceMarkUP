@@ -22,7 +22,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public bool HasErrors => FailedCount > 0 || InsertedCount == 0;
         public bool IsSuccess => InsertedCount > 0 && FailedCount == 0;
 
-        // User-friendly message for end users
+  
         public string GetMessage()
         {
             if (InsertedCount == 0 && FailedCount == 0)
@@ -32,7 +32,7 @@ namespace ASI.Basecode.Services.ServiceModels
 
             if (InsertedCount == 0 && FailedCount > 0)
             {
-                // Make the error more user-friendly
+
                 return SimplifyErrorMessage(FirstError ?? "We couldn't process your file. Please check the data and try again.");
             }
 

@@ -2,13 +2,13 @@
 @using System.Text.Json
 
 @{
-    // Notifications base URL: match nav behavior per role
+    // Notifications base URL
     var notifBaseUrl =
         User.IsInRole("Admin") ? Url.Action("Notifications", "Admin") :
         User.IsInRole("Teacher") ? Url.Action("Notifications", "Teacher") :
                                    Url.Action("Notifications", "Student");
 
-    // Calendar base URL: match nav behavior per role
+    // Calendar base URL
     var baseCalUrl =
         User.IsInRole("Admin") ? Url.Action("Calendar", "Admin") :
         User.IsInRole("Teacher") ? Url.Action("Calendar", "Teacher") :
@@ -21,7 +21,7 @@
     var userDatesJson = JsonSerializer.Serialize(Model.UserEventDates ?? new HashSet<string>());
     var globalDatesJson = JsonSerializer.Serialize(Model.GlobalEventDates ?? new HashSet<string>());
 
-    // Only students/teachers should see the bell
+    // Show bel only for student/teacher
     var showBell = User.IsInRole("Student") || User.IsInRole("Teacher");
 }
 

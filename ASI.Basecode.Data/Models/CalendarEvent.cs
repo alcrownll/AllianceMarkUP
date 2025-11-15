@@ -54,13 +54,14 @@ namespace ASI.Basecode.Data.Models
         public DateTime EndUtc { get; set; }
 
         /// <summary>
-        /// True for all-day (floating) events. When true, LocalStartDate/LocalEndDate are used for rendering.
+        /// True for all-day (floating) events.
         /// </summary>
         public bool IsAllDay { get; set; }
 
         /// <summary>
         /// Local calendar dates for all-day events (floating dates, not instants).
         /// When IsAllDay = true, fill these and still keep StartUtc/EndUtc for alarms if you want.
+        /// DISREGARD ON NExt MIGRATION
         /// </summary>
         public DateOnly? LocalStartDate { get; set; }
         public DateOnly? LocalEndDate { get; set; }

@@ -24,7 +24,6 @@ namespace ASI.Basecode.Services.Services
         // ======================================================
         public void NotifyProfileUpdated(int userId)
         {
-            // User updated their own profile -> My Activity
             AddNotification(
                 userId: userId,
                 title: "Profile updated",
@@ -189,7 +188,7 @@ namespace ASI.Basecode.Services.Services
             }
             else
             {
-                // Generic fallback for any other statuses
+                // Generic fallback
                 title = "Updated account status";
                 message = $"You changed the {roleText} account status of {label} to {status}.";
             }
@@ -460,9 +459,9 @@ namespace ASI.Basecode.Services.Services
                 userId: teacherUserId,
                 title: "New teaching assignment",
                 message: $"You have been assigned to {edpPart} – {coursePart}{termPart}.",
-                kind: NotificationKind.System,         // Updates tab
+                kind: NotificationKind.System,       
                 category: "AssignedCourses",
-                actorUserId: adminUserId              // admin is actor
+                actorUserId: adminUserId        
             );
         }
 

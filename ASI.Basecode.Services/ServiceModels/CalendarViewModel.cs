@@ -27,12 +27,12 @@ namespace ASI.Basecode.Services.ServiceModels
         [Required] public string Title { get; set; }
         public string Location { get; set; }
 
-        // MUST be DateTimeOffset so "2025-10-11T08:00:00Z" binds safely
+        
         [Required] public DateTimeOffset StartUtc { get; set; }
         [Required] public DateTimeOffset EndUtc { get; set; }
 
         public bool IsAllDay { get; set; }
-        public DateOnly? LocalStartDate { get; set; }
+        public DateOnly? LocalStartDate { get; set; } //can be disregarded later nlng walay pulos
         public DateOnly? LocalEndDate { get; set; }
 
         // Optional for Admin

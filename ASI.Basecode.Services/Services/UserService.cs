@@ -117,14 +117,15 @@ namespace ASI.Basecode.Services.Services
         public async Task<ForgotPasswordResult> RequestPasswordResetAsync(
     string email,
     TimeSpan ttl,
-    Func<string, string> linkFactory)
+    Func<string, string> linkFactory) 
         {
             var user = FindByEmail(email);
             if (user == null) return ForgotPasswordResult.NotFound;
 
             var token = CreatePasswordResetToken(user, ttl);
 
-            var link = linkFactory(token.Token);
+            
+            var link = linkFactory(token.Token); 
 
             var html = $@"
         <p>Use the link below to reset your password. It expires in {(int)ttl.TotalMinutes} minutes.</p>

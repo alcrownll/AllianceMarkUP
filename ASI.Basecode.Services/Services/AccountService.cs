@@ -18,7 +18,7 @@ namespace ASI.Basecode.Services.Services
         // Produce a DateTime acceptable for "timestamp" (no tz)
         private static DateTime DbNow()
             => DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
-        // ^ you can also just use DateTime.Now; the important part is: NOT Utc
+    
 
         public async Task<(bool ok, string message)> ChangePasswordAsync(
             int userId, string oldPassword, string newPassword, CancellationToken ct = default)
@@ -42,7 +42,7 @@ namespace ASI.Basecode.Services.Services
             try
             {
                 user.Password = PasswordManager.EncryptPassword(newPassword);
-                user.UpdatedAt = DbNow(); // ✅ NOT UtcNow
+                user.UpdatedAt = DbNow(); 
                 await _db.SaveChangesAsync(ct);
                 return (true, "Password changed successfully.");
             }

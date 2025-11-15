@@ -173,7 +173,7 @@ namespace ASI.Basecode.WebApp.Controllers
             var adminUserId = _profile.GetCurrentUserId();
             var roleLabel = (tab?.ToLower() == "teachers") ? "teacher" : "student";
 
-            // Default to "Inactive" if nothing is posted (shouldn't happen with our JS)
+            // Default to "Inactive" if nothing is posted
             var targetStatus = string.IsNullOrWhiteSpace(status) ? "Inactive" : status.Trim();
 
             var ok = await _adminacc.SuspendAccount(

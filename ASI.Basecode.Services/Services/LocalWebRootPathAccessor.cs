@@ -19,7 +19,7 @@ namespace ASI.Basecode.Services.Services
 
         public LocalWebRootPathAccessor()
         {
-            // Start from current directory (usually the content root).
+            // Start from current directory
             var baseDir = Directory.GetCurrentDirectory();
 
             // If ./wwwroot exists, use it. Otherwise probe up to 3 parents.

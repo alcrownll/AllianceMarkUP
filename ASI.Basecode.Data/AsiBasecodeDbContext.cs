@@ -32,7 +32,7 @@ namespace ASI.Basecode.Data
         public virtual DbSet<Notification> Notifications { get; set; }
         public virtual DbSet<CalendarEvent> CalendarEvents { get; set; }
 
-        // NEW: password reset tokens
+        // password reset tokens
         public virtual DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -188,7 +188,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // 🔹 NOTIFICATION
+            // NOTIFICATION
             modelBuilder.Entity<Notification>(entity =>
             {
                 entity.HasKey(e => e.NotificationId);
@@ -211,7 +211,7 @@ namespace ASI.Basecode.Data
                 v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
                 v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
-            // 🔹 CALENDAR EVENT
+            // CALENDAR EVENT
             modelBuilder.Entity<CalendarEvent>(entity =>
             {
                 entity.HasKey(e => e.CalendarEventId);
@@ -262,7 +262,7 @@ namespace ASI.Basecode.Data
             // YEARTERM
             modelBuilder.Entity<YearTerm>(entity =>
             {
-                entity.ToTable("YearTerm");                 // <-- add this line
+                entity.ToTable("YearTerm");                 
                 entity.HasKey(e => e.YearTermId);
                 entity.Property(e => e.YearLevel).IsRequired();
                 entity.Property(e => e.TermNumber).IsRequired();
@@ -306,7 +306,7 @@ namespace ASI.Basecode.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // 🔹 PASSWORD RESET TOKEN (NEW)
+            // PASSWORD RESET TOKEN
             var utcConv2 = new ValueConverter<DateTime, DateTime>(
                 v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
                 v => DateTime.SpecifyKind(v, DateTimeKind.Utc));

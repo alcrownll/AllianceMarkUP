@@ -103,7 +103,7 @@ namespace ASI.Basecode.Services.Services
 
             if (hasProg || hasYear || hasSec)
             {
-                // NOTE: this filter shows all NOT in the selected block (based on your previous code)
+                // NOTE: this filter shows all NOT in the selected block
                 q = q.Where(s =>
                     !((!hasProg || s.Program == program) &&
                       (!hasYear || s.YearLevel == yearLevel) &&
@@ -553,7 +553,7 @@ namespace ASI.Basecode.Services.Services
                 throw new InvalidOperationException("Assigned course not found.");
             }
 
-            // We keep your existing behavior: you can map other fields here if needed.
+        
 
             _assigned.UpdateAssignedCourse(ac);
             await _assigned.SaveChangesAsync(ct);

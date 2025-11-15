@@ -52,13 +52,13 @@ namespace ASI.Basecode.Data.Models
         public Teacher Teacher { get; set; }
         public UserProfile UserProfile { get; set; }
 
-        // Notifications (1:N)
+        // Notifications
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
-        // Calendar Events (1:N)
+        // Calendar Events 
         public ICollection<CalendarEvent> CalendarEvents { get; set; } = new List<CalendarEvent>();
 
-        // Password Reset Tokens (1:N)
+        // Password Reset Tokens 
         public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
     }
 }

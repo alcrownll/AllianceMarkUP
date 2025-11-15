@@ -25,7 +25,7 @@ namespace ASI.Basecode.Services.Interfaces
         bool ResetPassword(int userId, string newPassword);
         void MarkResetTokenUsed(string token);
 
-        // UPDATED: controller supplies exact URL via delegate
+    
         Task<ForgotPasswordResult> RequestPasswordResetAsync(
             string email,
             TimeSpan ttl,

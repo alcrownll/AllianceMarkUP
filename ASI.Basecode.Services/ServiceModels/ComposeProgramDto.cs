@@ -29,8 +29,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Name { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
 
-        // Optional: include this if you want to support replacing/merging curriculum on update.
-        // If you don't need it yet, you can remove it or keep it nullable.
+       
         public List<ComposeYearDto> Years { get; set; }
     }
 

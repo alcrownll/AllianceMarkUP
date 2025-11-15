@@ -142,7 +142,7 @@ namespace ASI.Basecode.Services.Services
                     adminUserId: adminUserId,
                     programCode: p.ProgramCode,
                     programName: p.ProgramName,
-                    forceDelete: hadCourses  // true if deleted while having courses (or via force)
+                    forceDelete: hadCourses 
                 );
             }
         }

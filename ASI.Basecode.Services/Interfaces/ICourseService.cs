@@ -13,7 +13,7 @@ namespace ASI.Basecode.Services.Interfaces
         Task UpdateAsync(Course course);
         Task DeleteAsync(int id);
 
-        // Add the method to check dependencies before deletion
-        Task<bool> HasDependenciesAsync(int courseId);  // New method
+
+        Task<bool> HasDependenciesAsync(int courseId); 
     }
 }

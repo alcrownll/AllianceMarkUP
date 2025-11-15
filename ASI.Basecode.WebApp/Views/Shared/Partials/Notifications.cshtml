@@ -43,7 +43,7 @@
 
 <div class="notifications-page">
     <div class="n-card">
-        @* Top bar: tabs on the left, Mark all as read on the right *@
+        @* Top bar *@
         <div class="n-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
             <!-- Main Tabs -->
             <ul class="nav n-tabs mb-0" id="notifTabs" role="tablist">
@@ -135,7 +135,7 @@
                 <div class="n-empty-scope" data-empty-for="all"></div>
             </div>
 
-            @* ========== UPDATES TAB (System) — hidden entirely for Admins ========== *@
+            @* ========== UPDATES TAB (System) — hidden for Admins ========== *@
             @if (!isAdmin)
             {
                 <div class="tab-pane fade" id="pane-updates" role="tabpanel" aria-labelledby="tab-updates">
@@ -228,7 +228,7 @@
 @section Scripts {
     <script>
         (function () {
-          // Map (scope, filter) -> empty message
+          // Map (scope, filter)
           const emptyMessages = {
             all:      { unread: "No unread notifications.", read: "No read notifications." },
             updates:  { unread: "No unread updates.",       read: "No read updates." },
