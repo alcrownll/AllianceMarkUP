@@ -229,13 +229,19 @@
                     }
                 }
 
+                // ✅ Force refresh courses table
                 if (typeof window.loadCourseTable === 'function') {
-                    await window.loadCourseTable();
+                    await window.loadCourseTable(true);   // <── FIXED HERE
                 }
+
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+
                 if (window.showToast) {
-                    showToast(MODE === 'add' ? 'Course created.' : 'Course updated.');
+                    showToast(MODE === 'add'
+                        ? 'Course created.'
+                        : 'Course updated.');
                 }
+
             } catch (err) {
                 console.error('Error details:', err);
                 showErr(err.message || 'An unexpected error occurred. Please try again.');
@@ -246,3 +252,4 @@
         });
     })();
 </script>
+

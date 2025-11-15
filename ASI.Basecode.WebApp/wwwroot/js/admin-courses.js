@@ -403,19 +403,15 @@
         }
     });
     // ===== Course table AJAX loader =====
-    let coursesLoaded = false;
+   
 
-    window.loadCourseTable = async function (force = false) {
+    // ===== Course table AJAX loader =====
+    window.loadCourseTable = async function () {
         const host = document.getElementById('coursesTableHost');
         if (!host) {
             console.warn('coursesTableHost not found');
             return;
         }
-
-        // Avoid reloading if already loaded unless forced
-        if (coursesLoaded && !force) return;
-
-        host.innerHTML = '<div class="text-center text-muted py-5">Loading courses...</div>';
 
         try {
             const res = await fetch('/admin/courses/list', {
@@ -431,8 +427,8 @@
                 return;
             }
 
+            // Just swap the HTML, no loading placeholder
             host.innerHTML = html;
-            coursesLoaded = true;
 
             // Reapply current search filter if function exists
             const searchVal = document.getElementById('globalSearch')?.value || '';
@@ -445,6 +441,7 @@
             if (window.showToast) window.showToast('Failed to reload courses.', 'error');
         }
     };
+
 
     (function () {
         const coursesTabLink = document.querySelector('a[data-bs-target="#courses"]');
