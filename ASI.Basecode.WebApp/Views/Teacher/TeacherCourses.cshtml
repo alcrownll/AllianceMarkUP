@@ -1,5 +1,4 @@
-﻿@model List<ASI.Basecode.Services.ServiceModels.TeacherClassScheduleViewModel>
-@{
+﻿@{
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["Title"] = "Assigned Courses";
     ViewData["PageHeader"] = "Assigned Courses";
@@ -41,90 +40,16 @@
 
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
-                <!-- Content for Grade View tab -->
+                <!-- Grade View -->
+                <!-- Filters -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesFilters.cshtml")
 
-                <!-- Students and Grades Table -->
+                <!-- Student and Grade Table -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesGradeTable.cshtml")
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
-                <!-- Content for Grade Entry tab -->
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h4 class="mb-3">Class Schedule</h4>
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle grade-entry-table">
-                                <thead>
-                                    <tr>
-                                        <th>EDP Code</th>
-                                        <th>Subject</th>
-                                        <th>Type</th>
-                                        <th>Units</th>
-                                        <th>Schedule</th>
-                                        <th>Room</th>
-                                        <th>Section</th>
-                                        <th>Course</th>
-                                        <th class="text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (Model != null && Model.Any())
-                                    {
-                                        @foreach (var course in Model)
-                                        {
-                                            <tr>
-                                                <td>@course.EDPCode</td>
-                                                <td>@course.Subject</td>
-                                                <td>@course.Type</td>
-                                                <td>@course.Units</td>
-                                                <td>@course.DateTime</td>
-                                                <td>@course.Room</td>
-                                                <td>@course.Section</td>
-                                                <td>@course.Course</td>
-                                                <td class="text-center">
-                                                    <div class="d-inline-flex gap-2">
-                                                        <!-- Edit -->
-                                                        <button type="button"
-                                                                class="icon-btn icon-edit"
-                                                                data-bs-toggle="tooltip"
-                                                                data-bs-title="Edit"
-                                                                onclick="showEditPanel('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            <i class="bi bi-pencil-square"></i>
-                                                        </button>
-
-                                                        <!-- Upload -->
-                                                        <button type="button"
-                                                                class="icon-btn icon-upload"
-                                                                data-bs-toggle="tooltip"
-                                                                data-bs-title="Upload Excel Grades"
-                                                                onclick="openExcelUploadModal('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            <i class="bi bi-upload"></i>
-                                                        </button>
-
-                                                        <!-- To PDF -->
-                                                        <button type="button"
-                                                                class="icon-btn icon-pdf"
-                                                                data-bs-toggle="tooltip"
-                                                                data-bs-title="To PDF"
-                                                                onclick="printGrades('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
-                                                            <i class="bi bi-file-earmark-text"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <tr>
-                                            <td colspan="9" class="text-center text-muted">No assigned courses found.</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                <!-- Grade Entry -->
+                @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesGradeEntry.cshtml")
 
                 <!-- Edit Grades Panel -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesEditPanel.cshtml")
