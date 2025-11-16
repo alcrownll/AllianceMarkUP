@@ -62,13 +62,18 @@ namespace ASI.Basecode.Services.Services
 
             // =============== GWA computation ===================
             decimal? cumulativeGwa = null;
-            var finals = grades
-                .Where(g => g.Final.HasValue)
-                .Select(g => g.Final!.Value)
-                .ToList();
-            if (finals.Any())
-                cumulativeGwa = Math.Round((decimal)finals.Average(), 2);
 
+            // same GPA logic as Grades: (Prelim + Midterm + SemiFinal + Final) / 4
+            var subjectGpas = grades
+                .Select(g => ComputeGpa(g.Prelims, g.Midterm, g.SemiFinal, g.Final))
+                .Where(gpa => gpa.HasValue)        // exclude INCOMPLETE subjects
+                .Select(gpa => gpa!.Value)
+                .ToList();
+
+            if (subjectGpas.Any())
+                cumulativeGwa = Math.Round(subjectGpas.Average(), 2);
+
+            // Dean’s list still uses GWA 1.00–1.70
             var isDeanList = cumulativeGwa is >= 1.00m and <= 1.70m;
 
             // =============== TERM UNIT COMPUTATION ===================
@@ -172,7 +177,7 @@ namespace ASI.Basecode.Services.Services
                 Program = student.Program,
                 YearLevel = FormatYearLevel(student.YearLevel),
                 CumulativeGwa = cumulativeGwa,
-                CurrentTermUnits = currentTermUnits,  
+                CurrentTermUnits = currentTermUnits,
                 IsDeanListEligible = isDeanList,
                 CurrentSchoolYear = targetSy,
                 CurrentSemesterName = targetSemShort + " Semester",
@@ -184,6 +189,7 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ---------------- Helpers ----------------
+
         private static string GetCurrentSchoolYear()
         {
             var now = DateTime.Now;
@@ -229,6 +235,16 @@ namespace ASI.Basecode.Services.Services
                 4 => "4th Year",
                 _ => $"{level}th Year"
             };
+        }
+
+        private static decimal? ComputeGpa(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+        {
+            if (!prelims.HasValue || !midterm.HasValue || !semiFinal.HasValue || !final.HasValue)
+                return null;
+
+            return Math.Round(
+                (prelims.Value + midterm.Value + semiFinal.Value + final.Value) / 4m,
+                2);
         }
     }
 }

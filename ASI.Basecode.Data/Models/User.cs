@@ -45,9 +45,6 @@ namespace ASI.Basecode.Data.Models
         [Column(TypeName = "timestamp")]
         public DateTime UpdatedAt { get; set; }
 
-        // ==============================
-        // Relationships
-        // ==============================
         public Student Student { get; set; }
         public Teacher Teacher { get; set; }
         public UserProfile UserProfile { get; set; }

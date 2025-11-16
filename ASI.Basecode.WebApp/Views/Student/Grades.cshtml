@@ -21,6 +21,61 @@
         function printGrades() {
             window.print();
         }
+
+        // when the term dropdown changes, split into schoolYear + semester and submit
+        function onTermChanged(selectEl) {
+            if (!selectEl) return;
+            const val = selectEl.value || '';
+            const parts = val.split('|||');
+
+            const syInput = document.getElementById('schoolYearInput');
+            const semInput = document.getElementById('semesterInput');
+
+            if (syInput) syInput.value = parts[0] || '';
+            if (semInput) semInput.value = parts[1] || '';
+
+            submitTermFilters();
+        }
+
+        // apply filters for Type + Remarks
+        function applyGradeFilters() {
+            const typeSel = document.getElementById('filterType');
+            const remarksSel = document.getElementById('filterRemarks');
+
+            const typeVal = typeSel ? typeSel.value.trim().toLowerCase() : '';
+            const remarksVal = remarksSel ? remarksSel.value.trim().toUpperCase() : '';
+
+            const rows = document.querySelectorAll('.grades-table tbody tr');
+
+            rows.forEach(row => {
+                const rowType = (row.getAttribute('data-type') || '').trim().toLowerCase();
+                const rowRemarks = (row.getAttribute('data-remarks') || '').toUpperCase();
+
+                let show = true;
+
+                // Type filter: lecture / laboratory
+                if (typeVal && rowType !== typeVal) {
+                    show = false;
+                }
+
+                // Remarks filter: PASS / INCOMPLETE / FAIL (contains check)
+                if (remarksVal) {
+                    if (!rowRemarks.includes(remarksVal)) {
+                        show = false;
+                    }
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const typeSel = document.getElementById('filterType');
+            const remarksSel = document.getElementById('filterRemarks');
+
+            if (typeSel) typeSel.addEventListener('change', applyGradeFilters);
+            if (remarksSel) remarksSel.addEventListener('change', applyGradeFilters);
+        });
     </script>
 }
 
@@ -31,11 +86,6 @@
         <div class="empty-state">
             <h3>No grades available yet</h3>
             <p>Once grades are uploaded to the system, they will appear here.</p>
-
-            <!-- keep a bottom-only print button for empty-state -->
-            <div style="margin-top:18px;">
-                <button class="btn-pill" onclick="printGrades()">Print Records</button>
-            </div>
         </div>
     }
     else
@@ -46,25 +96,33 @@
                 <div class="toolbar-left">
                     <span class="toolbar-label">Select School Term</span>
                     <form id="termFilterForm" method="get" class="term-inline">
-                        <label class="sr-only" for="selectSchoolTerm">School Year</label>
-                        <select id="selectSchoolTerm" name="schoolYear" onchange="submitTermFilters()">
-                            @foreach (var sy in Model.AvailableSchoolYears)
+                        @* hidden fields actually sent to the server *@
+                        <input type="hidden" id="schoolYearInput" name="schoolYear"
+                               value="@(Model.SelectedSchoolYear ?? Model.SchoolYear)" />
+                        <input type="hidden" id="semesterInput" name="semester"
+                               value="@(Model.SelectedSemester ?? Model.Semester)" />
+
+                        <label class="sr-only" for="selectTerm">School Term</label>
+                        <select id="selectTerm" class="term-pill-select" onchange="onTermChanged(this)">
+                            @if (Model.AvailableSchoolYears != null && Model.AvailableSemesters != null)
                             {
-                                var isSelected = string.Equals(Model.SelectedSchoolYear, sy, System.StringComparison.OrdinalIgnoreCase);
-                                <option value="@sy" selected="@(isSelected ? "selected" : null)">@sy</option>
+                                foreach (var sy in Model.AvailableSchoolYears)
+                                {
+                                    foreach (var sem in Model.AvailableSemesters)
+                                    {
+                                        var isSelected =
+                                        string.Equals(Model.SelectedSchoolYear, sy, StringComparison.OrdinalIgnoreCase) &&
+                                        string.Equals(Model.SelectedSemester, sem, StringComparison.OrdinalIgnoreCase);
+
+                                        var value = $"{sy}|||{sem}";
+                                        <option value="@value" selected="@(isSelected ? "selected" : null)">
+                                            S.Y. @sy - @sem
+                                        </option>
+                                    }
+                                }
                             }
                         </select>
 
-                        <label class="sr-only" for="selectSemester">Semester</label>
-                        <select id="selectSemester" name="semester" onchange="submitTermFilters()">
-                            @foreach (var sem in Model.AvailableSemesters)
-                            {
-                                var isSelected = string.Equals(Model.SelectedSemester, sem, System.StringComparison.OrdinalIgnoreCase);
-                                <option value="@sem" selected="@(isSelected ? "selected" : null)">@sem</option>
-                            }
-                        </select>
-
-                   
                         <button type="button" class="iconbtn" title="Print Grades" onclick="printGrades()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M6 9V3h12v6M6 17v4h12v-4M6 9h12m-1 4h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h2"
@@ -74,8 +132,6 @@
                         </button>
                     </form>
                 </div>
-
-              
             </div>
 
             <div class="info-grid">
@@ -98,20 +154,40 @@
                             <th>Subject</th>
                             <th>Description</th>
                             <th>Instructor</th>
-                            <th>Type</th>
+
+                            <!-- TYPE header as dropdown -->
+                            <th>
+                                <select id="filterType" class="filter-header-select">
+                                    <option value="">TYPE</option>
+                                    <option value="lecture">Lecture</option>
+                                    <option value="laboratory">Laboratory</option>
+                                </select>
+                            </th>
+
                             <th>Units</th>
                             <th>Prelim</th>
                             <th>Midterm</th>
                             <th>Semi-Final</th>
                             <th>Final</th>
-                            <th>Remarks</th>
+
+                            <!-- REMARKS header as dropdown -->
+                            <th>
+                                <select id="filterRemarks" class="filter-header-select">
+                                    <option value="">REMARKS</option>
+                                    <option value="PASS">Passed</option>
+                                    <option value="INCOMPLETE">Incomplete</option>
+                                    <option value="FAIL">Failed</option>
+                                </select>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model.Grades)
                         {
-                            var isPassed = !string.IsNullOrWhiteSpace(item.Remarks) && item.Remarks.ToUpper().Contains("PASS");
-                            <tr>
+                            var normalizedRemarks = (item.Remarks ?? "").Trim().ToUpper();
+                            var isPassed = normalizedRemarks.Contains("PASS");
+
+                            <tr data-type="@item.Type" data-remarks="@normalizedRemarks">
                                 <td>@item.SubjectCode</td>
                                 <td>@item.Description</td>
                                 <td>@item.Instructor</td>
@@ -121,19 +197,15 @@
                                 <td>@(item.Midterm?.ToString("0.0") ?? "—")</td>
                                 <td>@(item.SemiFinal?.ToString("0.0") ?? "—")</td>
                                 <td>@(item.Final?.ToString("0.0") ?? "—")</td>
-                                <td class="@(isPassed ? "remarks-pass" : "remarks-fail")">@((item.Remarks ?? "").ToUpper())</td>
+                                <td class="@(isPassed ? "remarks-pass" : "remarks-fail")">@normalizedRemarks</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
-
-           
-            <div class="card-bottom">
-                <button class="btn-pill" type="button" onclick="printGrades()">Print Records</button>
-            </div>
         </div>
         <!-- ================= /SCREEN VERSION ================= -->
+
         <!-- ================= PRINT VERSION ================= -->
         <div id="gradesPrintArea" class="print-sheet only-print">
             <div class="sheet-header">
@@ -194,7 +266,8 @@
                     {
                         foreach (var item in Model.Grades)
                         {
-                            var isPassed = !string.IsNullOrWhiteSpace(item.Remarks) && item.Remarks.ToUpper().Contains("PASS");
+                            var isPassed = !string.IsNullOrWhiteSpace(item.Remarks) &&
+                            item.Remarks.ToUpper().Contains("PASS");
                             <tr>
                                 <td>@item.SubjectCode</td>
                                 <td>@item.Description</td>

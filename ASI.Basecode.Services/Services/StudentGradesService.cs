@@ -3,10 +3,7 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +25,11 @@ namespace ASI.Basecode.Services.Services
             _users = users;
         }
 
-        public async Task<StudentGradesViewModel> BuildAsync(int userId, string schoolYear, string semester, CancellationToken ct = default)
+        public async Task<StudentGradesViewModel> BuildAsync(
+            int userId,
+            string schoolYear,
+            string semester,
+            CancellationToken ct = default)
         {
             var user = await _users.GetUsers()
                 .AsNoTracking()
@@ -52,6 +53,7 @@ namespace ASI.Basecode.Services.Services
             vm.Department = student.Department;
             vm.YearLevel = FormatYearLevel(student.YearLevel);
 
+            // ---- raw grade rows from DB ----
             var rows = await _grades.GetGrades()
                 .Where(g => g.StudentId == student.StudentId)
                 .Select(g => new
@@ -67,24 +69,32 @@ namespace ASI.Basecode.Services.Services
                 .AsNoTracking()
                 .ToListAsync(ct);
 
+            // ---- map to VM rows + compute per-subject remarks ----
             var gradeRows = rows.Select(r =>
             {
                 var rowSemester = r.AC?.Semester ?? "N/A";
                 var rowSchoolYear = r.AC?.SchoolYear ?? defaultSchoolYear;
-                var remarks = CalculateRemarksFromGrades(r.Prelims, r.Midterm, r.SemiFinal, r.Final);
+
+                var remarks = CalculateRemarksFromGrades(
+                    r.Prelims,
+                    r.Midterm,
+                    r.SemiFinal,
+                    r.Final);
 
                 return new StudentGradeRowViewModel
                 {
                     SubjectCode = r.AC?.EDPCode,
                     Description = r.Course?.Description,
-                    Instructor = r.TeacherUser != null ? $"{r.TeacherUser.FirstName} {r.TeacherUser.LastName}" : "N/A",
+                    Instructor = r.TeacherUser != null
+                        ? $"{r.TeacherUser.FirstName} {r.TeacherUser.LastName}"
+                        : "N/A",
                     Type = r.AC?.Type,
                     Units = UnitsForType(
-                                r.AC?.Type,
-                                r.AC?.Units,
-                                r.Course?.LecUnits,
-                                r.Course?.LabUnits,
-                                r.Course?.TotalUnits),
+                        r.AC?.Type,
+                        r.AC?.Units,
+                        r.Course?.LecUnits,
+                        r.Course?.LabUnits,
+                        r.Course?.TotalUnits),
                     Prelims = r.Prelims,
                     Midterm = r.Midterm,
                     SemiFinal = r.SemiFinal,
@@ -98,6 +108,7 @@ namespace ASI.Basecode.Services.Services
             if (!gradeRows.Any())
                 return vm;
 
+            // ---- school year + semester options ----
             var availableSchoolYears = gradeRows
                 .Select(r => r.SchoolYear)
                 .Where(sy => !string.IsNullOrWhiteSpace(sy))
@@ -134,15 +145,20 @@ namespace ASI.Basecode.Services.Services
                 .FirstOrDefault(se => string.Equals(se, semester, StringComparison.OrdinalIgnoreCase))
                 ?? availableSemesters.FirstOrDefault();
 
+            // ---- filter rows for selected term ----
             var filteredGrades = gradeRows
                 .Where(r =>
-                    (string.IsNullOrWhiteSpace(selectedSchoolYear) || string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase)) &&
-                    (string.IsNullOrWhiteSpace(selectedSemester) || string.Equals(r.Semester, selectedSemester, StringComparison.OrdinalIgnoreCase)))
+                    (string.IsNullOrWhiteSpace(selectedSchoolYear) ||
+                        string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrWhiteSpace(selectedSemester) ||
+                        string.Equals(r.Semester, selectedSemester, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
-            var finals = filteredGrades
-                .Where(r => r.Final.HasValue)
-                .Select(r => r.Final.Value)
+            // ---- overall GPA: average of per-subject GPAs ----
+            var subjectGpas = filteredGrades
+                .Select(r => ComputeGpa(r.Prelims, r.Midterm, r.SemiFinal, r.Final))
+                .Where(g => g.HasValue)
+                .Select(g => g.Value)
                 .ToList();
 
             vm.AvailableSchoolYears = availableSchoolYears;
@@ -152,26 +168,30 @@ namespace ASI.Basecode.Services.Services
             vm.SchoolYear = selectedSchoolYear ?? defaultSchoolYear;
             vm.Semester = selectedSemester ?? vm.Semester;
             vm.Grades = filteredGrades;
-            vm.Gpa = finals.Any() ? decimal.Round(finals.Average(), 2) : (decimal?)null;
+            vm.Gpa = subjectGpas.Any()
+                ? decimal.Round(subjectGpas.Average(), 2)
+                : (decimal?)null;
 
             return vm;
         }
 
-        // Helpers
+
         private static int UnitsForType(string type, int? acUnits, int? lecUnits, int? labUnits, int? totalUnits)
         {
             var t = (type ?? "").Trim().ToLowerInvariant();
 
-            // Prefer precise split by row type
             if (t == "lecture")
-                return lecUnits ?? // e.g., Courses.LecUnits
-                       (totalUnits.HasValue && labUnits.HasValue ? totalUnits.Value - labUnits.Value : acUnits ?? 0);
+                return lecUnits ??
+                       (totalUnits.HasValue && labUnits.HasValue
+                            ? totalUnits.Value - labUnits.Value
+                            : acUnits ?? 0);
 
             if (t == "laboratory" || t == "lab")
-                return labUnits ?? // e.g., Courses.LabUnits
-                       (totalUnits.HasValue && lecUnits.HasValue ? totalUnits.Value - lecUnits.Value : acUnits ?? 0);
+                return labUnits ??
+                       (totalUnits.HasValue && lecUnits.HasValue
+                            ? totalUnits.Value - lecUnits.Value
+                            : acUnits ?? 0);
 
-            // Fallback: show total if type is unknown
             return totalUnits ?? acUnits ?? 0;
         }
 
@@ -201,31 +221,24 @@ namespace ASI.Basecode.Services.Services
             return $"{level}{suffix} Year";
         }
 
+        private static decimal? ComputeGpa(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
+        {
+            // If any is missing => incomplete
+            if (!prelims.HasValue || !midterm.HasValue || !semiFinal.HasValue || !final.HasValue)
+                return null;
+
+            return Math.Round(
+                (prelims.Value + midterm.Value + semiFinal.Value + final.Value) / 4m,
+                2);
+        }
+
         private static string CalculateRemarksFromGrades(decimal? prelims, decimal? midterm, decimal? semiFinal, decimal? final)
         {
-            var components = new (decimal? Score, decimal Weight)[] {
-                (prelims,   0.3m),
-                (midterm,   0.3m),
-                (semiFinal, 0.2m),
-                (final,     0.2m)
-            };
+            var gpa = ComputeGpa(prelims, midterm, semiFinal, final);
+            if (!gpa.HasValue)
+                return "INCOMPLETE";
 
-            var weightedTotal = 0m;
-            var weightSum = 0m;
-
-            foreach (var c in components)
-            {
-                if (c.Score.HasValue)
-                {
-                    weightedTotal += c.Score.Value * c.Weight;
-                    weightSum += c.Weight;
-                }
-            }
-
-            if (weightSum <= 0) return "INCOMPLETE";
-
-            var gpa = Math.Round(weightedTotal / weightSum, 2);
-            return gpa <= 3.0m ? "PASSED" : "FAILED";
+            return gpa.Value <= 3.0m ? "PASSED" : "FAILED";
         }
     }
 }

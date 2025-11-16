@@ -14,25 +14,15 @@ namespace ASI.Basecode.Services.Interfaces
         int GetCurrentTeacherId();
 
         Task<StudentProfileViewModel> GetStudentProfileAsync(int userId);
-        /// <summary>
-        /// User updates their own student profile (My Activity only for that user).
-        /// </summary>
+
         Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input);
 
-        /// <summary>
-        /// Admin updates a student's profile (My Activity for admin + Updates for student).
-        /// </summary>
         Task UpdateStudentProfileByAdminAsync(int adminUserId, int targetUserId, StudentProfileViewModel input);
 
         Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId);
-        /// <summary>
-        /// User updates their own teacher profile (My Activity only for that user).
-        /// </summary>
+
         Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input);
 
-        /// <summary>
-        /// Admin updates a teacher's profile (My Activity for admin + Updates for teacher).
-        /// </summary>
         Task UpdateTeacherProfileByAdminAsync(int adminUserId, int targetUserId, TeacherProfileViewModel input);
 
         Task<ProfileViewModel> GetAdminProfileAsync(int userId);
