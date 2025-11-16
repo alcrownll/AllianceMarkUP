@@ -27,8 +27,6 @@ public class SmtpEmailSender : IEmailSender
             Timeout = 20000 // 20s
         };
 
-    
-        
         client.DeliveryFormat = SmtpDeliveryFormat.International;
 
         using var msg = new MailMessage(from, to)
@@ -44,7 +42,6 @@ public class SmtpEmailSender : IEmailSender
         }
         catch (SmtpException ex)
         {
-            // Surface useful SMTP codes/messages in logs
             throw new InvalidOperationException(
                 $"SMTP failed. StatusCode={(int)ex.StatusCode} ({ex.StatusCode}). " +
                 $"Host={host}:{port}. AuthUser={user}. " +
