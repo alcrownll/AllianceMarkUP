@@ -36,14 +36,14 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             var claims = new[]
             {
-             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-             new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
-             new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
-             new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
-             new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
-             new Claim("IdNumber", user.IdNumber ?? string.Empty),
-             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-    };
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+                new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+                new Claim(ClaimTypes.Role, user.Role ?? string.Empty),
+                new Claim("IdNumber", user.IdNumber ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            };
 
             var identity = new ClaimsIdentity(claims, AuthScheme);
             return new ClaimsPrincipal(identity);
