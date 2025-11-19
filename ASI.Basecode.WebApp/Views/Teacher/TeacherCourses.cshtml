@@ -11,8 +11,18 @@
 
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">
-        @TempData["Error"]
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+        <div class="toast show align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive"
+             aria-atomic="true" id="errorToast">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    @TempData["Error"]
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+            </div>
+        </div>
     </div>
 }
 
@@ -69,6 +79,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+            
+            // Auto-show error toast if present
+            const errorToast = document.getElementById('errorToast');
+            if (errorToast) {
+                new bootstrap.Toast(errorToast, { delay: 5000 }).show();
+            }
         });
     </script>
 }

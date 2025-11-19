@@ -169,13 +169,59 @@ function saveGrades() {
     });
 }
 
-// Success and Error Messages
+// Toast Container Setup
+function initToastContainer() {
+    let toastContainer = document.querySelector('.toast-container.teacher-toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3 teacher-toast-container';
+        toastContainer.style.zIndex = '1100';
+        document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+}
+
+// Success and Error Messages using Bootstrap Toast
 function showSuccessMessage(message) {
-    alert(message);
+    const container = initToastContainer();
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle-fill"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
 
 function showErrorMessage(message) {
-    alert(message);
+    const container = initToastContainer();
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
 
 // Print to PDF

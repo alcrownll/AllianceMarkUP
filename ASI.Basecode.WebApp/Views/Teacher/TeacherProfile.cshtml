@@ -11,11 +11,24 @@
 
 
 <div class="container my-4">
+    @if (TempData["ProfileSaved"] is string msg)
+    {
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11">
+            <div class="toast show align-items-center text-white bg-success border-0" role="alert" aria-live="assertive"
+                 aria-atomic="true" id="successToast">
+                <div class="d-flex">
+                    <div class="toast-body d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        @msg
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    }
+    
     <div class="profile-card">
-        @if (TempData["ProfileSaved"] is string msg)
-        {
-            <div class="alert alert-success mb-3">@msg</div>
-        }
 
         <p class="meta-info">User ID: <span>@Model.IdNumber</span></p>
         <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
@@ -174,6 +187,12 @@
                     form.classList.add('was-validated');
                 }, false);
             });
+            
+            // Auto-show success toast if present
+            const successToast = document.getElementById('successToast');
+            if (successToast) {
+                new bootstrap.Toast(successToast, { delay: 3000 }).show();
+            }
         })();
     </script>
 }
