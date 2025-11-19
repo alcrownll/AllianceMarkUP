@@ -101,7 +101,6 @@ namespace ASI.Basecode.Services.Services
                 LastName = g.Student?.User?.LastName ?? "",
                 FirstName = g.Student?.User?.FirstName ?? "",
                 CourseYear = $"{g.Student?.Program} {g.Student?.YearLevel}",
-                Gender = g.Student?.User?.UserProfile?.Gender ?? "",
                 Prelims = g.Prelims,
                 Midterm = g.Midterm,
                 SemiFinal = g.SemiFinal,
@@ -289,8 +288,8 @@ namespace ASI.Basecode.Services.Services
             return intYearLevels.Distinct().OrderBy(y => y).ToList();
         }
 
-        public async Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchName = null,
-            string searchId = null, string program = null, int? yearLevel = null)
+        public async Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchFirstName = null, string searchLastName = null,
+            string searchId = null, string program = null, int? yearLevel = null, string searchRemarks = null, string sortBy = "lastName", string sortOrder = "asc")
         {
             // Get all grades for students in teacher's courses
             var gradesQuery = _gradeRepository.GetGrades()
@@ -299,12 +298,18 @@ namespace ASI.Basecode.Services.Services
                 .AsQueryable();
 
             // Apply database-level filters first
-            if (!string.IsNullOrEmpty(searchName))
+            if (!string.IsNullOrEmpty(searchFirstName))
             {
-                var searchNameLower = searchName.ToLower();
+                var searchFirstNameLower = searchFirstName.ToLower();
                 gradesQuery = gradesQuery.Where(g =>
-                    g.Student.User.FirstName.ToLower().Contains(searchNameLower) ||
-                    g.Student.User.LastName.ToLower().Contains(searchNameLower));
+                    g.Student.User.FirstName.ToLower().Contains(searchFirstNameLower));
+            }
+
+            if (!string.IsNullOrEmpty(searchLastName))
+            {
+                var searchLastNameLower = searchLastName.ToLower();
+                gradesQuery = gradesQuery.Where(g =>
+                    g.Student.User.LastName.ToLower().Contains(searchLastNameLower));
             }
 
             if (!string.IsNullOrEmpty(searchId))
@@ -373,7 +378,48 @@ namespace ASI.Basecode.Services.Services
                 });
             }
 
-            return result.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList();
+            // Apply remarks filter after remarks are calculated
+            if (!string.IsNullOrEmpty(searchRemarks))
+            {
+                result = result.Where(s => s.Remarks.Equals(searchRemarks, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            // Apply sorting
+            result = ApplySorting(result, sortBy, sortOrder);
+
+            return result;
+        }
+
+        private List<StudentGradeViewModel> ApplySorting(List<StudentGradeViewModel> students, string sortBy, string sortOrder)
+        {
+            var isDescending = sortOrder?.ToLower() == "desc";
+
+            return (sortBy?.ToLower()) switch
+            {
+                "firstname" => isDescending 
+                    ? students.OrderByDescending(s => s.FirstName).ToList()
+                    : students.OrderBy(s => s.FirstName).ToList(),
+                
+                "idnumber" => isDescending 
+                    ? students.OrderByDescending(s => s.IdNumber).ToList()
+                    : students.OrderBy(s => s.IdNumber).ToList(),
+                
+                "courseyear" => isDescending 
+                    ? students.OrderByDescending(s => s.CourseYear).ToList()
+                    : students.OrderBy(s => s.CourseYear).ToList(),
+                
+                "remarks" => isDescending 
+                    ? students.OrderByDescending(s => s.Remarks).ToList()
+                    : students.OrderBy(s => s.Remarks).ToList(),
+                
+                "final" => isDescending 
+                    ? students.OrderByDescending(s => s.Final ?? 0).ToList()
+                    : students.OrderBy(s => s.Final ?? 0).ToList(),
+                
+                _ => isDescending 
+                    ? students.OrderByDescending(s => s.LastName).ThenByDescending(s => s.FirstName).ToList()
+                    : students.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList()
+            };
         }
 
         public string GetCurrentSemesterName()
@@ -416,14 +462,14 @@ namespace ASI.Basecode.Services.Services
                 }
             }
 
-            if (weightSum <= 0)
+            if (weightSum == 0)
             {
                 return "INCOMPLETE";
             }
 
             var gpa = Math.Round(weightedTotal / weightSum, 2);
 
-            // Determine pass/fail based on GPA (assuming 3.0 is passing grade)
+            // Determine pass/fail based on GPA (3.0 Passing Score)
             return gpa <= 3.0m ? "PASSED" : "FAILED";
         }
 

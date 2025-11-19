@@ -44,6 +44,11 @@ function loadStudentsForCourse(assignedCourseId) {
         });
 }
 
+// Grade View filtering auto submit
+document.getElementById('filterForm').addEventListener('change', function() {
+    this.submit();
+});
+
 // Rendering students table
 function renderStudentsTable(students) {
     const tbody = document.getElementById('studentsTableBody');
@@ -62,7 +67,6 @@ function renderStudentsTable(students) {
             <td>${student.lastName || ''}</td>
             <td>${student.firstName || ''}</td>
             <td>${student.courseYear || ''}</td>
-            <td>${student.gender || ''}</td>
             <td>
                 <input type="number" step="0.1" min="1.0" max="5.0" 
                        value="${student.prelims || ''}" 

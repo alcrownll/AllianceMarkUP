@@ -5,10 +5,40 @@
 
 <div class="container-fluid bg-white rounded-4 p-4 shadow-sm mb-4 teacher-filter-container">
     <form asp-action="AssignedCourses" method="get" id="filterForm">
-        <div class="row g-4 align-items-end">
+        
+        <!-- Filtering Row -->
+        <div class="row g-2 align-items-end">
+
+            <!-- Filter by ID Number -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">ID Number</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="searchId" id="searchId"
+                           placeholder="Search ID No." value="@ViewBag.SearchId">
+                </div>
+            </div>
+
+             <!-- Filter by Last Name -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Last Name</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="searchLastName" id="searchLastName"
+                           placeholder="Search Last Name" value="@ViewBag.SearchLastName">
+                </div>
+            </div>
+
+            <!-- Filter by First Name -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">First Name</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="searchFirstName" id="searchFirstName"
+                           placeholder="Search First Name" value="@ViewBag.SearchFirstName">
+                </div>
+            </div>
+
             <!-- Filter by Course -->
             <div class="col-md-2">
-                <label class="form-label fw-semibold">Filter by Course</label>
+                <label class="form-label fw-semibold">Course</label>
                 <select class="form-select" name="program" id="filterProgram">
                     <option value="">All Courses</option>
                     @foreach (var program in programs)
@@ -27,9 +57,9 @@
 
             <!-- Filter by Year Level -->
             <div class="col-md-2">
-                <label class="form-label fw-semibold no-wrap">Filter by Year Level</label>
+                <label class="form-label fw-semibold no-wrap">Year Level</label>
                 <select class="form-select" name="yearLevel" id="filterYearLevel">
-                    <option value="">All Year Levels</option>
+                    <option value="">All Levels</option>
                     @foreach (var year in yearLevels)
                     {
                         var yearSuffix = year == 1 ? "st" : year == 2 ? "nd" : year == 3 ? "rd" : "th";
@@ -46,39 +76,90 @@
                 </select>
             </div>
 
-            <!-- Search by Name -->
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Search by Name</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" class="form-control border-start-0" name="searchName" id="searchName"
-                           placeholder="Search Name" value="@ViewBag.SearchName">
-                </div>
-            </div>
-
-            <!-- Search by ID Number -->
-            <div class="col-md-3">
-                <label class="form-label fw-semibold">Search by ID Number</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" class="form-control border-start-0" name="searchId" id="searchId"
-                           placeholder="Search ID No." value="@ViewBag.SearchId">
-                </div>
-            </div>
-
-            <!-- Search Button -->
-            <div class="col-md-1">
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm fw-semibold">Search</button>
-                    @if (ViewBag.HasFilters == true)
-                    {
-                        <a href="@Url.Action("AssignedCourses")" class="btn btn-outline-secondary btn-sm fw-semibold">Clear</a>
+            <!-- Filter by Remarks (Dropdown: Passed, Failed, Incomplete) -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Remarks</label>
+                <select class="form-select" name="searchRemarks" id="searchRemarks">
+                    <option value="">All Remarks</option>
+                    @{
+                        var searchRemarks = ViewBag.SearchRemarks as string;
+                        var remarks = new List<string> { "PASSED", "FAILED", "INCOMPLETE" };
                     }
-                </div>
+                    @foreach (var remark in remarks)
+                    {
+                        @if (searchRemarks == remark)
+                        {
+                            <option value="@remark" selected>@remark</option>
+                        }
+                        else
+                        {
+                            <option value="@remark">@remark</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Separator Line -->
+        <hr class="my-3" style="border-top: 2px solid #dee2e6;">
+
+        <!-- Sorting Row -->
+        <div class="row g-2 align-items-end">
+
+            <!-- Sort By -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Sort By</label>
+                <select class="form-select" name="sortBy" id="sortBy">
+                    @{
+                        var sortBy = ViewBag.SortBy as string ?? "lastName";
+                        var sortOptions = new Dictionary<string, string>
+                        {
+                            { "lastName", "Last Name" },
+                            { "firstName", "First Name" },
+                            { "idnumber", "ID Number" },
+                            { "courseyear", "Course/Year" },
+                            { "remarks", "Remarks" },
+                            { "final", "Final Grade" }
+                        };
+                    }
+                    @foreach (var option in sortOptions)
+                    {
+                        @if (sortBy == option.Key)
+                        {
+                            <option value="@option.Key" selected>@option.Value</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Key">@option.Value</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Sort Order -->
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Order</label>
+                <select class="form-select" name="sortOrder" id="sortOrder">
+                    @{
+                        var sortOrder = ViewBag.SortOrder as string ?? "asc";
+                        var orderOptions = new List<(string, string)>
+                        {
+                            ("asc", "Ascending"),
+                            ("desc", "Descending")
+                        };
+                    }
+                    @foreach (var order in orderOptions)
+                    {
+                        @if (sortOrder == order.Item1)
+                        {
+                            <option value="@order.Item1" selected>@order.Item2</option>
+                        }
+                        else
+                        {
+                            <option value="@order.Item1">@order.Item2</option>
+                        }
+                    }
+                </select>
             </div>
         </div>
     </form>

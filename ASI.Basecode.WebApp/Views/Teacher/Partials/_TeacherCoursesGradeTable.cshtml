@@ -5,7 +5,7 @@
     string GetGradeBadgeClass(decimal? gradeValue)
     {
         if (!gradeValue.HasValue) return "";
-        return gradeValue <= 2.9m ? "bg-success" : gradeValue <= 3.9m ? "bg-warning" : "bg-danger";
+        return gradeValue < 2m ? "bg-success" : gradeValue < 3m ? "bg-warning" : "bg-danger";
     }
 
     IHtmlContent RenderGradeCell(decimal? gradeValue)
@@ -18,15 +18,6 @@
         {
             return Html.Raw("<span class=\"text-muted\">-</span>");
         }
-    }
-
-    string CalculateRemarks(decimal? finalGrade)
-    {
-        if (!finalGrade.HasValue)
-        {
-            return "INCOMPLETE";
-        }
-        return finalGrade <= 3.0m ? "PASSED" : "FAILED";
     }
 }
 
@@ -48,7 +39,6 @@
                         <th>Last Name</th>
                         <th>First Name</th>
                         <th>Course/Year</th>
-                        <th class="d-none d-md-table-cell">Gender</th>
                         <th>Prelim</th>
                         <th>Midterm</th>
                         <th>Semi-final</th>
@@ -68,12 +58,11 @@
                                 <td>@student.LastName</td>
                                 <td>@student.FirstName</td>
                                 <td>@student.CourseYear</td>
-                                <td class="d-none d-md-table-cell">@student.Gender</td>
                                 <td>@RenderGradeCell(student.Prelims)</td>
                                 <td>@RenderGradeCell(student.Midterm)</td>
                                 <td>@RenderGradeCell(student.SemiFinal)</td>
                                 <td>@RenderGradeCell(student.Final)</td>
-                                <td class="d-none d-lg-table-cell">@CalculateRemarks(student.Final)</td>
+                                <td class="d-none d-lg-table-cell">@student.Remarks</td>
                             </tr>
                         }
                     }

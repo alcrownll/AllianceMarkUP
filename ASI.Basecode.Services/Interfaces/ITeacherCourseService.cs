@@ -22,7 +22,7 @@ namespace ASI.Basecode.Services.Interfaces
         // For filtering functionality
         Task<List<string>> GetTeacherProgramsAsync(int teacherId);
         Task<List<int>> GetTeacherYearLevelsAsync(int teacherId);
-        Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchName = null, string searchId = null, string program = null, int? yearLevel = null);
+        Task<List<StudentGradeViewModel>> SearchStudentsAsync(int teacherId, string searchFirstName = null, string searchLastName = null, string searchId = null, string program = null, int? yearLevel = null, string searchRemarks = null, string sortBy = "lastName", string sortOrder = "asc");
 
         // For semester functionality
         string GetCurrentSemesterName();

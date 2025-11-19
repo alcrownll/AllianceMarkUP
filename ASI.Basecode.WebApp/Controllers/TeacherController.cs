@@ -74,7 +74,8 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         public async Task<IActionResult> AssignedCourses(string semester = null, string program = null,
-            int? yearLevel = null, string searchName = null, string searchId = null)
+            int? yearLevel = null, string searchFirstName = null, string searchLastName = null, string searchId = null, string searchRemarks = null, 
+            string sortBy = "lastName", string sortOrder = "asc")
         {
             ViewData["PageHeader"] = "Assigned Courses";
 
@@ -92,8 +93,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
                 var classSchedules = await _teacherCourseService.GetTeacherClassSchedulesAsync(teacherId, semester);
 
-                if (!string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) ||
-                    !string.IsNullOrEmpty(program) || yearLevel.HasValue)
+                if (!string.IsNullOrEmpty(searchFirstName) || !string.IsNullOrEmpty(searchLastName) || !string.IsNullOrEmpty(searchId) ||
+                    !string.IsNullOrEmpty(program) || yearLevel.HasValue || !string.IsNullOrEmpty(searchRemarks))
                 {
                     if (!string.IsNullOrEmpty(program))
                     {
@@ -101,9 +102,9 @@ namespace ASI.Basecode.WebApp.Controllers
                     }
                 }
 
-                var filteredStudents = await _teacherCourseService.SearchStudentsAsync(teacherId, searchName, searchId, program, yearLevel);
-                var hasFilters = !string.IsNullOrEmpty(searchName) || !string.IsNullOrEmpty(searchId) ||
-                                !string.IsNullOrEmpty(program) || yearLevel.HasValue;
+                var filteredStudents = await _teacherCourseService.SearchStudentsAsync(teacherId, searchFirstName, searchLastName, searchId, program, yearLevel, searchRemarks, sortBy, sortOrder);
+                var hasFilters = !string.IsNullOrEmpty(searchFirstName) || !string.IsNullOrEmpty(searchLastName) || !string.IsNullOrEmpty(searchId) ||
+                                !string.IsNullOrEmpty(program) || yearLevel.HasValue || !string.IsNullOrEmpty(searchRemarks);
 
                 var programs = await _teacherCourseService.GetTeacherProgramsAsync(teacherId);
                 var yearLevels = await _teacherCourseService.GetTeacherYearLevelsAsync(teacherId);
@@ -113,8 +114,12 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.SelectedSemester = semester;
                 ViewBag.FilterProgram = program;
                 ViewBag.FilterYearLevel = yearLevel;
-                ViewBag.SearchName = searchName;
+                ViewBag.SearchFirstName = searchFirstName;
+                ViewBag.SearchLastName = searchLastName;
                 ViewBag.SearchId = searchId;
+                ViewBag.SearchRemarks = searchRemarks;
+                ViewBag.SortBy = sortBy;
+                ViewBag.SortOrder = sortOrder;
                 ViewBag.FilteredStudents = filteredStudents;
                 ViewBag.HasFilters = hasFilters;
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
@@ -295,7 +300,7 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchStudents(string searchName = null, string searchId = null,
+        public async Task<IActionResult> SearchStudents(string searchFirstName = null, string searchLastName = null, string searchId = null,
             string program = null, int? yearLevel = null)
         {
             try
@@ -304,7 +309,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (teacherId == 0)
                     return Json(new { success = false, message = "Teacher not found" });
 
-                var students = await _teacherCourseService.SearchStudentsAsync(teacherId, searchName, searchId, program, yearLevel);
+                var students = await _teacherCourseService.SearchStudentsAsync(teacherId, searchFirstName, searchLastName, searchId, program, yearLevel);
                 return Json(new { success = true, students = students });
             }
             catch (Exception)
