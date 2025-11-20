@@ -11,7 +11,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-    /* Pills style (rounded buttons) */
+    /* Pill style tabs */
     .grade-tab-container .nav-pills {
         background: #fff;
         border-radius: 999px;
@@ -29,7 +29,7 @@ body {
             transition: all 0.2s ease;
         }
 
-            /* Active tab turns blue */
+            /* Blue active tab */
             .grade-tab-container .nav-pills .nav-link.active {
                 background-color: #0252A9;
                 color: #fff !important;
@@ -71,36 +71,11 @@ body {
     transition: all 0.25s ease;
 }
 
-    /* Make dropdowns and inputs more elegant */
+    /* Dropdowns and inputs */
     .teacher-filter-container .form-select,
     .teacher-filter-container .form-control {
         border-radius: 0.5rem;
         font-size: 0.9rem;
-    }
-
-    /* Compact search button (filled blue) */
-    .teacher-filter-container .btn-primary {
-        background-color: #0252A9;
-        border-color: #0252A9;
-        font-size: 0.85rem;
-        padding: 0.45rem 0.75rem;
-        transition: 0.2s ease-in-out;
-    }
-
-        .teacher-filter-container .btn-primary:hover {
-            background-color: #013b7e;
-            border-color: #013b7e;
-        }
-
-    /* Adjust the Clear button */
-    .teacher-filter-container .btn-outline-secondary {
-        font-size: 0.85rem;
-        padding: 0.45rem 0.75rem;
-    }
-
-    /* Make icons aligned nicely */
-    .teacher-filter-container .input-group-text i {
-        color: #0252A9;
     }
 
 /* =============================== Students & Grades Table Styling ======================================= */
@@ -124,20 +99,19 @@ body {
         font-size: 0.8rem;
         border-color: #dee2e6;
     }
-
-    /* Make cells compact and text smaller */
+    /* Table cell padding and color */
     .teacher-grade-table td {
         font-size: 0.85rem;
         padding: 0.5rem 0.75rem;
         color: #1e293b;
     }
 
-    /* Subtle row hover effect */
+    /* Row hover effect */
     .teacher-grade-table tbody tr:hover {
         background-color: #f5f9ff;
     }
 
-    /* Improve badge visibility */
+    /* Teacher grade table badge */
     .teacher-grade-table .badge {
         font-size: 0.75rem;
         padding: 0.4em 0.6em;
@@ -233,7 +207,7 @@ body {
     margin-right: -6px;
 }
 
-    /* Header: remove bg, increase size, emphasize text */
+    /* Header */
     .teacher-edit-card .card-header:first-child {
         background: #fff !important;
         color: #0252A9;
@@ -294,7 +268,7 @@ body {
         background-color: #f5f9ff;
     }
 
-/* ======================= Excel Upload Modal (updated) ======================= */
+/* ======================= Excel Upload Modal ======================= */
 #excelUploadModal .modal-content {
     border-radius: 1.5rem;
 }
@@ -336,7 +310,7 @@ body {
     font-weight: 600;
 }
 
-/* Outline (Download Template) */
+/* Download Template */
 #excelUploadModal .btn-outline-primary {
     color: #0252A9;
     border-color: #0252A9;
@@ -349,7 +323,7 @@ body {
         border-color: #0252A9;
     }
 
-/* Secondary (Close) */
+/* Close Button */
 #excelUploadModal .btn-secondary {
     background-color: #f3f4f6;
     color: #1f2937;
@@ -363,7 +337,7 @@ body {
         border-color: #cdd3da;
     }
 
-/* Primary (Upload & Process) */
+/* Upload & Process Button */
 #excelUploadModal .btn-primary,
 #excelUploadModal #uploadExcelBtn {
     background-color: #0252A9;

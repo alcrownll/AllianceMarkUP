@@ -28,7 +28,7 @@
 
 @Html.AntiForgeryToken()
 
-@* Main content area - visible on screen *@
+@* Main Content Area *@
 <div class="teacher-courses-container no-print">
     <div class="container-fluid">
 
@@ -50,7 +50,7 @@
 
         <div class="tab-content" id="gradeTabsContent">
             <div class="tab-pane fade show active" id="grade-view" role="tabpanel" aria-labelledby="grade-view-tab">
-                <!-- Grade View -->
+                <!-- Grade View Tab -->
                 <!-- Filters -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesFilters.cshtml")
 
@@ -58,7 +58,7 @@
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesGradeTable.cshtml")
             </div>
             <div class="tab-pane fade" id="grade-entry" role="tabpanel" aria-labelledby="grade-entry-tab">
-                <!-- Grade Entry -->
+                <!-- Grade Entry Tab -->
                 @await Html.PartialAsync("~/Views/Teacher/Partials/_TeacherCoursesGradeEntry.cshtml")
 
                 <!-- Edit Grades Panel -->
@@ -75,12 +75,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/teacher-courses.js"></script>
     <script>
-        // Initialize Bootstrap tooltips
+        // Fancy tooltip
         document.addEventListener('DOMContentLoaded', function () {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
             
-            // Auto-show error toast if present
+            // Error toast
             const errorToast = document.getElementById('errorToast');
             if (errorToast) {
                 new bootstrap.Toast(errorToast, { delay: 5000 }).show();
