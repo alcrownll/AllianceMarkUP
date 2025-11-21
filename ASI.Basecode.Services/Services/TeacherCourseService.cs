@@ -297,19 +297,19 @@ namespace ASI.Basecode.Services.Services
                 .Include(g => g.Student).ThenInclude(s => s.User).ThenInclude(u => u.UserProfile)
                 .AsQueryable();
 
-            // Apply database-level filters first
+            // Filters
             if (!string.IsNullOrEmpty(searchFirstName))
             {
                 var searchFirstNameLower = searchFirstName.ToLower();
                 gradesQuery = gradesQuery.Where(g =>
-                    g.Student.User.FirstName.ToLower().Contains(searchFirstNameLower));
+                    g.Student.User.FirstName.ToLower().StartsWith(searchFirstNameLower));
             }
 
             if (!string.IsNullOrEmpty(searchLastName))
             {
                 var searchLastNameLower = searchLastName.ToLower();
                 gradesQuery = gradesQuery.Where(g =>
-                    g.Student.User.LastName.ToLower().Contains(searchLastNameLower));
+                    g.Student.User.LastName.ToLower().StartsWith(searchLastNameLower));
             }
 
             if (!string.IsNullOrEmpty(searchId))
@@ -685,7 +685,7 @@ namespace ASI.Basecode.Services.Services
                             continue;
                         }
 
-                        // Validate student name matches (optional but recommended for data integrity)
+                        // Validate student name matches
                         var studentFullName = $"{gradeRecord.Student.User.FirstName} {gradeRecord.Student.User.LastName}".ToLower();
                         var excelFullName = $"{excelGrade.FirstName} {excelGrade.LastName}".ToLower();
 
@@ -761,7 +761,7 @@ namespace ASI.Basecode.Services.Services
         //for notification
         private async Task NotifyGradeUploadAsync(int assignedCourseId, IEnumerable<int> updatedStudentIds)
         {
-            // Get course + teacher + term in one go
+            // Get course + teacher + term
             var ac = await _assignedCourseRepository.GetAssignedCourses()
                 .Where(x => x.AssignedCourseId == assignedCourseId)
                 .Include(x => x.Course)
