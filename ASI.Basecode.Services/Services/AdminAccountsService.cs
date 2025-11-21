@@ -226,5 +226,18 @@ namespace ASI.Basecode.Services.Services
 
             return true;
         }
+
+        public async Task<bool> EmailExistsAsync(string email, int? excludeUserId, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+
+            var normalized = email.Trim().ToLowerInvariant();
+
+            return await _users.GetUsers()
+                .AnyAsync(u =>
+                    u.Email.ToLower() == normalized &&
+                    (!excludeUserId.HasValue || u.UserId != excludeUserId.Value),
+                ct);
+        }
     }
 }

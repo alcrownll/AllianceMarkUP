@@ -18,5 +18,7 @@ namespace ASI.Basecode.Services.Interfaces
             string status,
             string? roleLabel,
             CancellationToken ct);
+
+        Task<bool> EmailExistsAsync(string email, int? excludeUserId, CancellationToken ct);
     }
 }

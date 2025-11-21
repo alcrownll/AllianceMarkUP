@@ -105,6 +105,11 @@ namespace ASI.Basecode.WebApp.Controllers
             if (userId <= 0 && vm.UserId > 0)
                 userId = vm.UserId;
 
+            if (await _adminacc.EmailExistsAsync(vm.Email, userId, ct))
+            {
+                ModelState.AddModelError(nameof(vm.Email), "Email already exists.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Student Profile";
@@ -133,10 +138,15 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveTeacher(int userId, TeacherProfileViewModel vm)
+        public async Task<IActionResult> SaveTeacher(int userId, TeacherProfileViewModel vm, CancellationToken ct)
         {
             if (userId <= 0 && vm.UserId > 0)
                 userId = vm.UserId;
+
+            if (await _adminacc.EmailExistsAsync(vm.Email, userId, ct))
+            {
+                ModelState.AddModelError(nameof(vm.Email), "Email already exists.");
+            }
 
             if (!ModelState.IsValid)
             {
@@ -214,6 +224,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateStudent(StudentProfileViewModel vm, CancellationToken ct)
         {
+            if (await _adminacc.EmailExistsAsync(vm.Email, null, ct))
+            {
+                ModelState.AddModelError(nameof(vm.Email), "Email already exists.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Create Student";
@@ -221,7 +236,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewData["PostController"] = "AdminAccounts";
                 ViewData["PostAction"] = "CreateStudent";
 
-                // reload programs again so dropdown doesn't go empty
                 ViewBag.Programs = await _profile.GetActiveProgramsAsync(ct);
 
                 return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
@@ -260,6 +274,11 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateTeacher(TeacherProfileViewModel vm, CancellationToken ct)
         {
+            if (await _adminacc.EmailExistsAsync(vm.Email, null, ct))
+            {
+                ModelState.AddModelError(nameof(vm.Email), "Email already exists.");
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Create Teacher";

@@ -230,22 +230,21 @@
         })();
 
         (function () {
-            'use strict';
-            document.querySelectorAll('.needs-validation').forEach(form => {
-                form.addEventListener('submit', e => {
-                    if (!form.checkValidity()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
+            const form = document.querySelector('.needs-validation');
 
-                    const nonRequiredFields = form.querySelectorAll('input:not([required]), select:not([required]), textarea:not([required])');
+            form.addEventListener('submit', function (e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
 
-                    nonRequiredFields.forEach(field => {
-                        field.classList.remove('is-valid');
-                        field.parentElement?.classList.remove('is-valid');
+                const hasServerErrors = document.querySelector('.field-validation-error') !== null;
+
+                if (hasServerErrors) {
+                    form.querySelectorAll('.form-control').forEach(ctrl => {
+                        ctrl.classList.remove('is-valid');
                     });
-                }, false);
+                }
             });
         })();
     </script>

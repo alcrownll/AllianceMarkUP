@@ -202,10 +202,6 @@ namespace ASI.Basecode.Services.Services
                       .ToHashSet();
         }
 
-        /// <summary>
-        /// Lenient schedule creation: only writes when room + start + end + at least one day are provided.
-        /// Returns false if it no-ops; true if it wrote schedules.
-        /// </summary>
         private async Task<bool> TryCreateSchedulesLenientAsync(
             int assignedCourseId,
             string room,

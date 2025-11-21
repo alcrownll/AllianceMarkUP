@@ -201,15 +201,22 @@
         })();
 
         (function () {
-            'use strict';
-            document.querySelectorAll('.needs-validation').forEach(form => {
-                form.addEventListener('submit', e => {
-                    if (!form.checkValidity()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
+            const form = document.querySelector('.needs-validation');
+
+            form.addEventListener('submit', function (e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                const hasServerErrors = document.querySelector('.field-validation-error') !== null;
+
+                if (hasServerErrors) {
+                    form.querySelectorAll('.form-control').forEach(ctrl => {
+                        ctrl.classList.remove('is-valid');
+                    });
+                }
+
             });
         })();
     </script>
