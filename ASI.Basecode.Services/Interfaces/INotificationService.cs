@@ -1,7 +1,7 @@
-﻿using ASI.Basecode.Services.ServiceModels;
+﻿using ASI.Basecode.Data.Models;
+using ASI.Basecode.Services.ServiceModels;
 using System;
 using System.Collections.Generic;
-using ASI.Basecode.Data.Models;
 
 namespace ASI.Basecode.Services.Interfaces
 {
@@ -10,7 +10,6 @@ namespace ASI.Basecode.Services.Interfaces
         // Profile
         void NotifyProfileUpdated(int userId);
 
-        // Admin updated another user's profile
         void NotifyAdminUpdatedUserProfile(
             int adminUserId,
             int targetUserId,
@@ -18,7 +17,6 @@ namespace ASI.Basecode.Services.Interfaces
             string? targetIdNumber
         );
 
-        // Admin created accounts (single)
         void NotifyAdminCreatedStudent(
             int adminUserId,
             string studentFullName,
@@ -31,7 +29,6 @@ namespace ASI.Basecode.Services.Interfaces
             string? idNumber
         );
 
-        // Admin imported accounts (bulk)
         void NotifyAdminBulkUploadStudents(
             int adminUserId,
             string summaryMessage
@@ -42,7 +39,6 @@ namespace ASI.Basecode.Services.Interfaces
             string summaryMessage
         );
 
-        // Admin changed a user's account status (suspend / reactivate / other)
         void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
@@ -50,10 +46,6 @@ namespace ASI.Basecode.Services.Interfaces
             string roleLabel,
             string newStatus
         );
-
-        // ============================
-        // CURRICULUM: PROGRAMS & COURSES
-        // ============================
 
         // Programs
         void NotifyAdminCreatedProgram(
@@ -95,11 +87,7 @@ namespace ASI.Basecode.Services.Interfaces
             string courseTitle
         );
 
-        // ============================
-        // ASSIGNED COURSES & ENROLLMENTS
-        // ============================
-
-        // Admin: My Activity when creating assigned course
+        // Assigned courses / enrollments
         void NotifyAdminCreatedAssignedCourse(
             int adminUserId,
             string edpCode,
@@ -107,7 +95,6 @@ namespace ASI.Basecode.Services.Interfaces
             string teacherLabel
         );
 
-        // Teacher: Updates when admin assigns them
         void NotifyTeacherAssignedToCourse(
             int adminUserId,
             int teacherUserId,
@@ -117,7 +104,6 @@ namespace ASI.Basecode.Services.Interfaces
             string? schoolYear
         );
 
-        // Admin: My Activity when adding students
         void NotifyAdminAddedStudentsToAssignedCourse(
             int adminUserId,
             string edpCode,
@@ -125,7 +111,6 @@ namespace ASI.Basecode.Services.Interfaces
             int count
         );
 
-        // Student: Updates when admin assigns them into an assigned course
         void NotifyStudentAddedToAssignedCourse(
             int adminUserId,
             int studentUserId,
@@ -135,14 +120,12 @@ namespace ASI.Basecode.Services.Interfaces
             string? schoolYear
         );
 
-        // Admin: My Activity when updating assigned course (general)
         void NotifyAdminUpdatedAssignedCourse(
             int adminUserId,
             string edpCode,
             string courseCode
         );
 
-        // Admin: My Activity when removing students
         void NotifyAdminRemovedStudentsFromAssignedCourse(
             int adminUserId,
             string edpCode,
@@ -150,22 +133,17 @@ namespace ASI.Basecode.Services.Interfaces
             int count
         );
 
-        // Admin: My Activity when deleting assigned course
         void NotifyAdminDeletedAssignedCourse(
             int adminUserId,
             string edpCode,
             string courseCode
         );
 
-        // ============================
-        // GRADES
-        // ============================
+        // Grades
         void NotifyGradesPosted(int studentUserId, string courseCode, string termLabel);
         void NotifyTeacherGradeUploaded(int teacherUserId, string courseCode, string termLabel);
 
-        // ============================
-        // EVENTS (user’s own actions on their calendar)
-        // ============================
+        // Events
         void NotifyUserEventCreated(int ownerUserId, string title, DateTime startLocal, int actorUserId);
         void NotifyUserEventUpdated(int ownerUserId, string title, DateTime? startLocal, int actorUserId);
         void NotifyUserEventDeleted(int ownerUserId, string title, int actorUserId);
@@ -186,7 +164,9 @@ namespace ASI.Basecode.Services.Interfaces
 
         // State changes
         void MarkRead(int userId, int notificationId);
-        void MarkAllRead(int userId);
+
+        // ✅ UPDATED: optional kind for scoped "mark all"
+        void MarkAllRead(int userId, NotificationKind? kind = null);
 
         // Bell
         int GetBellUnreadCount(int userId);

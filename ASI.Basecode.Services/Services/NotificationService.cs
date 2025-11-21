@@ -13,6 +13,9 @@ namespace ASI.Basecode.Services.Services
         private readonly INotificationRepository _repo;
         private readonly IUnitOfWork _uow;
 
+        // Default display timezone (matches your Calendar)
+        private const string DefaultTimeZoneId = "Asia/Manila";
+
         public NotificationService(INotificationRepository repo, IUnitOfWork uow)
         {
             _repo = repo;
@@ -153,7 +156,6 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // Admin changed a user's account status (suspend / reactivate / other)
         public void NotifyAdminChangedUserStatus(
             int adminUserId,
             int targetUserId,
@@ -176,19 +178,16 @@ namespace ASI.Basecode.Services.Services
 
             if (status.Equals("Inactive", StringComparison.OrdinalIgnoreCase))
             {
-                // Suspended
                 title = "Suspended account";
                 message = $"You suspended the {roleText} account of {label}.";
             }
             else if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
             {
-                // Reactivated / lifted suspension
                 title = "Reactivated account";
                 message = $"You reactivated the {roleText} account of {label}.";
             }
             else
             {
-                // Generic fallback
                 title = "Updated account status";
                 message = $"You changed the {roleText} account status of {label} to {status}.";
             }
@@ -204,21 +203,13 @@ namespace ASI.Basecode.Services.Services
         }
 
         // ======================================================
-        // CURRICULUM: PROGRAMS & COURSES
+        // PROGRAMS & COURSES
         // ======================================================
-
-        // -------- Programs --------
-        public void NotifyAdminCreatedProgram(
-            int adminUserId,
-            string programCode,
-            string programName)
+        public void NotifyAdminCreatedProgram(int adminUserId, string programCode, string programName)
         {
             var code = (programCode ?? "").Trim();
             var name = (programName ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(name)
-                ? code
-                : $"{code} - {name}";
+            var label = string.IsNullOrWhiteSpace(name) ? code : $"{code} - {name}";
 
             AddNotification(
                 userId: adminUserId,
@@ -230,19 +221,11 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        public void NotifyAdminUpdatedProgram(
-            int adminUserId,
-            string programCode,
-            string programName,
-            bool isActive)
+        public void NotifyAdminUpdatedProgram(int adminUserId, string programCode, string programName, bool isActive)
         {
             var code = (programCode ?? "").Trim();
             var name = (programName ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(name)
-                ? code
-                : $"{code} - {name}";
-
+            var label = string.IsNullOrWhiteSpace(name) ? code : $"{code} - {name}";
             var statusText = isActive ? "Active" : "Inactive";
 
             AddNotification(
@@ -255,18 +238,11 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        public void NotifyAdminDeletedProgram(
-            int adminUserId,
-            string programCode,
-            string programName,
-            bool forceDelete)
+        public void NotifyAdminDeletedProgram(int adminUserId, string programCode, string programName, bool forceDelete)
         {
             var code = (programCode ?? "").Trim();
             var name = (programName ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(name)
-                ? code
-                : $"{code} - {name}";
+            var label = string.IsNullOrWhiteSpace(name) ? code : $"{code} - {name}";
 
             var extra = forceDelete
                 ? " Program courses, assigned courses, schedules, and grades linked to this program were also removed."
@@ -282,18 +258,11 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // -------- Courses --------
-        public void NotifyAdminCreatedCourse(
-            int adminUserId,
-            string courseCode,
-            string courseTitle)
+        public void NotifyAdminCreatedCourse(int adminUserId, string courseCode, string courseTitle)
         {
             var code = (courseCode ?? "").Trim();
             var title = (courseTitle ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(title)
-                ? code
-                : $"{code} - {title}";
+            var label = string.IsNullOrWhiteSpace(title) ? code : $"{code} - {title}";
 
             AddNotification(
                 userId: adminUserId,
@@ -305,17 +274,11 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        public void NotifyAdminUpdatedCourse(
-            int adminUserId,
-            string courseCode,
-            string courseTitle)
+        public void NotifyAdminUpdatedCourse(int adminUserId, string courseCode, string courseTitle)
         {
             var code = (courseCode ?? "").Trim();
             var title = (courseTitle ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(title)
-                ? code
-                : $"{code} - {title}";
+            var label = string.IsNullOrWhiteSpace(title) ? code : $"{code} - {title}";
 
             AddNotification(
                 userId: adminUserId,
@@ -327,17 +290,11 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        public void NotifyAdminDeletedCourse(
-            int adminUserId,
-            string courseCode,
-            string courseTitle)
+        public void NotifyAdminDeletedCourse(int adminUserId, string courseCode, string courseTitle)
         {
             var code = (courseCode ?? "").Trim();
             var title = (courseTitle ?? "").Trim();
-
-            var label = string.IsNullOrWhiteSpace(title)
-                ? code
-                : $"{code} - {title}";
+            var label = string.IsNullOrWhiteSpace(title) ? code : $"{code} - {title}";
 
             AddNotification(
                 userId: adminUserId,
@@ -419,12 +376,7 @@ namespace ASI.Basecode.Services.Services
         // ======================================================
         // ASSIGNED COURSES & ENROLLMENTS
         // ======================================================
-        // Admin: My Activity when creating an assigned course
-        public void NotifyAdminCreatedAssignedCourse(
-            int adminUserId,
-            string edpCode,
-            string courseCode,
-            string teacherLabel)
+        public void NotifyAdminCreatedAssignedCourse(int adminUserId, string edpCode, string courseCode, string teacherLabel)
         {
             var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
             var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
@@ -440,14 +392,7 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // Teacher: Updates when admin assigns them
-        public void NotifyTeacherAssignedToCourse(
-            int adminUserId,
-            int teacherUserId,
-            string edpCode,
-            string courseCode,
-            string? semester,
-            string? schoolYear)
+        public void NotifyTeacherAssignedToCourse(int adminUserId, int teacherUserId, string edpCode, string courseCode, string? semester, string? schoolYear)
         {
             var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
             var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
@@ -459,18 +404,13 @@ namespace ASI.Basecode.Services.Services
                 userId: teacherUserId,
                 title: "New teaching assignment",
                 message: $"You have been assigned to {edpPart} – {coursePart}{termPart}.",
-                kind: NotificationKind.System,       
+                kind: NotificationKind.System,
                 category: "AssignedCourses",
-                actorUserId: adminUserId        
+                actorUserId: adminUserId
             );
         }
 
-        // Admin: My Activity when adding students
-        public void NotifyAdminAddedStudentsToAssignedCourse(
-            int adminUserId,
-            string edpCode,
-            string courseCode,
-            int count)
+        public void NotifyAdminAddedStudentsToAssignedCourse(int adminUserId, string edpCode, string courseCode, int count)
         {
             if (count <= 0) return;
 
@@ -487,14 +427,7 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // Student: Updates when admin assigns them into an assigned course
-        public void NotifyStudentAddedToAssignedCourse(
-            int adminUserId,
-            int studentUserId,
-            string edpCode,
-            string courseCode,
-            string? semester,
-            string? schoolYear)
+        public void NotifyStudentAddedToAssignedCourse(int adminUserId, int studentUserId, string edpCode, string courseCode, string? semester, string? schoolYear)
         {
             var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
             var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
@@ -506,17 +439,13 @@ namespace ASI.Basecode.Services.Services
                 userId: studentUserId,
                 title: "New course enrollment",
                 message: $"You have been enrolled in {edpPart} – {coursePart}{termPart}.",
-                kind: NotificationKind.System,         // Updates tab
+                kind: NotificationKind.System,
                 category: "AssignedCourses",
                 actorUserId: adminUserId
             );
         }
 
-        // Admin: My Activity when updating assigned course (general)
-        public void NotifyAdminUpdatedAssignedCourse(
-            int adminUserId,
-            string edpCode,
-            string courseCode)
+        public void NotifyAdminUpdatedAssignedCourse(int adminUserId, string edpCode, string courseCode)
         {
             var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
             var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
@@ -531,12 +460,7 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // Admin: My Activity when removing students from assigned course
-        public void NotifyAdminRemovedStudentsFromAssignedCourse(
-            int adminUserId,
-            string edpCode,
-            string courseCode,
-            int count)
+        public void NotifyAdminRemovedStudentsFromAssignedCourse(int adminUserId, string edpCode, string courseCode, int count)
         {
             if (count <= 0) return;
 
@@ -553,11 +477,7 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
-        // Admin: My Activity when deleting assigned course
-        public void NotifyAdminDeletedAssignedCourse(
-            int adminUserId,
-            string edpCode,
-            string courseCode)
+        public void NotifyAdminDeletedAssignedCourse(int adminUserId, string edpCode, string courseCode)
         {
             var coursePart = string.IsNullOrWhiteSpace(courseCode) ? "N/A" : courseCode.Trim();
             var edpPart = string.IsNullOrWhiteSpace(edpCode) ? "N/A" : edpCode.Trim();
@@ -601,10 +521,13 @@ namespace ASI.Basecode.Services.Services
                 Kind = finalKind,
                 Category = category,
                 ActorUserId = actorUserId,
-                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+
+                // ✅ store as real UTC instant
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                 IsDeleted = false
             });
 
+            // NOTE: SaveChanges happens via UoW outside or in repo pattern
         }
 
         // ======================================================
@@ -613,6 +536,7 @@ namespace ASI.Basecode.Services.Services
         public List<NotificationListItemVm> GetLatest(int userId, int page = 1, int pageSize = 50)
         {
             CleanupOldNotificationsCore(userId, retentionDays: 90, keepLast: 100);
+
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 50;
 
@@ -626,7 +550,11 @@ namespace ASI.Basecode.Services.Services
                     Title = n.Title,
                     Message = n.Message,
                     IsRead = n.IsRead,
-                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+
+                    // ✅ Manila display time
+                    When = ConvertUtcToDefaultLocal(n.CreatedAt)
+                        .ToString("MMM dd, yyyy • h:mm tt"),
+
                     Kind = n.Kind,
                     Category = n.Category
                 })
@@ -644,7 +572,8 @@ namespace ASI.Basecode.Services.Services
                     Title = n.Title,
                     Message = n.Message,
                     IsRead = n.IsRead,
-                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+                    When = ConvertUtcToDefaultLocal(n.CreatedAt)
+                        .ToString("MMM dd, yyyy • h:mm tt"),
                     Kind = n.Kind,
                     Category = n.Category
                 })
@@ -662,7 +591,8 @@ namespace ASI.Basecode.Services.Services
                     Title = n.Title,
                     Message = n.Message,
                     IsRead = n.IsRead,
-                    When = n.CreatedAt.ToString("MMM dd, yyyy • h:mm tt"),
+                    When = ConvertUtcToDefaultLocal(n.CreatedAt)
+                        .ToString("MMM dd, yyyy • h:mm tt"),
                     Kind = n.Kind,
                     Category = n.Category
                 })
@@ -676,15 +606,32 @@ namespace ASI.Basecode.Services.Services
         {
             var n = _repo.GetByUser(userId).FirstOrDefault(x => x.NotificationId == notificationId);
             if (n == null) return;
+
             n.IsRead = true;
             _uow.SaveChanges();
         }
 
+        // ✅ keep old call sites working (ALL)
         public void MarkAllRead(int userId)
+            => MarkAllRead(userId, kind: null);
+
+        // ✅ interface-required scoped mark-all
+        // kind = null   -> ALL unread
+        // kind = System -> Updates tab unread only
+        // kind = Activity -> My Activity tab unread only
+        public void MarkAllRead(int userId, NotificationKind? kind = null)
         {
-            var list = _repo.GetByUser(userId).Where(x => !x.IsRead).ToList();
+            IQueryable<Notification> query =
+                kind == null
+                    ? _repo.GetByUser(userId)
+                    : _repo.GetByUserAndKind(userId, kind.Value);
+
+            var list = query.Where(x => !x.IsRead).ToList();
             if (list.Count == 0) return;
-            foreach (var n in list) n.IsRead = true;
+
+            foreach (var n in list)
+                n.IsRead = true;
+
             _uow.SaveChanges();
         }
 
@@ -693,10 +640,10 @@ namespace ASI.Basecode.Services.Services
         // ======================================================
         private int CleanupOldNotificationsCore(int userId, int retentionDays = 90, int keepLast = 100)
         {
-            var cutoff = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-retentionDays), DateTimeKind.Unspecified);
+            var cutoffUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-retentionDays), DateTimeKind.Utc);
 
             var oldOnes = _repo.GetAll()
-                .Where(n => n.UserId == userId && !n.IsDeleted && n.CreatedAt < cutoff)
+                .Where(n => n.UserId == userId && !n.IsDeleted && n.CreatedAt < cutoffUtc)
                 .ToList();
 
             var overQuota = _repo.GetAll()
@@ -721,6 +668,27 @@ namespace ASI.Basecode.Services.Services
         public int GetBellUnreadCount(int userId)
         {
             return _repo.CountUnreadByKind(userId, NotificationKind.System);
+        }
+
+        // ======================================================
+        // TIMEZONE HELPER
+        // ======================================================
+        private static DateTime ConvertUtcToDefaultLocal(DateTime utc)
+        {
+            var fixedUtc = utc.Kind == DateTimeKind.Utc
+                ? utc
+                : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+
+            try
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(DefaultTimeZoneId);
+                return TimeZoneInfo.ConvertTimeFromUtc(fixedUtc, tz);
+            }
+            catch
+            {
+                // fallback if tz id not found on host
+                return fixedUtc.ToLocalTime();
+            }
         }
     }
 }

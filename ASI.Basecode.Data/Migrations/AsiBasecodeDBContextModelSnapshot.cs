@@ -252,7 +252,7 @@ namespace ASI.Basecode.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamptz");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -277,7 +277,9 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Category", "CreatedAt");
+
+                    b.HasIndex("UserId", "Kind", "IsRead", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });

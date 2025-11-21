@@ -1,7 +1,9 @@
 ﻿using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using ASI.Basecode.Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -33,7 +35,6 @@ namespace ASI.Basecode.WebApp.Controllers
             }
         }
 
-        // Canonical GET routes per role (named)
         [HttpGet("/Student/Notifications", Name = "StudentNotifications")]
         [Authorize(Roles = "Student")]
         public async Task<IActionResult> StudentIndex() => await BuildIndexViewAsync();
@@ -46,15 +47,12 @@ namespace ASI.Basecode.WebApp.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminIndex() => await BuildIndexViewAsync();
 
-        // Fallback: /Notifications -> redirect to the correct role route
         [HttpGet("/Notifications")]
         public IActionResult Index() => RedirectToRoleNotifications();
 
-        // Shared builder
         private async Task<IActionResult> BuildIndexViewAsync()
         {
             ViewData["PageHeader"] = "Notifications";
-
             await SetRightSidebarAsync();
 
             var userId = _profileService.GetCurrentUserId();
@@ -69,7 +67,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("~/Views/Shared/Partials/Notifications.cshtml", vm);
         }
 
-        // POST actions
         [HttpPost("/Notifications/MarkRead")]
         [ValidateAntiForgeryToken]
         public IActionResult MarkRead(int id)
@@ -79,12 +76,28 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToRoleNotifications();
         }
 
+        // ✅ UPDATED: accepts scope from tab
         [HttpPost("/Notifications/MarkAllRead")]
         [ValidateAntiForgeryToken]
-        public IActionResult MarkAllRead()
+        public IActionResult MarkAllRead(string scope)
         {
             var userId = _profileService.GetCurrentUserId();
-            _notificationService.MarkAllRead(userId);
+
+            // scope: "all" | "updates" | "activity"
+            if (string.Equals(scope, "updates", StringComparison.OrdinalIgnoreCase))
+            {
+                _notificationService.MarkAllRead(userId, NotificationKind.System);
+            }
+            else if (string.Equals(scope, "activity", StringComparison.OrdinalIgnoreCase))
+            {
+                _notificationService.MarkAllRead(userId, NotificationKind.Activity);
+            }
+            else
+            {
+                // default/all tab
+                _notificationService.MarkAllRead(userId, kind: null);
+            }
+
             return RedirectToRoleNotifications();
         }
 

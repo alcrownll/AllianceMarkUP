@@ -96,11 +96,12 @@ namespace ASI.Basecode.WebApp.Controllers
             try
             {
                 await _calendarService.CreateAsync(User, input);
+                TempData["ToastSuccess"] = "Event added successfully.";
                 return RedirectToRoleCalendar();
             }
             catch (Exception ex)
             {
-                TempData["Error"] = ex.Message;
+                TempData["ToastError"] = ex.Message;
                 return RedirectToRoleCalendar();
             }
         }
@@ -112,11 +113,12 @@ namespace ASI.Basecode.WebApp.Controllers
             try
             {
                 await _calendarService.UpdateAsync(User, input);
+                TempData["ToastSuccess"] = "Event updated successfully.";
                 return RedirectToRoleCalendar();
             }
             catch (Exception ex)
             {
-                TempData["Error"] = ex.Message;
+                TempData["ToastError"] = ex.Message;
                 return RedirectToRoleCalendar();
             }
         }
@@ -125,8 +127,17 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            await _calendarService.DeleteAsync(User, id);
-            return RedirectToRoleCalendar();
+            try
+            {
+                await _calendarService.DeleteAsync(User, id);
+                TempData["ToastSuccess"] = "Event deleted successfully.";
+                return RedirectToRoleCalendar();
+            }
+            catch (Exception ex)
+            {
+                TempData["ToastError"] = ex.Message;
+                return RedirectToRoleCalendar();
+            }
         }
 
         private IActionResult RedirectToRoleCalendar()

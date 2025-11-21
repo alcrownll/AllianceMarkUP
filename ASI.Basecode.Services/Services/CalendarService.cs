@@ -13,7 +13,7 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly ICalendarEventRepository _events;
         private readonly INotificationService _notificationService;
-        private readonly IUserRepository _users;   
+        private readonly IUserRepository _users;
 
         public CalendarService(
             ICalendarEventRepository eventsRepo,
@@ -28,8 +28,38 @@ namespace ASI.Basecode.Services.Services
         private static bool CanEdit(ClaimsPrincipal principal, CalendarEvent e, int actorId)
         {
             if (principal.IsInRole("Admin")) return true;
-            // Only owner of a private event can edit it
             return e.IsGlobal == false && e.UserId == actorId;
+        }
+
+        // Resolve timezone safely (IANA on Linux, Windows IDs on Windows)
+        private static TimeZoneInfo ResolveTimeZone(string tzId)
+        {
+            if (string.IsNullOrWhiteSpace(tzId)) tzId = "Asia/Manila";
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(tzId);
+            }
+            catch
+            {
+                // Manila fallback for Windows machines
+                if (tzId == "Asia/Manila")
+                {
+                    try { return TimeZoneInfo.FindSystemTimeZoneById("Philippines Standard Time"); }
+                    catch { /* ignore */ }
+                }
+
+                // final fallback: local server timezone
+                return TimeZoneInfo.Local;
+            }
+        }
+
+        private static DateTime UtcFromLocalDate(DateOnly d, TimeZoneInfo tz)
+        {
+            // Local midnight (unspecified kind)
+            var localMidnight = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Unspecified);
+            var utc = TimeZoneInfo.ConvertTimeToUtc(localMidnight, tz);
+            return DateTime.SpecifyKind(utc, DateTimeKind.Utc);
         }
 
         public Task<CalendarViewModel> GetUserCalendarAsync(ClaimsPrincipal principal, DateTime fromUtc, DateTime toUtc)
@@ -60,17 +90,39 @@ namespace ASI.Basecode.Services.Services
             var isAdmin = principal.IsInRole("Admin");
 
             if (input == null) throw new ArgumentNullException(nameof(input));
-            if (input.StartUtc == default || input.EndUtc == default)
-                throw new ArgumentException("Start and End are required.");
-            if (input.EndUtc < input.StartUtc)
-                throw new ArgumentException("End time must be after start time.");
 
-            var startUtc = DateTime.SpecifyKind(input.StartUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
-            var endUtc = DateTime.SpecifyKind(input.EndUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
+            var tzId = string.IsNullOrWhiteSpace(input.TimeZoneId) ? "Asia/Manila" : input.TimeZoneId;
+            var tz = ResolveTimeZone(tzId);
 
-            var tz = string.IsNullOrWhiteSpace(input.TimeZoneId) ? "Asia/Manila" : input.TimeZoneId;
+            DateTime startUtc;
+            DateTime endUtc;
 
-            // ADMIN can decide if it's global; others always create personal events
+            if (input.IsAllDay)
+            {
+                if (!input.LocalStartDate.HasValue)
+                    throw new ArgumentException("LocalStartDate is required for all-day events.");
+
+                var startDate = input.LocalStartDate.Value;
+                var endDate = input.LocalEndDate ?? startDate;
+
+                if (endDate < startDate)
+                    throw new ArgumentException("End date must not be before start date.");
+
+                startUtc = UtcFromLocalDate(startDate, tz);
+                // exclusive end = next day's midnight
+                endUtc = UtcFromLocalDate(endDate.AddDays(1), tz);
+            }
+            else
+            {
+                if (input.StartUtc == default || input.EndUtc == default)
+                    throw new ArgumentException("Start and End are required.");
+                if (input.EndUtc < input.StartUtc)
+                    throw new ArgumentException("End time must be after start time.");
+
+                startUtc = DateTime.SpecifyKind(input.StartUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
+                endUtc = DateTime.SpecifyKind(input.EndUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
+            }
+
             var willBeGlobal = isAdmin && input.IsGlobal;
             var ownerUserId = willBeGlobal ? (int?)null : actorId;
 
@@ -81,7 +133,7 @@ namespace ASI.Basecode.Services.Services
                 StartUtc = startUtc,
                 EndUtc = endUtc,
                 IsAllDay = input.IsAllDay,
-                TimeZoneId = tz,
+                TimeZoneId = tzId,
                 LocalStartDate = input.IsAllDay ? input.LocalStartDate : null,
                 LocalEndDate = input.IsAllDay ? (input.LocalEndDate ?? input.LocalStartDate) : null,
                 IsGlobal = willBeGlobal,
@@ -92,22 +144,20 @@ namespace ASI.Basecode.Services.Services
 
             _events.Add(entity);
 
-            // Build a safe DateTime representation for notifications
+            // Notification date:
             DateTime startLocalForNotif;
             if (entity.IsAllDay && entity.LocalStartDate.HasValue)
             {
-                var d = entity.LocalStartDate.Value; 
+                var d = entity.LocalStartDate.Value;
                 startLocalForNotif = new DateTime(d.Year, d.Month, d.Day);
             }
             else
             {
-                startLocalForNotif = entity.StartUtc.ToLocalTime();
+                startLocalForNotif = TimeZoneInfo.ConvertTimeFromUtc(entity.StartUtc, tz);
             }
 
-            // ---------- NOTIFICATIONS ----------
             if (willBeGlobal && isAdmin)
             {
-                // 1) Admin's own "My Activity"
                 if (actorId > 0)
                 {
                     _notificationService.NotifyUserEventCreated(
@@ -118,7 +168,6 @@ namespace ASI.Basecode.Services.Services
                     );
                 }
 
-                // 2) System Updates for all Students + Teachers
                 var recipients = _users.GetUsers()
                     .Where(u => (u.Role == "Student" || u.Role == "Teacher") && u.UserId != actorId)
                     .Select(u => u.UserId)
@@ -130,15 +179,14 @@ namespace ASI.Basecode.Services.Services
                         userId: uid,
                         title: "New global event",
                         message: $"A new global event \"{entity.Title}\" is scheduled on {startLocalForNotif:MMM dd, yyyy}.",
-                        kind: NotificationKind.System,      
+                        kind: NotificationKind.System,
                         category: "Events",
-                        actorUserId: actorId                  
+                        actorUserId: actorId
                     );
                 }
             }
             else
             {
-                // Non-global event: this is the actor's own personal event → My Activity
                 if (ownerUserId.HasValue && ownerUserId.Value > 0)
                 {
                     _notificationService.NotifyUserEventCreated(
@@ -173,15 +221,44 @@ namespace ASI.Basecode.Services.Services
             if (e == null) return Task.FromResult<CalendarEventVm>(null);
             if (!CanEdit(principal, e, actorId)) return Task.FromResult<CalendarEventVm>(null);
 
-            if (input.StartUtc == default || input.EndUtc == default)
-                throw new ArgumentException("Start and End are required.");
-            if (input.EndUtc < input.StartUtc)
-                throw new ArgumentException("End time must be after start time.");
+            var tzId = string.IsNullOrWhiteSpace(input.TimeZoneId)
+                ? (e.TimeZoneId ?? "Asia/Manila")
+                : input.TimeZoneId;
+
+            var tz = ResolveTimeZone(tzId);
+
+            DateTime startUtc;
+            DateTime endUtc;
+
+            if (input.IsAllDay)
+            {
+                if (!input.LocalStartDate.HasValue)
+                    throw new ArgumentException("LocalStartDate is required for all-day events.");
+
+                var startDate = input.LocalStartDate.Value;
+                var endDate = input.LocalEndDate ?? startDate;
+
+                if (endDate < startDate)
+                    throw new ArgumentException("End date must not be before start date.");
+
+                startUtc = UtcFromLocalDate(startDate, tz);
+                endUtc = UtcFromLocalDate(endDate.AddDays(1), tz);
+            }
+            else
+            {
+                if (input.StartUtc == default || input.EndUtc == default)
+                    throw new ArgumentException("Start and End are required.");
+                if (input.EndUtc < input.StartUtc)
+                    throw new ArgumentException("End time must be after start time.");
+
+                startUtc = DateTime.SpecifyKind(input.StartUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
+                endUtc = DateTime.SpecifyKind(input.EndUtc.ToUniversalTime().UtcDateTime, DateTimeKind.Utc);
+            }
 
             e.Title = input.Title?.Trim();
             e.Location = input.Location?.Trim();
-            e.StartUtc = DateTime.SpecifyKind(input.StartUtc.UtcDateTime, DateTimeKind.Utc);
-            e.EndUtc = DateTime.SpecifyKind(input.EndUtc.UtcDateTime, DateTimeKind.Utc);
+            e.StartUtc = startUtc;
+            e.EndUtc = endUtc;
             e.IsAllDay = input.IsAllDay;
 
             if (isAdmin)
@@ -190,9 +267,7 @@ namespace ASI.Basecode.Services.Services
                 e.UserId = e.IsGlobal ? (int?)null : actorId;
             }
 
-            e.TimeZoneId = string.IsNullOrWhiteSpace(input.TimeZoneId)
-                ? (e.TimeZoneId ?? "Asia/Manila")
-                : input.TimeZoneId;
+            e.TimeZoneId = tzId;
 
             if (input.IsAllDay)
             {
@@ -208,7 +283,6 @@ namespace ASI.Basecode.Services.Services
             e.UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             _events.Update(e);
 
-            
             DateTime startLocalForNotif;
             if (e.IsAllDay && e.LocalStartDate.HasValue)
             {
@@ -217,7 +291,7 @@ namespace ASI.Basecode.Services.Services
             }
             else
             {
-                startLocalForNotif = e.StartUtc.ToLocalTime();
+                startLocalForNotif = TimeZoneInfo.ConvertTimeFromUtc(e.StartUtc, tz);
             }
 
             _notificationService.NotifyUserEventUpdated(
@@ -247,10 +321,9 @@ namespace ASI.Basecode.Services.Services
             if (e == null) return Task.CompletedTask;
             if (!CanEdit(principal, e, actorId)) return Task.CompletedTask;
 
-            var title = e.Title; // capture before delete
+            var title = e.Title;
             _events.Delete(id);
 
-            // Actor’s own My Activity
             _notificationService.NotifyUserEventDeleted(
                 ownerUserId: actorId,
                 title: title,

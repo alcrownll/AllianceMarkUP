@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASI.Basecode.Data.Migrations
 {
     [DbContext(typeof(AsiBasecodeDBContext))]
-    [Migration("20251026121452_AddNotificationKindActorCategory")]
-    partial class AddNotificationKindActorCategory
+    [Migration("20251121110442_ConvertNotificationCreatedAtToTimestamptz")]
+    partial class ConvertNotificationCreatedAtToTimestamptz
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -255,7 +255,7 @@ namespace ASI.Basecode.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp");
+                        .HasColumnType("timestamptz");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -280,7 +280,9 @@ namespace ASI.Basecode.Data.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Category", "CreatedAt");
+
+                    b.HasIndex("UserId", "Kind", "IsRead", "CreatedAt");
 
                     b.ToTable("Notifications");
                 });

@@ -34,15 +34,40 @@
     var updates = items.Where(IsUpdates).ToList();
     var activity = items.Where(IsActivity).ToList();
 
+    var allUnreadCount = items.Count(x => !x.IsRead);
+    var updatesUnreadCount = updates.Count(x => !x.IsRead);
+    var activityUnreadCount = activity.Count(x => !x.IsRead);
+
     var isAdmin = User.IsInRole("Admin");
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/notifications.css" />
+    <style>
+        /* Filter row that holds Unread/Read + Mark-all on one line */
+        .n-filterbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .n-filterbar .n-filters {
+            display: flex;
+            gap: 6px;
+        }
+        .n-markall-btn {
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+        }
+    </style>
 }
 
 <div class="notifications-page">
     <div class="n-card">
+
         @* Top bar *@
         <div class="n-topbar d-flex justify-content-between align-items-center flex-wrap gap-2">
             <!-- Main Tabs -->
@@ -54,7 +79,6 @@
                     </button>
                 </li>
 
-                @* Show Updates tab only for non-admin roles *@
                 @if (!isAdmin)
                 {
                     <li class="nav-item" role="presentation">
@@ -72,32 +96,38 @@
                     </button>
                 </li>
             </ul>
-
-            <div class="d-flex align-items-center">
-                @if (Model?.UnreadCount > 0)
-                {
-                    <form method="post" action="/Notifications/MarkAllRead" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-sm btn-outline-primary n-markall-btn">
-                            <i class="fa-solid fa-check-double me-1"></i>Mark all as read
-                        </button>
-                    </form>
-                }
-                else
-                {
-                    <button type="button" class="btn btn-sm btn-outline-secondary n-markall-btn" disabled>
-                        <i class="fa-regular fa-circle-check me-1"></i>All caught up
-                    </button>
-                }
-            </div>
         </div>
 
         <div class="tab-content mt-3">
+
             <!-- ========== ALL TAB ========== -->
             <div class="tab-pane fade show active" id="pane-all" role="tabpanel" aria-labelledby="tab-all">
-                <div class="n-filters" data-scope="all">
-                    <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
-                    <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+
+                <!-- Filters + MarkAll aligned row -->
+                <div class="n-filterbar">
+                    <div class="n-filters" data-scope="all">
+                        <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
+                        <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+                    </div>
+
+                    <div class="n-markall-wrap">
+                        @if (allUnreadCount > 0)
+                        {
+                            <form method="post" action="/Notifications/MarkAllRead" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="scope" value="all" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary n-markall-btn">
+                                    <i class="fa-solid fa-check-double me-1"></i>Mark all as read
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary n-markall-btn" disabled>
+                                <i class="fa-regular fa-circle-check me-1"></i>All caught up
+                            </button>
+                        }
+                    </div>
                 </div>
 
                 <ul class="n-list" data-list="all">
@@ -135,13 +165,37 @@
                 <div class="n-empty-scope" data-empty-for="all"></div>
             </div>
 
+
             @* ========== UPDATES TAB (System) — hidden for Admins ========== *@
             @if (!isAdmin)
             {
                 <div class="tab-pane fade" id="pane-updates" role="tabpanel" aria-labelledby="tab-updates">
-                    <div class="n-filters" data-scope="updates">
-                        <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
-                        <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+
+                    <!-- Filters + MarkAll aligned row -->
+                    <div class="n-filterbar">
+                        <div class="n-filters" data-scope="updates">
+                            <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
+                            <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+                        </div>
+
+                        <div class="n-markall-wrap">
+                            @if (updatesUnreadCount > 0)
+                            {
+                                <form method="post" action="/Notifications/MarkAllRead" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="scope" value="updates" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary n-markall-btn">
+                                        <i class="fa-solid fa-check-double me-1"></i>Mark all as read
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary n-markall-btn" disabled>
+                                    <i class="fa-regular fa-circle-check me-1"></i>No unread updates
+                                </button>
+                            }
+                        </div>
                     </div>
 
                     <ul class="n-list" data-list="updates">
@@ -180,11 +234,35 @@
                 </div>
             }
 
+
             <!-- ========== MY ACTIVITY TAB ========== -->
             <div class="tab-pane fade" id="pane-activity" role="tabpanel" aria-labelledby="tab-activity">
-                <div class="n-filters" data-scope="activity">
-                    <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
-                    <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+
+                <!-- Filters + MarkAll aligned row -->
+                <div class="n-filterbar">
+                    <div class="n-filters" data-scope="activity">
+                        <button type="button" class="n-filter-btn active" data-filter="unread">Unread</button>
+                        <button type="button" class="n-filter-btn" data-filter="read">Read</button>
+                    </div>
+
+                    <div class="n-markall-wrap">
+                        @if (activityUnreadCount > 0)
+                        {
+                            <form method="post" action="/Notifications/MarkAllRead" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="scope" value="activity" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary n-markall-btn">
+                                    <i class="fa-solid fa-check-double me-1"></i>Mark all as read
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary n-markall-btn" disabled>
+                                <i class="fa-regular fa-circle-check me-1"></i>No unread activity
+                            </button>
+                        }
+                    </div>
                 </div>
 
                 <ul class="n-list" data-list="activity">
@@ -228,7 +306,6 @@
 @section Scripts {
     <script>
         (function () {
-          // Map (scope, filter)
           const emptyMessages = {
             all:      { unread: "No unread notifications.", read: "No read notifications." },
             updates:  { unread: "No unread updates.",       read: "No read updates." },
@@ -266,13 +343,11 @@
             const container = document.querySelector(`.n-filters[data-scope="${scope}"]`);
             if (!container) return;
 
-            // default to "unread"
             container.querySelectorAll('.n-filter-btn').forEach(b => b.classList.remove('active'));
             const def = container.querySelector('.n-filter-btn[data-filter="unread"]');
             if (def) def.classList.add('active');
             applyFilter(scope, 'unread');
 
-            // click handlers
             container.querySelectorAll('.n-filter-btn').forEach(btn => {
               btn.addEventListener('click', () => {
                 container.querySelectorAll('.n-filter-btn').forEach(b => b.classList.remove('active'));
@@ -281,7 +356,6 @@
               });
             });
 
-            // when the tab is shown, reset to Unread and re-apply
             const pane = container.closest('.tab-pane');
             if (pane) {
               document.querySelectorAll(`[data-bs-target="#${pane.id}"]`).forEach(tabBtn => {

@@ -37,6 +37,9 @@ namespace ASI.Basecode.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            var utcConv = new ValueConverter<DateTime, DateTime>(
+               v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+               v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -196,7 +199,9 @@ namespace ASI.Basecode.Data
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Message).HasMaxLength(500);
 
-                entity.Property(e => e.CreatedAt).HasColumnType("timestamp");
+                entity.Property(e => e.CreatedAt)
+                      .HasColumnType("timestamptz")
+                      .HasConversion(utcConv);
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.Notifications)
@@ -207,9 +212,6 @@ namespace ASI.Basecode.Data
                 entity.HasIndex(e => new { e.UserId, e.Category, e.CreatedAt });
             });
 
-            var utcConv = new ValueConverter<DateTime, DateTime>(
-                v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
-                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
             // CALENDAR EVENT
             modelBuilder.Entity<CalendarEvent>(entity =>
