@@ -40,7 +40,6 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="AssignedCourseId" />
 
-            <!-- ===== COURSE INFORMATION ===== -->
             <div class="section-title mt-1">Course Information</div>
 
             <div class="row g-3 uniform-row">
@@ -133,7 +132,6 @@
 
             <hr class="section-divider" />
 
-            <!-- ===== TEACHER ===== -->
             <div class="section-title">Teacher</div>
             <div class="row g-3 uniform-row">
                 <div class="col-md-6">
@@ -158,10 +156,8 @@
 
             <hr class="section-divider" />
 
-            <!-- ===== ROOM & SCHEDULE ===== -->
             <div class="section-title">Room &amp; Schedule</div>
 
-            <!-- Expose current schedule to JS for hydration (days blue + room/time prefill) -->
             <div id="ScheduleData" data-existing-days="@existingDaysCsv" data-room="@firstRoom" data-start="@firstStart"
                 data-end="@firstEnd"></div>
 
@@ -202,7 +198,6 @@
                 <small id="DayLiveText" class="text-muted d-block mt-2"></small>
             </div>
 
-            <!-- hidden field the JS will fill with "1,3,5" before submit -->
             <input type="hidden" id="ScheduleDaysCsv" name="ScheduleDaysCsv" />
 
             <hr class="section-divider" />
@@ -256,7 +251,6 @@
                 </table>
             </div>
 
-            <!-- Removal summary -->
             <div id="removeSummary" class="alert alert-danger py-2 d-none border border-danger bg-danger bg-opacity-10"
                 role="status" aria-live="polite">
                 <div class="d-flex align-items-center gap-2">
@@ -281,7 +275,6 @@
     </div>
 </div>
 
-<!-- ===== Add Students Modal ===== -->
 <div class="modal fade" id="addStudentsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
     data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">

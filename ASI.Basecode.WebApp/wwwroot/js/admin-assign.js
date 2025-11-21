@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  // ---------- tiny helpers ----------
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -15,7 +14,6 @@
         const el = this;
         const $el = window.jQuery(el);
 
-        // HARD GUARD: survives multiple jQuery copies
         if (el.dataset.spInited === "1") {
           $el.selectpicker("refresh");
           return;
@@ -49,7 +47,6 @@
     return u.toString();
   }
 
-  // ---------- Course -> Type -> Units ----------
   function attachCourseTypeUnits({
     courseSel,
     typeSel,
@@ -158,9 +155,8 @@
       Laboratory: ["C1", "C2", "C4", "CISCO", "A35", "AInnovation Lab"],
     };
 
-    // ---- time helpers ----
-    const MIN_MINUTES = 7 * 60 + 30; // 07:30
-    const MAX_MINUTES = 21 * 60 + 30; // 21:30
+    const MIN_MINUTES = 7 * 60 + 30; // 07:30 AM
+    const MAX_MINUTES = 21 * 60 + 30; // 9:30 PM
 
     function parseHHMM(v) {
       if (!v || !/^\d{2}:\d{2}$/.test(v)) return null;
@@ -198,12 +194,11 @@
       roomSel.removeAttribute("disabled");
     }
 
-    // set min/max/step attrs
     [startTime, endTime].forEach((el) => {
       if (!el) return;
       el.setAttribute("min", "07:30");
       el.setAttribute("max", "21:30");
-      el.setAttribute("step", "900"); // 15 mins
+      el.setAttribute("step", "900");
     });
 
     const dayMap = {
@@ -261,7 +256,6 @@
 
         const maxStart = clampMinutes(e - minGapMinutes);
 
-        // Trigger auto-set ONLY if start is empty or too late vs min gap.
         if (s == null || s > maxStart) {
           startTime.value = toHHMM(maxStart);
         }
@@ -338,7 +332,6 @@
     });
   }
 
-  // ---------- Index page (toasts) ----------
   function initAdminAssignIndex() {
     $$(".js-auto-toast").forEach((el) => {
       try {
@@ -349,7 +342,6 @@
     });
   }
 
-  // ---------- Students Section ----------
   function initAdminAssignPhase2() {
     if (!$("#CourseId") || !$("#Type") || !$("#Units")) return;
     if (!$("#ModeHidden") || !$("#blockFields")) return;
@@ -480,13 +472,11 @@
     radioManual && radioManual.addEventListener("change", syncModeUI);
     syncModeUI();
 
-    // ✅ ONLY ONE debouncedFetch
     const debouncedFetch = debounce((page) => fetchManualTable(page), 200);
 
     blockSectionSel &&
       blockSectionSel.addEventListener("change", () => debouncedFetch(1));
 
-    // event delegation for dynamic table renders
     host?.addEventListener("change", (e) => {
       const t = e.target;
       if (t && t.id === "selectAllStudents") {
@@ -553,7 +543,6 @@
       });
   }
 
-  // ---------- View/Edit page (add/remove students modal etc.) ----------
   function initAdminAssignView() {
     if (!$("#addStudentsModal")) return;
 
@@ -770,7 +759,7 @@
       loadAddTable(1);
     });
 
-    // ----------- schedule hydrate for edit -----------
+    // blueblue to prefill
     function setPickedDays(days) {
       const map = {
         1: "Monday",
@@ -841,7 +830,6 @@
           roomSel.appendChild(opt);
         }
         roomSel.value = room;
-        // never disable the select; it must post
         roomSel.removeAttribute("disabled");
       }
     }

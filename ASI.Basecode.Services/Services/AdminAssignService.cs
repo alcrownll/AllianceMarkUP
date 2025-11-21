@@ -127,7 +127,6 @@ namespace ASI.Basecode.Services.Services
 
             if (hasProg || hasYear || hasSec)
             {
-                // shows all NOT in the selected block
                 q = q.Where(s =>
                     !((!hasProg || s.Program == program) &&
                       (!hasYear || s.YearLevel == yearLevel) &&
@@ -344,20 +343,18 @@ namespace ASI.Basecode.Services.Services
             return targetIds;
         }
 
-        // ===================== Create (Assigned + optional Schedules + optional Grades) =====================
-
         public async Task<int> CreateAssignedCourseAsync(
-     int adminUserId,
-     AssignedCourse form,
-     string blockProgram,
-     string blockYear,
-     string blockSection,
-     IEnumerable<int> extraStudentIds,
-     string scheduleRoom,
-     string scheduleStartHHmm,
-     string scheduleEndHHmm,
-     string scheduleDaysCsv,
-     CancellationToken ct = default)
+            int adminUserId,
+            AssignedCourse form,
+            string blockProgram,
+            string blockYear,
+            string blockSection,
+            IEnumerable<int> extraStudentIds,
+            string scheduleRoom,
+            string scheduleStartHHmm,
+            string scheduleEndHHmm,
+            string scheduleDaysCsv,
+            CancellationToken ct = default)
         {
             // Assigned course base creation
             var ac = new AssignedCourse
@@ -377,16 +374,13 @@ namespace ASI.Basecode.Services.Services
             _assigned.AddAssignedCourseNoSave(ac);
             await _assigned.SaveChangesAsync(ct);
 
-            // Load course code for notifications
             var course = await _courses.GetCourses()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.CourseId == ac.CourseId, ct);
             var courseCode = course?.CourseCode ?? "N/A";
 
-            // Collect target students (block + extra)
             var targets = await CollectTargetStudentIdsAsync(blockProgram, blockYear, blockSection, extraStudentIds, ct);
 
-            // Seed grades like your working flow (no error if 0 students)
             await SeedGradesForTargetsAsync(ac.AssignedCourseId, targets, ct);
 
             await TryCreateSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
@@ -456,8 +450,6 @@ namespace ASI.Basecode.Services.Services
 
             return ac.AssignedCourseId;
         }
-
-        // ===================== Reads =====================
 
         public async Task<AssignedCourse> GetAssignedCourseAsync(int id, CancellationToken ct)
         {
@@ -537,8 +529,6 @@ namespace ASI.Basecode.Services.Services
 
             return (items, total);
         }
-
-        // ===================== Update (Assigned + Students + Schedules) =====================
 
         public async Task UpdateAssignedCourseAsync(
             int adminUserId,
@@ -629,7 +619,6 @@ namespace ASI.Basecode.Services.Services
                 .FirstOrDefaultAsync(c => c.CourseId == ac.CourseId, ct);
             var courseCode = course?.CourseCode ?? "N/A";
 
-            // ================= NOTIFICATIONS (UPDATE) =================
 
             // General update
             _notifications.NotifyAdminUpdatedAssignedCourse(
@@ -669,7 +658,6 @@ namespace ASI.Basecode.Services.Services
                 }
             }
 
-            // Removed students: Admin only (My Activity)
             if (toDelete.Count > 0)
             {
                 _notifications.NotifyAdminRemovedStudentsFromAssignedCourse(
@@ -680,8 +668,6 @@ namespace ASI.Basecode.Services.Services
                 );
             }
         }
-
-        // ===================== Delete =====================
 
         public async Task<(bool ok, string message)> DeleteAssignedCourseAsync(
             int adminUserId,

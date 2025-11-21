@@ -18,8 +18,6 @@ namespace ASI.Basecode.Services.Services
         private readonly IProgramCourseRepository _progCourses;
         private readonly IYearTermRepository _yearTerms;
         private readonly INotificationService _notif;
-
-        // ✅ CHANGE THIS IF YOU WANT A DIFFERENT CAP
         private const int MAX_UNITS_PER_TERM = 24;
 
         public CurriculumService(
@@ -47,7 +45,6 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(nameNorm))
                 throw new InvalidOperationException("Program name is required.");
 
-            // ✅ DUPLICATE CHECK: Program Code
             var dupCode = _programs.GetPrograms()
                 .AsNoTracking()
                 .Any(p => p.ProgramCode != null &&
@@ -55,7 +52,6 @@ namespace ASI.Basecode.Services.Services
             if (dupCode)
                 throw new DuplicateProgramException("code", codeNorm);
 
-            // ✅ DUPLICATE CHECK: Program Name
             var dupName = _programs.GetPrograms()
                 .AsNoTracking()
                 .Any(p => p.ProgramName != null &&
@@ -109,7 +105,6 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(nameNorm))
                 throw new InvalidOperationException("Program name is required.");
 
-            // ✅ DUPLICATE CHECK: Program Code (excluding current)
             var dupCode = _programs.GetPrograms()
                 .AsNoTracking()
                 .Any(p => p.ProgramId != id &&
@@ -118,7 +113,6 @@ namespace ASI.Basecode.Services.Services
             if (dupCode)
                 throw new DuplicateProgramException("code", codeNorm);
 
-            // ✅ DUPLICATE CHECK: Program Name (excluding current)
             var dupName = _programs.GetPrograms()
                 .AsNoTracking()
                 .Any(p => p.ProgramId != id &&
@@ -201,7 +195,6 @@ namespace ASI.Basecode.Services.Services
         // PROGRAM COURSE METHODS
         // =====================================================
 
-        // ✅ Helper: get current total units for a term
         private int GetCurrentTermUnits(int programId, int year, int term)
         {
             var existingTermCourses = _progCourses
@@ -211,9 +204,6 @@ namespace ASI.Basecode.Services.Services
             return existingTermCourses.Sum(pc => (pc.Course.LecUnits + pc.Course.LabUnits));
         }
 
-        // ✅ Helper: get candidate course units by courseId
-        // We try to find the course via any ProgramCourse that references it.
-        // If not found, we block to avoid letting invalid adds bypass the cap.
         private int GetCourseUnitsOrThrow(int courseId)
         {
             var anyPcWithCourse = _progCourses.GetProgramCourses()
@@ -291,7 +281,6 @@ namespace ASI.Basecode.Services.Services
                                        .Select(x => x.CourseId)
                                        .ToHashSet();
 
-            // ✅ Pre-validate cap BEFORE adding anything
             var currentUnits = GetCurrentTermUnits(programId, year, term);
 
             // unique + valid new ids
@@ -318,7 +307,6 @@ namespace ASI.Basecode.Services.Services
                 simulatedTotal += units;
             }
 
-            // ✅ Safe to add
             for (int i = 0; i < courseIds.Length; i++)
             {
                 var cid = courseIds[i];
