@@ -1,7 +1,7 @@
-﻿<!-- ===================== COURSE PICKER MODAL ===================== -->
+﻿<!-- ===================== COURSE PICKER MODAL  ===================== -->
 <div class="modal fade" id="coursePickerModal" tabindex="-1" aria-labelledby="coursePickerLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow border-0 rounded-4">
             <!-- Header -->
             <div class="modal-header cp-header text-white">
@@ -14,17 +14,55 @@
             <!-- Body -->
             <div class="modal-body p-4">
                 <div class="row g-3">
+
+                    <!-- SEARCH + RESULTS -->
                     <div class="col-md-8">
                         <label class="form-label fw-medium">Course <span class="text-danger">*</span></label>
-                        <select id="selCourse" class="form-select" required></select>
+
+                        <!-- Search input -->
+                        <input id="cpSearch"
+                               type="search"
+                               class="form-control mb-2"
+                               placeholder="Search by course code or title…"
+                               autocomplete="off" />
+
+                        <!-- Selected course display -->
+                        <div id="cpSelectedWrap" class="small text-muted mb-2" style="display:none;">
+                            Selected:
+                            <span class="badge bg-dark-subtle text-dark" id="cpSelectedText"></span>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" id="cpClearSelected">Clear</button>
+                        </div>
+
+                        <!-- Results list (FIXED HEIGHT so modal doesn't grow) -->
+                        <div class="border rounded-3 overflow-auto"
+                             style="height: 260px; max-height: 260px;">
+                            <div id="cpResults" class="list-group list-group-flush">
+                                <div class="text-muted small p-3">Loading courses…</div>
+                            </div>
+                        </div>
+
+                        <div class="form-text mt-1">
+                            Shows 5 most recent courses by default. Search to see more.
+                        </div>
+
+                        <!-- ✅ Max units hint -->
+                        <div class="small text-muted mt-2">
+                            Max units per semester: <strong>24</strong>
+                            <span class="ms-2">Current total: <strong id="cpCurrentUnits">0</strong></span>
+                            <span class="ms-2">After stack: <strong id="cpAfterUnits">0</strong></span>
+                        </div>
                     </div>
+
+                    <!-- Prerequisite -->
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Prerequisite (optional)</label>
                         <select id="selPrereq" class="form-select">
                             <option value="">— None —</option>
                         </select>
+                        <div class="form-text mt-1" id="prereqHint"></div>
                     </div>
 
+                    <!-- Stack -->
                     <div class="col-12 mt-3">
                         <div class="border rounded p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -55,14 +93,22 @@
       if (window.__coursePickerBoundOnce) return;
       window.__coursePickerBoundOnce = true;
 
+      // ============================
+      // ✅ SETTINGS
+      // ============================
+      const MAX_UNITS_PER_TERM = 24;
+
       // --- Global state ---
       window.COURSE_PICK_TARGET = window.COURSE_PICK_TARGET || { year: 1, term: 1 };
       window.PICK_STACK = [];
+      let SELECTED_COURSE_ID = null;
 
       // --- Elements ---
       const modalEl = document.getElementById('coursePickerModal');
-      const selCourse = document.getElementById('selCourse');
+      const searchEl = document.getElementById('cpSearch');
+      const resultsEl = document.getElementById('cpResults');
       const selPrereq = document.getElementById('selPrereq');
+      const prereqHint = document.getElementById('prereqHint');
       const err = document.getElementById('coursePickerError');
       const stackList = document.getElementById('stackList');
       const stackTermTarget = document.getElementById('stackTermTarget');
@@ -70,6 +116,13 @@
       const btnApplyStack = document.getElementById('btnApplyStackToTerm');
       const btnClearStack = document.getElementById('btnClearStack');
       const closeBtn = document.getElementById('cpCloseBtn');
+
+      const selectedWrap = document.getElementById('cpSelectedWrap');
+      const selectedText = document.getElementById('cpSelectedText');
+      const clearSelectedBtn = document.getElementById('cpClearSelected');
+
+      const cpCurrentUnitsEl = document.getElementById('cpCurrentUnits');
+      const cpAfterUnitsEl = document.getElementById('cpAfterUnits');
 
       // --- Helpers ---
       const esc = s => (s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -86,36 +139,200 @@
         return { courseId: Number(courseId), courseCode, description, lecUnits: Number(lecUnits), labUnits: Number(labUnits) };
       }
 
-      function getTakenCourseCodes() {
-        const rows = document.querySelectorAll('tbody[data-term-table] tr[data-row="course"]');
+      function currentTermKey() {
+        const y = window.COURSE_PICK_TARGET?.year || 1;
+        const t = window.COURSE_PICK_TARGET?.term || 1;
+        return `Y${y}T${t}`;
+      }
+
+      function getCurrentTermUnits() {
+        const key = currentTermKey();
+        const tbody = document.getElementById(`tbl-${key}`);
+        if (!tbody) return 0;
+
+        let total = 0;
+        tbody.querySelectorAll('tr[data-row="course"]').forEach(tr => {
+          const cell = tr.querySelector('[data-col="units"]');
+          if (cell) total += Number(cell.textContent || 0);
+        });
+        return total;
+      }
+
+      function getStackUnits() {
+        let total = 0;
+        (window.PICK_STACK || []).forEach(s => {
+          const c = window.COURSES?.find(x => x.courseId === s.courseId);
+          if (c) total += (c.lecUnits || 0) + (c.labUnits || 0);
+        });
+        return total;
+      }
+
+      function updateUnitBadges() {
+        const cur = getCurrentTermUnits();
+        const stack = getStackUnits();
+        if (cpCurrentUnitsEl) cpCurrentUnitsEl.textContent = cur;
+        if (cpAfterUnitsEl) cpAfterUnitsEl.textContent = cur + stack;
+      }
+
+      // only taken in CURRENT TERM, not whole program
+      function getTakenCourseCodesForTarget() {
+        const key = currentTermKey();
+        const tbody = document.getElementById(`tbl-${key}`);
         const codes = [];
-        rows.forEach(tr => {
+        if (!tbody) return new Set(codes);
+
+        tbody.querySelectorAll('tr[data-row="course"]').forEach(tr => {
           const code = (tr.dataset.courseCode || tr.querySelector('td')?.textContent || '').trim();
           if (code) codes.push(code);
         });
+
         return new Set(codes);
       }
 
-      function renderSelects(allCourses) {
-        if (!selCourse || !selPrereq) return;
-        const taken = getTakenCourseCodes();
-        const notTaken = allCourses.filter(c => !taken.has((c.courseCode || '').trim()));
+      function getStackCourseCodes() {
+        const set = new Set();
+        (window.PICK_STACK || []).forEach(s => {
+          const c = window.COURSES?.find(x => x.courseId === s.courseId);
+          if (c?.courseCode) set.add(c.courseCode.trim());
+        });
+        return set;
+      }
 
-        const opts = ['<option value="">— Select —</option>']
-          .concat(notTaken.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
-        selCourse.innerHTML = opts.join('');
+      function availableCourses(allCourses) {
+        const taken = getTakenCourseCodesForTarget();
+        const stacked = getStackCourseCodes();
+
+        return allCourses.filter(c => {
+          const code = (c.courseCode || '').trim();
+          if (!code) return false;
+          if (taken.has(code)) return false;
+          if (stacked.has(code)) return false;
+          return true;
+        });
+      }
+
+      // ✅ past-term prereq candidates only
+      function getPastTermCourseCodes() {
+        const ctxYear = Number(window.COURSE_PICK_TARGET?.year || 1);
+        const ctxTerm = Number(window.COURSE_PICK_TARGET?.term || 1);
+
+        const pastCodes = new Set();
+
+        document.querySelectorAll('tbody[data-term-table]').forEach(tbody => {
+          const y = Number(tbody.dataset.year || 0);
+          const t = Number(tbody.dataset.term || 0);
+
+          const isPast = (y < ctxYear) || (y === ctxYear && t < ctxTerm);
+          if (!isPast) return;
+
+          tbody.querySelectorAll('tr[data-row="course"]').forEach(tr => {
+            const code = (tr.dataset.courseCode || tr.querySelector('td')?.textContent || '').trim();
+            if (code) pastCodes.add(code);
+          });
+        });
+
+        return pastCodes;
+      }
+
+      function renderPrereqSelect(allCourses) {
+        if (!selPrereq) return;
+
+        const pastCodes = getPastTermCourseCodes();
+        const candidates = allCourses.filter(c => pastCodes.has((c.courseCode || '').trim()));
+
+        if (candidates.length === 0) {
+          selPrereq.innerHTML = `<option value="">— None —</option>`;
+          if (prereqHint) prereqHint.textContent = 'No valid prerequisites (no past courses yet).';
+          return;
+        }
 
         const preOpts = ['<option value="">— None —</option>']
-          .concat(allCourses.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`));
+          .concat(
+            candidates.map(c => `<option value="${c.courseId}">${c.courseCode} — ${esc(c.description)}</option>`)
+          );
+
         selPrereq.innerHTML = preOpts.join('');
+        if (prereqHint) prereqHint.textContent = 'Only courses from earlier semesters are shown.';
+      }
+
+      function renderResults(filterText = '') {
+        if (!resultsEl) return;
+
+        const all = availableCourses(window.COURSES || []);
+        const q = (filterText || '').trim().toLowerCase();
+
+        let filtered;
+        if (!q) {
+          filtered = [...all]
+            .sort((a, b) => b.courseId - a.courseId)
+            .slice(0, 5);
+        } else {
+          filtered = all.filter(c =>
+            (c.courseCode || '').toLowerCase().includes(q) ||
+            (c.description || '').toLowerCase().includes(q)
+          );
+        }
+
+        if (filtered.length === 0) {
+          resultsEl.innerHTML = `<div class="text-muted small p-3">No matching courses.</div>`;
+          return;
+        }
+
+        const curUnits = getCurrentTermUnits();
+        const stackUnits = getStackUnits();
+
+        resultsEl.innerHTML = filtered.map(c => {
+          const units = (c.lecUnits || 0) + (c.labUnits || 0);
+          const selected = SELECTED_COURSE_ID === c.courseId;
+
+          const wouldExceed = (curUnits + stackUnits + units) > MAX_UNITS_PER_TERM;
+          const disabledClass = wouldExceed ? 'disabled opacity-50' : '';
+          const exceedBadge = wouldExceed
+            ? `<span class="badge bg-danger-subtle text-danger ms-2">Exceeds 24u</span>`
+            : '';
+
+          return `
+            <button type="button"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${selected ? 'active' : ''} ${disabledClass}"
+                    data-course-id="${c.courseId}"
+                    ${wouldExceed ? 'disabled aria-disabled="true"' : ''}>
+              <div>
+                <div class="fw-semibold">${esc(c.courseCode)} — ${esc(c.description)} ${exceedBadge}</div>
+                <div class="small text-muted">Lec ${c.lecUnits} / Lab ${c.labUnits} • ${units} unit(s)</div>
+              </div>
+              <i class="bi bi-check2-circle ms-2 ${selected ? '' : 'text-muted'}"></i>
+            </button>
+          `;
+        }).join('');
+
+        resultsEl.querySelectorAll('[data-course-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (btn.disabled) return; // blocked by max
+            const id = Number(btn.getAttribute('data-course-id'));
+            const course = window.COURSES.find(x => x.courseId === id);
+            if (!course) return;
+
+            SELECTED_COURSE_ID = id;
+            if (selectedWrap && selectedText) {
+              selectedText.textContent = `${course.courseCode} — ${course.description}`;
+              selectedWrap.style.display = 'block';
+            }
+            renderResults(searchEl?.value || '');
+          });
+        });
+
+        updateUnitBadges();
       }
 
       function renderStack() {
         if (!stackList) return;
         if (!Array.isArray(window.PICK_STACK) || window.PICK_STACK.length === 0) {
           stackList.innerHTML = 'Empty. Use “Add to Stack”.';
+          renderResults(searchEl?.value || '');
+          updateUnitBadges();
           return;
         }
+
         const lines = window.PICK_STACK.map((item, idx) => {
           const c = window.COURSES?.find(x => x.courseId === item.courseId);
           const p = item.prereqId ? window.COURSES?.find(x => x.courseId === item.prereqId) : null;
@@ -135,6 +352,7 @@
               <button type="button" class="btn btn-sm btn-outline-danger" data-remove="${idx}">Remove</button>
             </div>`;
         });
+
         stackList.innerHTML = lines.join('');
         stackList.querySelectorAll('button[data-remove]').forEach(btn => {
           btn.addEventListener('click', e => {
@@ -144,45 +362,35 @@
             renderStack();
           });
         });
-      }
 
-      function recalcUnits(termKey) {
-        const tbody = document.getElementById(`tbl-${termKey}`);
-        const totalSpan = document.getElementById(`units-${termKey}`);
-        let total = 0;
-        if (tbody) {
-          const rows = tbody.querySelectorAll('tr[data-row="course"]');
-          if (rows.length) {
-            rows.forEach(tr => {
-              const unitsCell = tr.querySelector('[data-col="units"]');
-              if (unitsCell) total += Number(unitsCell.textContent || 0);
-            });
-          } else {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No subjects yet.</td></tr>`;
-          }
-        }
-        if (totalSpan) totalSpan.textContent = total;
+        renderResults(searchEl?.value || '');
+        updateUnitBadges();
       }
-      window.recalcUnits = window.recalcUnits || recalcUnits;
 
       // --- Lifecycle ---
       modalEl?.addEventListener('shown.bs.modal', async () => {
         clearErr();
+        SELECTED_COURSE_ID = null;
+        if (selectedWrap) selectedWrap.style.display = 'none';
+
         if (stackTermTarget) {
           const tm = window.COURSE_PICK_TARGET?.term === 2 ? '2nd Sem' : '1st Sem';
           stackTermTarget.textContent = `Year ${window.COURSE_PICK_TARGET?.year ?? '?'} — ${tm}`;
         }
 
         try {
-          if (!Array.isArray(window.COURSES) || window.COURSES.length === 0) {
-            const res = await fetch('/admin/courses/all', { method: 'GET' });
-            const json = await res.json().catch(() => ({}));
-            const rawItems = Array.isArray(json) ? json : (json.items || []);
-            if (!Array.isArray(rawItems) || rawItems.length === 0) setErr('No courses returned. Check /admin/courses/all.');
-            window.COURSES = rawItems.map(mapCourse).filter(Boolean);
-          }
-          renderSelects(window.COURSES);
+          const res = await fetch('/admin/courses/all?_ts=' + Date.now(), { method: 'GET' });
+          const json = await res.json().catch(() => ({}));
+          const rawItems = Array.isArray(json) ? json : (json.items || []);
+          window.COURSES = rawItems.map(mapCourse).filter(Boolean);
+
+          renderPrereqSelect(window.COURSES);
           renderStack();
+          renderResults('');
+
+          searchEl.value = '';
+          searchEl?.focus();
+          updateUnitBadges();
         } catch (e) {
           console.error(e);
           setErr(e.message || 'Unable to load courses.');
@@ -193,37 +401,72 @@
 
       modalEl?.addEventListener('hidden.bs.modal', () => {
         window.PICK_STACK = [];
+        SELECTED_COURSE_ID = null;
         renderStack();
         clearErr();
+
+        searchEl.value = '';
+        if (selectedWrap) selectedWrap.style.display = 'none';
+
         const parentOpen = document.getElementById('programProspectusModal')?.classList.contains('show');
         if (parentOpen) document.body.classList.add('modal-open');
         else document.body.classList.remove('modal-open');
       });
 
-      // --- Stack actions ---
+      // Search typing
+      searchEl?.addEventListener('input', () => renderResults(searchEl.value || ''));
+
+      // Clear selected
+      clearSelectedBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        SELECTED_COURSE_ID = null;
+        if (selectedWrap) selectedWrap.style.display = 'none';
+        renderResults(searchEl?.value || '');
+      });
+
+      // --- Add to stack (✅ max enforcement here) ---
       btnAddToStack?.addEventListener('click', e => {
         e.stopPropagation();
         clearErr();
-        const courseId = Number(selCourse?.value || 0);
-        if (!courseId) { setErr('Please select a course to add to stack.'); return; }
+
+        const courseId = Number(SELECTED_COURSE_ID || 0);
+        if (!courseId) { setErr('Please select a course first.'); return; }
+
+        const selected = window.COURSES?.find(x => x.courseId === courseId);
+        if (!selected) { setErr('Selected course not found.'); return; }
+
+        const selectedUnits = (selected.lecUnits || 0) + (selected.labUnits || 0);
+        const cur = getCurrentTermUnits();
+        const stack = getStackUnits();
+
+        if ((cur + stack + selectedUnits) > MAX_UNITS_PER_TERM) {
+          setErr(`Cannot add ${selected.courseCode}. This would exceed the maximum of ${MAX_UNITS_PER_TERM} total units for this semester.`);
+          return;
+        }
+
         const prereqId = selPrereq?.value ? Number(selPrereq.value) : null;
 
         if (window.PICK_STACK.some(x => x.courseId === courseId)) {
           setErr('Course already in stack.');
           return;
         }
+
         window.PICK_STACK.push({ courseId, prereqId });
+        SELECTED_COURSE_ID = null;
+        if (selectedWrap) selectedWrap.style.display = 'none';
         renderStack();
       });
 
       btnClearStack?.addEventListener('click', e => {
         e.stopPropagation();
         window.PICK_STACK = [];
+        SELECTED_COURSE_ID = null;
+        if (selectedWrap) selectedWrap.style.display = 'none';
         renderStack();
         clearErr();
       });
 
-      // --- Apply stack to term ---
+      // --- Apply stack to term (✅ max enforcement here too) ---
       btnApplyStack?.addEventListener('click', async ev => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -235,6 +478,13 @@
         }
         const ctx = window.COURSE_PICK_TARGET;
         if (!ctx || !ctx.year || !ctx.term) { setErr('No target term selected.'); return; }
+
+        const cur = getCurrentTermUnits();
+        const stack = getStackUnits();
+        if ((cur + stack) > MAX_UNITS_PER_TERM) {
+          setErr(`Cannot apply stack. Total would be ${cur + stack} units, exceeding the max of ${MAX_UNITS_PER_TERM}.`);
+          return;
+        }
 
         const programId = (typeof getCurrentProgramId === 'function') ? getCurrentProgramId() : '';
         if (!programId) { setErr('Missing Program Id.'); return; }
@@ -282,12 +532,10 @@
             window.recalcUnits?.(key);
           }
 
-          // Success toast
           window.showToast?.(
             `Courses added to Year ${ctx.year} — ${ctx.term === 2 ? '2nd Sem' : '1st Sem'}`
           );
 
-          // Hide child only
           bootstrap.Modal.getOrCreateInstance(modalEl).hide();
 
         } catch (e) {
@@ -296,14 +544,12 @@
         }
       });
 
-      // --- Child-close should not close parent ---
       closeBtn?.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
         bootstrap.Modal.getOrCreateInstance(modalEl).hide();
       });
 
-      // --- Programmatic open sync (if needed) ---
       modalEl?.addEventListener('show.bs.modal', e => {
         const btn = e.relatedTarget || document.querySelector('#programProspectusModal [data-action="open-course-picker"]:focus');
         const yr = Number(btn?.getAttribute('data-year') || window.COURSE_PICK_TARGET?.year || 1);
@@ -312,10 +558,10 @@
         if (stackTermTarget) stackTermTarget.textContent = `Year ${yr} — ${tm === 2 ? '2nd Sem' : '1st Sem'}`;
       });
 
-      // --- Prevent bubbling from action buttons to parent dismiss handlers ---
       document.addEventListener('click', e => {
-        const act = e.target.closest('[data-remove], #btnApplyStackToTerm, #btnClearStack, #btnAddToStack');
+        const act = e.target.closest('[data-remove], #btnApplyStackToTerm, #btnClearStack, #btnAddToStack, [data-course-id]');
         if (act) e.stopPropagation();
       });
+
     })();
 </script>

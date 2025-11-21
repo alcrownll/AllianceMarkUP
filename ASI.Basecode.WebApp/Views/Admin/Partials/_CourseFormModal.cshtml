@@ -38,11 +38,25 @@
                     <div class="row g-3 mb-2">
                         <div class="col-6">
                             <label class="form-label fw-medium">Lecture Units</label>
-                            <input type="number" class="form-control" id="cfLecUnits" placeholder="0" min="0" max="10" step="1" value="0">
+                            <input type="number"
+                                   class="form-control"
+                                   id="cfLecUnits"
+                                   placeholder="1"
+                                   min="1"
+                                   max="4"
+                                   step="1"
+                                   value="1">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-medium">Lab Units</label>
-                            <input type="number" class="form-control" id="cfLabUnits" placeholder="0" min="0" max="10" step="1" value="0">
+                            <input type="number"
+                                   class="form-control"
+                                   id="cfLabUnits"
+                                   placeholder="0"
+                                   min="0"
+                                   max="1"
+                                   step="1"
+                                   value="0">
                         </div>
                     </div>
                     <div class="form-text mb-3">Total units will be computed automatically (Lec + Lab).</div>
@@ -84,6 +98,11 @@
             errEl.style.display = msg ? 'block' : 'none';
         };
 
+        const toInt = (v, fallback = 0) => {
+            const n = parseInt(v, 10);
+            return Number.isFinite(n) ? n : fallback;
+        };
+
         // Open "Add"
         window.openAddCourseModal = function () {
             MODE = 'add';
@@ -94,7 +113,7 @@
 
             codeEl.value = '';
             descEl.value = '';
-            lecUnitsEl.value = '0';
+            lecUnitsEl.value = '1';
             labUnitsEl.value = '0';
             codeEl.readOnly = false;
             descEl.readOnly = false;
@@ -114,8 +133,13 @@
 
             codeEl.value = course.code || '';
             descEl.value = course.description || '';
-            lecUnitsEl.value = course.lecUnits || '0';
-            labUnitsEl.value = course.labUnits || '0';
+
+            // keep existing values but clamp only for display (0–1 lab, 1–4 lec)
+            let lec = toInt(course.lecUnits, 1);
+            let lab = toInt(course.labUnits, 0);
+            lecUnitsEl.value = String(Math.min(4, Math.max(1, lec)));
+            labUnitsEl.value = String(Math.min(1, Math.max(0, lab)));
+
             codeEl.readOnly = false;
             descEl.readOnly = false;
 
@@ -157,6 +181,19 @@
                 return;
             }
 
+            // ✅ Units range validation (NO auto-fixing)
+            const lecVal = toInt(lecUnitsEl.value, 1);
+            const labVal = toInt(labUnitsEl.value, 0);
+
+            if (lecVal < 1 || lecVal > 4) {
+                showErr('Lecture units must be between 1 and 4.');
+                return;
+            }
+            if (labVal < 0 || labVal > 1) {
+                showErr('Lab units must be 0 or 1 only.');
+                return;
+            }
+
             primary.disabled = true;
             const origText = primary.textContent;
             primary.textContent = 'Saving...';
@@ -170,8 +207,8 @@
                 if (MODE === 'add') {
                     payload.append('CourseCode', codeEl.value.trim());
                     payload.append('Description', descEl.value.trim());
-                    payload.append('LecUnits', lecUnitsEl.value || '0');
-                    payload.append('LabUnits', labUnitsEl.value || '0');
+                    payload.append('LecUnits', String(lecVal));
+                    payload.append('LabUnits', String(labVal));
 
                     const res = await fetch('/admin/courses/create', {
                         method: 'POST',
@@ -201,8 +238,8 @@
                     payload.append('CourseId', idEl.value);
                     payload.append('CourseCode', codeEl.value.trim());
                     payload.append('Description', descEl.value.trim());
-                    payload.append('LecUnits', lecUnitsEl.value || '0');
-                    payload.append('LabUnits', labUnitsEl.value || '0');
+                    payload.append('LecUnits', String(lecVal));
+                    payload.append('LabUnits', String(labVal));
 
                     const res = await fetch('/admin/courses/edit', {
                         method: 'POST',
@@ -231,7 +268,7 @@
 
                 // ✅ Force refresh courses table
                 if (typeof window.loadCourseTable === 'function') {
-                    await window.loadCourseTable(true);   // <── FIXED HERE
+                    await window.loadCourseTable(true);
                 }
 
                 bootstrap.Modal.getOrCreateInstance(modalEl).hide();
@@ -252,4 +289,3 @@
         });
     })();
 </script>
-

@@ -1,6 +1,7 @@
 ﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,15 @@ namespace ASI.Basecode.Services.Services
         // Create a new course
         public async Task CreateAsync(Course course)
         {
+            // Check for duplicate course code
+            var existingCourse = await _repo.GetCourses()
+                .FirstOrDefaultAsync(c => c.CourseCode.ToLower() == course.CourseCode.ToLower());
+
+            if (existingCourse != null)
+            {
+                throw new DuplicateCourseCodeException(course.CourseCode);
+            }
+
             course.TotalUnits = course.LecUnits + course.LabUnits;
             _repo.AddCourse(course);
             await _uow.SaveChangesAsync();
@@ -44,6 +54,24 @@ namespace ASI.Basecode.Services.Services
         // Update an existing course
         public async Task UpdateAsync(Course course)
         {
+            // Check if course exists
+            var existingCourse = await GetByIdAsync(course.CourseId);
+            if (existingCourse == null)
+            {
+                throw new NotFoundException("Course", course.CourseId);
+            }
+
+            // Check for duplicate course code (excluding the current course)
+            var duplicateCourse = await _repo.GetCourses()
+                .FirstOrDefaultAsync(c =>
+                    c.CourseCode.ToLower() == course.CourseCode.ToLower() &&
+                    c.CourseId != course.CourseId);
+
+            if (duplicateCourse != null)
+            {
+                throw new DuplicateCourseCodeException(course.CourseCode);
+            }
+
             // Calculate total units
             course.TotalUnits = course.LecUnits + course.LabUnits;
 
@@ -64,20 +92,37 @@ namespace ASI.Basecode.Services.Services
         // Delete a course after checking for dependencies
         public async Task DeleteAsync(int id)
         {
-            // Checking if the course has dependencies before deletion
-            if (await HasDependenciesAsync(id))
+            // Check if course exists
+            var course = await GetByIdAsync(id);
+            if (course == null)
             {
-                // If dependencies exist, throw an exception or handle accordingly
-                throw new InvalidOperationException("This course cannot be deleted because it is referenced in ProgramCourses or AssignedCourses.");
+                throw new NotFoundException("Course", id);
             }
+
+            // Check if course is referenced in ProgramCourses
+            var programCodes = await _uow.Database.Set<ProgramCourse>()
+                .Where(pc => pc.CourseId == id)
+                .Join(
+                    _uow.Database.Set<Program>(),
+                    pc => pc.ProgramId,
+                    p => p.ProgramId,
+                    (pc, p) => p.ProgramCode
+                )
+                .ToListAsync();
+
+            if (programCodes.Any())
+            {
+                throw new CourseInUseException(course.CourseCode, programCodes);
+            }
+           
+            // Safe to delete
             _repo.DeleteCourse(id);
             await _uow.SaveChangesAsync();
         }
 
-        // New method to check for dependencies before deletion
+        // Checks if Course is referenced in a ProgramCourse or AssignedCourse
         public async Task<bool> HasDependenciesAsync(int courseId)
         {
-            // Check if the course is referenced in ProgramCourses or AssignedCourses
             bool isReferencedInProgramCourses = await _uow.Database.Set<ProgramCourse>()
                 .AnyAsync(pc => pc.CourseId == courseId);
 

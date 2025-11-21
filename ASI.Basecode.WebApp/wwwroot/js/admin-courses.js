@@ -1,5 +1,4 @@
-﻿// admin-course.js
-(() => {
+﻿(() => {
     // ===== Toast helper =====
     window.showToast = function (msg, type = 'success') {
         const toastEl = document.getElementById('appToast');
@@ -26,7 +25,6 @@
         }
     }
 
-    // 🔑 make it globally accessible so _ProgramFormModal.cshtml can call it
     window.loadProgramTable = loadProgramTable;
 
     // ===== Client-side filter for Courses tab =====
@@ -45,7 +43,6 @@
 
         // assumes table body rows contain columns: Code, Title, Lec, Lab, Units, etc.
         table.querySelectorAll('tbody tr').forEach(tr => {
-            // skip placeholder rows (e.g., "No courses found." spanning row)
             const tds = tr.querySelectorAll('td');
             if (!tds.length) return;
 
@@ -402,8 +399,6 @@
             spinner?.classList.add('d-none');
         }
     });
-    // ===== Course table AJAX loader =====
-   
 
     // ===== Course table AJAX loader =====
     window.loadCourseTable = async function () {
@@ -463,4 +458,21 @@
         }
     })();
 
+    window.recalcUnits = function (termKey) {
+        const tbody = document.getElementById(`tbl-${termKey}`);
+        const totalSpan = document.getElementById(`units-${termKey}`);
+        if (!tbody || !totalSpan) return;
+
+        let total = 0;
+
+        tbody.querySelectorAll('tr[data-row="course"]').forEach(tr => {
+            const unitsCell = tr.querySelector('[data-col="units"]');
+            if (unitsCell) {
+                const val = Number(unitsCell.textContent || 0);
+                if (!Number.isNaN(val)) total += val;
+            }
+        });
+
+        totalSpan.textContent = total;
+    };
 })();
