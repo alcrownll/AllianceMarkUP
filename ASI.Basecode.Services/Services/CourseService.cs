@@ -14,12 +14,17 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly ICourseRepository _repo;
         private readonly IUnitOfWork _uow;
+        private readonly INotificationService _notif; //for notification
 
         // Primary constructor
-        public CourseService(ICourseRepository repo, IUnitOfWork uow)
+        public CourseService(
+            ICourseRepository repo,
+            IUnitOfWork uow,
+            INotificationService notif) //for notification
         {
             _repo = repo;
             _uow = uow;
+            _notif = notif; //for notification
         }
 
         // Get all courses, ordered by course code
@@ -34,8 +39,11 @@ namespace ASI.Basecode.Services.Services
                        .AsNoTracking() // Prevent tracking for read-only operations
                        .FirstOrDefaultAsync(c => c.CourseId == id);
 
-        // Create a new course
-        public async Task CreateAsync(Course course)
+        public Task CreateAsync(Course course)
+            => CreateAsync(course, adminUserId: 0); //for notification
+
+        //for notification
+        public async Task CreateAsync(Course course, int adminUserId)
         {
             // Check for duplicate course code
             var existingCourse = await _repo.GetCourses()
@@ -49,10 +57,22 @@ namespace ASI.Basecode.Services.Services
             course.TotalUnits = course.LecUnits + course.LabUnits;
             _repo.AddCourse(course);
             await _uow.SaveChangesAsync();
+
+            if (adminUserId > 0) //for notification
+            {
+                _notif.NotifyAdminCreatedCourse(
+                    adminUserId,
+                    course.CourseCode,
+                    course.Description
+                );
+            }
         }
 
-        // Update an existing course
-        public async Task UpdateAsync(Course course)
+        public Task UpdateAsync(Course course)
+            => UpdateAsync(course, adminUserId: 0); //for notification
+
+        //for notification
+        public async Task UpdateAsync(Course course, int adminUserId)
         {
             // Check if course exists
             var existingCourse = await GetByIdAsync(course.CourseId);
@@ -84,13 +104,25 @@ namespace ASI.Basecode.Services.Services
                 trackedEntity.State = EntityState.Detached;
             }
 
-            // Now update the course
+            // update the course
             _repo.UpdateCourse(course);
             await _uow.SaveChangesAsync();
+
+            if (adminUserId > 0) //for notification
+            {
+                _notif.NotifyAdminUpdatedCourse(
+                    adminUserId,
+                    course.CourseCode,
+                    course.Description
+                );
+            }
         }
 
-        // Delete a course after checking for dependencies
-        public async Task DeleteAsync(int id)
+        public Task DeleteAsync(int id)
+            => DeleteAsync(id, adminUserId: 0); //for notification
+
+        //for notification
+        public async Task DeleteAsync(int id, int adminUserId)
         {
             // Check if course exists
             var course = await GetByIdAsync(id);
@@ -114,10 +146,19 @@ namespace ASI.Basecode.Services.Services
             {
                 throw new CourseInUseException(course.CourseCode, programCodes);
             }
-           
+
             // Safe to delete
             _repo.DeleteCourse(id);
             await _uow.SaveChangesAsync();
+
+            if (adminUserId > 0) //for notification
+            {
+                _notif.NotifyAdminDeletedCourse(
+                    adminUserId,
+                    course.CourseCode,
+                    course.Description
+                );
+            }
         }
 
         // Checks if Course is referenced in a ProgramCourse or AssignedCourse
