@@ -127,7 +127,7 @@ namespace ASI.Basecode.Services.Services
 
             if (hasProg || hasYear || hasSec)
             {
-                // NOTE: this filter shows all NOT in the selected block
+                // shows all NOT in the selected block
                 q = q.Where(s =>
                     !((!hasProg || s.Program == program) &&
                       (!hasYear || s.YearLevel == yearLevel) &&
@@ -174,7 +174,6 @@ namespace ASI.Basecode.Services.Services
         }
 
         // helpers
-
         private static bool TryParseTime(string hhmm, out TimeSpan ts)
         {
             ts = default;
@@ -234,11 +233,6 @@ namespace ASI.Basecode.Services.Services
             return true;
         }
 
-        /// <summary>
-        /// Lenient upsert: 
-        /// - If inputs are incomplete OR no days => delete existing schedules for this course (reflects empty selection) and no-op insert.
-        /// - Otherwise upsert all specified days and delete the rest.
-        /// </summary>
         private async Task UpsertSchedulesLenientAsync(
             int assignedCourseId,
             string room,
@@ -249,7 +243,6 @@ namespace ASI.Basecode.Services.Services
         {
             var want = ParseDaysCsv(daysCsv);
 
-            // Incomplete => remove all schedules (treat as user cleared the selection)
             if (want.Count == 0 ||
                 string.IsNullOrWhiteSpace(room) ||
                 !TryParseTime(startHHmm, out var start) ||
@@ -273,7 +266,6 @@ namespace ASI.Basecode.Services.Services
                 .Where(s => s.AssignedCourseId == assignedCourseId)
                 .ToListAsync(ct);
 
-            // Update overlapping days
             foreach (var row in existing.Where(r => want.Contains((int)r.Day)))
             {
                 row.Room = trimmedRoom;
@@ -282,7 +274,6 @@ namespace ASI.Basecode.Services.Services
                 _classSchedules.UpdateClassSchedule(row);
             }
 
-            // Insert missing days
             var have = existing.Select(e => (int)e.Day).ToHashSet();
             foreach (var d in want.Except(have))
             {
@@ -296,7 +287,6 @@ namespace ASI.Basecode.Services.Services
                 });
             }
 
-            // Delete removed days
             foreach (var del in existing.Where(r => !want.Contains((int)r.Day)).ToList())
                 _classSchedules.DeleteClassSchedule(del.ClassScheduleId);
 
@@ -399,12 +389,8 @@ namespace ASI.Basecode.Services.Services
             // Seed grades like your working flow (no error if 0 students)
             await SeedGradesForTargetsAsync(ac.AssignedCourseId, targets, ct);
 
-            // Try schedules (lenient): only writes when complete; silent no-op otherwise
             await TryCreateSchedulesLenientAsync(ac.AssignedCourseId, scheduleRoom, scheduleStartHHmm, scheduleEndHHmm, scheduleDaysCsv, ct);
 
-            // ================= NOTIFICATIONS =================
-
-            // 1) Teacher notifications: Admin = My Activity, Teacher = Updates
             if (ac.TeacherId > 0)
             {
                 var teacher = await _teachers.GetTeachers()
@@ -573,7 +559,14 @@ namespace ASI.Basecode.Services.Services
                 throw new InvalidOperationException("Assigned course not found.");
             }
 
-
+            ac.EDPCode = posted.EDPCode?.Trim();
+            ac.CourseId = posted.CourseId;
+            ac.Type = posted.Type;
+            ac.Units = posted.Units;
+            ac.ProgramId = posted.ProgramId;
+            ac.TeacherId = posted.TeacherId;
+            ac.Semester = posted.Semester;
+            ac.SchoolYear = posted.SchoolYear;
 
             _assigned.UpdateAssignedCourse(ac);
             await _assigned.SaveChangesAsync(ct);
