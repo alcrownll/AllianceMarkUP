@@ -905,8 +905,6 @@
 
         if (state.selectedTeacherId != null && teacherDetail && detailTeacherId === Number(state.selectedTeacherId)) {
             renderTeacherDetail(teacherDetail);
-        } else if (!state.selectedTeacherId && aggregateTeacherDetail) {
-            renderTeacherDetail(aggregateTeacherDetail);
         } else {
             renderTeacherDetail(null);
         }
