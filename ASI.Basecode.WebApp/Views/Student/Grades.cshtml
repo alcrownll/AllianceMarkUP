@@ -195,11 +195,12 @@
             }
         </div>
         <!-- ================= /SCREEN VERSION ================= -->
-
         <!-- ================= PRINT VERSION ================= -->
         <div id="gradesPrintArea" class="print-sheet only-print">
             <div class="sheet-header">
-                <div class="logo-container"><img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-center" /></div>
+                <div class="logo-container">
+                    <img src="~/img/uc-logo.png" alt="University of Cebu" class="logo-center" />
+                </div>
                 <div class="header-text">
                     <div class="u-name">UNIVERSITY OF CEBU LAPU-LAPU AND MANDAUE</div>
                     <div>A.C. Cortes Avenue,<br />Mandaue City, Philippines</div>
@@ -220,6 +221,7 @@
                 <div class="lbl">School Year</div><div class="val">: @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</div>
                 <div class="lbl">Semester</div><div class="val">: @(Model.SelectedSemester ?? Model.Semester)</div>
                 <div class="lbl">Year Level</div><div class="val">: @Model.YearLevel</div>
+                <div class="lbl">Section</div><div class="val">: @(Model.Section ?? "—")</div>
                 <div class="lbl">GPA</div><div class="val">: @(Model.Gpa?.ToString("0.00") ?? "—")</div>
             </div>
 
@@ -227,16 +229,16 @@
 
             <table class="grid">
                 <colgroup>
-                    <col style="width:7%">   
-                    <col style="width:20%"> 
-                    <col style="width:14%"> 
-                    <col style="width:8.5%"> 
-                    <col style="width:6%">  
-                    <col style="width:7%">  
-                    <col style="width:7%">  
-                    <col style="width:7%"> 
-                    <col style="width:7%">   
-                    <col style="width:11%">   
+                    <col style="width:7%">
+                    <col style="width:20%">
+                    <col style="width:14%">
+                    <col style="width:8.5%">
+                    <col style="width:6%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:7%">
+                    <col style="width:11%">
                 </colgroup>
                 <thead>
                     <tr>
