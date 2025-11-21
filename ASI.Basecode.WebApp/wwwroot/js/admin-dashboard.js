@@ -8,6 +8,7 @@
     const payload = window.AdminDashboardInitial || {};
     const yearSelector = document.getElementById('yearSelector');
     const termSelector = document.getElementById('termSelector');
+    const programSelector = document.getElementById('programSelector');
     const yearChip = root.querySelector('[data-year-display]');
     const termChip = root.querySelector('[data-term-display]');
     const termDescriptor = document.getElementById('termDescriptor');
@@ -18,12 +19,47 @@
         passFail: null
     };
 
-
     const colorPalette = ['#2563eb', '#22c55e', '#f97316', '#a855f7', '#0ea5e9', '#f59e0b', '#ec4899'];
 
+    const kpiNodes = {
+        students: root.querySelector('[data-kpi="students"]'),
+        teachers: root.querySelector('[data-kpi="teachers"]'),
+        courses: root.querySelector('[data-kpi="courses"]')
+    };
+
     let currentDetail = payload.detail || {};
+    let currentSummary = payload.summary || {};
     let currentSchoolYear = payload.selectedSchoolYear || currentDetail.SchoolYear || currentDetail.schoolYear || '';
     let currentTermKey = payload.selectedTermKey || currentDetail.SelectedTermKey || currentDetail.selectedTermKey || '';
+    let currentProgramId = payload.selectedProgramId ?? null;
+
+    function toInt(value) {
+        if (value === '' || value === null || value === undefined) {
+            return null;
+        }
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function updateSummaryCards(summary) {
+        const safeSummary = summary || {};
+        currentSummary = safeSummary;
+
+        const safeNumber = (value) => {
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : 0;
+        };
+
+        if (kpiNodes.students) {
+            kpiNodes.students.textContent = safeNumber(safeSummary.totalStudents).toLocaleString();
+        }
+        if (kpiNodes.teachers) {
+            kpiNodes.teachers.textContent = safeNumber(safeSummary.totalTeachers).toLocaleString();
+        }
+        if (kpiNodes.courses) {
+            kpiNodes.courses.textContent = safeNumber(safeSummary.activeCourses).toLocaleString();
+        }
+    }
 
     function updateSubjectEnrollmentChart(enrollments) {
         const ctx = document.getElementById('enrollmentTrendChart');
@@ -157,6 +193,25 @@
         syncYearSelector(safeDetail);
     }
 
+    function applyDashboardPayload(update) {
+        if (!update) {
+            return;
+        }
+
+        if (update.summary) {
+            updateSummaryCards(update.summary);
+            payload.summary = update.summary;
+        }
+
+        if (Array.isArray(update.trend)) {
+            payload.trend = update.trend;
+        }
+
+        if (update.detail) {
+            applyYearDetail(update.detail);
+        }
+    }
+
     function updateAverageGpaChart(points) {
         const ctx = document.getElementById('averageGpaChart');
         if (!ctx) {
@@ -189,7 +244,7 @@
 
         charts.gpa = new Chart(ctx, {
             type: 'bar',
-            options: {  
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 resizeDelay: 200,
@@ -241,9 +296,7 @@
                             }
                         },
                         grid: { display: false },
-                        afterFit(axis) {
-                            axis.width += 20;
-                        }
+                       
                     }
                 }
             },
@@ -255,7 +308,7 @@
                         data,
                         backgroundColor: labels.map((_, idx) => colorPalette[idx % colorPalette.length]),
                         borderRadius: 8,
-                        barThickness: Math.max(24, Math.floor(260 / Math.max(entries.length, 1))),
+                        barThickness: 15,
                         maxBarThickness: 48,
                         borderSkipped: false,
                         categoryPercentage: 0.6,
@@ -265,7 +318,7 @@
             }
         });
     }
-    // if no Chart Values (Pass vs Fail)
+
     function updatePassFailChart(rates) {
         const ctx = document.getElementById('passFailChart');
         if (!ctx) {
@@ -278,7 +331,7 @@
         if (!items.length) {
             charts.passFail = createEmptyChart(ctx, 'doughnut', 'No data');
             return;
-        }   
+        }
 
         const totals = aggregatePassFail(items);
         const data = [totals.passed, totals.failed];
@@ -296,7 +349,7 @@
                 maintainAspectRatio: false,
                 resizeDelay: 200,
                 devicePixelRatio: Math.min(window.devicePixelRatio, 2),
-                plugins: {  
+                plugins: {
                     legend: {
                         position: 'bottom',
                         labels: { usePointStyle: true, padding: 16 }
@@ -380,30 +433,42 @@
         });
     }
 
-    async function handleSchoolYearChange(event) {
-        const year = event.target.value;
-        if (!year || year === '--') {
-            return;
+    function buildDashboardParams(overrides = {}) {
+        const params = new URLSearchParams();
+        const year = overrides.schoolYear !== undefined ? overrides.schoolYear : currentSchoolYear;
+        const term = overrides.termKey !== undefined ? overrides.termKey : currentTermKey;
+        const program = overrides.programId !== undefined ? overrides.programId : currentProgramId;
+
+        if (year) {
+            params.append('schoolYear', year);
         }
 
-        currentSchoolYear = year;
-        root.classList.add('is-loading');
-        try {
-            const params = new URLSearchParams({ schoolYear: year });
-            if (currentTermKey) {
-                params.append('termKey', currentTermKey);
-            }
+        if (term) {
+            params.append('termKey', term);
+        }
 
+        if (program != null) {
+            params.append('programId', program);
+        }
+
+        return params;
+    }
+
+    async function refreshDashboard(overrides = {}) {
+        const params = buildDashboardParams(overrides);
+        root.classList.add('is-loading');
+
+        try {
             const response = await fetch(`/Admin/DashboardYearDetail?${params.toString()}`, {
                 headers: { Accept: 'application/json' }
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch year detail');
+                throw new Error('Failed to refresh dashboard');
             }
 
             const json = await response.json();
-            applyYearDetail(json);
+            applyDashboardPayload(json);
         } catch (error) {
             console.error(error);
         } finally {
@@ -411,36 +476,19 @@
         }
     }
 
-    async function handleTermChange(event) {
-        const termKey = event.target.value;
-        currentTermKey = termKey || '';
+    async function handleSchoolYearChange(event) {
+        const year = event.target.value || '';
+        currentSchoolYear = year;
+        await refreshDashboard({ schoolYear: year });
+    }
 
+    async function handleTermChange(event) {
+        const termKey = event.target.value || '';
+        currentTermKey = termKey;
         if (!currentSchoolYear) {
             return;
         }
-
-        root.classList.add('is-loading');
-        try {
-            const params = new URLSearchParams({ schoolYear: currentSchoolYear });
-            if (currentTermKey) {
-                params.append('termKey', currentTermKey);
-            }
-
-            const response = await fetch(`/Admin/DashboardYearDetail?${params.toString()}`, {
-                headers: { Accept: 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch term detail');
-            }
-
-            const json = await response.json();
-            applyYearDetail(json);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            root.classList.remove('is-loading');
-        }
+        await refreshDashboard({ termKey });
     }
 
     function bindEvents() {
@@ -450,6 +498,10 @@
 
         if (termSelector) {
             termSelector.addEventListener('change', handleTermChange);
+        }
+
+        if (programSelector) {
+            programSelector.addEventListener('change', handleProgramChange);
         }
     }
 
@@ -520,8 +572,18 @@
         return a.every((val, index) => val === b[index]);
     }
 
+    function handleProgramChange(event) {
+        const selectedValue = event.target.value;
+        currentProgramId = toInt(selectedValue);
+        refreshDashboard({ programId: currentProgramId });
+    }
+
     function init() {
         console.log('Admin Dashboard Initialized');
+        if (programSelector && currentProgramId != null) {
+            programSelector.value = String(currentProgramId);
+        }
+        updateSummaryCards(currentSummary);
         applyYearDetail(payload.detail);
         bindEvents();
     }

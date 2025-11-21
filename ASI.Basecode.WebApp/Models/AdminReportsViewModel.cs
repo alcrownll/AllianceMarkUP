@@ -11,5 +11,7 @@ namespace ASI.Basecode.WebApp.Models
         public string SelectedTermKey { get; set; }
         public int? SelectedTeacherId { get; set; }
         public int? SelectedStudentId { get; set; }
+        public int? SelectedStudentProgramId { get; set; }
+        public int? SelectedStudentCourseId { get; set; }
     }
 }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace ASI.Basecode.Services.ServiceModels
 {
-    public class DashboardYearDetailModel
+    public class AdminDashboardModel
     {
         public string SchoolYear { get; set; }
         public IList<ProgramShareModel> ProgramShares { get; set; } = new List<ProgramShareModel>();
@@ -14,15 +14,26 @@ namespace ASI.Basecode.Services.ServiceModels
         public decimal OverallPassRate { get; set; }
         public IList<SubjectEnrollmentPointModel> SubjectEnrollments { get; set; } = new List<SubjectEnrollmentPointModel>();
         public IList<SubjectGpaPointModel> SubjectAverageGpa { get; set; } = new List<SubjectGpaPointModel>();
+        public int? SelectedProgramId { get; set; }
+        public int ScopedStudentCount { get; set; }
     }
-
+     public class DashboardSummaryModel
+    {
+        public int TotalStudents { get; set; }
+        public decimal StudentsChangePercent { get; set; }
+        public int TotalTeachers { get; set; }
+        public decimal TeachersChangePercent { get; set; }
+        public int ActiveCourses { get; set; }
+        public decimal ActiveCoursesChangePercent { get; set; }
+    }
+    
     public class ProgramShareModel
     {
         public string Program { get; set; }
         public int StudentCount { get; set; }
         public decimal SharePercent { get; set; }
     }
-
+    
     public class YearLevelSeriesPointModel
     {
         public string YearLevel { get; set; }
@@ -69,5 +80,12 @@ namespace ASI.Basecode.Services.ServiceModels
         public string CourseCode { get; set; }
         public string CourseName { get; set; }
         public decimal AverageGpa { get; set; }
+    }
+
+    public class ProgramOptionModel
+    {
+        public int ProgramId { get; set; }
+        public string ProgramCode { get; set; }
+        public string ProgramName { get; set; }
     }
 }

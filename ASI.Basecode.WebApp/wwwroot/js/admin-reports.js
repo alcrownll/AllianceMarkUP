@@ -1,3 +1,32 @@
+    async function refreshDashboard({ preserveTeacher = false } = {}) {
+        try {
+            setLoading(true);
+            const params = {
+                schoolYear: state.selectedSchoolYear,
+                termKey: state.selectedTermKey,
+                studentId: state.selectedStudentId,
+                studentProgramId: state.selectedStudentProgramId,
+                studentCourseId: state.selectedCourseId
+            };
+
+            if (preserveTeacher && state.selectedTeacherId) {
+                params.teacherId = state.selectedTeacherId;
+            }
+
+            const dashboard = await fetchJson('/Admin/ReportsDashboard', params);
+
+            if (!preserveTeacher) {
+                state.selectedTeacherId = null;
+            }
+
+            renderDropdowns(dashboard);
+        } catch (error) {
+            console.error('Failed to refresh admin reports dashboard', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
 /* global Chart */
 (function () {
     const root = document.getElementById('reports-page');
@@ -9,11 +38,14 @@
     const state = {
         dashboard: initialDashboard,
         selectedTeacherId: null,
-        selectedStudentId: null,
+        selectedStudentId: initialDashboard?.Student?.SelectedStudentId || null,
+        selectedCourseId: initialDashboard?.Student?.SelectedCourseId || null,
+        selectedStudentProgramId: initialDashboard?.Student?.SelectedProgramId ?? null,
         teacherDirectory: [],
         studentOptions: [],
-        selectedSchoolYear: initialDashboard?.SchoolYear || initialDashboard?.schoolYear || null,
-        selectedTermKey: initialDashboard?.TermKey || initialDashboard?.termKey || null
+        studentPrograms: Array.isArray(initialDashboard?.Student?.Programs) ? initialDashboard.Student.Programs : [],
+        selectedSchoolYear: initialDashboard?.SchoolYear || initialDashboard?.schoolYear || '',
+        selectedTermKey: initialDashboard?.TermKey || initialDashboard?.termKey || ''
     };
 
     const chartRegistry = new Map();
@@ -25,7 +57,13 @@
         teacherAssignmentsBody: root.querySelector('[data-table="teacher-assignments"] tbody'),
         teacherSubmissionList: root.querySelector('[data-list="teacher-submissions"]'),
         teacherSelector: root.querySelector('[data-selector="teacher"]'),
-        studentGradesBody: root.querySelector('[data-table="student-grades"] tbody')
+        studentGradesBody: root.querySelector('[data-table="student-grades"] tbody'),
+        studentProgramFilter: root.querySelector('[data-filter="student-program"]'),
+        studentYearFilter: root.querySelector('[data-filter="student-year"]'),
+        studentCourseFilter: root.querySelector('[data-filter="student-course"]'),
+        loadStudentsButton: root.querySelector('[data-action="load-students"]'),
+        studentSection: root.querySelector('[data-section="student-details"]'),
+        teacherSection: root.querySelector('[data-section="teacher-details"]')
     };
 
     const numberFormatter = new Intl.NumberFormat();
@@ -48,6 +86,34 @@
         const numeric = Number(value);
         return Number.isFinite(numeric) ? numeric : fallback;
     };
+
+    function ensureChart(canvasId, type, labels = [], datasets = [], options = {}) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || typeof Chart === 'undefined') {
+            return;
+        }
+
+        if (chartRegistry.has(canvasId)) {
+            const existing = chartRegistry.get(canvasId);
+            if (existing?.destroy) {
+                existing.destroy();
+            }
+            chartRegistry.delete(canvasId);
+        }
+
+        const context = canvas.getContext('2d');
+        const config = {
+            type,
+            data: {
+                labels: Array.isArray(labels) ? labels : [],
+                datasets: Array.isArray(datasets) ? datasets : []
+            },
+            options
+        };
+
+        const chart = new Chart(context, config);
+        chartRegistry.set(canvasId, chart);
+    }
 
     const calculateVolatilityScore = (row) => {
         if (!row) {
@@ -186,6 +252,53 @@
         }
     }
 
+    function toggleStudentSection(isVisible) {
+        if (!els.studentSection) {
+            return;
+        }
+
+        els.studentSection.hidden = !isVisible;
+    }
+
+    function toggleTeacherSection(isVisible) {
+        if (!els.teacherSection) {
+            return;
+        }
+
+        els.teacherSection.hidden = !isVisible;
+    }
+
+    async function loadStudentDirectory() {
+        try {
+            setLoading(true);
+            const params = {
+                schoolYear: state.selectedSchoolYear,
+                termKey: state.selectedTermKey,
+                programId: state.selectedStudentProgramId,
+                courseId: state.selectedCourseId
+            };
+
+            const directory = await fetchJson('/Admin/ReportsStudentDirectory', params);
+            state.studentOptions = Array.isArray(directory) ? directory : [];
+
+            const mapped = state.studentOptions.map(option => ({
+                value: option.studentId ?? option.StudentId,
+                label: option.name || option.Name || 'Student'
+            }));
+
+            const selectedValue = state.selectedStudentId != null ? state.selectedStudentId : '';
+            renderOptions(els.studentSelector, mapped, selectedValue, 'Select Student');
+
+            if (!mapped.length && !state.selectedStudentId) {
+                renderStudent(null);
+            }
+        } catch (error) {
+            console.error('Failed to load student directory', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     function bindTabEvents() {
         if (!els.tabs.length) {
             return;
@@ -202,77 +315,116 @@
         });
     }
 
-    function bindEvents() {
-        bindTabEvents();
+    function bindStudentEvents() {
+        if (els.studentSelector) {
+            els.studentSelector.addEventListener('change', async event => {
+                const target = event.target;
+                const id = target instanceof HTMLSelectElement ? Number(target.value) : NaN;
+                if (!Number.isFinite(id) || id <= 0) {
+                    state.selectedStudentId = null;
+                    toggleStudentSection(false);
+                    renderStudent(null);
+                    return;
+                }
+
+                state.selectedStudentId = id;
+                await loadStudentAnalytics(id);
+            });
+        }
+
+        if (els.studentProgramFilter) {
+            els.studentProgramFilter.addEventListener('change', async event => {
+                const value = event.target.value;
+                state.selectedStudentProgramId = value ? Number(value) : null;
+                state.selectedCourseId = null;
+                state.selectedStudentId = null;
+                await refreshDashboard();
+            });
+        }
+
+        if (els.studentYearFilter) {
+            els.studentYearFilter.addEventListener('change', event => {
+                const yearValue = event.target.value || '';
+                state.selectedSchoolYear = yearValue;
+            });
+        }
+
+        if (els.studentCourseFilter) {
+            els.studentCourseFilter.addEventListener('change', event => {
+                const value = event.target.value;
+                state.selectedCourseId = value ? Number(value) : null;
+                state.selectedStudentId = null;
+                loadStudentDirectory();
+            });
+        }
+
+        if (els.loadStudentsButton) {
+            els.loadStudentsButton.addEventListener('click', () => {
+                loadStudentDirectory();
+            });
+        }
     }
 
-    function ensureChart(id, type, labels, datasets, options, customizer) {
-        const canvas = document.getElementById(id);
-        if (!canvas || typeof Chart === 'undefined') {
-            return;
-        }
-
-        const normalizedLabels = Array.isArray(labels) && labels.length ? labels : ['No data'];
-        const normalizedDatasets = Array.isArray(datasets) && datasets.length
-            ? datasets.map(ds => ({
-                ...ds,
-                data: Array.isArray(ds.data) && ds.data.length
-                    ? ds.data.map(value => {
-                        if (Array.isArray(value)) {
-                            return value;
-                        }
-
-                        if (value && typeof value === 'object') {
-                            return value;
-                        }
-
-                        const numeric = Number(value);
-                        return Number.isFinite(numeric) ? numeric : 0;
-                    })
-                    : [0]
-            }))
-            : [{
-                label: 'No data',
-                data: [0],
-                backgroundColor: 'rgba(148, 163, 184, 0.45)',
-                borderColor: 'rgba(148, 163, 184, 0.9)',
-                borderDash: [4, 4]
-            }];
-
-        let chart = chartRegistry.get(id);
-        const config = {
-            type,
-            data: { labels: normalizedLabels, datasets: normalizedDatasets },
-            options: Object.assign({
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label(context) {
-                                if (context.dataset.label === 'No data') {
-                                    return 'No recorded values yet';
-                                }
-                                return context.formattedValue;
-                            }
-                        }
-                    }
+    function bindTeacherEvents() {
+        if (els.teacherSelector) {
+            els.teacherSelector.addEventListener('change', () => {
+                const value = els.teacherSelector.value;
+                const teacherId = value ? Number(value) : null;
+                if (teacherId) {
+                    updateTeacherSelection(teacherId);
+                } else {
+                    renderTeacherDetail(null);
                 }
-            }, options)
-        };
-
-        if (typeof customizer === 'function') {
-            customizer(config);
+            });
         }
 
-        if (!chart) {
-            chart = new Chart(canvas, config);
-            chartRegistry.set(id, chart);
+    }
+
+    function bindEvents() {
+        bindTabEvents();
+        bindStudentEvents();
+        bindTeacherEvents();
+        toggleStudentSection(Boolean(state.selectedStudentId));
+        toggleTeacherSection(true);
+    }
+
+    async function loadStudentAnalytics(id) {
+        const studentId = id || state.selectedStudentId;
+        if (!studentId) {
+            renderStudent(null);
             return;
         }
 
-        chart.data.labels = normalizedLabels;
-        chart.data.datasets = normalizedDatasets;
-        chart.options = Object.assign({}, chart.options, config.options);
-        chart.update();
+        try {
+            setLoading(true);
+            const data = await fetchJson('/Admin/ReportsStudentAnalytics', {
+                studentId,
+                schoolYear: state.selectedSchoolYear,
+                termKey: state.selectedTermKey
+            });
+            renderStudent(data);
+        } catch (error) {
+            console.error('Failed to load student analytics', error);
+            renderStudent(null);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function loadTeacherDetail(teacherId) {
+        try {
+            setLoading(true);
+            const detail = await fetchJson('/Admin/ReportsTeacherDetail', {
+                teacherId,
+                schoolYear: state.selectedSchoolYear,
+                termKey: state.selectedTermKey
+            });
+            renderTeacherDetail(detail);
+        } catch (error) {
+            console.error('Failed to load teacher detail', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     function renderStudentConsistency(label, score) {
@@ -349,8 +501,11 @@
     }
     
     function renderTeacherDetail(detail) {
-        const teacherId = readProp(detail, 'TeacherId');
-        const hasDetail = Boolean(teacherId);
+        const hasDetail = detail != null && (readProp(detail, 'TeacherId') || readProp(detail, 'IsAggregate'));
+        toggleTeacherSection(true);
+
+        const teacherId = hasDetail ? readProp(detail, 'TeacherId') : null;
+        const isAggregate = hasDetail ? Boolean(readProp(detail, 'IsAggregate')) : false;
         const assignmentsSource = readProp(detail, 'Assignments');
         const submissionStatusesSource = readProp(detail, 'SubmissionStatuses');
         const coursePassRatesSource = readProp(detail, 'CoursePassRates');
@@ -362,7 +517,7 @@
         const teacherName = hasDetail ? (readProp(detail, 'Name') || 'Select a teacher') : 'Select a teacher';
         const teacherRank = readProp(detail, 'Rank') || '--';
         const teacherDepartment = readProp(detail, 'Department') || '--';
-
+        
         setField('teacher-name', teacherName);
         setField('teacher-meta', hasDetail ? `${teacherRank} · ${teacherDepartment}` : '--');
 
@@ -388,26 +543,22 @@
         if (els.teacherAssignmentsBody) {
             els.teacherAssignmentsBody.innerHTML = '';
             if (!assignments.length) {
-                els.teacherAssignmentsBody.innerHTML = '<tr data-empty="true"><td colspan="6" class="text-center">Select a teacher to load assignments.</td></tr>';
+                els.teacherAssignmentsBody.innerHTML = '<tr data-empty="true"><td colspan="3" class="text-center">Select a teacher to load assignments.</td></tr>';
             } else {
                 assignments.forEach(item => {
-                    const subjectName = readProp(item, 'SubjectName') || readProp(item, 'CourseCode') || '--';
+                    const courseCode = readProp(item, 'CourseCode') || '--';
+                    const subjectName = readProp(item, 'SubjectName') || courseCode;
+                    const displaySubject = courseCode && subjectName && subjectName !== courseCode
+                        ? `${courseCode} • ${subjectName}`
+                        : subjectName || courseCode || '--';
                     const schedule = readProp(item, 'Schedule') || '--';
                     const units = readProp(item, 'Units');
-                    const finalGradeValue = readProp(item, 'FinalGrade');
-                    const finalGrade = Number.isFinite(toNumber(finalGradeValue, NaN))
-                        ? toNumber(finalGradeValue).toFixed(2)
-                        : '--';
-                    const statusLabel = readProp(item, 'Status') || '--';
-                    const statusClass = statusLabel.toLowerCase();
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${subjectName}</td>
+                        <td>${displaySubject}</td>
                         <td>${schedule}</td>
-                        <td>${formatNumber(units)}</td>
-                        <td>${finalGrade}</td>
-                        <td class="status-${statusClass}">${statusLabel}</td>`;
+                        <td>${formatNumber(units)}</td>`;
                     els.teacherAssignmentsBody.appendChild(tr);
                 });
             }
@@ -463,6 +614,25 @@
     }
     
     function renderStudent(analytics) {
+        toggleStudentSection(Boolean(analytics));
+
+        const studentName = readProp(analytics, 'StudentName') || readProp(analytics, 'Name') || (analytics?.IsAggregate ? 'All Students' : 'Select a student');
+
+        setField('student-name', studentName);
+
+        let courseLabel = 'All Programs';
+        if (analytics?.IsAggregate) {
+            if (state.selectedStudentProgramId != null) {
+                const programOption = state.studentPrograms.find(program => Number(readProp(program, 'ProgramId')) === state.selectedStudentProgramId);
+                courseLabel = readProp(programOption, 'DisplayName') || readProp(programOption, 'ProgramName') || readProp(programOption, 'ProgramCode') || courseLabel;
+            }
+        } else if (state.selectedStudentId) {
+            const studentOption = state.studentOptions.find(option => Number(readProp(option, 'StudentId')) === state.selectedStudentId);
+            courseLabel = readProp(studentOption, 'Program') || courseLabel;
+        }
+
+        setField('student-course', courseLabel);
+
         const gradeBreakdownRaw = readProp(analytics, 'GradeBreakdown');
         const gradeBreakdown = Array.isArray(gradeBreakdownRaw) ? gradeBreakdownRaw : [];
         const normalizedBreakdown = gradeBreakdown.map(row => {
@@ -485,7 +655,6 @@
             normalizedRow.finalGrade = finalGradeValue;
             normalizedRow.Status = computedStatus;
             normalizedRow.status = computedStatus;
-
             return normalizedRow;
         });
 
@@ -660,71 +829,120 @@
 
     function renderDropdowns(dashboard) {
         state.dashboard = dashboard || {};
-        state.studentOptions = Array.isArray(dashboard?.Student?.Students) ? dashboard.Student.Students : [];
-        state.teacherDirectory = Array.isArray(dashboard?.Teacher?.Directory) ? dashboard.Teacher.Directory : [];
+
+        const studentData = readProp(state.dashboard, 'Student') || {};
+        const teacherData = readProp(state.dashboard, 'Teacher') || {};
+
+        const studentOptionsSource = readProp(studentData, 'Students');
+        const studentProgramsSource = readProp(studentData, 'Programs');
+        const studentCoursesSource = readProp(studentData, 'Courses');
+        const teacherDirectorySource = readProp(teacherData, 'Directory');
+
+        state.studentOptions = Array.isArray(studentOptionsSource) ? studentOptionsSource : [];
+        state.teacherDirectory = Array.isArray(teacherDirectorySource) ? teacherDirectorySource : [];
+        state.studentPrograms = Array.isArray(studentProgramsSource) ? studentProgramsSource : [];
+
+        const rawStudentProgramId = readProp(studentData, 'SelectedProgramId');
+        if (rawStudentProgramId != null) {
+            const numericStudentProgram = Number(rawStudentProgramId);
+            state.selectedStudentProgramId = Number.isFinite(numericStudentProgram)
+                ? numericStudentProgram
+                : rawStudentProgramId;
+        } else if (state.selectedStudentProgramId == null) {
+            state.selectedStudentProgramId = null;
+        }
+
+        const rawStudentCourseId = readProp(studentData, 'SelectedCourseId');
+        if (rawStudentCourseId != null) {
+            const numericCourse = Number(rawStudentCourseId);
+            state.selectedCourseId = Number.isFinite(numericCourse) ? numericCourse : rawStudentCourseId;
+        } else if (state.selectedCourseId == null) {
+            state.selectedCourseId = null;
+        }
+
+        const studentProgramOptions = Array.isArray(dashboard?.Student?.Programs)
+            ? dashboard.Student.Programs.map(option => ({
+                value: option.ProgramId,
+                label: option.DisplayName || option.ProgramName || option.ProgramCode || 'Program'
+            }))
+            : [];
+
+        renderOptions(els.studentProgramFilter, studentProgramOptions, state.selectedStudentProgramId ?? '', 'All Programs');
+
+        const courseOptions = Array.isArray(studentCoursesSource)
+            ? studentCoursesSource.map(option => ({
+                value: readProp(option, 'CourseId'),
+                label: readProp(option, 'DisplayName')
+                    || readProp(option, 'CourseName')
+                    || readProp(option, 'CourseCode')
+                    || 'Course'
+            }))
+            : [];
+
+        renderOptions(els.studentCourseFilter, courseOptions, state.selectedCourseId ?? '', 'All Courses');
+
+        if (els.studentYearFilter && state.selectedSchoolYear) {
+            els.studentYearFilter.value = state.selectedSchoolYear;
+        }
 
         renderOptions(els.studentSelector, state.studentOptions.map(option => ({
-            value: option.StudentId,
-            label: option.Name || 'Unknown'
+            value: readProp(option, 'StudentId'),
+            label: readProp(option, 'Name') || 'Unknown'
         })), state.selectedStudentId ?? '', 'Select Student');
 
         renderOptions(els.teacherSelector, state.teacherDirectory.map(option => ({
-            value: option.TeacherId,
-            label: option.Name || 'Unknown'
+            value: readProp(option, 'TeacherId'),
+            label: readProp(option, 'Name') || 'Unknown'
         })), state.selectedTeacherId ?? '', 'Select Teacher');
 
-        let teacherDetail = dashboard?.Teacher?.SelectedTeacher;
-        let teacherRendered = false;
-
-        if (teacherDetail?.TeacherId) {
-            if (!state.selectedTeacherId) {
-                state.selectedTeacherId = teacherDetail.TeacherId;
-            }
-
-            if (teacherDetail.TeacherId === state.selectedTeacherId) {
-                renderTeacherDetail(teacherDetail);
-                teacherRendered = true;
-            }
+        if (!state.selectedTeacherId && els.teacherSelector) {
+            els.teacherSelector.value = '';
         }
 
-        if (!state.selectedTeacherId && state.teacherDirectory.length) {
-            state.selectedTeacherId = state.teacherDirectory[0].TeacherId;
+        const aggregateTeacherDetail = readProp(teacherData, 'AggregateDetail');
+        const teacherDetail = readProp(teacherData, 'SelectedTeacher');
+        const detailTeacherId = teacherDetail ? Number(readProp(teacherDetail, 'TeacherId')) || null : null;
+
+        if (state.selectedTeacherId != null && teacherDetail && detailTeacherId === Number(state.selectedTeacherId)) {
+            renderTeacherDetail(teacherDetail);
+        } else {
+            renderTeacherDetail(null);
         }
 
-        if (!teacherRendered) {
-            if (state.selectedTeacherId) {
-                updateTeacherSelection(state.selectedTeacherId);
-            }
-            else {
-                renderTeacherDetail(null);
-            }
-        }
-
+        const aggregateStudentAnalytics = readProp(studentData, 'AggregateAnalytics') || readProp(studentData, 'Analytics');
         let studentRendered = false;
-        if (dashboard.Student?.Analytics && dashboard.Student?.SelectedStudentId) {
+
+        const studentAnalytics = readProp(studentData, 'Analytics');
+        const studentSelectedId = readProp(studentData, 'SelectedStudentId');
+
+        if (studentAnalytics && studentSelectedId) {
             if (!state.selectedStudentId) {
-                state.selectedStudentId = dashboard.Student.SelectedStudentId;
+                state.selectedStudentId = studentSelectedId;
             }
 
-            if (dashboard.Student.SelectedStudentId === state.selectedStudentId) {
-                renderStudent(dashboard.Student.Analytics);
+            if (studentSelectedId === state.selectedStudentId) {
+                renderStudent(studentAnalytics);
                 studentRendered = true;
             }
         }
 
         if (!state.selectedStudentId && state.studentOptions.length) {
             const firstStudent = state.studentOptions[0];
-            state.selectedStudentId = firstStudent.StudentId;
+            state.selectedStudentId = readProp(firstStudent, 'StudentId');
             if (els.studentSelector) {
-                els.studentSelector.value = String(firstStudent.StudentId);
+                els.studentSelector.value = String(readProp(firstStudent, 'StudentId'));
             }
+        }
+
+        if (!studentRendered && aggregateStudentAnalytics) {
+            renderStudent(aggregateStudentAnalytics);
+            studentRendered = true;
         }
 
         if (!studentRendered) {
             if (state.selectedStudentId) {
                 loadStudentAnalytics();
-            }
-            else {
+            } else {
                 renderStudent(null);
             }
         }
@@ -753,30 +971,6 @@
         }
     }
 
-    if (els.studentSelector) {
-        els.studentSelector.addEventListener('change', () => {
-            const value = els.studentSelector.value;
-            state.selectedStudentId = value ? Number(value) : null;
-            if (state.selectedStudentId) {
-                loadStudentAnalytics();
-            } else {
-                renderStudent(null);
-            }
-        });
-    }
-
-    if (els.teacherSelector) {
-        els.teacherSelector.addEventListener('change', () => {
-            const value = els.teacherSelector.value;
-            const teacherId = value ? Number(value) : null;
-            if (teacherId) {
-                updateTeacherSelection(teacherId);
-            } else {
-                renderTeacherDetail(null);
-            }
-        });
-    }
-
     async function updateTeacherSelection(teacherId) {
         if (!teacherId) {
             return;
@@ -803,15 +997,8 @@
         bindEvents();
         if (state.dashboard) {
             renderDropdowns(state.dashboard);
-            if (state.selectedStudentId) {
-                loadStudentAnalytics();
-            }
-            if (state.selectedTeacherId) {
-                updateTeacherSelection(state.selectedTeacherId);
-            }
         }
         activateTab('student');
     }
-
     initialize();
 })();

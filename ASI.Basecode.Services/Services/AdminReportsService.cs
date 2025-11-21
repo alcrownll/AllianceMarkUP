@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ASI.Basecode.Data;
 using ASI.Basecode.Data.Models;
@@ -14,30 +16,141 @@ namespace ASI.Basecode.Services.Services
     {
         private readonly AsiBasecodeDBContext _ctx;
 
+        private static readonly StaticSemesterDefinition[] StaticSemesterDefinitions = new[]
+        {
+            new StaticSemesterDefinition("all-semester", "All Semester", 0),
+            new StaticSemesterDefinition("first-semester", "First Semester", 1),
+            new StaticSemesterDefinition("second-semester", "Second Semester", 2)
+        };
+
         public AdminReportsService(AsiBasecodeDBContext ctx)
         {
             _ctx = ctx;
         }
 
-        public async Task<ReportsDashboardModel> GetDashboardAsync(string schoolYear = null, string termKey = null, int? highlightedTeacherId = null, int? highlightedStudentId = null)
+        private static StaticSemesterDefinition ResolveSemesterDefinition(string termKey)
         {
-            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
-            var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
-            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
-
-            var students = await LoadStudentDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
-            var teachers = await LoadTeacherDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
-
-            StudentAnalyticsModel studentAnalytics = null;
-            if (highlightedStudentId.HasValue)
+            if (string.IsNullOrWhiteSpace(termKey))
             {
-                studentAnalytics = await GetStudentAnalyticsAsync(highlightedStudentId.Value, normalizedSchoolYear, normalizedTermKey);
+                return StaticSemesterDefinitions.First();
             }
 
-            TeacherDetailModel teacherDetail = null;
-            if (highlightedTeacherId.HasValue)
+            return StaticSemesterDefinitions.FirstOrDefault(def => def.Key.Equals(termKey, StringComparison.OrdinalIgnoreCase))
+                ?? StaticSemesterDefinitions.First();
+        }
+
+        private static string NormalizeStaticTermKey(string termKey)
+        {
+            return ResolveSemesterDefinition(termKey).Key;
+        }
+
+        private static int? ResolveSemesterOrder(string termKey)
+        {
+            var definition = ResolveSemesterDefinition(termKey);
+            return definition.Order > 0 ? definition.Order : (int?)null;
+        }
+
+        private static IList<ReportTermOptionModel> BuildStaticTermOptions(string schoolYear)
+        {
+            return StaticSemesterDefinitions
+                .Select(def => new ReportTermOptionModel
+                {
+                    TermKey = def.Key,
+                    Label = def.Label,
+                    SchoolYear = schoolYear,
+                    SemesterOrder = def.Order
+                })
+                .ToList();
+        }
+
+        private static bool IsAllSemester(string termKey)
+        {
+            return string.IsNullOrWhiteSpace(termKey) || termKey.Equals(StaticSemesterDefinitions[0].Key, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildContextLabel(string scope, string schoolYear, string termKey, string extra = null)
+        {
+            var segments = new List<string>();
+            if (!string.IsNullOrWhiteSpace(scope))
             {
-                teacherDetail = await GetTeacherDetailAsync(highlightedTeacherId.Value, normalizedSchoolYear, normalizedTermKey);
+                segments.Add(scope);
+            }
+
+            if (!string.IsNullOrWhiteSpace(schoolYear))
+            {
+                segments.Add(schoolYear);
+            }
+
+            if (!IsAllSemester(termKey))
+            {
+                segments.Add(ResolveSemesterDefinition(termKey).Label);
+            }
+
+            if (!string.IsNullOrWhiteSpace(extra))
+            {
+                segments.Add(extra);
+            }
+
+            return string.Join(" · ", segments);
+        }
+
+        public async Task<ReportsDashboardModel> GetDashboardAsync(
+            string schoolYear = null,
+            string termKey = null,
+            int? highlightedTeacherId = null,
+            int? highlightedStudentId = null,
+            int? studentProgramId = null,
+            int? studentCourseId = null)
+        {
+            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
+            var termOptions = BuildStaticTermOptions(normalizedSchoolYear);
+            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
+
+            var studentDirectory = await LoadStudentDirectoryAsync(normalizedSchoolYear, normalizedTermKey, studentProgramId, studentCourseId);
+            var studentCourses = await LoadCourseOptionsAsync(normalizedSchoolYear, normalizedTermKey, studentProgramId);
+            var studentPrograms = await LoadStudentProgramOptionsAsync();
+            var aggregateStudentAnalytics = await BuildStudentAggregateAnalyticsAsync(normalizedSchoolYear, normalizedTermKey, studentProgramId);
+
+            StudentAnalyticsModel selectedStudentAnalytics = aggregateStudentAnalytics;
+            int? resolvedStudentId = null;
+            if (highlightedStudentId.HasValue && studentDirectory.Any(student => student.StudentId == highlightedStudentId.Value))
+            {
+                selectedStudentAnalytics = await GetStudentAnalyticsAsync(highlightedStudentId.Value, normalizedSchoolYear, normalizedTermKey);
+                resolvedStudentId = highlightedStudentId.Value;
+            }
+
+            var teacherDirectory = await LoadTeacherDirectoryAsync(normalizedSchoolYear, normalizedTermKey);
+            var aggregateTeacherDetail = await BuildTeacherAggregateDetailAsync(normalizedSchoolYear, normalizedTermKey);
+            // default values for teacher detail
+            aggregateTeacherDetail ??= new TeacherDetailModel
+            {
+                TeacherId = 0,
+                Name = "Select Teacher",
+                Department = "--",
+                Email = "--",
+                Rank = string.Empty,
+                TeachingLoadUnits = 0,
+                TeachingLoadCount = 0,
+                SectionCount = 0,
+                PassRatePercent = 0m,
+                SubmissionCompletionPercent = 0m,
+                Assignments = new List<TeacherAssignmentModel>(),
+                CoursePassRates = new List<CoursePassRateModel>(),
+                SubmissionStatuses = new List<TeacherSubmissionStatusModel>(),
+                SubmissionSummary = new List<NamedValueModel>(),
+                PassCount = 0,
+                FailCount = 0,
+                IncompleteCount = 0,
+                IsAggregate = true,
+                ContextLabel = BuildContextLabel("Select Teacher", normalizedSchoolYear, normalizedTermKey, null)
+            };
+
+            TeacherDetailModel selectedTeacherDetail = aggregateTeacherDetail;
+            int? resolvedTeacherId = null;
+            if (highlightedTeacherId.HasValue && teacherDirectory.Any(teacher => teacher.TeacherId == highlightedTeacherId.Value))
+            {
+                selectedTeacherDetail = await GetTeacherDetailAsync(highlightedTeacherId.Value, normalizedSchoolYear, normalizedTermKey);
+                resolvedTeacherId = highlightedTeacherId.Value;
             }
 
             return new ReportsDashboardModel
@@ -46,16 +159,23 @@ namespace ASI.Basecode.Services.Services
                 TermKey = normalizedTermKey,
                 AvailableSchoolYears = await GetAvailableSchoolYearsAsync(),
                 TermOptions = termOptions,
+                Overall = await BuildOverallAsync(normalizedSchoolYear, normalizedTermKey, studentProgramId),
                 Student = new ReportsStudentModel
                 {
-                    Students = students,
-                    SelectedStudentId = highlightedStudentId,
-                    Analytics = studentAnalytics ?? new StudentAnalyticsModel()
+                    Students = studentDirectory,
+                    SelectedStudentId = resolvedStudentId,
+                    Programs = studentPrograms,
+                    SelectedProgramId = studentProgramId,
+                    Analytics = selectedStudentAnalytics,
+                    AggregateAnalytics = aggregateStudentAnalytics,
+                    Courses = studentCourses,
+                    SelectedCourseId = studentCourseId
                 },
                 Teacher = new ReportsTeacherModel
                 {
-                    Directory = teachers,
-                    SelectedTeacher = teacherDetail ?? new TeacherDetailModel()
+                    Directory = teacherDirectory,
+                    SelectedTeacher = selectedTeacherDetail,
+                    AggregateDetail = aggregateTeacherDetail
                 }
             };
         }
@@ -63,8 +183,7 @@ namespace ASI.Basecode.Services.Services
         public async Task<TeacherDetailModel> GetTeacherDetailAsync(int teacherId, string schoolYear = null, string termKey = null)
         {
             var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
-            var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
-            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
+            var normalizedTermKey = NormalizeStaticTermKey(termKey);
 
             var teacher = await _ctx.Teachers
                 .Include(t => t.User)
@@ -73,18 +192,23 @@ namespace ASI.Basecode.Services.Services
                     && t.User != null
                     && t.User.Role != null
                     && t.User.Role.ToLower() == "teacher");
-
+        
             if (teacher == null)
             {
                 return new TeacherDetailModel();
             }
 
             var assignedCoursesQuery = _ctx.AssignedCourses
-                .Where(ac => ac.TeacherId == teacherId && ac.SchoolYear == normalizedSchoolYear)
+                .Where(ac => ac.TeacherId == teacherId)
                 .Include(ac => ac.Course)
                 .Include(ac => ac.Program)
                 .Include(ac => ac.ClassSchedules)
                 .AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(normalizedSchoolYear))
+            {
+                assignedCoursesQuery = assignedCoursesQuery.Where(ac => ac.SchoolYear == normalizedSchoolYear);
+            }
 
             var assignedCourses = await assignedCoursesQuery.ToListAsync();
 
@@ -99,7 +223,7 @@ namespace ASI.Basecode.Services.Services
                     .ToListAsync();
             }
 
-            if (!string.IsNullOrEmpty(normalizedTermKey))
+            if (!IsAllSemester(normalizedTermKey))
             {
                 assignedCourses = assignedCourses
                     .Where(ac => MatchesTermKey(ac.Semester, normalizedTermKey))
@@ -107,9 +231,14 @@ namespace ASI.Basecode.Services.Services
             }
 
             var gradesQuery = _ctx.Grades
-                .Where(g => g.AssignedCourse.TeacherId == teacherId && g.AssignedCourse.SchoolYear == normalizedSchoolYear)
+                .Where(g => g.AssignedCourse.TeacherId == teacherId)
                 .Include(g => g.AssignedCourse)
                 .AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(normalizedSchoolYear))
+            {
+                gradesQuery = gradesQuery.Where(g => g.AssignedCourse.SchoolYear == normalizedSchoolYear);
+            }
 
             var grades = await gradesQuery.ToListAsync();
 
@@ -122,7 +251,7 @@ namespace ASI.Basecode.Services.Services
                     .ToListAsync();
             }
 
-            if (!string.IsNullOrWhiteSpace(normalizedTermKey))
+            if (!IsAllSemester(normalizedTermKey))
             {
                 grades = grades
                     .Where(g => MatchesTermKey(g.AssignedCourse.Semester, normalizedTermKey))
@@ -255,9 +384,7 @@ namespace ASI.Basecode.Services.Services
                 TeachingLoadUnits = assignedCourses.Sum(ac => ac.Units),
                 TeachingLoadCount = assignments.Count,
                 SectionCount = assignments.Count,
-                PassRatePercent = assignments.Sum(a => a.FinalGrade.HasValue ? a.FinalGrade.Value : 0m) > 0 && assignments.Any(a => a.FinalGrade.HasValue)
-                    ? Math.Round(assignments.Where(a => a.FinalGrade.HasValue).Average(a => a.FinalGrade.Value < 3m ? 100m : 0m), 1)
-                    : passRateAggregate,
+                PassRatePercent = passRateAggregate,
                 SubmissionCompletionPercent = submissionCompletion,
                 Assignments = assignments,
                 CoursePassRates = coursePassRates,
@@ -265,7 +392,10 @@ namespace ASI.Basecode.Services.Services
                 SubmissionSummary = submissionSummary,
                 PassCount = passFailCounts.Pass,
                 FailCount = passFailCounts.Fail,
-                IncompleteCount = passFailCounts.Incomplete
+                IncompleteCount = passFailCounts.Incomplete,
+                IsAggregate = false,
+                ContextLabel = BuildContextLabel(teacher.User != null ? $"{teacher.User.FirstName} {teacher.User.LastName}" : "Teacher", normalizedSchoolYear, normalizedTermKey,
+                    null)
             };
         }
 
@@ -293,25 +423,37 @@ namespace ASI.Basecode.Services.Services
             }
 
             var courseGrades = grades
-                .GroupBy(g => g.AssignedCourse.Course.CourseCode)
-                .Select(group => new StudentCourseGradeModel
+                .GroupBy(g => g.AssignedCourse.Course.CourseCode ?? g.AssignedCourse.EDPCode)
+                .Select(group =>
                 {
-                    CourseCode = group.Key,
-                    Grade = MapToPercent(group) ?? 0m
+                    var forcedGrades = group.Select(ForceFinalGradeValue).ToList();
+                    var average = forcedGrades.Any()
+                        ? Math.Round(forcedGrades.Average(), 2)
+                        : 5m;
+
+                    return new StudentCourseGradeModel
+                    {
+                        CourseCode = group.Key,
+                        Grade = average
+                    };
                 })
                 .OrderBy(g => g.CourseCode)
                 .ToList();
 
-            var gradeBreakdown = grades.Select(g => new StudentGradeBreakdownModel
+            var gradeBreakdown = grades.Select(g =>
             {
-                EdpCode = g.AssignedCourse.EDPCode,
-                Subject = g.AssignedCourse.Course.Description,
-                Prelim = g.Prelims,
-                Midterm = g.Midterm,
-                Prefinal = g.SemiFinal,
-                Final = g.Final,
-                FinalGrade = MapToPercent(g),
-                Status = DetermineStudentStatus(g)
+                var forcedFinal = ForceFinalGradeValue(g);
+                return new StudentGradeBreakdownModel
+                {
+                    EdpCode = g.AssignedCourse.EDPCode,
+                    Subject = g.AssignedCourse.Course.Description,
+                    Prelim = g.Prelims,
+                    Midterm = g.Midterm,
+                    Prefinal = g.SemiFinal,
+                    Final = g.Final,
+                    FinalGrade = forcedFinal,
+                    Status = MapFinalGradeToStatus(forcedFinal)
+                };
             }).ToList();
 
             var statusMix = gradeBreakdown
@@ -334,7 +476,9 @@ namespace ASI.Basecode.Services.Services
                 GradeBreakdown = gradeBreakdown,
                 StatusMix = statusMix,
                 ConsistencyLabel = consistencyLabel,
-                ComparativeHighlights = comparativeHighlights
+                ComparativeHighlights = comparativeHighlights,
+                IsAggregate = false,
+                ContextLabel = BuildContextLabel(null, normalizedSchoolYear, normalizedTermKey, await ResolveStudentNameAsync(studentId))
             };
         }
 
@@ -371,83 +515,207 @@ namespace ASI.Basecode.Services.Services
                 .ToListAsync();
         }
 
-        private async Task<IList<ReportTermOptionModel>> BuildTermOptionsAsync(string schoolYear)
+        private Task<IList<ReportTermOptionModel>> BuildTermOptionsAsync(string schoolYear)
         {
-            if (string.IsNullOrWhiteSpace(schoolYear))
-            {
-                return new List<ReportTermOptionModel>();
-            }
+            var normalizedYear = string.IsNullOrWhiteSpace(schoolYear)
+                ? string.Empty
+                : schoolYear;
 
-            var semesters = await _ctx.AssignedCourses
-                .Where(ac => ac.SchoolYear == schoolYear && ac.Semester != null)
-                .Select(ac => ac.Semester)
-                .Distinct()
-                .AsNoTracking()
-                .ToListAsync();
-
-            var parsed = semesters
-                .Select(ParseTerm)
-                .Where(term => term != null)
-                .OrderBy(term => term.YearStart)
-                .ThenBy(term => term.SemesterOrder)
-                .Select(term => new ReportTermOptionModel
-                {
-                    TermKey = term.TermKey,
-                    Label = term.Label,
-                    SchoolYear = term.SchoolYear
-                })
-                .ToList();
-
-            if (parsed.Count > 0)
-            {
-                parsed.Insert(0, new ReportTermOptionModel
-                {
-                    TermKey = string.Empty,
-                    Label = $"{schoolYear} - Whole Year",
-                    SchoolYear = schoolYear
-                });
-            }
-
-            return parsed;
+            var options = BuildStaticTermOptions(normalizedYear);
+            return Task.FromResult<IList<ReportTermOptionModel>>(options);
         }
 
         private static string NormalizeTermKey(string termKey, IList<ReportTermOptionModel> options)
         {
-            if (string.IsNullOrWhiteSpace(termKey))
+            var resolved = ResolveSemesterDefinition(termKey).Key;
+
+            if (options != null && options.Any(option => string.Equals(option.TermKey, resolved, StringComparison.OrdinalIgnoreCase)))
             {
-                return string.Empty;
+                return resolved;
             }
 
-            return options.FirstOrDefault(option => string.Equals(option.TermKey, termKey, StringComparison.OrdinalIgnoreCase))?.TermKey ?? string.Empty;
+            return resolved;
         }
 
-        private async Task<IList<StudentOptionModel>> LoadStudentDirectoryAsync(string schoolYear, string termKey)
+        private async Task<IList<StudentOptionModel>> LoadStudentDirectoryAsync(string schoolYear, string termKey, int? programId, int? courseId)
         {
-            var students = await _ctx.Students
+            var query = _ctx.Students
                 .Include(s => s.User)
+                .Include(s => s.Grades)
+                    .ThenInclude(g => g.AssignedCourse)
+                        .ThenInclude(ac => ac.Program)
                 .AsNoTracking()
+                .AsQueryable();
+
+            if (programId.HasValue)
+            {
+                query = query.Where(s => s.Grades.Any(g => g.AssignedCourse != null && g.AssignedCourse.ProgramId == programId.Value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(schoolYear))
+            {
+                query = query.Where(s => s.Grades.Any(g => g.AssignedCourse != null && g.AssignedCourse.SchoolYear == schoolYear));
+            }
+
+            var students = await query
                 .OrderBy(s => s.User.LastName)
                 .ThenBy(s => s.User.FirstName)
                 .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                students = students
+                    .Where(student => student.Grades != null
+                        && student.Grades.Any(grade => grade.AssignedCourse != null && MatchesTermKey(grade.AssignedCourse.Semester, termKey)))
+                    .ToList();
+            }
+
+            if (courseId.HasValue)
+            {
+                students = students
+                    .Where(student => student.Grades != null
+                        && student.Grades.Any(grade => grade.AssignedCourse != null && grade.AssignedCourse.CourseId == courseId.Value))
+                    .ToList();
+            }
 
             return students
                 .Select(student => new StudentOptionModel
                 {
                     StudentId = student.StudentId,
                     Name = student.User != null ? $"{student.User.FirstName} {student.User.LastName}" : "Student",
-                    Program = student.Program,
+                    ProgramId = student.Grades?
+                        .Where(g => g.AssignedCourse?.ProgramId != null)
+                        .Select(g => (int?)g.AssignedCourse.ProgramId)
+                        .FirstOrDefault(),
+                    Program = student.Grades?
+                        .Where(g => g.AssignedCourse?.Program != null)
+                        .Select(g => g.AssignedCourse.Program.ProgramName)
+                        .FirstOrDefault()
+                        ?? student.Program,
                     Sections = new List<string>()
                 })
                 .ToList();
+        }
+
+        private async Task<IList<StudentCourseOptionModel>> LoadCourseOptionsAsync(string schoolYear, string termKey, int? programId)
+        {
+            if (string.IsNullOrWhiteSpace(schoolYear))
+            {
+                return new List<StudentCourseOptionModel>();
+            }
+
+            var query = _ctx.AssignedCourses
+                .Include(ac => ac.Course)
+                .Include(ac => ac.Program)
+                .AsNoTracking()
+                .Where(ac => ac.SchoolYear == schoolYear);
+
+            if (programId.HasValue)
+            {
+                query = query.Where(ac => ac.ProgramId == programId.Value);
+            }
+
+            var coursesQuery = await query
+                .Select(ac => new
+                {
+                    ac.AssignedCourseId,
+                    ac.CourseId,
+                    ac.ProgramId,
+                    ac.Course.CourseCode,
+                    ac.Course.Description,
+                    ac.SchoolYear,
+                    TermKey = ac.Semester
+                })
+                .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                coursesQuery = coursesQuery
+                    .Where(course => MatchesTermKey(course.TermKey, termKey))
+                    .ToList();
+            }
+
+            return coursesQuery
+                .GroupBy(item => item.CourseId)
+                .Select(group =>
+                {
+                    var first = group.First();
+                    var termInfo = ParseTerm(first.TermKey);
+
+                    return new StudentCourseOptionModel
+                    {
+                        AssignedCourseId = first.AssignedCourseId,
+                        CourseId = first.CourseId,
+                        ProgramId = first.ProgramId,
+                        CourseCode = first.CourseCode,
+                        CourseName = first.Description,
+                        SchoolYear = first.SchoolYear,
+                        TermKey = termInfo?.TermKey ?? string.Empty
+                    };
+                })
+                .OrderBy(model => model.CourseCode ?? model.CourseName)
+                .ToList();
+        }
+
+        private async Task<IList<ReportsProgramOptionModel>> LoadStudentProgramOptionsAsync()
+        {
+            return await _ctx.Programs
+                .Where(program => program.IsActive)
+                .OrderBy(program => program.ProgramName)
+                .AsNoTracking()
+                .Select(program => new ReportsProgramOptionModel
+                {
+                    ProgramId = program.ProgramId,
+                    ProgramCode = program.ProgramCode,
+                    ProgramName = program.ProgramName
+                })
+                .ToListAsync();
+        }
+
+        public async Task<IList<StudentOptionModel>> GetStudentDirectoryAsync(string schoolYear = null, string termKey = null, int? programId = null, int? courseId = null)
+        {
+            var normalizedSchoolYear = await ResolveSchoolYearAsync(schoolYear);
+            var termOptions = await BuildTermOptionsAsync(normalizedSchoolYear);
+            var normalizedTermKey = NormalizeTermKey(termKey, termOptions);
+
+            var studentOptions = await LoadStudentDirectoryAsync(normalizedSchoolYear, normalizedTermKey, programId, courseId);
+
+            if (courseId.HasValue)
+            {
+                var courseGrades = await _ctx.Grades
+                    .Where(g => g.AssignedCourse.CourseId == courseId.Value
+                        && g.AssignedCourse.SchoolYear == normalizedSchoolYear)
+                    .Include(g => g.AssignedCourse)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if (!IsAllSemester(normalizedTermKey))
+                {
+                    courseGrades = courseGrades
+                        .Where(g => g.AssignedCourse != null && MatchesTermKey(g.AssignedCourse.Semester, normalizedTermKey))
+                        .ToList();
+                }
+
+                var enrolledIds = courseGrades
+                    .Select(g => g.StudentId)
+                    .Distinct()
+                    .ToList();
+
+                studentOptions = studentOptions
+                    .Where(option => enrolledIds.Contains(option.StudentId))
+                    .ToList();
+            }
+
+            return studentOptions;
         }
 
         private async Task<IList<TeacherDirectoryItemModel>> LoadTeacherDirectoryAsync(string schoolYear, string termKey)
         {
             var teacherUsers = await _ctx.Users
                 .Include(u => u.Teacher)
-                .Where(u => u.Role != null
-                    && u.Role.ToLower() == "teacher"
-                    && u.Teacher != null)
+                .Where(u => u.Teacher != null
+                    && u.Role != null
+                    && u.Role.ToLower() == "teacher")
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -457,20 +725,40 @@ namespace ASI.Basecode.Services.Services
                 .Select(id => id.Value)
                 .ToList();
 
-            var assignments = await _ctx.AssignedCourses
-                .Where(ac => teacherIds.Contains(ac.TeacherId) && ac.SchoolYear == schoolYear)
+            var assignmentsQuery = _ctx.AssignedCourses
+                .Where(ac => teacherIds.Contains(ac.TeacherId));
+
+            if (!string.IsNullOrWhiteSpace(schoolYear))
+            {
+                assignmentsQuery = assignmentsQuery.Where(ac => ac.SchoolYear == schoolYear);
+            }
+
+            var assignments = await assignmentsQuery
                 .Include(ac => ac.Program)
                 .AsNoTracking()
                 .ToListAsync();
+            var assignedTeacherIds = assignments
+                .Select(ac => ac.TeacherId)
+                .Where(id => id != 0)
+                .Distinct()
+                .ToHashSet();
+
+            if (!assignedTeacherIds.Any())
+            {
+                return new List<TeacherDirectoryItemModel>();
+            }
+            var assignmentsForStats = assignments;
 
             if (!string.IsNullOrEmpty(termKey))
             {
-                assignments = assignments
+                assignmentsForStats = assignments
                     .Where(ac => MatchesTermKey(ac.Semester, termKey))
                     .ToList();
             }
 
-            var stats = assignments
+            var eligibleTeacherIds = assignedTeacherIds;
+
+            var stats = assignmentsForStats
                 .GroupBy(ac => ac.TeacherId)
                 .ToDictionary(
                     group => group.Key,
@@ -481,11 +769,16 @@ namespace ASI.Basecode.Services.Services
                         Department = group.Select(ac => ac.Program?.ProgramName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name))
                     });
 
-            return teacherUsers
+            var directory = teacherUsers
                 .Select(user =>
                 {
                     var teacher = user.Teacher;
                     if (teacher == null)
+                    {
+                        return null;
+                    }
+
+                    if (!eligibleTeacherIds.Contains(teacher.TeacherId))
                     {
                         return null;
                     }
@@ -503,9 +796,294 @@ namespace ASI.Basecode.Services.Services
                         Sections = stat?.Sections ?? 0
                     };
                 })
-                .Where(item => item != null && (item.LoadUnits > 0 || item.Sections > 0))
+                .Where(item => item != null)
                 .OrderBy(item => item.Name)
                 .ToList();
+
+            return directory;
+        }
+
+        private async Task<ReportsOverallModel> BuildOverallAsync(string schoolYear, string termKey, int? programId)
+        {
+            var summary = await BuildOverallSummaryAsync(schoolYear, termKey, programId);
+            var trend = await BuildEnrollmentTrendAsync(schoolYear, termKey, programId);
+
+            return new ReportsOverallModel
+            {
+                Summary = summary,
+                EnrollmentTrend = trend
+            };
+        }
+
+        private async Task<ReportsOverallSummary> BuildOverallSummaryAsync(string schoolYear, string termKey, int? programId)
+        {
+            var students = await _ctx.Grades
+                .Where(g => string.IsNullOrWhiteSpace(schoolYear) || g.AssignedCourse.SchoolYear == schoolYear)
+                .Where(g => !programId.HasValue || g.AssignedCourse.ProgramId == programId.Value)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                students = students
+                    .Where(g => MatchesTermKey(g.AssignedCourse.Semester, termKey))
+                    .ToList();
+            }
+
+            var distinctStudents = students.Select(g => g.StudentId).Distinct().Count();
+            var gwaValues = students
+                .Select(ComputeFinalGradeValue)
+                .Where(value => value.HasValue)
+                .Select(value => value.Value)
+                .ToList();
+
+            var passRatePercent = gwaValues.Any()
+                ? Math.Round(gwaValues.Count(value => value < 3m) * 100m / gwaValues.Count, 1)
+                : 0m;
+
+            var averageGwa = gwaValues.Any()
+                ? Math.Round(gwaValues.Average(), 2)
+                : 0m;
+
+            return new ReportsOverallSummary
+            {
+                TotalEnrolled = distinctStudents,
+                AverageGwa = averageGwa,
+                PassRatePercent = passRatePercent,
+                GrowthPercent = 0m,
+                RetentionPercent = 0m
+            };
+        }
+
+        private async Task<IList<TrendPointModel>> BuildEnrollmentTrendAsync(string schoolYear, string termKey, int? programId)
+        {
+            var grades = await _ctx.Grades
+                .Where(g => string.IsNullOrWhiteSpace(schoolYear) || g.AssignedCourse.SchoolYear == schoolYear)
+                .Include(g => g.AssignedCourse)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var trend = grades
+                .Where(g => g.AssignedCourse != null)
+                .GroupBy(g => g.AssignedCourse.SchoolYear)
+                .Select(group => new TrendPointModel
+                {
+                    Label = group.Key,
+                    TermKey = group.Key,
+                    Value = group.Select(g => g.StudentId).Distinct().Count()
+                })
+                .OrderBy(point => point.Label)
+                .ToList();
+
+            return trend;
+        }
+
+        private async Task<string> ResolveProgramLabelAsync(int programId)
+        {
+            var program = await _ctx.Programs
+                .Where(p => p.ProgramId == programId)
+                .Select(p => new { p.ProgramCode, p.ProgramName })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (program == null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(program.ProgramCode))
+            {
+                return program.ProgramName;
+            }
+
+            if (string.IsNullOrWhiteSpace(program.ProgramName))
+            {
+                return program.ProgramCode;
+            }
+
+            return $"{program.ProgramCode} - {program.ProgramName}";
+        }
+
+        private async Task<string> ResolveStudentNameAsync(int studentId)
+        {
+            var student = await _ctx.Students
+                .Include(s => s.User)
+                .Where(s => s.StudentId == studentId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (student?.User == null)
+            {
+                return null;
+            }
+
+            return $"{student.User.FirstName} {student.User.LastName}";
+        }
+
+        private async Task<StudentAnalyticsModel> BuildStudentAggregateAnalyticsAsync(string schoolYear, string termKey, int? programId = null)
+        {
+            var grades = await _ctx.Grades
+                .Where(g => string.IsNullOrWhiteSpace(schoolYear) || g.AssignedCourse.SchoolYear == schoolYear)
+                .Where(g => !programId.HasValue || g.AssignedCourse.ProgramId == programId.Value)
+                .Include(g => g.AssignedCourse)
+                    .ThenInclude(ac => ac.Course)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                grades = grades
+                    .Where(g => MatchesTermKey(g.AssignedCourse.Semester, termKey))
+                    .ToList();
+            }
+
+            var courseGrades = grades
+                .Where(g => g.AssignedCourse?.Course != null)
+                .GroupBy(g => g.AssignedCourse.Course.CourseCode ?? g.AssignedCourse.EDPCode)
+                .Select(group =>
+                {
+                    var forcedGrades = group.Select(ForceFinalGradeValue).ToList();
+                    var average = forcedGrades.Any() ? Math.Round(forcedGrades.Average(), 2) : 0m;
+
+                    return new StudentCourseGradeModel
+                    {
+                        CourseCode = group.Key,
+                        Grade = average
+                    };
+                })
+                .OrderBy(model => model.CourseCode)
+                .ToList();
+
+            var gradeBreakdown = grades
+                .Select(g => new StudentGradeBreakdownModel
+                {
+                    EdpCode = g.AssignedCourse.EDPCode,
+                    Subject = g.AssignedCourse.Course.Description,
+                    Prelim = g.Prelims,
+                    Midterm = g.Midterm,
+                    Prefinal = g.SemiFinal,
+                    Final = g.Final,
+                    FinalGrade = ForceFinalGradeValue(g),
+                    Status = MapFinalGradeToStatus(ComputeFinalGradeValue(g))
+                })
+                .ToList();
+
+            var statusMix = gradeBreakdown
+                .GroupBy(row => row.Status ?? "Incomplete")
+                .Select(group => new NamedValueModel
+                {
+                    Name = group.Key,
+                    Value = group.Count()
+                })
+                .ToList();
+
+            return new StudentAnalyticsModel
+            {
+                CourseGrades = courseGrades,
+                GradeBreakdown = gradeBreakdown,
+                StatusMix = statusMix,
+                ConsistencyLabel = "",
+                ComparativeHighlights = new List<StudentComparativeHighlightModel>(),
+                IsAggregate = true,
+                ContextLabel = BuildContextLabel("All Students", schoolYear, termKey)
+            };
+        }
+
+        private async Task<TeacherDetailModel> BuildTeacherAggregateDetailAsync(string schoolYear, string termKey)
+        {
+            var assignments = await _ctx.AssignedCourses
+                .Where(ac => string.IsNullOrWhiteSpace(schoolYear) || ac.SchoolYear == schoolYear)
+                .Include(ac => ac.Course)
+                .Include(ac => ac.Program)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                assignments = assignments
+                    .Where(ac => MatchesTermKey(ac.Semester, termKey))
+                    .ToList();
+            }
+
+            var grades = await _ctx.Grades
+                .Where(g => string.IsNullOrWhiteSpace(schoolYear) || g.AssignedCourse.SchoolYear == schoolYear)
+                .Include(g => g.AssignedCourse)
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (!IsAllSemester(termKey))
+            {
+                grades = grades
+                    .Where(g => MatchesTermKey(g.AssignedCourse.Semester, termKey))
+                    .ToList();
+            }
+
+            var teacherAssignments = assignments
+                .GroupBy(ac => ac.TeacherId)
+                .Select(group => new TeacherAssignmentModel
+                {
+                    CourseCode = group.First().Course?.CourseCode ?? group.First().EDPCode,
+                    SubjectName = group.First().Course?.Description ?? group.First().EDPCode,
+                    Schedule = "--",
+                    Units = group.Sum(ac => ac.Units),
+                    Enrolled = grades.Count(g => g.AssignedCourse.TeacherId == group.Key)
+                })
+                .ToList();
+
+            var submissionStatuses = teacherAssignments
+                .Select(model => new TeacherSubmissionStatusModel
+                {
+                    CourseCode = model.CourseCode,
+                    SubjectName = model.SubjectName,
+                    Status = "--",
+                    IsComplete = false
+                })
+                .ToList();
+
+            return new TeacherDetailModel
+            {
+                TeacherId = 0,
+                Name = "All Teachers",
+                Department = "All Programs",
+                Email = "--",
+                Rank = "",
+                TeachingLoadUnits = assignments.Sum(ac => ac.Units),
+                TeachingLoadCount = assignments.Count,
+                SectionCount = assignments.Count,
+                PassRatePercent = 0m,
+                SubmissionCompletionPercent = 0m,
+                Assignments = teacherAssignments,
+                CoursePassRates = new List<CoursePassRateModel>(),
+                SubmissionStatuses = submissionStatuses,
+                SubmissionSummary = submissionStatuses
+                    .GroupBy(status => status.IsComplete)
+                    .Select(group => new NamedValueModel
+                    {
+                        Name = group.Key ? "All grades submitted" : "Some grades are ungraded",
+                        Value = group.Count()
+                    })
+                    .ToList(),
+                PassCount = 0,
+                FailCount = 0,
+                IncompleteCount = submissionStatuses.Count,
+                IsAggregate = true,
+                ContextLabel = BuildContextLabel("All Teachers", schoolYear, termKey)
+            };
+        }
+
+        private async Task<IList<ReportsProgramOptionModel>> LoadProgramOptionsAsync()
+        {
+            return await _ctx.Programs
+                .Where(program => program.IsActive)
+                .OrderBy(program => program.ProgramName)
+                .AsNoTracking()
+                .Select(program => new ReportsProgramOptionModel
+                {
+                    ProgramId = program.ProgramId,
+                    ProgramCode = program.ProgramCode,
+                    ProgramName = program.ProgramName
+                })
+                .ToListAsync();
         }
 
         private static string BuildScheduleDescription(IEnumerable<ClassSchedule> schedules)
@@ -568,8 +1146,8 @@ namespace ASI.Basecode.Services.Services
 
         private static string DetermineStudentStatus(Grade grade)
         {
-            var finalGrade = ComputeFinalGradeValue(grade);
-            return MapFinalGradeToStatus(finalGrade);
+            var forced = ForceFinalGradeValue(grade);
+            return MapFinalGradeToStatus(forced);
         }
 
         private static string DetermineAggregateStatus(IEnumerable<Grade> grades)
@@ -706,34 +1284,75 @@ namespace ASI.Basecode.Services.Services
                     var best = group
                         .Select(grade => new
                         {
-                            Grade = MapToPercent(grade),
+                            Grade = ComputeFinalGradeValue(grade),
                             Period = grade.AssignedCourse.Semester
                         })
-                        .Where(x => x.Grade.HasValue)
-                        .OrderByDescending(x => x.Grade)
+                        .Where(x => x.Grade.HasValue && x.Grade.Value < 3m)
+                        .OrderBy(x => x.Grade.Value)
                         .FirstOrDefault();
+
+                    if (best == null)
+                    {
+                        return null;
+                    }
 
                     return new StudentComparativeHighlightModel
                     {
                         Course = group.Key,
-                        Grade = best?.Grade,
-                        PeriodLabel = best != null ? ParseTerm(best.Period)?.Label ?? best.Period : "--"
+                        Grade = Math.Round(best.Grade.Value, 2),
+                        PeriodLabel = ParseTerm(best.Period)?.Label ?? best.Period ?? "--"
                     };
                 })
-                .Where(item => item.Grade.HasValue)
-                .OrderByDescending(item => item.Grade)
+                .Where(item => item != null)
+                .OrderBy(item => item.Grade)
                 .ToList();
+        }
+
+        private static decimal ForceFinalGradeValue(Grade grade)
+        {
+            if (grade == null)
+            {
+                return 5m;
+            }
+
+            var computed = ComputeFinalGradeValue(grade);
+            if (!computed.HasValue)
+            {
+                return 5m;
+            }
+
+            var rounded = Math.Round(computed.Value, 2);
+
+            if (rounded < 1m)
+            {
+                rounded = 1m;
+            }
+
+            if (rounded > 5m)
+            {
+                rounded = 5m;
+            }
+
+            return rounded;
         }
 
         private static bool MatchesTermKey(string semester, string termKey)
         {
-            if (string.IsNullOrWhiteSpace(termKey))
+            if (IsAllSemester(termKey))
             {
                 return true;
             }
 
-            var term = ParseTerm(semester);
-            return term != null && string.Equals(term.TermKey, termKey, StringComparison.OrdinalIgnoreCase);
+            var normalizedKey = NormalizeStaticTermKey(termKey);
+            var parsed = ParseTerm(semester);
+
+            if (parsed == null)
+            {
+                return false;
+            }
+
+            var resolvedSemesterKey = NormalizeStaticTermKey(parsed.TermKey);
+            return string.Equals(resolvedSemesterKey, normalizedKey, StringComparison.OrdinalIgnoreCase);
         }
 
         private static TermInfo ParseTerm(string semester)
@@ -797,5 +1416,7 @@ namespace ASI.Basecode.Services.Services
             public int YearStart { get; set; }
             public int SemesterOrder { get; set; }
         }
+
+        private record StaticSemesterDefinition(string Key, string Label, int Order);
     }
 }

@@ -76,12 +76,13 @@ window.refreshGradesTable = async function () {
 };
 
 // Panel
-function showEditPanel(edpCode, course, schedule, assignedCourseId) {
+function showEditPanel(edpCode, course, program, schedule, assignedCourseId) {
     currentAssignedCourseId = assignedCourseId;
     
     // Update panel header with course information
     document.getElementById("edpCodeText").innerText = edpCode;
     document.getElementById("courseText").innerText = course;
+    document.getElementById("programText").innerText = program;
     document.getElementById("scheduleText").innerText = schedule;
     
     // Load students data from server
@@ -123,18 +124,52 @@ document.getElementById('filterForm').addEventListener('change', function() {
     this.submit();
 });
 
+// Calculate remarks based on grades (same logic as backend)
+function calculateRemarks(prelims, midterm, semiFinal, final) {
+    const scores = [prelims, midterm, semiFinal, final];
+    const weights = [0.3, 0.3, 0.2, 0.2];
+    
+    let weightedTotal = 0;
+    let weightSum = 0;
+    
+    for (let i = 0; i < scores.length; i++) {
+        if (scores[i] !== null && scores[i] !== undefined && scores[i] !== '') {
+            const scoreValue = parseFloat(scores[i]);
+            if (!isNaN(scoreValue)) {
+                weightedTotal += scoreValue * weights[i];
+                weightSum += weights[i];
+            }
+        }
+    }
+    
+    if (weightSum <= 0) return 'INCOMPLETE';
+    
+    const gpa = Math.round((weightedTotal / weightSum) * 100) / 100;
+    return gpa <= 3.0 ? 'PASSED' : 'FAILED';
+}
+
+// Get badge class for remarks
+function getRemarksBadgeClass(remarks) {
+    if (remarks === 'PASSED') return 'bg-success';
+    if (remarks === 'FAILED') return 'bg-danger';
+    return 'bg-secondary';
+}
+
 // Rendering students table
 function renderStudentsTable(students) {
     const tbody = document.getElementById('studentsTableBody');
     tbody.innerHTML = '';
 
     if (!students || students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No students found for this course</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No students found for this course</td></tr>';
         return;
     }
 
     students.forEach((student, index) => {
         const row = document.createElement('tr');
+        const remarks = calculateRemarks(student.prelims, student.midterm, student.semiFinal, student.final);
+        const badgeClass = getRemarksBadgeClass(remarks);
+        
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${student.idNumber || ''}</td>
@@ -173,9 +208,44 @@ function renderStudentsTable(students) {
                        data-grade-id="${student.gradeId}"
                        class="form-control form-control-sm grade-input" />
             </td>
+            <td>
+                <span class="badge ${badgeClass} remarks-badge" data-student-id="${student.studentId}">
+                    ${remarks}
+                </span>
+            </td>
         `;
         tbody.appendChild(row);
     });
+    
+    // Attach event listeners to grade inputs for real-time remarks calculation
+    document.querySelectorAll('.grade-input').forEach(input => {
+        input.addEventListener('input', updateRemarksForStudent);
+    });
+}
+
+// Update remarks in real-time as grades change
+function updateRemarksForStudent(event) {
+    const input = event.target;
+    const studentId = input.getAttribute('data-student-id');
+    const row = input.closest('tr');
+    
+    // Get all grade inputs for this student
+    const prelims = parseFloat(row.querySelector('[data-grade-type="prelims"]').value) || null;
+    const midterm = parseFloat(row.querySelector('[data-grade-type="midterm"]').value) || null;
+    const semiFinal = parseFloat(row.querySelector('[data-grade-type="semifinal"]').value) || null;
+    const final = parseFloat(row.querySelector('[data-grade-type="final"]').value) || null;
+    
+    // Calculate new remarks
+    const remarks = calculateRemarks(prelims, midterm, semiFinal, final);
+    const badgeClass = getRemarksBadgeClass(remarks);
+    
+    // Update the remarks badge
+    const remarksBadge = row.querySelector('[data-student-id="' + studentId + '"].remarks-badge');
+    if (remarksBadge) {
+        remarksBadge.textContent = remarks;
+        remarksBadge.className = `badge ${badgeClass} remarks-badge`;
+        remarksBadge.setAttribute('data-student-id', studentId);
+    }
 }
 
 // Save grades
@@ -258,8 +328,8 @@ function initToastContainer() {
 }
 
 // Print to PDF
-function printGrades(edpCode, course, schedule, assignedCourseId) {
-    console.log('Opening print page for:', edpCode, course, schedule, assignedCourseId);
+function printGrades(edpCode, course, program, schedule, assignedCourseId) {
+    console.log('Opening print page for:', edpCode, course, program, schedule, assignedCourseId);
     
     const printUrl = `/Teacher/PrintGrades?assignedCourseId=${assignedCourseId}`;
     
@@ -269,11 +339,11 @@ function printGrades(edpCode, course, schedule, assignedCourseId) {
 // Excel Upload Functions
 let currentUploadAssignedCourseId = 0;
 
-function openExcelUploadModal(edpCode, course, schedule, assignedCourseId) {
+function openExcelUploadModal(edpCode, course, program, schedule, assignedCourseId) {
     currentUploadAssignedCourseId = assignedCourseId;
     
     // Update course info in modal
-    document.getElementById('uploadCourseInfo').textContent = `${edpCode} - ${course} | ${schedule}`;
+    document.getElementById('uploadCourseInfo').textContent = `${edpCode} - ${course} | ${program} | ${schedule}`;
     
     // Reset modal state
     document.getElementById('excelFileInput').value = '';

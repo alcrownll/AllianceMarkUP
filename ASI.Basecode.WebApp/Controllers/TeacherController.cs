@@ -288,7 +288,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
                 var teacherName = $"{teacherProfile?.FirstName}_{teacherProfile?.LastName}".Replace(" ", "_");
                 var edpCode = course?.EDPCode?.Replace(" ", "_") ?? "Unknown";
-                var fileName = $"{teacherName}_{edpCode}_{course}.xlsx";
+                var courseName = course?.Course?.Replace(" ", "_") ?? "Unknown";
+                var fileName = $"{teacherName}_{edpCode}_{courseName}.xlsx";
 
                 return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
             }

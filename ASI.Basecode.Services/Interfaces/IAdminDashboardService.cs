@@ -6,9 +6,10 @@ namespace ASI.Basecode.Services.Interfaces
 {
     public interface IAdminDashboardService
     {
-        Task<DashboardSummaryModel> GetSummaryAsync();
-        Task<IList<EnrollmentTrendPointModel>> GetEnrollmentTrendAsync(int maxPoints = 8);
+        Task<DashboardSummaryModel> GetSummaryAsync(string schoolYear = null, string termKey = null, int? programId = null);
+        Task<IList<EnrollmentTrendPointModel>> GetEnrollmentTrendAsync(int maxPoints = 8, int? programId = null);
         Task<IList<string>> GetAvailableSchoolYearsAsync();
-        Task<DashboardYearDetailModel> GetYearDetailAsync(string schoolYear = null, string termKey = null);
+        Task<AdminDashboardModel> GetYearDetailAsync(string schoolYear = null, string termKey = null, int? programId = null);
+        Task<IList<ProgramOptionModel>> GetProgramOptionsAsync();
     }
 }
