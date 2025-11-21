@@ -16,36 +16,27 @@ namespace ASI.Basecode.Services.Services
         private readonly IUnitOfWork _uow;
         private readonly INotificationService _notif; //for notification
 
-        // Primary constructor
-        public CourseService(
-            ICourseRepository repo,
-            IUnitOfWork uow,
-            INotificationService notif) //for notification
+        public CourseService(ICourseRepository repo, IUnitOfWork uow)
         {
             _repo = repo;
             _uow = uow;
             _notif = notif; //for notification
         }
 
-        // Get all courses, ordered by course code
         public async Task<List<Course>> GetAllAsync() =>
             await _repo.GetCourses()
                        .OrderBy(c => c.CourseCode)
                        .ToListAsync();
 
-        // Get a course by its ID
         public async Task<Course?> GetByIdAsync(int id) =>
             await _repo.GetCourses()
-                       .AsNoTracking() // Prevent tracking for read-only operations
+                       .AsNoTracking() 
                        .FirstOrDefaultAsync(c => c.CourseId == id);
 
-        public Task CreateAsync(Course course)
-            => CreateAsync(course, adminUserId: 0); //for notification
-
-        //for notification
-        public async Task CreateAsync(Course course, int adminUserId)
+       
+        public async Task CreateAsync(Course course)
         {
-            // Check for duplicate course code
+            
             var existingCourse = await _repo.GetCourses()
                 .FirstOrDefaultAsync(c => c.CourseCode.ToLower() == course.CourseCode.ToLower());
 
@@ -68,20 +59,16 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
-        public Task UpdateAsync(Course course)
-            => UpdateAsync(course, adminUserId: 0); //for notification
-
-        //for notification
-        public async Task UpdateAsync(Course course, int adminUserId)
+     
+        public async Task UpdateAsync(Course course)
         {
-            // Check if course exists
+            
             var existingCourse = await GetByIdAsync(course.CourseId);
             if (existingCourse == null)
             {
                 throw new NotFoundException("Course", course.CourseId);
             }
 
-            // Check for duplicate course code (excluding the current course)
             var duplicateCourse = await _repo.GetCourses()
                 .FirstOrDefaultAsync(c =>
                     c.CourseCode.ToLower() == course.CourseCode.ToLower() &&
@@ -92,10 +79,9 @@ namespace ASI.Basecode.Services.Services
                 throw new DuplicateCourseCodeException(course.CourseCode);
             }
 
-            // Calculate total units
             course.TotalUnits = course.LecUnits + course.LabUnits;
 
-            // Detach any existing tracked entity with the same key
+      
             var trackedEntity = _uow.Database.ChangeTracker.Entries<Course>()
                 .FirstOrDefault(e => e.Entity.CourseId == course.CourseId);
 
@@ -104,7 +90,7 @@ namespace ASI.Basecode.Services.Services
                 trackedEntity.State = EntityState.Detached;
             }
 
-            // update the course
+           
             _repo.UpdateCourse(course);
             await _uow.SaveChangesAsync();
 
@@ -118,20 +104,17 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
-        public Task DeleteAsync(int id)
-            => DeleteAsync(id, adminUserId: 0); //for notification
-
-        //for notification
-        public async Task DeleteAsync(int id, int adminUserId)
+       
+        public async Task DeleteAsync(int id)
         {
-            // Check if course exists
+            
             var course = await GetByIdAsync(id);
             if (course == null)
             {
                 throw new NotFoundException("Course", id);
             }
 
-            // Check if course is referenced in ProgramCourses
+            
             var programCodes = await _uow.Database.Set<ProgramCourse>()
                 .Where(pc => pc.CourseId == id)
                 .Join(
@@ -146,8 +129,8 @@ namespace ASI.Basecode.Services.Services
             {
                 throw new CourseInUseException(course.CourseCode, programCodes);
             }
-
-            // Safe to delete
+           
+          
             _repo.DeleteCourse(id);
             await _uow.SaveChangesAsync();
 

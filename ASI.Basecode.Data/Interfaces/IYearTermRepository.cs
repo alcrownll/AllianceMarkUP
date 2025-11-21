@@ -7,10 +7,8 @@ namespace ASI.Basecode.Data.Interfaces
     {
         IQueryable<YearTerm> GetYearTerms();
         YearTerm GetYearTermById(int yearTermId);
-        YearTerm GetYearTerm(int yearLevel, int term); // e.g., (1..4, 1..2)
+        YearTerm GetYearTerm(int yearLevel, int term); 
 
-        // Usually YearTerm is seeded/static, so no add/update/delete needed,
-        // added just in case :)
         void AddYearTerm(YearTerm yearTerm);
         void UpdateYearTerm(YearTerm yearTerm);
         void DeleteYearTerm(int yearTermId);

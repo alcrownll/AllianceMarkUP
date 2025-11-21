@@ -11,8 +11,7 @@ namespace ASI.Basecode.Data.Repositories
         private readonly AsiBasecodeDBContext _ctx;
         public ProgramCourseRepository(AsiBasecodeDBContext ctx) => _ctx = ctx;
 
-        public IQueryable<ProgramCourse> GetProgramCourses() =>
-            _ctx.ProgramCourses;
+        public IQueryable<ProgramCourse> GetProgramCourses() => _ctx.ProgramCourses;
 
         public ProgramCourse GetProgramCourseById(int programCourseId) =>
             _ctx.ProgramCourses
@@ -50,7 +49,6 @@ namespace ASI.Basecode.Data.Repositories
 
         public void DeleteProgramCourse(int programCourseId)
         {
-            // Attach a stub to avoid a read, then delete.
             var stub = new ProgramCourse { ProgramCourseId = programCourseId };
             _ctx.Entry(stub).State = EntityState.Deleted;
 
