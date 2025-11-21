@@ -1,5 +1,4 @@
-﻿// ASI.Basecode.Services/Interfaces/ICourseService.cs
-using ASI.Basecode.Data.Models;
+﻿using ASI.Basecode.Data.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

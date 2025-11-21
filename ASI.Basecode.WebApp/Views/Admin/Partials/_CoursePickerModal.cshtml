@@ -33,7 +33,7 @@
                             <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" id="cpClearSelected">Clear</button>
                         </div>
 
-                        <!-- Results list (FIXED HEIGHT so modal doesn't grow) -->
+                       
                         <div class="border rounded-3 overflow-auto"
                              style="height: 260px; max-height: 260px;">
                             <div id="cpResults" class="list-group list-group-flush">
@@ -45,7 +45,7 @@
                             Shows 5 most recent courses by default. Search to see more.
                         </div>
 
-                        <!-- ✅ Max units hint -->
+                      
                         <div class="small text-muted mt-2">
                             Max units per semester: <strong>24</strong>
                             <span class="ms-2">Current total: <strong id="cpCurrentUnits">0</strong></span>
@@ -93,17 +93,14 @@
       if (window.__coursePickerBoundOnce) return;
       window.__coursePickerBoundOnce = true;
 
-      // ============================
-      // ✅ SETTINGS
-      // ============================
+      
       const MAX_UNITS_PER_TERM = 24;
 
-      // --- Global state ---
       window.COURSE_PICK_TARGET = window.COURSE_PICK_TARGET || { year: 1, term: 1 };
       window.PICK_STACK = [];
       let SELECTED_COURSE_ID = null;
 
-      // --- Elements ---
+    
       const modalEl = document.getElementById('coursePickerModal');
       const searchEl = document.getElementById('cpSearch');
       const resultsEl = document.getElementById('cpResults');
@@ -124,7 +121,6 @@
       const cpCurrentUnitsEl = document.getElementById('cpCurrentUnits');
       const cpAfterUnitsEl = document.getElementById('cpAfterUnits');
 
-      // --- Helpers ---
       const esc = s => (s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
       const setErr = m => { if (!err) return; err.textContent = m || ''; err.style.display = m ? 'block' : 'none'; };
       const clearErr = () => setErr('');
@@ -174,7 +170,7 @@
         if (cpAfterUnitsEl) cpAfterUnitsEl.textContent = cur + stack;
       }
 
-      // only taken in CURRENT TERM, not whole program
+   
       function getTakenCourseCodesForTarget() {
         const key = currentTermKey();
         const tbody = document.getElementById(`tbl-${key}`);
@@ -211,7 +207,7 @@
         });
       }
 
-      // ✅ past-term prereq candidates only
+   
       function getPastTermCourseCodes() {
         const ctxYear = Number(window.COURSE_PICK_TARGET?.year || 1);
         const ctxTerm = Number(window.COURSE_PICK_TARGET?.term || 1);
@@ -307,7 +303,7 @@
 
         resultsEl.querySelectorAll('[data-course-id]').forEach(btn => {
           btn.addEventListener('click', () => {
-            if (btn.disabled) return; // blocked by max
+            if (btn.disabled) return; 
             const id = Number(btn.getAttribute('data-course-id'));
             const course = window.COURSES.find(x => x.courseId === id);
             if (!course) return;
