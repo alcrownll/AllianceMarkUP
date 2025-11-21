@@ -22,7 +22,6 @@
             window.print();
         }
 
-        // when the term dropdown changes, split into schoolYear + semester and submit
         function onTermChanged(selectEl) {
             if (!selectEl) return;
             const val = selectEl.value || '';
@@ -37,7 +36,6 @@
             submitTermFilters();
         }
 
-        // apply filters for Type + Remarks
         function applyGradeFilters() {
             const typeSel = document.getElementById('filterType');
             const remarksSel = document.getElementById('filterRemarks');
@@ -53,17 +51,8 @@
 
                 let show = true;
 
-                // Type filter: lecture / laboratory
-                if (typeVal && rowType !== typeVal) {
-                    show = false;
-                }
-
-                // Remarks filter: PASS / INCOMPLETE / FAIL (contains check)
-                if (remarksVal) {
-                    if (!rowRemarks.includes(remarksVal)) {
-                        show = false;
-                    }
-                }
+                if (typeVal && rowType !== typeVal) show = false;
+                if (remarksVal && !rowRemarks.includes(remarksVal)) show = false;
 
                 row.style.display = show ? '' : 'none';
             });
@@ -96,7 +85,6 @@
                 <div class="toolbar-left">
                     <span class="toolbar-label">Select School Term</span>
                     <form id="termFilterForm" method="get" class="term-inline">
-                        @* hidden fields actually sent to the server *@
                         <input type="hidden" id="schoolYearInput" name="schoolYear"
                                value="@(Model.SelectedSchoolYear ?? Model.SchoolYear)" />
                         <input type="hidden" id="semesterInput" name="semester"
@@ -154,8 +142,6 @@
                             <th>Subject</th>
                             <th>Description</th>
                             <th>Instructor</th>
-
-                            <!-- TYPE header as dropdown -->
                             <th>
                                 <select id="filterType" class="filter-header-select">
                                     <option value="">TYPE</option>
@@ -163,14 +149,11 @@
                                     <option value="laboratory">Laboratory</option>
                                 </select>
                             </th>
-
                             <th>Units</th>
                             <th>Prelim</th>
                             <th>Midterm</th>
                             <th>Semi-Final</th>
                             <th>Final</th>
-
-                            <!-- REMARKS header as dropdown -->
                             <th>
                                 <select id="filterRemarks" class="filter-header-select">
                                     <option value="">REMARKS</option>
@@ -204,7 +187,6 @@
                 </table>
             </div>
 
-            @* GPA moved below the table *@
             @if (Model.Gpa.HasValue)
             {
                 <div class="gpa-summary no-print">
@@ -213,6 +195,7 @@
             }
         </div>
         <!-- ================= /SCREEN VERSION ================= -->
+
         <!-- ================= PRINT VERSION ================= -->
         <div id="gradesPrintArea" class="print-sheet only-print">
             <div class="sheet-header">
@@ -227,7 +210,8 @@
 
             <div class="title">GRADES</div>
             <div class="sub-title">
-                @(Model.SelectedSemester ?? Model.Semester), S.Y. @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)
+                @(Model.SelectedSemester ?? Model.Semester),
+                S.Y. @(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)
             </div>
             <div class="prog">@Model.Program</div>
 
@@ -243,16 +227,16 @@
 
             <table class="grid">
                 <colgroup>
-                    <col style="width:12%">
-                    <col style="width:26%">
-                    <col style="width:16%">
-                    <col style="width:6%">
-                    <col style="width:6%">
-                    <col style="width:7%">
-                    <col style="width:7%">
-                    <col style="width:7%">
-                    <col style="width:7%">
-                    <col style="width:6%">
+                    <col style="width:7%">   
+                    <col style="width:20%"> 
+                    <col style="width:14%"> 
+                    <col style="width:8.5%"> 
+                    <col style="width:6%">  
+                    <col style="width:7%">  
+                    <col style="width:7%">  
+                    <col style="width:7%"> 
+                    <col style="width:7%">   
+                    <col style="width:11%">   
                 </colgroup>
                 <thead>
                     <tr>
@@ -263,7 +247,7 @@
                         <th>Units</th>
                         <th>Prelim</th>
                         <th>Midterm</th>
-                        <th>Semi-Final</th>
+                        <th>Semi</th>
                         <th>Final</th>
                         <th>Remarks</th>
                     </tr>

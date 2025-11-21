@@ -27,18 +27,16 @@
         padding: 0 !important;
         width: auto !important;
         height: auto !important;
-        font: 13px/1.35 "Inter","Segoe UI",Arial,sans-serif;
+        font: 12px/1.3 "Inter","Segoe UI",Arial,sans-serif;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         overflow: visible !important;
     }
 
-    /* Hide app chrome */
     nav, header, footer, .left-sidebar, .right-sidebar, .no-print {
         display: none !important;
     }
 
-    /* Break any screen containers */
     .container, .container-fluid, .content, .content-wrapper, .main-content,
     .page, .page-wrapper, .app, .app-container, .layout, .dash-wrap,
     .grades-page, .grades-card {
@@ -51,7 +49,6 @@
         overflow: visible !important;
     }
 
-    /* Show printable sheet */
     .only-print, .print-sheet.only-print {
         display: block !important;
     }
@@ -65,22 +62,22 @@
         box-sizing: border-box !important;
     }
 
-    /* ---------- Header ---------- */
     .sheet-header {
         display: grid;
         grid-template-columns: 1fr;
         grid-template-rows: auto auto;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         margin-bottom: 4px;
     }
+
         .sheet-header .logo-container {
             text-align: center;
         }
 
         .sheet-header .logo-center {
-            width: 120px;
-            height: 120px;
+            width: 110px;
+            height: 110px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -88,29 +85,28 @@
 
         .sheet-header .header-text {
             text-align: center;
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         .sheet-header .u-name {
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
             letter-spacing: .3px;
             margin-bottom: 1px;
             text-transform: uppercase;
         }
 
-    /* ---------- Titles ---------- */
     .title {
         text-align: center;
         font-weight: 700;
-        font-size: 18px;
-        margin-top: 20px !important;
+        font-size: 17px;
+        margin-top: 16px !important;
     }
 
     .sub-title, .dept, .prog {
         text-align: center;
-        font-size: 13px;
+        font-size: 12px;
     }
 
     .sub-title {
@@ -119,23 +115,23 @@
     }
 
     .dept {
-        margin-top: 4px;
+        margin-top: 3px;
     }
 
     .prog {
         margin-top: 1px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
-    /* ---------- Info Grid ---------- */
     .info-grid {
         display: grid;
-        grid-template-columns: 120px 1fr;
-        row-gap: 3px;
+        grid-template-columns: 110px 1fr;
+        row-gap: 2px;
         column-gap: 6px;
-        margin-top: 16px !important;
-        margin-bottom: 12px;
+        margin-top: 12px !important;
+        margin-bottom: 8px;
         color: #111;
+        font-size: 12px;
     }
 
         .info-grid .lbl {
@@ -145,14 +141,13 @@
     .sep {
         border: none;
         border-top: 1px solid #bbb;
-        margin: 6px 0 6px;
+        margin: 5px 0 5px;
     }
 
-    /* ---------- Table ---------- */
     table.grid {
         border-collapse: collapse;
         table-layout: fixed;
-        font-size: 11px !important;
+        font-size: 10px !important;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
@@ -160,20 +155,23 @@
 
         table.grid thead th {
             border: 1px solid #bbb !important;
-            padding: 5px 4px !important;
+            padding: 3px 3px !important;
             text-align: center;
             font-weight: 600;
             vertical-align: middle;
-            white-space: nowrap;
+            white-space: normal !important;
             background-color: #bbb !important;
+            line-height: 1.1;
         }
 
         table.grid tbody td {
             border: 1px solid #bbb !important;
-            padding: 3px 4px !important;
+            padding: 7px 3px !important;
             vertical-align: middle;
             overflow: hidden;
             word-wrap: break-word;
+            white-space: normal !important;
+            line-height: 1.15;
         }
 
         table.grid .no-rows {
@@ -181,49 +179,46 @@
             color: #bbb !important;
         }
 
-        /* Column widths (sum 100%) */
         table.grid th:nth-child(1), table.grid td:nth-child(1) {
-            width: 12% !important;
+            width: 7% !important;
         }
-        /* Subject */
+
         table.grid th:nth-child(2), table.grid td:nth-child(2) {
-            width: 26% !important;
+            width: 20% !important;
         }
-        /* Description */
+
         table.grid th:nth-child(3), table.grid td:nth-child(3) {
-            width: 16% !important;
+            width: 14% !important;
         }
-        /* Instructor */
+
         table.grid th:nth-child(4), table.grid td:nth-child(4) {
-            width: 6% !important;
+            width: 8.5% !important;
         }
-        /* Type */
+
         table.grid th:nth-child(5), table.grid td:nth-child(5) {
             width: 6% !important;
         }
-        /* Units */
+
         table.grid th:nth-child(6), table.grid td:nth-child(6) {
             width: 7% !important;
         }
-        /* Prelim */
+
         table.grid th:nth-child(7), table.grid td:nth-child(7) {
             width: 7% !important;
         }
-        /* Midterm */
+
         table.grid th:nth-child(8), table.grid td:nth-child(8) {
             width: 7% !important;
         }
-        /* Semi-Final */
+
         table.grid th:nth-child(9), table.grid td:nth-child(9) {
             width: 7% !important;
         }
-        /* Final */
-        table.grid th:nth-child(10), table.grid td:nth-child(10) {
-            width: 6% !important;
-        }
-        /* Remarks */
 
-        /* Alignment */
+        table.grid th:nth-child(10), table.grid td:nth-child(10) {
+            width: 11% !important;
+        }
+
         table.grid tbody td:nth-child(2),
         table.grid tbody td:nth-child(3) {
             text-align: left;
@@ -240,23 +235,21 @@
             text-align: center;
         }
 
-    /* ---------- Footer ---------- */
     .footer-row {
         display: flex;
         justify-content: flex-end;
-        margin: 6px 0 0 0 !important;
+        margin: 5px 0 0 0 !important;
         padding-right: 4px;
         font-weight: 600;
-        font-size: 12px;
+        font-size: 11px;
     }
 
-    /* ---------- Watermark ---------- */
     .watermark {
         position: fixed;
         top: 55%;
         left: 50%;
         transform: translate(-50%,-50%) rotate(-35deg);
-        font-size: 160px;
+        font-size: 150px;
         font-weight: 700;
         color: #1f2937;
         opacity: .08;
@@ -265,7 +258,6 @@
         white-space: nowrap;
     }
 
-    /* Colors */
     .remarks-pass {
         color: #1f9d63 !important;
     }
@@ -274,7 +266,6 @@
         color: #d9534f !important;
     }
 
-    /* Guarantee white */
     html, body, .print-sheet, table, td, th {
         background: #fff !important;
     }
