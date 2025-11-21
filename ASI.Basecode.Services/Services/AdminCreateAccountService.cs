@@ -312,8 +312,8 @@ namespace ASI.Basecode.Services.Services
 
                 if (isRequired)
                 {
-                    cell.Style.Fill.BackgroundColor = XLColor.LightPink;
-                    cell.Style.Font.FontColor = XLColor.DarkRed;
+                    cell.Style.Fill.BackgroundColor = XLColor.LightBlue;
+                    cell.Style.Font.FontColor = XLColor.DarkBlue;
                 }
                 else
                 {

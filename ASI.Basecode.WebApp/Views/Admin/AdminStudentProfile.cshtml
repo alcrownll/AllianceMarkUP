@@ -47,8 +47,8 @@
                             <option value="Old">Old</option>
                             <option value="Transferee">Transferee</option>
                         </select>
+                        <span asp-validation-for="AdmissionType" class="text-danger"></span>
                     </div>
-
                     <div class="col-md-3">
                         <label class="form-label" asp-for="Department"></label>
                         <select class="form-select" asp-for="Department" required>
@@ -95,7 +95,7 @@
                 <div class="row g-3 uniform-row mt-2">
                     <div class="col-md-3">
                         <label class="form-label" asp-for="Section"></label>
-                        <input class="form-control" asp-for="Section" />
+                        <input class="form-control" asp-for="Section" required />
                         <span asp-validation-for="Section" class="text-danger"></span>
                     </div>
                 </div>
@@ -238,6 +238,13 @@
                         e.stopPropagation();
                     }
                     form.classList.add('was-validated');
+
+                    const nonRequiredFields = form.querySelectorAll('input:not([required]), select:not([required]), textarea:not([required])');
+
+                    nonRequiredFields.forEach(field => {
+                        field.classList.remove('is-valid');
+                        field.parentElement?.classList.remove('is-valid');
+                    });
                 }, false);
             });
         })();
