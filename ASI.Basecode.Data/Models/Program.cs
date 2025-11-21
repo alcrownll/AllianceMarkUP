@@ -20,6 +20,7 @@ namespace ASI.Basecode.Data.Models
 
         public bool IsActive { get; set; }
 
+        // Navigation property
         public ICollection<AssignedCourse> AssignedCourses { get; set; }
         public ICollection<ProgramCourse> ProgramCourses { get; set; }
     }
