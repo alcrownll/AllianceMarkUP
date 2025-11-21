@@ -38,7 +38,7 @@
   padding: 0.9rem 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  font-size: 1rem; /* ✅ header readable */
+  font-size: 1rem; 
   color: #0f172a;
   background: #e5effb;
   border-bottom: 2px solid #dee2e6;
@@ -47,7 +47,7 @@
 /* Body: smaller and tidy */
 .accounts-table tbody td {
   padding: 0.7rem 1rem;
-  font-size: 0.9rem; /* ✅ slightly smaller body text */
+  font-size: 0.9rem; 
   color: #111827;
   vertical-align: middle;
 }

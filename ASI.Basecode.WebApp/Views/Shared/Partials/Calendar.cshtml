@@ -329,7 +329,7 @@
                     localStartDateEl.value = toDateInputValue(startDt);
                     localEndDateEl.value = toDateInputValue(endDt);
 
-                    // remove required on datetime inputs (so browser doesn't block submit)
+                    // remove required on datetime inputs
                     startLocalEl.required = false;
                     endLocalEl.required = false;
 
@@ -615,7 +615,7 @@
                         return false;
                     }
 
-                    // Build local midnight instants in browser timezone
+                    // build local midnight instants in browser timezone
                     const startLocalMidnight = new Date(`${sDate}T00:00:00`);
                     const endLocalMidnightExclusive = new Date(`${eDate}T00:00:00`);
                     endLocalMidnightExclusive.setDate(endLocalMidnightExclusive.getDate() + 1);

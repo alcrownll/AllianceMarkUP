@@ -17,6 +17,8 @@ namespace ASI.Basecode.Services.Services
         private readonly INotificationRepository _notifs;
         private readonly ICalendarEventRepository _calendar;
 
+        private const string DefaultTimeZoneId = "Asia/Manila";
+
         public RightSidebarService(
             IUserRepository users,
             IUserProfileRepository profiles,
@@ -83,7 +85,7 @@ namespace ASI.Basecode.Services.Services
                     .Select(p => p.ProfilePictureUrl)
                     .FirstOrDefault();
 
-                // Recent Activities (Activity only)
+            
                 vm.Notifications = _notifs.GetByUserAndKind(userId, NotificationKind.Activity)
                     .OrderByDescending(n => n.CreatedAt)
                     .Take(takeNotifications)
@@ -92,7 +94,9 @@ namespace ASI.Basecode.Services.Services
                         Id = n.NotificationId,
                         Title = n.Title,
                         Snippet = n.Message,
-                        When = n.CreatedAt.ToLocalTime().ToString("MM/dd/yy"),
+                        When = ConvertUtcToDefaultLocal(n.CreatedAt)
+                        .ToString("MM/dd/yy"),
+
                         IsRead = n.IsRead
                     })
                     .ToList();
@@ -116,20 +120,20 @@ namespace ASI.Basecode.Services.Services
                     {
                         Id = e.CalendarEventId,
                         Title = e.Title,
-                        When = e.StartUtc.ToLocalTime().ToString("MM/dd/yy"),
-                        WhenLocal = e.StartUtc.ToLocalTime(),
+                        When = ConvertUtcToDefaultLocal(e.StartUtc)
+                                .ToString("MMM dd, yyyy • h:mm tt"),
+                        WhenLocal = ConvertUtcToDefaultLocal(e.StartUtc),
                         Location = e.Location,
                         IsGlobal = e.IsGlobal
                     })
                     .ToList();
 
-                //DISCARDED DELETE LATER hehe  === Fill both sets with EVERY local date in each event's range (supports multi-day + all-day) ===
+                // Fill date sets for mini calendar highlights
                 foreach (var e in evs)
                 {
                     DateTime startLocalDate;
                     DateTime endLocalDate;
 
-                    // Prefer all-day's LocalStart/End if present
                     if (e.IsAllDay && e.LocalStartDate.HasValue)
                     {
                         var lsd = e.LocalStartDate.Value;
@@ -140,8 +144,8 @@ namespace ASI.Basecode.Services.Services
                     }
                     else
                     {
-                        var sLocal = e.StartUtc.ToLocalTime();
-                        var eLocal = (e.EndUtc == default ? e.StartUtc : e.EndUtc).ToLocalTime();
+                        var sLocal = ConvertUtcToDefaultLocal(e.StartUtc);
+                        var eLocal = ConvertUtcToDefaultLocal(e.EndUtc == default ? e.StartUtc : e.EndUtc);
 
                         startLocalDate = sLocal.Date;
                         endLocalDate = eLocal.Date;
@@ -160,7 +164,6 @@ namespace ASI.Basecode.Services.Services
             }
             else
             {
-                // Anonymous fallback
                 vm.LastName = user.FindFirst(ClaimTypes.Surname)?.Value
                            ?? user.FindFirst("LastName")?.Value
                            ?? "User";
@@ -168,6 +171,23 @@ namespace ASI.Basecode.Services.Services
             }
 
             return Task.FromResult(vm);
+        }
+
+        private static DateTime ConvertUtcToDefaultLocal(DateTime utc)
+        {
+            var fixedUtc = utc.Kind == DateTimeKind.Utc
+                ? utc
+                : DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+
+            try
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(DefaultTimeZoneId);
+                return TimeZoneInfo.ConvertTimeFromUtc(fixedUtc, tz);
+            }
+            catch
+            {
+                return fixedUtc.ToLocalTime();
+            }
         }
     }
 }

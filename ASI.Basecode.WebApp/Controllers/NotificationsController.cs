@@ -76,7 +76,7 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToRoleNotifications();
         }
 
-        // ✅ UPDATED: accepts scope from tab
+ 
         [HttpPost("/Notifications/MarkAllRead")]
         [ValidateAntiForgeryToken]
         public IActionResult MarkAllRead(string scope)

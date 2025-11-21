@@ -36,6 +36,18 @@ namespace ASI.Basecode.Services.Services
             );
         }
 
+        public void NotifyPasswordChanged(int userId)
+        {
+            AddNotification(
+                userId: userId,
+                title: "Password changed",
+                message: "You updated your password.",
+                kind: NotificationKind.Activity,
+                category: "Profile",
+                actorUserId: userId
+            );
+        }
+
         public void NotifyAdminUpdatedUserProfile(
             int adminUserId,
             int targetUserId,
@@ -496,12 +508,12 @@ namespace ASI.Basecode.Services.Services
         // CORE ADD LOGIC
         // ======================================================
         public void AddNotification(
-            int userId,
-            string title,
-            string message,
-            NotificationKind kind = NotificationKind.System,
-            string? category = null,
-            int? actorUserId = null)
+       int userId,
+       string title,
+       string message,
+       NotificationKind kind = NotificationKind.System,
+       string? category = null,
+       int? actorUserId = null)
         {
             var finalKind = kind;
 
@@ -521,14 +533,12 @@ namespace ASI.Basecode.Services.Services
                 Kind = finalKind,
                 Category = category,
                 ActorUserId = actorUserId,
-
-                // ✅ store as real UTC instant
                 CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                 IsDeleted = false
             });
-
-            // NOTE: SaveChanges happens via UoW outside or in repo pattern
+            _uow.SaveChanges();
         }
+
 
         // ======================================================
         // LIST / QUERY
@@ -551,7 +561,7 @@ namespace ASI.Basecode.Services.Services
                     Message = n.Message,
                     IsRead = n.IsRead,
 
-                    // ✅ Manila display time
+                    // Manila display time
                     When = ConvertUtcToDefaultLocal(n.CreatedAt)
                         .ToString("MMM dd, yyyy • h:mm tt"),
 
@@ -611,14 +621,9 @@ namespace ASI.Basecode.Services.Services
             _uow.SaveChanges();
         }
 
-        // ✅ keep old call sites working (ALL)
         public void MarkAllRead(int userId)
             => MarkAllRead(userId, kind: null);
 
-        // ✅ interface-required scoped mark-all
-        // kind = null   -> ALL unread
-        // kind = System -> Updates tab unread only
-        // kind = Activity -> My Activity tab unread only
         public void MarkAllRead(int userId, NotificationKind? kind = null)
         {
             IQueryable<Notification> query =

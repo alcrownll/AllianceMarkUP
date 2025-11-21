@@ -1,12 +1,10 @@
-﻿using ASI.Basecode.Data.Models;
-using ASI.Basecode.Services.Interfaces;
+﻿using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.Manager;
 using ASI.Basecode.Services.Services;
 using ASI.Basecode.WebApp;
 using ASI.Basecode.WebApp.Extensions.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -43,12 +41,8 @@ builder.Services.AddScoped<IStudyLoadService, StudyLoadService>();
 builder.Services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
-// ✅ REQUIRED because TeacherController injects IHttpContextAccessor
+// IHttpContextAccessor for teacher
 builder.Services.AddHttpContextAccessor();
-
-// If you are NOT adding MVC in StartupConfigurer, uncomment this:
-// builder.Services.AddControllersWithViews();
-// builder.Services.AddRazorPages();
 
 // Build
 var app = builder.Build();
