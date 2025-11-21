@@ -1,8 +1,8 @@
-﻿// ASI.Basecode.Services/Services/CurriculumService.cs
-using ASI.Basecode.Data.Interfaces;
+﻿using ASI.Basecode.Data.Interfaces;
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using ASI.Basecode.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -19,6 +19,9 @@ namespace ASI.Basecode.Services.Services
         private readonly IYearTermRepository _yearTerms;
         private readonly INotificationService _notif;
 
+        // ✅ CHANGE THIS IF YOU WANT A DIFFERENT CAP
+        private const int MAX_UNITS_PER_TERM = 24;
+
         public CurriculumService(
             IProgramRepository programs,
             IProgramCourseRepository progCourses,
@@ -31,21 +34,39 @@ namespace ASI.Basecode.Services.Services
             _notif = notif;
         }
 
-        // =====================================================
-        // PROGRAM CREATE
-        // =====================================================
-
-        // Legacy
         public Program CreateProgram(string code, string name, string notes)
             => CreateProgram(code, name, notes, adminUserId: 0);
 
-        // =With admin id, triggers My Activity
         public Program CreateProgram(string code, string name, string notes, int adminUserId)
         {
+            var codeNorm = (code ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codeNorm))
+                throw new InvalidOperationException("Program code is required.");
+
+            var nameNorm = (name ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nameNorm))
+                throw new InvalidOperationException("Program name is required.");
+
+            // ✅ DUPLICATE CHECK: Program Code
+            var dupCode = _programs.GetPrograms()
+                .AsNoTracking()
+                .Any(p => p.ProgramCode != null &&
+                          p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
+            if (dupCode)
+                throw new DuplicateProgramException("code", codeNorm);
+
+            // ✅ DUPLICATE CHECK: Program Name
+            var dupName = _programs.GetPrograms()
+                .AsNoTracking()
+                .Any(p => p.ProgramName != null &&
+                          p.ProgramName.Trim().ToLower() == nameNorm.ToLower());
+            if (dupName)
+                throw new DuplicateProgramException("name", nameNorm);
+
             var entity = new Program
             {
-                ProgramCode = (code ?? "").Trim(),
-                ProgramName = (name ?? "").Trim(),
+                ProgramCode = codeNorm,
+                ProgramName = nameNorm,
                 IsActive = false
             };
 
@@ -72,11 +93,6 @@ namespace ASI.Basecode.Services.Services
             return p;
         }
 
-        // =====================================================
-        // PROGRAM UPDATE
-        // =====================================================
-
-        // Legacy
         public bool UpdateProgram(int id, string code, string name, bool isActive)
             => UpdateProgram(id, code, name, isActive, adminUserId: 0);
 
@@ -93,12 +109,23 @@ namespace ASI.Basecode.Services.Services
             if (string.IsNullOrWhiteSpace(nameNorm))
                 throw new InvalidOperationException("Program name is required.");
 
-            var duplicate = _programs.GetPrograms()
+            // ✅ DUPLICATE CHECK: Program Code (excluding current)
+            var dupCode = _programs.GetPrograms()
                 .AsNoTracking()
                 .Any(p => p.ProgramId != id &&
+                          p.ProgramCode != null &&
                           p.ProgramCode.Trim().ToLower() == codeNorm.ToLower());
-            if (duplicate)
-                throw new InvalidOperationException("A program with the same code already exists.");
+            if (dupCode)
+                throw new DuplicateProgramException("code", codeNorm);
+
+            // ✅ DUPLICATE CHECK: Program Name (excluding current)
+            var dupName = _programs.GetPrograms()
+                .AsNoTracking()
+                .Any(p => p.ProgramId != id &&
+                          p.ProgramName != null &&
+                          p.ProgramName.Trim().ToLower() == nameNorm.ToLower());
+            if (dupName)
+                throw new DuplicateProgramException("name", nameNorm);
 
             entity.ProgramCode = codeNorm;
             entity.ProgramName = nameNorm;
@@ -119,11 +146,6 @@ namespace ASI.Basecode.Services.Services
             return true;
         }
 
-        // =====================================================
-        // PROGRAM DELETE (DISCARD)
-        // =====================================================
-
-        // Legacy
         public void DiscardProgram(int programId)
             => DiscardProgram(programId, adminUserId: 0);
 
@@ -142,14 +164,10 @@ namespace ASI.Basecode.Services.Services
                     adminUserId: adminUserId,
                     programCode: p.ProgramCode,
                     programName: p.ProgramName,
-                    forceDelete: hadCourses 
+                    forceDelete: hadCourses
                 );
             }
         }
-
-        // =====================================================
-        // OTHER PROGRAM METHODS
-        // =====================================================
 
         public bool HasAnyCourses(int programId)
         {
@@ -183,8 +201,46 @@ namespace ASI.Basecode.Services.Services
         // PROGRAM COURSE METHODS
         // =====================================================
 
+        // ✅ Helper: get current total units for a term
+        private int GetCurrentTermUnits(int programId, int year, int term)
+        {
+            var existingTermCourses = _progCourses
+                .GetByProgramAndYearTerm(programId, year, term)
+                .Where(pc => pc.Course != null);
+
+            return existingTermCourses.Sum(pc => (pc.Course.LecUnits + pc.Course.LabUnits));
+        }
+
+        // ✅ Helper: get candidate course units by courseId
+        // We try to find the course via any ProgramCourse that references it.
+        // If not found, we block to avoid letting invalid adds bypass the cap.
+        private int GetCourseUnitsOrThrow(int courseId)
+        {
+            var anyPcWithCourse = _progCourses.GetProgramCourses()
+                .AsNoTracking()
+                .Include(pc => pc.Course)
+                .FirstOrDefault(pc => pc.CourseId == courseId);
+
+            var course = anyPcWithCourse?.Course;
+            if (course == null)
+                throw new InvalidOperationException($"Course not found (CourseId={courseId}) for unit check.");
+
+            return course.LecUnits + course.LabUnits;
+        }
+
         public ProgramCourse AddCourseToTerm(int programId, int year, int term, int courseId, int prereqCourseId)
         {
+            var currentUnits = GetCurrentTermUnits(programId, year, term);
+            var newCourseUnits = GetCourseUnitsOrThrow(courseId);
+
+            if (currentUnits + newCourseUnits > MAX_UNITS_PER_TERM)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot add course. This semester already has {currentUnits} unit(s). " +
+                    $"Adding this course ({newCourseUnits} unit(s)) exceeds the maximum of {MAX_UNITS_PER_TERM} unit(s) per semester."
+                );
+            }
+
             var yt = _yearTerms.GetYearTerm(year, term);
             var pc = new ProgramCourse
             {
@@ -235,6 +291,34 @@ namespace ASI.Basecode.Services.Services
                                        .Select(x => x.CourseId)
                                        .ToHashSet();
 
+            // ✅ Pre-validate cap BEFORE adding anything
+            var currentUnits = GetCurrentTermUnits(programId, year, term);
+
+            // unique + valid new ids
+            var toAdd = new List<int>();
+            for (int i = 0; i < courseIds.Length; i++)
+            {
+                var cid = courseIds[i];
+                if (cid <= 0 || existing.Contains(cid)) continue;
+                if (!toAdd.Contains(cid)) toAdd.Add(cid);
+            }
+
+            // simulate addition to check max
+            int simulatedTotal = currentUnits;
+            foreach (var cid in toAdd)
+            {
+                var units = GetCourseUnitsOrThrow(cid);
+                if (simulatedTotal + units > MAX_UNITS_PER_TERM)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot add selected courses. This semester already has {currentUnits} unit(s). " +
+                        $"Adding the selected list would exceed the maximum of {MAX_UNITS_PER_TERM} unit(s) per semester."
+                    );
+                }
+                simulatedTotal += units;
+            }
+
+            // ✅ Safe to add
             for (int i = 0; i < courseIds.Length; i++)
             {
                 var cid = courseIds[i];
@@ -256,7 +340,6 @@ namespace ASI.Basecode.Services.Services
             }
         }
 
-        // CreateProgramWithCurriculum stays using the legacy CreateProgram
         public Program CreateProgramWithCurriculum(ComposeProgramDto dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));

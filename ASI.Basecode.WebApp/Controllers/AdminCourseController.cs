@@ -1,5 +1,6 @@
 ﻿using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
+using ASI.Basecode.Services.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -46,17 +47,29 @@ namespace ASI.Basecode.WebApp.Controllers
         [HttpGet("get")]
         public async Task<IActionResult> Get(int id)
         {
-            var c = await _service.GetByIdAsync(id);
-            if (c == null) return NotFound();
-            return Json(new
+            try
             {
-                id = c.CourseId,
-                code = c.CourseCode,
-                description = c.Description,
-                lecUnits = c.LecUnits,
-                labUnits = c.LabUnits,
-                totalUnits = c.TotalUnits,
-            });
+                var c = await _service.GetByIdAsync(id);
+                if (c == null) return NotFound();
+
+                return Json(new
+                {
+                    id = c.CourseId,
+                    code = c.CourseCode,
+                    description = c.Description,
+                    lecUnits = c.LecUnits,
+                    labUnits = c.LabUnits,
+                    totalUnits = c.TotalUnits,
+                });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { ok = false, message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { ok = false, message = "An error occurred while retrieving the course." });
+            }
         }
 
         [HttpPost("create")]
@@ -88,10 +101,15 @@ namespace ASI.Basecode.WebApp.Controllers
                     description = course.Description
                 });
             }
-            catch (InvalidOperationException ex)
+            catch (DuplicateCourseCodeException ex)
             {
-                // e.g. duplicate course code, etc.
+                // Duplicate course code
                 return Conflict(new { ok = false, message = ex.Message });
+            }
+            catch (ValidationException ex)
+            {
+                // Validation errors
+                return BadRequest(new { ok = false, message = ex.Message });
             }
             catch (Exception)
             {
@@ -120,16 +138,26 @@ namespace ASI.Basecode.WebApp.Controllers
 
                 return Ok(new { ok = true });
             }
-            catch (InvalidOperationException ex)
+            catch (DuplicateCourseCodeException ex)
             {
+                // Duplicate course code
                 return Conflict(new { ok = false, message = ex.Message });
+            }
+            catch (NotFoundException ex)
+            {
+                // Course not found
+                return NotFound(new { ok = false, message = ex.Message });
+            }
+            catch (ValidationException ex)
+            {
+                // Validation errors
+                return BadRequest(new { ok = false, message = ex.Message });
             }
             catch (Exception)
             {
                 return StatusCode(500, new { ok = false, message = "An error occurred while updating the course." });
             }
         }
-
 
         [HttpPost("delete")]
         [ValidateAntiForgeryToken]
@@ -138,29 +166,50 @@ namespace ASI.Basecode.WebApp.Controllers
             try
             {
                 await _service.DeleteAsync(id);
-                return Json(new { success = true, message = "Course deleted successfully." });
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Error message: {ex.InnerException.Message}");
-                }
 
-                if (ex.InnerException?.Message.Contains("ProgramCourses_CourseId_fkey") == true)
-                {
-                    return Json(new { success = false, message = "This course cannot be deleted because it is referenced in ProgramCourses or AssignedCourses." });
-                }
-                else
-                {
-                    return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
-                }
+                if (IsAjaxRequest())
+                    return Ok(new { success = true, message = "Course deleted successfully." });
+
+                TempData["ToastSuccess"] = "Course deleted successfully.";
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
+            catch (CourseInUseException ex)
             {
-                return Json(new { success = false, message = "An error occurred while deleting the course. Please try again." });
+                if (IsAjaxRequest())
+                    return Conflict(new { success = false, message = ex.Message });
+
+                TempData["ToastError"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+            catch (NotFoundException ex)
+            {
+                if (IsAjaxRequest())
+                    return NotFound(new { success = false, message = ex.Message });
+
+                TempData["ToastError"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+            catch (BaseServiceException ex)
+            {
+                // any other custom service exception
+                if (IsAjaxRequest())
+                    return BadRequest(new { success = false, message = ex.Message });
+
+                TempData["ToastError"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex}");
+
+                if (IsAjaxRequest())
+                    return StatusCode(500, new { success = false, message = "An unexpected error occurred while deleting the course." });
+
+                TempData["ToastError"] = "An unexpected error occurred while deleting the course.";
+                return RedirectToAction(nameof(Index));
             }
         }
+
 
         [HttpGet("list")]
         public async Task<IActionResult> List()
@@ -169,6 +218,5 @@ namespace ASI.Basecode.WebApp.Controllers
             // Return just the table markup
             return PartialView("~/Views/Admin/Partials/_CoursesTable.cshtml", courses.ToList());
         }
-
     }
 }

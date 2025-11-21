@@ -2,6 +2,7 @@
 using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
+using ASI.Basecode.Services.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
@@ -37,10 +38,25 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Create([FromForm] string code, [FromForm] string name, [FromForm] string notes)
         {
-            var adminUserId = CurrentAdminUserId();
-            var p = _svc.CreateProgram(code, name, notes, adminUserId);
+            try
+            {
+                var adminUserId = CurrentAdminUserId();
+                var p = _svc.CreateProgram(code, name, notes, adminUserId);
 
-            return Json(new { ok = true, programId = p.ProgramId, code = p.ProgramCode, name = p.ProgramName });
+                return Json(new { ok = true, programId = p.ProgramId, code = p.ProgramCode, name = p.ProgramName });
+            }
+            catch (DuplicateProgramException ex)
+            {
+                return StatusCode(409, new { ok = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { ok = false, message = ex.Message });
+            }
+            catch
+            {
+                return StatusCode(500, new { ok = false, message = "Unexpected server error." });
+            }
         }
 
         [HttpPost("add-course")]
@@ -183,13 +199,17 @@ namespace ASI.Basecode.WebApp.Controllers
                 if (!ok) return NotFound(new { message = "Program not found." });
                 return Ok(new { ok = true });
             }
+            catch (DuplicateProgramException ex)
+            {
+                return StatusCode(409, new { ok = false, message = ex.Message });
+            }
             catch (InvalidOperationException ex)
             {
-                return StatusCode(409, new { message = ex.Message });
+                return BadRequest(new { ok = false, message = ex.Message });
             }
             catch
             {
-                return StatusCode(500, new { message = "Unexpected server error." });
+                return StatusCode(500, new { ok = false, message = "Unexpected server error." });
             }
         }
     }
