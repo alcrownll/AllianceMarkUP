@@ -26,7 +26,7 @@ namespace ASI.Basecode.WebApp.Controllers
         private readonly IStudentRepository _studentRepository;
         private readonly IUserRepository _userRepository;
         private readonly IClassScheduleRepository _classScheduleRepository;
-        private readonly IWebHostEnvironment _env; 
+        private readonly IWebHostEnvironment _env;
         private readonly IProfileService _profileService;
         private readonly IHttpContextAccessor _httpContext;
         private readonly INotificationService _notificationService;
@@ -79,7 +79,7 @@ namespace ASI.Basecode.WebApp.Controllers
         // --------------------------------------------------------------------
         // PROFILE
         // --------------------------------------------------------------------
-        public async Task<IActionResult> Profile()
+        public async Task<IActionResult> Profile(CancellationToken ct)
         {
             ViewData["PageHeader"] = "Profile";
 
@@ -87,27 +87,28 @@ namespace ASI.Basecode.WebApp.Controllers
             var vm = await _profileService.GetStudentProfileAsync(userId);
             if (vm == null) return NotFound();
 
+            ViewBag.Programs = await _profileService.GetActiveProgramsAsync(ct);
+
             return View("StudentProfile", vm);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveProfile(StudentProfileViewModel vm)
+        public async Task<IActionResult> SaveProfile(StudentProfileViewModel vm, CancellationToken ct)
         {
             if (!ModelState.IsValid)
             {
+                ViewBag.Programs = await _profileService.GetActiveProgramsAsync(ct);
                 return View("StudentProfile", vm);
             }
 
             int userId = _profileService.GetCurrentUserId();
             await _profileService.UpdateStudentProfileAsync(userId, vm);
+
             TempData["ProfileSaved"] = "Your profile has been updated.";
             return RedirectToAction(nameof(Profile));
         }
 
-        // --------------------------------------------------------------------
-        // STUDY LOAD
-        // --------------------------------------------------------------------
         [HttpGet]
         public async Task<IActionResult> StudyLoad(string term = null)
         {

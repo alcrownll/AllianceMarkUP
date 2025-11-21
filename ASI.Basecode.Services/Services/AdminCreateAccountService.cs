@@ -37,9 +37,6 @@ namespace ASI.Basecode.Services.Services
             _notifications = notifications;
         }
 
-        // ======================================================
-        // SINGLE CREATE: STUDENT
-        // ======================================================
         public async Task<(int UserId, string IdNumber)> CreateSingleStudentAsync(
             int adminUserId,
             StudentProfileViewModel vm,
@@ -130,9 +127,6 @@ namespace ASI.Basecode.Services.Services
             return (userId, idNumber);
         }
 
-        // ======================================================
-        // SINGLE CREATE: TEACHER
-        // ======================================================
         public async Task<(int UserId, string IdNumber)> CreateSingleTeacherAsync(
             int adminUserId,
             TeacherProfileViewModel vm,
@@ -214,9 +208,6 @@ namespace ASI.Basecode.Services.Services
             return (userId, idNumber);
         }
 
-        // ======================================================
-        // TEMPLATES
-        // ======================================================
         public (byte[] Content, string ContentType, string FileName) GenerateStudentsTemplate()
         {
             var headers = new[]
@@ -226,11 +217,38 @@ namespace ASI.Basecode.Services.Services
                 "Barangay", "Date Of Birth", "Age", "Place Of Birth", "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
+            var required = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "First Name", "Last Name", "Email", "Admission Type", "Program",
+                "Year Level", "Section", "Date Of Birth", "Age"
+            };
+
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("StudentsTemplate");
 
             for (int c = 0; c < headers.Length; c++)
-                ws.Cell(1, c + 1).Value = headers[c];
+            {
+                var headerName = headers[c];
+                var isRequired = required.Contains(headerName);
+
+                var cell = ws.Cell(1, c + 1);
+                cell.Value = isRequired ? $"{headerName}*" : headerName;
+
+                cell.Style.Font.Bold = true;
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cell.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+
+                if (isRequired)
+                {
+                    cell.Style.Fill.BackgroundColor = XLColor.LightSkyBlue;
+                    cell.Style.Font.FontColor = XLColor.DarkBlue;
+                }
+                else
+                {
+                    cell.Style.Fill.BackgroundColor = XLColor.LightGray;
+                }
+            }
 
             ws.SheetView.FreezeRows(1);
 
@@ -253,6 +271,7 @@ namespace ASI.Basecode.Services.Services
             }
 
             ws.Columns().AdjustToContents();
+            ws.Row(1).Height = 22;
 
             using var ms = new MemoryStream();
             wb.SaveAs(ms);
@@ -270,11 +289,37 @@ namespace ASI.Basecode.Services.Services
                 "Gender", "Marital Status", "Religion", "Citizenship"
             };
 
+            var required = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "First Name", "Last Name", "Email", "Position", "Date Of Birth", "Age"
+            };
+
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet("TeachersTemplate");
 
             for (int c = 0; c < headers.Length; c++)
-                ws.Cell(1, c + 1).Value = headers[c];
+            {
+                var headerName = headers[c];
+                var isRequired = required.Contains(headerName);
+
+                var cell = ws.Cell(1, c + 1);
+                cell.Value = isRequired ? $"{headerName}*" : headerName;
+
+                cell.Style.Font.Bold = true;
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cell.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+
+                if (isRequired)
+                {
+                    cell.Style.Fill.BackgroundColor = XLColor.LightPink;
+                    cell.Style.Font.FontColor = XLColor.DarkRed;
+                }
+                else
+                {
+                    cell.Style.Fill.BackgroundColor = XLColor.LightGray;
+                }
+            }
 
             ws.SheetView.FreezeRows(1);
 
@@ -297,6 +342,7 @@ namespace ASI.Basecode.Services.Services
             }
 
             ws.Columns().AdjustToContents();
+            ws.Row(1).Height = 22;
 
             using var ms = new MemoryStream();
             wb.SaveAs(ms);
@@ -305,9 +351,6 @@ namespace ASI.Basecode.Services.Services
                     "Teachers_Bulk_Template.xlsx");
         }
 
-        // ======================================================
-        // BULK IMPORT: STUDENTS
-        // ======================================================
         public async Task<ImportResult> ImportStudentsAsync(
             int adminUserId,
             IFormFile file,
@@ -396,22 +439,19 @@ namespace ASI.Basecode.Services.Services
                         var dateOfBirth = GetDateOnly(ws, r, map, "Date Of Birth");
                         var age = GetInt(ws, r, map, "Age");
 
-                        // Validate required user fields
+                        // Validate required fields
                         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email))
                             throw new Exception($"Row {r}: First Name, Last Name, and Email are required for all students.");
 
-                        // Validate email format
                         if (!IsValidEmail(email))
                             throw new Exception($"Row {r}: '{email}' doesn't look like a valid email address.");
 
-                        // Validate required student fields
                         if (string.IsNullOrWhiteSpace(admissionType) || string.IsNullOrWhiteSpace(program) || string.IsNullOrWhiteSpace(yearLevel))
                             throw new Exception($"Row {r}: Admission Type, Program, and Year Level must be filled in.");
 
                         if (string.IsNullOrWhiteSpace(section))
                             throw new Exception($"Row {r}: Section is required.");
 
-                        // Validate date and age
                         if (!dateOfBirth.HasValue)
                             throw new Exception($"Row {r}: Date of Birth must be a valid date (e.g., 01/15/2000).");
 
@@ -423,12 +463,11 @@ namespace ASI.Basecode.Services.Services
                         if (emailExists)
                             throw new Exception($"Row {r}: A student with email '{email}' already exists in the system.");
 
-                        // --- Create entities ---
+                        // Create user
                         var idNumber = await GenerateUniqueIdNumberAsync('2', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
 
-                        // Create User
                         var user = new User
                         {
                             FirstName = firstName,
@@ -444,7 +483,6 @@ namespace ASI.Basecode.Services.Services
 
                         _users.AddUser(user);
 
-                        // Create Profile
                         var profile = new UserProfile
                         {
                             UserId = user.UserId,
@@ -466,7 +504,6 @@ namespace ASI.Basecode.Services.Services
 
                         _profiles.AddUserProfile(profile);
 
-                        // Create Student
                         var student = new Student
                         {
                             UserId = user.UserId,
@@ -519,9 +556,6 @@ namespace ASI.Basecode.Services.Services
             return result;
         }
 
-        // ======================================================
-        // BULK IMPORT: TEACHERS
-        // ======================================================
         public async Task<ImportResult> ImportTeachersAsync(
             int adminUserId,
             IFormFile file,
@@ -585,7 +619,6 @@ namespace ASI.Basecode.Services.Services
                 {
                     try
                     {
-                        // Check if row is completely empty
                         var isEmptyRow = true;
                         foreach (var col in map.Values)
                         {
@@ -611,31 +644,27 @@ namespace ASI.Basecode.Services.Services
                         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email))
                             throw new Exception($"Row {r}: First Name, Last Name, and Email are required for all teachers.");
 
-                        // Validate email format
                         if (!IsValidEmail(email))
                             throw new Exception($"Row {r}: '{email}' doesn't look like a valid email address.");
 
                         if (string.IsNullOrWhiteSpace(position))
                             throw new Exception($"Row {r}: Position is required.");
 
-                        // Validate date and age
                         if (!dateOfBirth.HasValue)
                             throw new Exception($"Row {r}: Date of Birth must be a valid date (e.g., 01/15/1980).");
 
                         if (!age.HasValue || age.Value < 18 || age.Value > 100)
                             throw new Exception($"Row {r}: Age must be a number between 18 and 100.");
 
-                        // Check for duplicate email
                         var emailExists = await _users.GetUsers().AnyAsync(u => u.Email == email, ct);
                         if (emailExists)
                             throw new Exception($"Row {r}: A teacher with email '{email}' already exists in the system.");
 
-                        // --- Create entities ---
+                        // Create user
                         var idNumber = await GenerateUniqueIdNumberAsync('1', ct);
                         var password = GenerateHashPassword(lastName, idNumber);
                         var now = DateTime.Now;
 
-                        // Create User
                         var user = new User
                         {
                             FirstName = firstName,
@@ -651,7 +680,6 @@ namespace ASI.Basecode.Services.Services
 
                         _users.AddUser(user);
 
-                        // Create Profile
                         var profile = new UserProfile
                         {
                             UserId = user.UserId,
@@ -673,7 +701,6 @@ namespace ASI.Basecode.Services.Services
 
                         _profiles.AddUserProfile(profile);
 
-                        // Create Teacher
                         var teacher = new Teacher
                         {
                             UserId = user.UserId,
@@ -722,9 +749,7 @@ namespace ASI.Basecode.Services.Services
             return result;
         }
 
-        // ======================================================
-        // HELPERS
-        // ======================================================
+        // helpers
         private static (IXLWorksheet ws, Dictionary<string, int> map) ReadWorksheetAndHeaderMap(IFormFile file)
         {
             var stream = file.OpenReadStream();
@@ -748,8 +773,13 @@ namespace ASI.Basecode.Services.Services
 
         private static string NormalizeHeaderName(string header)
         {
-            var normalizedHeader = System.Text.RegularExpressions.Regex.Replace(header, "([a-z])([A-Z])", "$1 $2");
-            return normalizedHeader;
+            if (string.IsNullOrWhiteSpace(header)) return string.Empty;
+
+            var cleaned = header.Replace("*", "").Trim();
+
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "([a-z])([A-Z])", "$1 $2");
+
+            return cleaned.Trim();
         }
 
         private static string Get(IXLWorksheet ws, int r, System.Collections.Generic.IDictionary<string, int> map, string name)
@@ -800,10 +830,8 @@ namespace ASI.Basecode.Services.Services
                 cell.FormulaA1.StartsWith("HYPERLINK(", StringComparison.OrdinalIgnoreCase))
             {
                 var f = cell.FormulaA1;
-                // Extract inside of HYPERLINK(...)
                 var inner = f.Substring(10, f.Length - 11);
 
-                // Split arguments by the first comma outside quotes
                 int depth = 0, splitIdx = -1;
                 for (int i = 0; i < inner.Length; i++)
                 {
@@ -820,14 +848,13 @@ namespace ASI.Basecode.Services.Services
                 {
                     var display = inner.Substring(splitIdx + 1).Trim();
                     if (display.StartsWith("\"") && display.EndsWith("\"") && display.Length >= 2)
-                        display = display.Substring(1, display.Length - 2); // remove quotes
+                        display = display.Substring(1, display.Length - 2);
 
                     if (!string.IsNullOrWhiteSpace(display))
                         s = display;
                 }
                 else
                 {
-                    // If formula only contains the mailto part, extract it
                     var parts = inner.Split(',');
                     if (parts.Length > 0)
                     {

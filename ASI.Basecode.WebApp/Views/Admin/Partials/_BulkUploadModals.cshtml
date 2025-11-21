@@ -1,55 +1,51 @@
-﻿@* ===========================
-   Bulk Upload Students Modal
-   =========================== *@
-<div class="modal fade" id="bulkUploadStudentsModal" tabindex="-1" aria-labelledby="bulkUploadStudentsLabel"
+﻿<div class="modal fade" id="bulkUploadStudentsModal" tabindex="-1" aria-labelledby="bulkUploadStudentsLabel"
     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg excel-upload-modal">
         <div class="modal-content excel-upload-modal">
-            <!-- Header -->
+
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center" id="bulkUploadStudentsLabel">
-                    <i class="bi bi-file-earmark-spreadsheet-fill me-2" aria-hidden="true"></i>
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>
                     Upload Excel – Add Students
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <!-- Body -->
             <div class="modal-body">
-                <!-- Instructions -->
+
                 <div class="row mb-3">
                     <div class="col-12">
                         <h6>Instructions:</h6>
                         <ol class="small text-muted mb-2">
                             <li>Download the Excel template.</li>
-                            <li>Fill in all <strong>mandatory</strong> columns exactly as listed below.</li>
-                            <li>Keep the column headers unchanged; add one record per row.</li>
-                            <li>Use proper date format <strong>MM/DD/YYYY</strong> and valid emails.</li>
-                            <li>Save the file and upload it here for processing.</li>
+                            <li>Fill in all required columns (marked with <strong>*</strong>).</li>
+                            <li>Do not rename, delete, or reorder any column headers.</li>
+                            <li>Enter one record per row only.</li>
+                            <li>Use valid emails and the <strong>MM/DD/YYYY</strong> date format.</li>
+                            <li>Save the file and upload it below.</li>
                         </ol>
+
                         <div class="small">
-                            <strong>Mandatory columns for students:</strong>
+                            <strong>Required fields:</strong>
                             <ul class="mandatory-list mt-2">
-                                <li>First Name</li>
-                                <li>Last Name</li>
-                                <li>Email</li>
-                                <li>Admission Type</li>
-                                <li>Program</li>
-                                <li>Year Level</li>
-                                <li>Section</li>
-                                <li>Date Of Birth</li>
-                                <li>Age</li>
+                                <li>First Name*</li>
+                                <li>Last Name*</li>
+                                <li>Email*</li>
+                                <li>Admission Type*</li>
+                                <li>Program*</li>
+                                <li>Year Level*</li>
+                                <li>Section*</li>
+                                <li>Date Of Birth*</li>
+                                <li>Age*</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- Download Template Button -->
                 <div class="row mb-3">
                     <div class="col-12">
-                        <a class="btn btn-outline-primary" id="studentDownloadTemplateBtn"
-                            asp-controller="AdminAccounts" asp-action="DownloadStudentTemplate">
+                        <a class="btn btn-outline-primary" asp-controller="AdminAccounts"
+                            asp-action="DownloadStudentTemplate">
                             <i class="bi bi-download me-1"></i>Download Excel Template
                         </a>
                     </div>
@@ -60,11 +56,9 @@
                     asp-action="BulkUploadStudents" id="studentUploadForm" novalidate>
                     @Html.AntiForgeryToken()
 
-                    <!-- preserve active/inactive filter -->
                     <input type="hidden" name="status"
                         value="@(Model?.Filters?.Status?.Equals("Inactive", StringComparison.OrdinalIgnoreCase) == true ? "inactive" : "active")" />
 
-                    <!-- File Upload -->
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
@@ -76,19 +70,16 @@
                         </div>
                     </div>
 
-                    <!-- Upload Progress -->
                     <div class="row" id="studentUploadProgress" style="display:none;">
                         <div class="col-12">
                             <div class="progress mb-3">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                                    style="width:100%">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">
                                     Processing...
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Upload Results (errors appear here; success stays as toast) -->
                     <div class="row upload-results" id="studentUploadResults" style="display:none;">
                         <div class="col-12">
                             <div class="alert" id="studentUploadResultAlert">
@@ -101,7 +92,6 @@
                         </div>
                     </div>
 
-                    <!-- Footer -->
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-primary" id="studentUploadBtn">
@@ -109,119 +99,7 @@
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-@* ===========================
-   Bulk Upload Teachers Modal
-   =========================== *@
-<div class="modal fade" id="bulkUploadTeachersModal" tabindex="-1" aria-labelledby="bulkUploadTeachersLabel"
-    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg excel-upload-modal">
-        <div class="modal-content excel-upload-modal">
-            <!-- Header -->
-            <div class="modal-header">
-                <h5 class="modal-title d-flex align-items-center" id="bulkUploadTeachersLabel">
-                    <i class="bi bi-file-earmark-spreadsheet-fill me-2" aria-hidden="true"></i>
-                    Upload Excel – Add Teachers
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
-            </div>
-
-            <!-- Body -->
-            <div class="modal-body">
-                <!-- Instructions -->
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <h6>Instructions:</h6>
-                        <ol class="small text-muted mb-2">
-                            <li>Download the Excel template.</li>
-                            <li>Fill in all <strong>mandatory</strong> columns exactly as listed below.</li>
-                            <li>Keep the column headers unchanged; add one record per row.</li>
-                            <li>Use proper date format <strong>MM/DD/YYYY</strong> and valid emails.</li>
-                            <li>Save the file and upload it here for processing.</li>
-                        </ol>
-                        <div class="small">
-                            <strong>Mandatory columns for teachers:</strong>
-                            <ul class="mandatory-list mt-2">
-                                <li>First Name</li>
-                                <li>Last Name</li>
-                                <li>Email</li>
-                                <li>Position</li>
-                                <li>Date Of Birth</li>
-                                <li>Age</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Download Template Button -->
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <a class="btn btn-outline-primary" id="teacherDownloadTemplateBtn"
-                            asp-controller="AdminAccounts" asp-action="DownloadTeacherTemplate">
-                            <i class="bi bi-download me-1"></i>Download Excel Template
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Upload Form -->
-                <form method="post" enctype="multipart/form-data" asp-controller="AdminAccounts"
-                    asp-action="BulkUploadTeachers" id="teacherUploadForm" novalidate>
-                    @Html.AntiForgeryToken()
-
-                    <!-- preserve active/inactive filter -->
-                    <input type="hidden" name="status"
-                        value="@(Model?.Filters?.Status?.Equals("Inactive", StringComparison.OrdinalIgnoreCase) == true ? "inactive" : "active")" />
-
-                    <!-- File Upload -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="mb-3">
-                                <label for="teacherFile" class="form-label">Select Excel File</label>
-                                <input id="teacherFile" type="file" name="file" class="form-control" accept=".xlsx,.xls"
-                                    required />
-                                <div class="form-text">Accepted formats: .xlsx, .xls (Max size: 5MB)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Upload Progress -->
-                    <div class="row" id="teacherUploadProgress" style="display:none;">
-                        <div class="col-12">
-                            <div class="progress mb-3">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                                    style="width:100%">
-                                    Processing...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Upload Results  -->
-                    <div class="row upload-results" id="teacherUploadResults" style="display:none;">
-                        <div class="col-12">
-                            <div class="alert" id="teacherUploadResultAlert">
-                                <div id="teacherUploadResultMessage"></div>
-                                <div id="teacherUploadErrorList" style="display:none;">
-                                    <strong>Errors:</strong>
-                                    <ul id="teacherUploadErrors"></ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary" id="teacherUploadBtn">
-                            <i class="bi bi-upload me-1"></i>Upload &amp; Process
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>

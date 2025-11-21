@@ -7,6 +7,22 @@
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["PageHeader"] = "Manage Accounts";
 
+    var nameSortClass = vm.Filters.SortBy == "name"
+        ? (vm.Filters.SortDir == "asc" ? "asc" : "desc")
+        : "";
+
+    var yearSortClass = vm.Filters.SortBy == "year"
+        ? (vm.Filters.SortDir == "asc" ? "asc" : "desc")
+        : "";
+
+    var nextNameDir = (vm.Filters.SortBy == "name" && vm.Filters.SortDir == "asc")
+        ? "desc"
+        : "asc";
+
+    var nextYearDir = (vm.Filters.SortBy == "year" && vm.Filters.SortDir == "asc")
+        ? "desc"
+        : "asc";
+
     var currentTab = vm.ActiveTab == ManageTab.Teachers ? "teachers" : "students";
     var currentStatus = vm?.Filters?.Status ?? "Active";
     var isInactive = string.Equals(currentStatus, "Inactive", StringComparison.OrdinalIgnoreCase);
@@ -120,15 +136,44 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Program</th>
-                                    <th>Year Level</th>
-                                    <th>Name</th>
+                                    <th>
+                                        Year Level
+                                        <a asp-controller="AdminAccounts"
+                                        asp-action="Index"
+                                        asp-route-tab="students"
+                                        asp-route-status="@(vm.Filters?.Status ?? "Active")"
+                                        asp-route-program="@(vm.Filters?.Program)"
+                                        asp-route-yearLevel="@(vm.Filters?.YearLevel)"
+                                        asp-route-name="@(vm.Filters?.Name)"
+                                        asp-route-idNumber="@(vm.Filters?.IdNumber)"
+                                        asp-route-sortBy="year"
+                                        asp-route-sortDir="@(vm.Filters.SortBy == "year" && vm.Filters.SortDir == "asc" ? "desc" : "asc")">
+                                            <i class="bi bi-filter sort-icon @yearSortClass"></i>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        Name
+                                        <a asp-controller="AdminAccounts"
+                                        asp-action="Index"
+                                        asp-route-tab="students"
+                                        asp-route-status="@(vm.Filters?.Status ?? "Active")"
+                                        asp-route-program="@(vm.Filters?.Program)"
+                                        asp-route-yearLevel="@(vm.Filters?.YearLevel)"
+                                        asp-route-name="@(vm.Filters?.Name)"
+                                        asp-route-idNumber="@(vm.Filters?.IdNumber)"
+                                        asp-route-sortBy="name"
+                                        asp-route-sortDir="@(vm.Filters.SortBy == "name" && vm.Filters.SortDir == "asc" ? "desc" : "asc")">
+                                            <i class="bi bi-filter sort-icon @nameSortClass"></i>
+                                        </a>
+                                    </th>
+
                                     <th>ID Number</th>
                                     <th></th>
                                 </tr>
                                 <tr class="filters-row">
                                     <th>
                                         <select name="program" class="form-select" onchange="this.form.submit()">
-                                            <option value="">All Programs</option>
+                                            <option value="">All</option>
                                             @foreach (var p in vm.Programs)
                                             {
                                                 <option value="@p" selected="@(vm.Filters?.Program == p ? "selected" : null)">@p</option>
@@ -137,7 +182,7 @@
                                     </th>
                                     <th>
                                         <select name="yearLevel" class="form-select" onchange="this.form.submit()">
-                                            <option value="">All Year Levels</option>
+                                            <option value="">All</option>
                                             @foreach (var y in vm.YearLevels)
                                             {
                                                 <option value="@y" selected="@(vm.Filters?.YearLevel == y ? "selected" : null)">@y</option>
@@ -203,98 +248,111 @@
                         <input type="hidden" name="tab" value="teachers" />
                         <input type="hidden" name="status" value="@(vm.Filters?.Status ?? "Active")" />
                         <table class="accounts-table table align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>Full Name</th>
-            <th>Position</th>
-            <th>ID Number</th>
-            <th></th>
-        </tr>
-        <tr class="filters-row">
-            <th>
-                <input name="name"
-                       class="form-control"
-                       value="@(vm.Filters?.Name ?? "")"
-                       placeholder="Search by Name" />
-            </th>
-            <th>
-                <input name="position"
-                       class="form-control"
-                       value="@(vm.Filters?.Position ?? "")"
-                       placeholder="Search by Position" />
-            </th>
-            <th>
-                <input name="idNumber"
-                       class="form-control"
-                       value="@(vm.Filters?.IdNumber ?? "")"
-                       placeholder="Search by ID Number" />
-            </th>
-            <th class="text-end">
-                <button type="submit" class="btn btn-outline btn-xs">Search</button>
-                <a class="btn btn-link btn-xs"
-                   asp-controller="AdminAccounts"
-                   asp-action="Index"
-                   asp-route-tab="teachers"
-                   asp-route-status="@(vm.Filters?.Status ?? "Active")">
-                    Reset
-                </a>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (vm.Teachers != null && vm.Teachers.Count > 0)
-        {
-            foreach (var t in vm.Teachers)
-            {
-                <tr>
-                    <td class="text-start">@t.FullName</td>
-                    <td class="text-center">@t.Position</td>
-                    <td class="text-center">@t.IdNumber</td> 
-                    <td class="text-end">
-                        <div class="row-actions">
-                            <a class="btn btn-primary btn-sm rounded-pill"
-                               asp-controller="AdminAccounts"
-                               asp-action="Teacher"
-                               asp-route-userId="@t.UserId">
-                                View
-                            </a>
-                            @if (!isInactive)
-                            {
-                                <button type="button"
-                                        class="btn btn-danger btn-sm rounded-pill js-status-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmSuspendModal"
-                                        data-user-id="@t.UserId"
-                                        data-tab="teachers"
-                                        data-name="@t.FullName"
-                                        data-status="Inactive">
-                                    Suspend
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button"
-                                        class="btn btn-success btn-sm rounded-pill js-status-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmSuspendModal"
-                                        data-user-id="@t.UserId"
-                                        data-tab="teachers"
-                                        data-name="@t.FullName"
-                                        data-status="Active">
-                                    Lift Suspension
-                                </button>
-                            }
-                        </div>
-                    </td>
-                </tr>
-            }
-        }
-        else
-        {
-            <tr><td colspan="4" class="empty-row">No results found.</td></tr>
-        }
-    </tbody>
-</table>
+                            <thead class="table-light">
+                                <tr>
+                                    <th>
+                                        Name
+                                        <a asp-controller="AdminAccounts"
+                                        asp-action="Index"
+                                        asp-route-tab="teachers"
+                                        asp-route-status="@(vm.Filters?.Status ?? "Active")"
+                                        asp-route-name="@(vm.Filters?.Name)"
+                                        asp-route-position="@(vm.Filters?.Position)"
+                                        asp-route-idNumber="@(vm.Filters?.IdNumber)"
+                                        asp-route-sortBy="name"
+                                        asp-route-sortDir="@(vm.Filters.SortBy == "name" && vm.Filters.SortDir == "asc" ? "desc" : "asc")">
+                                            <i class="bi bi-filter sort-icon @nameSortClass"></i>
+                                        </a>
+                                    </th>
+                                    <th>Position</th>
+                                    <th>ID Number</th>
+                                    <th></th>
+                                </tr>
+                                <tr class="filters-row">
+                                    <th>
+                                        <input name="name"
+                                            class="form-control"
+                                            value="@(vm.Filters?.Name ?? "")"
+                                            placeholder="Search by Name" />
+                                    </th>
+                                    <th>
+                                        <input name="position"
+                                            class="form-control"
+                                            value="@(vm.Filters?.Position ?? "")"
+                                            placeholder="Search by Position" />
+                                    </th>
+                                    <th>
+                                        <input name="idNumber"
+                                            class="form-control"
+                                            value="@(vm.Filters?.IdNumber ?? "")"
+                                            placeholder="Search by ID Number" />
+                                    </th>
+                                    <th class="text-end">
+                                        <button type="submit" class="btn btn-outline btn-xs">Search</button>
+                                        <a class="btn btn-link btn-xs"
+                                        asp-controller="AdminAccounts"
+                                        asp-action="Index"
+                                        asp-route-tab="teachers"
+                                        asp-route-status="@(vm.Filters?.Status ?? "Active")">
+                                            Reset
+                                        </a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (vm.Teachers != null && vm.Teachers.Count > 0)
+                                {
+                                    foreach (var t in vm.Teachers)
+                                    {
+                                        <tr>
+                                            <td class="text-start">@t.FullName</td>
+                                            <td class="text-center">@t.Position</td>
+                                            <td class="text-center">@t.IdNumber</td> 
+                                            <td class="text-end">
+                                                <div class="row-actions">
+                                                    <a class="btn btn-primary btn-sm rounded-pill"
+                                                    asp-controller="AdminAccounts"
+                                                    asp-action="Teacher"
+                                                    asp-route-userId="@t.UserId">
+                                                        View
+                                                    </a>
+                                                    @if (!isInactive)
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-danger btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId"
+                                                                data-tab="teachers"
+                                                                data-name="@t.FullName"
+                                                                data-status="Inactive">
+                                                            Suspend
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button"
+                                                                class="btn btn-success btn-sm rounded-pill js-status-btn"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmSuspendModal"
+                                                                data-user-id="@t.UserId"
+                                                                data-tab="teachers"
+                                                                data-name="@t.FullName"
+                                                                data-status="Active">
+                                                            Lift Suspension
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="4" class="empty-row">No results found.</td></tr>
+                                }
+                            </tbody>
+                        </table>
 
                     </form>
                 }

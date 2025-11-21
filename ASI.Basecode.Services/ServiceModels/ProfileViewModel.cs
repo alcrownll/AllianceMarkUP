@@ -74,31 +74,8 @@ namespace ASI.Basecode.Services.ServiceModels
                 };
             }
         }
-        public string ProgramDb { get; set; }
         [Required(ErrorMessage = "Please select a program.")]
-        public string Program
-        {
-            get
-            {
-                return ProgramDb switch
-                {
-                    "BSCS" => "Computer Science",
-                    "BSIT" => "Information Technology",
-                    "BSIS" => "Information Systems",
-                    _ => ProgramDb
-                };
-            }
-            set
-            {
-                ProgramDb = value switch
-                {
-                    "Computer Science" => "BSCS",
-                    "Information Technology" => "BSIT",
-                    "Information Systems" => "BSIS",
-                    _ => value
-                };
-            }
-        }
+        public string Program { get; set; }
         [Required(ErrorMessage = "Please select a department.")]
         public string Department { get; set; }
         [Required(ErrorMessage = "Please select a year level.")]
@@ -115,5 +92,11 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Position { get; set; }
         [Required(ErrorMessage = "Please select a department.")]
         public string Department { get; set; }
+    }
+
+    public class ProgramOption
+    {
+        public string Code { get; set; }
+        public string Name { get; set; }
     }
 }

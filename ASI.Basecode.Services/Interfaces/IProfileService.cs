@@ -18,6 +18,7 @@ namespace ASI.Basecode.Services.Interfaces
         Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input);
 
         Task UpdateStudentProfileByAdminAsync(int adminUserId, int targetUserId, StudentProfileViewModel input);
+        Task<List<ProgramOption>> GetActiveProgramsAsync(CancellationToken ct = default);
 
         Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId);
 

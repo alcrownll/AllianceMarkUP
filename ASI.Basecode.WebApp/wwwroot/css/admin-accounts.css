@@ -230,6 +230,21 @@ html {
   overflow-y: scroll;
 }
 
+.sort-icon {
+  margin-left: 6px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+  opacity: 0.8;
+}
+
+.sort-icon.asc {
+  transform: rotate(0deg);
+}
+
+.sort-icon.desc {
+  transform: rotate(180deg);
+}
+
 body.modal-open {
   padding-right: 0 !important;
 }

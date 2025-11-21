@@ -5,9 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace ASI.Basecode.Services.Services
 {
@@ -16,6 +17,7 @@ namespace ASI.Basecode.Services.Services
         private readonly IUserRepository _users;
         private readonly IUserProfileRepository _profiles;
         private readonly IStudentRepository _students;
+        private readonly IProgramRepository _programs;
         private readonly ITeacherRepository _teachers;
         private readonly IHttpContextAccessor _httpContext;
         private readonly IWebRootPathAccessor _webRoot;
@@ -28,11 +30,13 @@ namespace ASI.Basecode.Services.Services
             ITeacherRepository teachers,
             IHttpContextAccessor httpContext,
             IWebRootPathAccessor webRoot,
-            INotificationService notifications)
+            INotificationService notifications,
+            IProgramRepository programs)
         {
             _users = users;
             _profiles = profiles;
             _students = students;
+            _programs = programs;
             _teachers = teachers;
             _httpContext = httpContext;
             _webRoot = webRoot;
@@ -69,12 +73,10 @@ namespace ASI.Basecode.Services.Services
         {
             try
             {
-                // Get user ID using existing method
                 var userId = GetCurrentUserId();
                 if (userId <= 0)
                     return 0;
 
-                // Get teacher ID from the teachers repository
                 var teacher = _teachers.GetTeachers()
                     .FirstOrDefault(t => t.UserId == userId);
 
@@ -133,33 +135,24 @@ namespace ASI.Basecode.Services.Services
                 // Students
                 StudentId = student.StudentId,
                 AdmissionTypeDb = student.AdmissionType,
-                ProgramDb = student.Program,
+                Program = student.Program,
                 Department = student.Department,
                 YearLevel = student.YearLevel,
                 Section = student.Section
             };
         }
 
-        // ------------------------------------------------------------
         // STUDENT PROFILE UPDATES
-        // ------------------------------------------------------------
 
-        /// <summary>
-        /// User updates their own student profile (My Activity only for that user).
-        /// </summary>
         public async Task UpdateStudentProfileAsync(int userId, StudentProfileViewModel input)
         {
             ApplyStudentProfileChanges(userId, input);
 
-            // Self update -> My Activity for that user only
             _notifications.NotifyProfileUpdated(userId);
 
             await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Admin updates a student's profile (My Activity for admin + Updates for student).
-        /// </summary>
         public async Task UpdateStudentProfileByAdminAsync(int adminUserId, int targetUserId, StudentProfileViewModel input)
         {
             ApplyStudentProfileChanges(targetUserId, input);
@@ -177,9 +170,33 @@ namespace ASI.Basecode.Services.Services
             await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Shared student update logic, no notifications.
-        /// </summary>
+        public async Task<List<ProgramOption>> GetActiveProgramsAsync(CancellationToken ct = default)
+        {
+            // Step 1: EF query (no custom methods)
+            var programs = await _programs.GetPrograms()
+                .Where(p => p.IsActive)
+                .ToListAsync(ct);
+
+            // Step 2: In-memory projection with custom logic
+            return programs
+                .Select(p => new ProgramOption
+                {
+                    Code = p.ProgramCode,
+                    Name = CleanProgramName(p.ProgramName)
+                })
+                .OrderBy(p => p.Name)
+                .ToList();
+        }
+
+        private static string CleanProgramName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return raw;
+
+            return raw.Replace("Bachelor of", "", StringComparison.OrdinalIgnoreCase).Trim();
+        }
+
+
         private void ApplyStudentProfileChanges(int userId, StudentProfileViewModel input)
         {
             TrimStringProperties(input);
@@ -225,17 +242,13 @@ namespace ASI.Basecode.Services.Services
             if (student != null)
             {
                 student.AdmissionType = input.AdmissionTypeDb;
-                student.Program = input.ProgramDb;
+                student.Program = input.Program;
                 student.Department = input.Department;
                 student.YearLevel = input.YearLevel;
                 student.Section = input.Section;
                 _students.UpdateStudent(student);
             }
         }
-
-        // ------------------------------------------------------------
-        // TEACHER PROFILE UPDATES
-        // ------------------------------------------------------------
 
         public async Task<TeacherProfileViewModel> GetTeacherProfileAsync(int userId)
         {
@@ -288,9 +301,6 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
-        /// <summary>
-        /// User updates their own teacher profile (My Activity only for that user).
-        /// </summary>
         public async Task UpdateTeacherProfileAsync(int userId, TeacherProfileViewModel input)
         {
             ApplyTeacherProfileChanges(userId, input);
@@ -299,9 +309,6 @@ namespace ASI.Basecode.Services.Services
             await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Admin updates a teacher's profile (My Activity for admin + Updates for teacher).
-        /// </summary>
         public async Task UpdateTeacherProfileByAdminAsync(int adminUserId, int targetUserId, TeacherProfileViewModel input)
         {
             ApplyTeacherProfileChanges(targetUserId, input);
@@ -319,9 +326,6 @@ namespace ASI.Basecode.Services.Services
             await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Shared teacher update logic, no notifications.
-        /// </summary>
         private void ApplyTeacherProfileChanges(int userId, TeacherProfileViewModel input)
         {
             TrimStringProperties(input);
@@ -347,7 +351,6 @@ namespace ASI.Basecode.Services.Services
                 _profiles.UpdateUserProfile(profile);
             }
 
-            // Avatar upload support for teachers too
             if (input.ProfilePhotoFile != null && input.ProfilePhotoFile.Length > 0)
             {
                 var oldUrl = profile.ProfilePictureUrl;
@@ -460,10 +463,7 @@ namespace ASI.Basecode.Services.Services
 
         }
 
-
-        // ------------------------------------------------------------
         // Helpers
-        // ------------------------------------------------------------
         private static void TrimStringProperties(object model)
         {
             if (model == null) return;
@@ -495,9 +495,7 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrWhiteSpace(vm.Citizenship)) db.Citizenship = vm.Citizenship;
         }
 
-        // ------------------------------------------------------------
         // Avatar helpers
-        // ------------------------------------------------------------
         private string? SaveAvatarFile(int userId, IFormFile file)
         {
             if (file == null || file.Length == 0) return null;
@@ -549,7 +547,6 @@ namespace ASI.Basecode.Services.Services
             }
             catch
             {
-                // Swallow: deleting old files is best-effort
             }
         }
     }

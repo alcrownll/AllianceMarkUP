@@ -36,6 +36,8 @@ namespace ASI.Basecode.WebApp.Controllers
             string? idNumber,
             string? status,
             string? position,
+            string? sortBy,
+            string? sortDir,
             CancellationToken ct)
         {
             var normalizedStatus = string.Equals(status, "inactive", StringComparison.OrdinalIgnoreCase)
@@ -50,7 +52,9 @@ namespace ASI.Basecode.WebApp.Controllers
                 Name = name,
                 IdNumber = idNumber,
                 Status = normalizedStatus,
-                Position = position
+                Position = position,
+                SortBy = string.IsNullOrWhiteSpace(sortBy) ? null : sortBy.Trim().ToLowerInvariant(),
+                SortDir = (sortDir?.ToLowerInvariant() == "desc") ? "desc" : "asc"
             };
 
             AdminAccountsViewModel vm;
@@ -82,39 +86,40 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Student(int userId)
+        public async Task<IActionResult> Student(int userId, CancellationToken ct)
         {
             var vm = await _profile.GetStudentProfileAsync(userId);
             if (vm == null) return NotFound();
+
             ViewData["PageHeader"] = "Student Profile";
+            ViewBag.Programs = await _profile.GetActiveProgramsAsync(ct);
 
             return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveStudent(int userId, StudentProfileViewModel vm)
+        public async Task<IActionResult> SaveStudent(int userId, StudentProfileViewModel vm, CancellationToken ct)
         {
-            // align route + hidden if needed
             if (userId <= 0 && vm.UserId > 0)
                 userId = vm.UserId;
 
             if (!ModelState.IsValid)
             {
                 ViewData["PageHeader"] = "Student Profile";
+                ViewBag.Programs = await _profile.GetActiveProgramsAsync(ct);
                 return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
             }
 
             var adminUserId = _profile.GetCurrentUserId();
 
-            await _profile.UpdateStudentProfileByAdminAsync(
-                adminUserId: adminUserId,
-                targetUserId: userId,
-                input: vm);
+            await _profile.UpdateStudentProfileByAdminAsync(adminUserId, userId, vm);
 
             TempData["ProfileSaved"] = "Profile has been updated.";
             return RedirectToAction(nameof(Student), new { userId });
         }
+
 
         [HttpGet]
         public async Task<IActionResult> Teacher(int userId)
@@ -150,17 +155,6 @@ namespace ASI.Basecode.WebApp.Controllers
             return RedirectToAction(nameof(Teacher), new { userId });
         }
 
-        /// <summary>
-        /// Changes account status (suspend or reactivate) and logs a My Activity notification.
-        /// </summary>
-        /// <param name="userId">The user being changed.</param>
-        /// <param name="tab">students/teachers (for redirect + wording).</param>
-        /// <param name="status">
-        /// New status for the account ("Inactive" to suspend, "Active" to reactivate).
-        /// </param>
-        /// <param name="viewStatus">
-        /// Which list to show after redirect ("active" or "inactive").
-        /// </param>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SuspendUser(
@@ -203,13 +197,16 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult CreateStudent()
+        public async Task<IActionResult> CreateStudent(CancellationToken ct)
         {
             var vm = new StudentProfileViewModel();
             ViewData["PageHeader"] = "Create Student";
             ViewData["IsCreate"] = true;
             ViewData["PostController"] = "AdminAccounts";
             ViewData["PostAction"] = "CreateStudent";
+
+            ViewBag.Programs = await _profile.GetActiveProgramsAsync(ct);
+
             return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
         }
 
@@ -223,6 +220,10 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewData["IsCreate"] = true;
                 ViewData["PostController"] = "AdminAccounts";
                 ViewData["PostAction"] = "CreateStudent";
+
+                // reload programs again so dropdown doesn't go empty
+                ViewBag.Programs = await _profile.GetActiveProgramsAsync(ct);
+
                 return View("~/Views/Admin/AdminStudentProfile.cshtml", vm);
             }
 

@@ -17,22 +17,24 @@ namespace ASI.Basecode.Services.Services
         private readonly IUserRepository _users;
         private readonly IUnitOfWork _uow;
         private readonly INotificationService _notifications;
+        private readonly IProgramRepository _programs;
 
         public AdminAccountsService(
             IStudentRepository students,
             ITeacherRepository teachers,
             IUserRepository users,
             IUnitOfWork uow,
-            INotificationService notifications)
+            INotificationService notifications,
+            IProgramRepository programs)
         {
             _students = students;
             _teachers = teachers;
             _users = users;
             _uow = uow;
             _notifications = notifications;
+            _programs = programs;
         }
 
-        // fetch data and filters
         public async Task<AccountsFilterResult> GetStudentsAsync(AccountsFilters filters, CancellationToken ct)
         {
             var status = string.IsNullOrWhiteSpace(filters.Status) ? "Active" : filters.Status!.Trim();
@@ -49,35 +51,56 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
                 var name = filters.Name.Trim().ToLower();
-                query = query.Where(s => (s.User.FirstName + " " + s.User.LastName).ToLower().Contains(name));
+                query = query.Where(s =>
+                    (s.User.FirstName + " " + s.User.LastName).ToLower().Contains(name));
             }
 
             if (!string.IsNullOrWhiteSpace(filters.IdNumber))
             {
                 var id = filters.IdNumber.Trim();
-                query = query.Where(s => s.User.IdNumber.Contains(id));
+                query = query.Where(s => s.User.IdNumber.StartsWith(id));
+            }
+
+            switch (filters.SortBy?.ToLower())
+            {
+                case "year":
+                    query = filters.SortDir == "desc"
+                        ? query.OrderByDescending(s => s.YearLevel)
+                        : query.OrderBy(s => s.YearLevel);
+                    break;
+
+                case "name":
+                    query = filters.SortDir == "desc"
+                        ? query.OrderByDescending(s => s.User.LastName)
+                               .ThenByDescending(s => s.User.FirstName)
+                        : query.OrderBy(s => s.User.LastName)
+                               .ThenBy(s => s.User.FirstName);
+                    break;
+
+                default:
+                    query = query.OrderBy(s => s.Program)
+                                 .ThenBy(s => s.YearLevel)
+                                 .ThenBy(s => s.User.LastName);
+                    break;
             }
 
             var rows = await query
-                .OrderBy(s => s.Program)
-                .ThenBy(s => s.YearLevel)
-                .ThenBy(s => s.User.LastName)
                 .Select(s => new StudentListItem
                 {
                     StudentId = s.StudentId,
                     UserId = s.UserId,
                     Program = s.Program,
                     YearLevel = s.YearLevel,
-                    FullName = s.User.FirstName + " " + s.User.LastName,
+                    FullName = s.User.LastName + ", " + s.User.FirstName,
                     IdNumber = s.User.IdNumber,
                 })
                 .ToListAsync(ct);
 
-            var programs = await _students.GetStudents()
-                .Select(s => s.Program)
-                .Where(p => !string.IsNullOrEmpty(p))
+            var programs = await _programs.GetPrograms()
+                .Where(p => p.IsActive)
+                .Select(p => p.ProgramCode)
                 .Distinct()
-                .OrderBy(p => p)
+                .OrderBy(code => code)
                 .ToListAsync(ct);
 
             var yearLevels = await _students.GetStudents()
@@ -106,7 +129,8 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrWhiteSpace(filters.Name))
             {
                 var name = filters.Name.Trim().ToLower();
-                query = query.Where(t => (t.User.FirstName + " " + t.User.LastName).ToLower().Contains(name));
+                query = query.Where(t =>
+                    (t.User.FirstName + " " + t.User.LastName).ToLower().Contains(name));
             }
 
             if (!string.IsNullOrWhiteSpace(filters.Position))
@@ -118,17 +142,31 @@ namespace ASI.Basecode.Services.Services
             if (!string.IsNullOrWhiteSpace(filters.IdNumber))
             {
                 var id = filters.IdNumber.Trim();
-                query = query.Where(t => t.User.IdNumber.Contains(id));
+                query = query.Where(t => t.User.IdNumber.StartsWith(id));
+            }
+
+            switch (filters.SortBy?.ToLower())
+            {
+                case "name":
+                    query = filters.SortDir == "desc"
+                        ? query.OrderByDescending(t => t.User.LastName)
+                               .ThenByDescending(t => t.User.FirstName)
+                        : query.OrderBy(t => t.User.LastName)
+                               .ThenBy(t => t.User.FirstName);
+                    break;
+
+                default:
+                    query = query.OrderBy(t => t.User.LastName)
+                                 .ThenBy(t => t.User.FirstName);
+                    break;
             }
 
             var rows = await query
-                .OrderBy(t => t.User.LastName)
-                .ThenBy(t => t.User.FirstName)
                 .Select(t => new TeacherListItem
                 {
                     TeacherId = t.TeacherId,
                     UserId = t.UserId,
-                    FullName = t.User.FirstName + " " + t.User.LastName,
+                    FullName = t.User.LastName + ", " + t.User.FirstName,
                     Position = t.Position,
                     IdNumber = t.User.IdNumber
                 })

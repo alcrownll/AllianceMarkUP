@@ -47,10 +47,17 @@
                     </div>
 
                     <div class="col-md-3">
-                        <label class="form-label">Program</label>
-                        <input class="form-control" value="@Model.Program" disabled aria-disabled="true" tabindex="-1"
-                            data-locked="true" />
-                        <input type="hidden" asp-for="Program" data-locked="true" />
+                        <label class="form-label" asp-for="Program">Program</label>
+                        <select class="form-select" asp-for="Program" required>
+                            <option value="">-- Select --</option>
+
+                            @foreach (var p in (IEnumerable<ASI.Basecode.Services.ServiceModels.ProgramOption>)
+                                                        (ViewBag.Programs ?? Enumerable.Empty<ASI.Basecode.Services.ServiceModels.ProgramOption>()))
+                            {
+                                <option value="@p.Code">@p.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Program" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-3">

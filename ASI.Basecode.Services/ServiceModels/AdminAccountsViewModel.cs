@@ -15,6 +15,9 @@ namespace ASI.Basecode.Services.ServiceModels
         public string? IdNumber { get; set; }
         public string? Status { get; set; }
         public string? Position { get; set; }
+
+        public string? SortBy { get; set; }
+        public string? SortDir { get; set; }
     }
 
     public class StudentListItem
