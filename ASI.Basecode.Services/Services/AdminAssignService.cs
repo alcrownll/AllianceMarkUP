@@ -42,13 +42,14 @@ namespace ASI.Basecode.Services.Services
             _notifications = notifications;
         }
 
-        public async Task<IReadOnlyList<AssignedCourse>> GetListAsync(string q = null)
+        public async Task<IReadOnlyList<AssignedCourse>> GetListAsync(string q = null, string sort = "edp_default")
         {
             IQueryable<AssignedCourse> query = _assigned.GetAssignedCourses()
                 .AsNoTracking()
                 .Include(a => a.Course)
                 .Include(a => a.Teacher).ThenInclude(t => t.User);
 
+            // Search filter
             if (!string.IsNullOrWhiteSpace(q))
             {
                 var term = q.Trim().ToLower();
@@ -57,19 +58,30 @@ namespace ASI.Basecode.Services.Services
                     (a.Course != null && (a.Course.CourseCode ?? "").ToLower().Contains(term)) ||
                     (a.Teacher != null && a.Teacher.User != null &&
                         (
-                          ((a.Teacher.User.FirstName ?? "") + " " + (a.Teacher.User.LastName ?? "")).ToLower().Contains(term) ||
-                          (a.Teacher.User.LastName ?? "").ToLower().Contains(term) ||
-                          (a.Teacher.User.FirstName ?? "").ToLower().Contains(term)
+                            ((a.Teacher.User.FirstName ?? "") + " " + (a.Teacher.User.LastName ?? "")).ToLower().Contains(term) ||
+                            (a.Teacher.User.LastName ?? "").ToLower().Contains(term) ||
+                            (a.Teacher.User.FirstName ?? "").ToLower().Contains(term)
                         )
                     )
                 );
             }
 
-            return await query
-                .OrderBy(a => a.EDPCode)
-                .ThenBy(a => a.Course.CourseCode)
-                .ToListAsync();
+            query = sort switch
+            {
+                "teacher_asc" => query
+                    .OrderBy(a => a.Teacher != null ? a.Teacher.User.LastName : "")
+                    .ThenBy(a => a.Teacher != null ? a.Teacher.User.FirstName : ""),
+
+                "teacher_desc" => query
+                    .OrderByDescending(a => a.Teacher != null ? a.Teacher.User.LastName : "")
+                    .ThenByDescending(a => a.Teacher != null ? a.Teacher.User.FirstName : ""),
+
+                _ => query.OrderBy(a => a.EDPCode)
+            };
+
+            return await query.ToListAsync();
         }
+
 
         public async Task<IReadOnlyList<Course>> GetCoursesAsync() =>
             await _courses.GetCourses().AsNoTracking().OrderBy(c => c.CourseCode).ToListAsync();

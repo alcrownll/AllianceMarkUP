@@ -53,9 +53,15 @@
                         <label class="form-label" asp-for="Department"></label>
                         <select class="form-select" asp-for="Department" required>
                             <option value="">-- Select --</option>
-                            <option>Arts & Sciences</option>
-                            <option>Computer Studies</option>
-                            <option>Engineering</option>
+                            <option value="Business &amp; Accountancy">Business &amp; Accountancy</option>
+                            <option value="Computer Studies">Computer Studies</option>
+                            <option value="Criminal Justice">Criminal Justice</option>
+                            <option value="Customs Administration">Customs Administration</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Hospitality Management">Hospitality Management</option>
+                            <option value="Maritime Education">Maritime Education</option>
+                            <option value="Nursing">Nursing</option>
+                            <option value="Teacher Education">Teacher Education</option>
                         </select>
                         <span asp-validation-for="Department" class="text-danger"></span>
                     </div>

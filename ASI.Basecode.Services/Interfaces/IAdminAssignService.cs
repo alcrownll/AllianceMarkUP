@@ -8,7 +8,7 @@ namespace ASI.Basecode.Services.Interfaces
 {
     public interface IAdminAssignService
     {
-        Task<IReadOnlyList<AssignedCourse>> GetListAsync(string q = null);
+        Task<IReadOnlyList<AssignedCourse>> GetListAsync(string q = null, string sort = "edp_default");
 
         Task<IReadOnlyList<Course>> GetCoursesAsync();
         Task<IReadOnlyList<Program>> GetProgramsAsync();

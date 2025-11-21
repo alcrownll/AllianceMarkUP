@@ -5,7 +5,11 @@
     ViewData["Title"] = "Manage Assigned Courses";
     Layout = "~/Views/Shared/Layouts/_MainLayout.cshtml";
     ViewData["PageHeader"] = "Assign Courses";
+
     var q = (string)(ViewData["Query"] ?? "");
+    var teacherSort = (string)(ViewData["TeacherSort"] ?? "asc");
+    var nextTeacherSort = teacherSort == "asc" ? "desc" : "asc";
+    var teacherSortClass = teacherSort == "asc" ? "asc" : "desc";
 }
 
 <link rel="stylesheet" href="~/css/admin-assign.css" asp-append-version="true" />
@@ -21,7 +25,7 @@
                             <i class="bi bi-search"></i>
                         </span>
                         <input name="q" value="@q" type="text" class="form-control border-start-0"
-                               placeholder="Search by Course Code, EDP Code, or Teacher…" autocomplete="off" />
+                            placeholder="Search by Course Code, EDP Code, or Teacher…" autocomplete="off" />
                     </div>
                 </form>
 
@@ -37,27 +41,27 @@
                 <div id="liveToastContainer">
                     @if (TempData["Ok"] != null)
                     {
-                        <div class="toast align-items-center text-bg-success border-0 js-auto-toast"
-                             role="status" aria-live="polite" aria-atomic="true" data-bs-delay="4000">
+                        <div class="toast align-items-center text-bg-success border-0 js-auto-toast" role="status"
+                            aria-live="polite" aria-atomic="true" data-bs-delay="4000">
                             <div class="d-flex">
                                 <div class="toast-body">
                                     @TempData["Ok"]
                                 </div>
-                                <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                        data-bs-dismiss="toast" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                                    aria-label="Close"></button>
                             </div>
                         </div>
                     }
                     @if (TempData["Error"] != null)
                     {
-                        <div class="toast align-items-center text-bg-danger border-0 js-auto-toast"
-                             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+                        <div class="toast align-items-center text-bg-danger border-0 js-auto-toast" role="alert"
+                            aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
                             <div class="d-flex">
                                 <div class="toast-body">
                                     @TempData["Error"]
                                 </div>
-                                <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                        data-bs-dismiss="toast" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                                    aria-label="Close"></button>
                             </div>
                         </div>
                     }
@@ -71,7 +75,13 @@
                             <th class="text-center" style="width:140px;">EDP Code</th>
                             <th class="text-center" style="width:160px;">Course Code</th>
                             <th class="text-center" style="width:140px;">Type</th>
-                            <th class="text-start">Teacher</th>
+                            <th class="text-start">
+                                Teacher
+                                <a asp-action="Index" asp-route-q="@q" asp-route-teacherSort="@nextTeacherSort"
+                                    title="Sort Teacher @(nextTeacherSort == "asc" ? "A–Z" : "Z–A")">
+                                    <i class="bi bi-filter sort-icon @teacherSortClass"></i>
+                                </a>
+                            </th>
                             <th class="text-end" style="width:210px;"></th>
                         </tr>
                     </thead>
@@ -80,7 +90,7 @@
                         {
                             foreach (var ac in Model)
                             {
-                                var teacherName = $"{ac.Teacher?.User?.FirstName} {ac.Teacher?.User?.LastName}".Trim();
+                                var teacherName = $"{ac.Teacher?.User?.LastName}, {ac.Teacher?.User?.FirstName}".Trim();
                                 var modalId = $"confirmDelete-{ac.AssignedCourseId}";
                                 <tr>
                                     <td class="text-center"><span class="chip">@ac.EDPCode</span></td>
@@ -89,11 +99,11 @@
                                     <td class="text-start">@teacherName</td>
                                     <td class="text-end">
                                         <div class="row-actions">
-                                            <a class="btn btn-primary btn-sm rounded-pill"
-                                               asp-action="View" asp-route-id="@ac.AssignedCourseId">View</a>
+                                            <a class="btn btn-primary btn-sm rounded-pill" asp-action="View"
+                                                asp-route-id="@ac.AssignedCourseId">View</a>
 
                                             <button type="button" class="btn btn-danger btn-sm rounded-pill"
-                                                    data-bs-toggle="modal" data-bs-target="#@modalId">
+                                                data-bs-toggle="modal" data-bs-target="#@modalId">
                                                 Delete
                                             </button>
                                         </div>

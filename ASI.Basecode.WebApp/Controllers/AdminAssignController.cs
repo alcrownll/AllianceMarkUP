@@ -23,12 +23,24 @@ namespace ASI.Basecode.WebApp.Controllers
 
         private int CurrentAdminUserId() => _profileService.GetCurrentUserId();
 
-        public async Task<IActionResult> Index(string q, CancellationToken ct = default)
+        public async Task<IActionResult> Index(
+            string q,
+            string teacherSort = null,
+            string sort = "edp_default",
+            CancellationToken ct = default)
         {
-            var model = await _service.GetListAsync(q);
+            if (!string.IsNullOrWhiteSpace(teacherSort))
+                sort = teacherSort == "desc" ? "teacher_desc" : "teacher_asc";
+
+            var model = await _service.GetListAsync(q, sort);
+
             ViewData["Query"] = q ?? "";
+            ViewData["Sort"] = sort ?? "edp_default";
+            ViewData["TeacherSort"] = teacherSort ?? (sort == "teacher_desc" ? "desc" : "asc");
+
             return View("~/Views/Admin/AdminAssign.cshtml", model);
         }
+
 
         [HttpGet]
         public async Task<IActionResult> Assign(

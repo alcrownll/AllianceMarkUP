@@ -1,276 +1,314 @@
 ﻿/* ===== CONTAINER & CARD ===== */
 .admin-accounts-container {
-    padding: 1.5rem;
-    background: #E5EFFB;
-    min-height: 100vh;
+  padding: 1.5rem;
+  background: #e5effb;
+  min-height: 100vh;
 }
 
 .admin-accounts-card {
-    max-width: 1150px;
-    margin: 0 auto;
-    border-radius: .75rem;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.20);
+  max-width: 1150px;
+  margin: 0 auto;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0px 5px 7px rgba(0, 0, 0, 0.2);
 }
 
 /* ===== TABLE WRAPPER ===== */
 .table-wrap {
-    margin-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-    overflow: auto;
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  overflow: auto;
 }
 
 /* ===== TABLE STYLING ===== */
 .accounts-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: #fff;
-    border-radius: .25rem;
-    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
-    color: #0f172a;
-    line-height: 1.5;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 0.25rem;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color: #0f172a;
+  line-height: 1.5;
 }
 
-    /* Headers: large & bold */
-    .accounts-table thead th {
-        text-align: center;
-        padding: .9rem 1rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        font-size: 1rem; /* ✅ header readable */
-        color: #0f172a;
-        background: #E5EFFB;
-        border-bottom: 2px solid #dee2e6;
-    }
+/* Headers: large & bold */
+.accounts-table thead th {
+  text-align: center;
+  padding: 0.9rem 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 1rem; /* ✅ header readable */
+  color: #0f172a;
+  background: #e5effb;
+  border-bottom: 2px solid #dee2e6;
+}
 
-    /* Body: smaller and tidy */
-    .accounts-table tbody td {
-        padding: .7rem 1rem;
-        font-size: 0.9rem; /* ✅ slightly smaller body text */
-        color: #111827;
-        vertical-align: middle;
-    }
+/* Body: smaller and tidy */
+.accounts-table tbody td {
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem; /* ✅ slightly smaller body text */
+  color: #111827;
+  vertical-align: middle;
+}
 
-    .accounts-table tbody tr:nth-child(odd) {
-        background-color: #f9fbff;
-    }
+.accounts-table tbody tr:nth-child(odd) {
+  background-color: #f9fbff;
+}
 
-    /* Monospace for EDP & Course Code columns */
-    .accounts-table thead th:nth-child(1),
-    .accounts-table thead th:nth-child(2),
-    .accounts-table tbody td:nth-child(1),
-    .accounts-table tbody td:nth-child(2) {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-        font-variant-numeric: tabular-nums;
-        font-size: 0.9rem;
-        letter-spacing: 0.02em;
-    }
+/* Monospace for EDP & Course Code columns */
+.accounts-table thead th:nth-child(1),
+.accounts-table thead th:nth-child(2),
+.accounts-table tbody td:nth-child(1),
+.accounts-table tbody td:nth-child(2) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
 
 /* ===== CHIPS ===== */
 .chip {
-    display: inline-block;
-    padding: .15rem .6rem;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #3730a3;
-    font-size: 0.82rem;
-    font-weight: 600;
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.accounts-table .chip {
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  line-height: 1.5 !important;
 }
 
 /* ===== ROW ACTION BUTTONS ===== */
 .row-actions {
-    display: inline-flex;
-    gap: 0.45rem;
-    justify-content: flex-end;
+  display: inline-flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
 }
 
-    /* Compact, short buttons */
-    .row-actions .btn {
-        min-width: 75px;
-        font-size: 0.82rem;
-        padding: 0.26rem 0.6rem;
-        line-height: 1.1;
-        border-radius: 999px;
-        text-align: center;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
+/* Compact, short buttons */
+.row-actions .btn {
+  min-width: 75px;
+  font-size: 0.82rem;
+  padding: 0.26rem 0.6rem;
+  line-height: 1.1;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
 
-        /* VIEW (blue outline) */
-        .row-actions .btn.btn-primary {
-            background-color: transparent !important;
-            color: #0252A9 !important;
-            border: 2px solid #0252A9 !important;
-        }
+/* VIEW (blue outline) */
+.row-actions .btn.btn-primary {
+  background-color: transparent !important;
+  color: #0252a9 !important;
+  border: 2px solid #0252a9 !important;
+}
 
-            .row-actions .btn.btn-primary:hover,
-            .row-actions .btn.btn-primary:focus {
-                background-color: #0252A9 !important;
-                color: #fff !important;
-            }
+.row-actions .btn.btn-primary:hover,
+.row-actions .btn.btn-primary:focus {
+  background-color: #0252a9 !important;
+  color: #fff !important;
+}
 
-        /* DELETE (red outline) */
-        .row-actions .btn.btn-danger {
-            background-color: transparent !important;
-            color: #dc3545 !important;
-            border: 2px solid #dc3545 !important;
-        }
+/* DELETE (red outline) */
+.row-actions .btn.btn-danger {
+  background-color: transparent !important;
+  color: #dc3545 !important;
+  border: 2px solid #dc3545 !important;
+}
 
-            .row-actions .btn.btn-danger:hover,
-            .row-actions .btn.btn-danger:focus {
-                background-color: #dc3545 !important;
-                color: #fff !important;
-            }
+.row-actions .btn.btn-danger:hover,
+.row-actions .btn.btn-danger:focus {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+}
 
-        /* Hover feedback */
-        .row-actions .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        }
+/* Hover feedback */
+.row-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
 
 /* ===== EMPTY ROW ===== */
 .empty-row {
-    text-align: center;
-    padding: 1.5rem 1rem;
-    color: #6b7280;
-    font-size: .9rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
 /* ===== RESPONSIVE FONT SCALING ===== */
 @media (max-width: 992px) {
-    .accounts-table thead th {
-        font-size: 0.95rem;
-    }
+  .accounts-table thead th {
+    font-size: 0.95rem;
+  }
 
-    .accounts-table tbody td {
-        font-size: 0.86rem;
-    }
+  .accounts-table tbody td {
+    font-size: 0.86rem;
+  }
 }
 
 @media (max-width: 576px) {
-    .accounts-table thead th {
-        font-size: 0.88rem;
-    }
+  .accounts-table thead th {
+    font-size: 0.88rem;
+  }
 
-    .accounts-table tbody td {
-        font-size: 0.84rem;
-    }
+  .accounts-table tbody td {
+    font-size: 0.84rem;
+  }
 }
 
 /* ===== ALIGNMENT HELPERS ===== */
 .accounts-table td.text-start {
-    text-align: left;
+  text-align: left;
 }
 
 .accounts-table td.text-center {
-    text-align: center;
+  text-align: center;
 }
 
 .accounts-table td.text-end {
-    text-align: right;
+  text-align: right;
 }
 
 /* ===== SCROLL FIX FOR MODALS ===== */
 html {
-    overflow-y: scroll;
+  overflow-y: scroll;
 }
 
 body.modal-open {
-    padding-right: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* ===== FIX: Make top-level Assign Course button solid blue ===== */
 .admin-accounts-container .btn.btn-primary {
-    background-color: #0252A9 !important;
-    border: 2px solid #0252A9 !important;
-    color: #fff !important;
-    font-weight: 600;
-    transition: all 0.2s ease;
+  background-color: #0252a9 !important;
+  border: 2px solid #0252a9 !important;
+  color: #fff !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-    .admin-accounts-container .btn.btn-primary:hover {
-        background-color: #01448E !important;
-        border-color: #01448E !important;
-    }
+.admin-accounts-container .btn.btn-primary:hover {
+  background-color: #01448e !important;
+  border-color: #01448e !important;
+}
 
 /* Keep outlined style for View button only inside the table row-actions */
 .row-actions .btn.btn-primary {
-    background-color: transparent !important;
-    color: #0252A9 !important;
-    border: 2px solid #0252A9 !important;
+  background-color: transparent !important;
+  color: #0252a9 !important;
+  border: 2px solid #0252a9 !important;
 }
 
-    .row-actions .btn.btn-primary:hover {
-        background-color: #0252A9 !important;
-        color: #fff !important;
-    }
+.row-actions .btn.btn-primary:hover {
+  background-color: #0252a9 !important;
+  color: #fff !important;
+}
 
 /* ============================================================
    CONFIRM ASSIGNED COURSE DELETE MODAL (scoped to dynamic id)
    Matches the dark-red themed delete modal style
    ============================================================ */
 .modal[id^="confirmDelete-"] .modal-content {
-    border-radius: 1rem;
-    border: 1px solid #f1c6ca; /* soft red border */
-    box-shadow: 0 12px 30px rgba(139,14,14,.25);
+  border-radius: 1rem;
+  border: 1px solid #f1c6ca; /* soft red border */
+  box-shadow: 0 12px 30px rgba(139, 14, 14, 0.25);
 }
 
 .modal[id^="confirmDelete-"] .modal-header {
-    background: #8B0E0E !important; /* dark red header */
-    color: #fff !important;
-    border: 0;
-    padding: .9rem 1rem;
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+  background: #8b0e0e !important; /* dark red header */
+  color: #fff !important;
+  border: 0;
+  padding: 0.9rem 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
 }
 
 .modal[id^="confirmDelete-"] .modal-title {
-    color: #fff !important;
-    font-weight: 700;
+  color: #fff !important;
+  font-weight: 700;
 }
 
 .modal[id^="confirmDelete-"] .btn-close {
-    filter: invert(1) grayscale(1) brightness(200%); /* white close icon */
-    opacity: .9;
+  filter: invert(1) grayscale(1) brightness(200%); /* white close icon */
+  opacity: 0.9;
 }
 
-    .modal[id^="confirmDelete-"] .btn-close:hover {
-        opacity: 1;
-    }
+.modal[id^="confirmDelete-"] .btn-close:hover {
+  opacity: 1;
+}
 
 .modal[id^="confirmDelete-"] .modal-body {
-    background: #fff;
-    padding-top: 1rem;
-    color: #1f2937;
+  background: #fff;
+  padding-top: 1rem;
+  color: #1f2937;
 }
 
 /* Buttons */
 .modal[id^="confirmDelete-"] .modal-footer {
-    border-top: 0;
-    padding-top: .25rem;
+  border-top: 0;
+  padding-top: 0.25rem;
 }
 
 .modal[id^="confirmDelete-"] .btn.btn-light {
-    border-radius: 999px;
-    font-weight: 600;
+  border-radius: 999px;
+  font-weight: 600;
 }
 
 /* Promote the red Delete button to branded dark red with pill shape */
 .modal[id^="confirmDelete-"] .btn.btn-danger {
-    background-color: #B01616; /* brandy red */
-    border-color: #B01616;
-    color: #fff;
-    border-radius: 999px;
-    font-weight: 700;
-    padding: 0.45rem 1.1rem;
-    transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  background-color: #b01616; /* brandy red */
+  border-color: #b01616;
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.45rem 1.1rem;
+  transition: background-color 0.15s ease, transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-    .modal[id^="confirmDelete-"] .btn.btn-danger:hover,
-    .modal[id^="confirmDelete-"] .btn.btn-danger:focus {
-        background-color: #8B0E0E;
-        border-color: #8B0E0E;
-        box-shadow: 0 6px 16px rgba(139,14,14,.28);
-        transform: translateY(-1px);
-    }
+.modal[id^="confirmDelete-"] .btn.btn-danger:hover,
+.modal[id^="confirmDelete-"] .btn.btn-danger:focus {
+  background-color: #8b0e0e;
+  border-color: #8b0e0e;
+  box-shadow: 0 6px 16px rgba(139, 14, 14, 0.28);
+  transform: translateY(-1px);
+}
+
+.sort-icon {
+  margin-left: 4px;
+  text-decoration: none;
+}
+
+.sort-lines {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  position: relative;
+}
+
+.sort-icon {
+  margin-left: 6px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+  opacity: 0.8;
+  vertical-align: middle;
+}
+
+.sort-icon.asc {
+  transform: rotate(0deg);
+}
+
+.sort-icon.desc {
+  transform: rotate(180deg);
+}
