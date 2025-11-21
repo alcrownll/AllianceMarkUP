@@ -86,7 +86,8 @@
         <div class="info-grid">
             <div class="lbl">Instructor</div><div class="val">: @User.Identity.Name</div>
             <div class="lbl">EDP Code</div><div class="val">: @ViewBag.EDPCode</div>
-            <div class="lbl">Subject</div><div class="val">: @ViewBag.Subject</div>
+            <div class="lbl">Course</div><div class="val">: @ViewBag.Course</div>
+            <div class="lbl">Program</div><div class="val">: @ViewBag.Program</div>
             <div class="lbl">Schedule</div><div class="val">: @ViewBag.Schedule</div>
         </div>
 
@@ -99,7 +100,7 @@
                     <th>ID Number</th>
                     <th>Last Name</th>
                     <th>First Name</th>
-                    <th>Course/Year</th>
+                    <th>Program/Year</th>
                     <th>Prelim</th>
                     <th>Midterm</th>
                     <th>Semi-Final</th>
@@ -119,7 +120,7 @@
                             <td>@(student.IdNumber ?? "—")</td>
                             <td>@(student.LastName ?? "—")</td>
                             <td>@(student.FirstName ?? "—")</td>
-                            <td>@(student.CourseYear ?? "—")</td>
+                            <td>@(student.ProgramYear ?? "—")</td>
                             <td>@(student.Prelims?.ToString("F1") ?? "—")</td>
                             <td>@(student.Midterm?.ToString("F1") ?? "—")</td>
                             <td>@(student.SemiFinal?.ToString("F1") ?? "—")</td>

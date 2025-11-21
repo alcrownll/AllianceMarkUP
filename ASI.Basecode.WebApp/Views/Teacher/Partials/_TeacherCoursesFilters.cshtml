@@ -36,11 +36,11 @@
                 </div>
             </div>
 
-            <!-- Filter by Course -->
+            <!-- Filter by Program -->
             <div class="col-md-2">
-                <label class="form-label fw-semibold">Course</label>
+                <label class="form-label fw-semibold">Program</label>
                 <select class="form-select" name="program" id="filterProgram">
-                    <option value="">All Courses</option>
+                    <option value="">All Programs</option>
                     @foreach (var program in programs)
                     {
                         @if (ViewBag.FilterProgram as string == program)
@@ -116,7 +116,7 @@
                             { "lastName", "Last Name" },
                             { "firstName", "First Name" },
                             { "idnumber", "ID Number" },
-                            { "courseyear", "Course/Year" },
+                            { "programyear", "Program/Year" },
                             { "remarks", "Remarks" },
                             { "final", "Final Grade" }
                         };

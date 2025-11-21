@@ -68,20 +68,20 @@ namespace ASI.Basecode.Services.Services
                 {
                     AssignedCourseId = ac.AssignedCourseId,
                     EDPCode = ac.EDPCode,
-                    Subject = ac.Course?.CourseCode ?? "",
+                    Course = ac.Course?.CourseCode ?? "", // Change this to "Course" after changing all Course to Program
                     Description = ac.Course?.Description ?? "",
                     Type = ac.Type,
                     Units = ac.Units > 0 ? ac.Units : (ac.Course?.LecUnits + ac.Course?.LabUnits ?? 0),
                     DateTime = FormatSchedule(schedules),
                     Room = schedules.FirstOrDefault()?.Room ?? "",
                     Section = DetermineSection(ac.Program?.ProgramCode),
-                    Course = ac.Program?.ProgramCode,
+                    Program = ac.Program?.ProgramCode,
                     Semester = ac.Semester,
                     StudentCount = studentCount
                 });
             }
 
-            return result.OrderBy(tc => tc.Subject).ThenBy(tc => tc.Type).ToList();
+            return result.OrderBy(tc => tc.Course).ThenBy(tc => tc.Type).ToList();
         }
 
         public async Task<List<StudentGradeViewModel>> GetStudentsInCourseAsync(int assignedCourseId)
@@ -100,7 +100,7 @@ namespace ASI.Basecode.Services.Services
                 IdNumber = g.Student?.User?.IdNumber ?? "",
                 LastName = g.Student?.User?.LastName ?? "",
                 FirstName = g.Student?.User?.FirstName ?? "",
-                CourseYear = $"{g.Student?.Program} {g.Student?.YearLevel}",
+                ProgramYear = $"{g.Student?.Program} {g.Student?.YearLevel}",
                 Prelims = g.Prelims,
                 Midterm = g.Midterm,
                 SemiFinal = g.SemiFinal,
@@ -133,18 +133,18 @@ namespace ASI.Basecode.Services.Services
                 {
                     AssignedCourseId = ac.AssignedCourseId,
                     EDPCode = ac.EDPCode,
-                    Subject = ac.Course?.CourseCode ?? "",
+                    Course = ac.Course?.CourseCode ?? "",
                     Type = ac.Type,
                     Units = ac.Units > 0 ? ac.Units : (ac.Course?.LecUnits + ac.Course?.LabUnits ?? 0),
                     DateTime = FormatSchedule(schedules),
                     Room = schedules.FirstOrDefault()?.Room ?? "",
                     Section = DetermineSection(ac.Program?.ProgramCode),
-                    Course = ac.Program?.ProgramCode,
+                    Program = ac.Program?.ProgramCode,
                     Students = students
                 });
             }
 
-            return result.OrderBy(tc => tc.Subject).ThenBy(tc => tc.Type).ToList();
+            return result.OrderBy(tc => tc.Course).ThenBy(tc => tc.Type).ToList();
         }
 
         public async Task<List<StudentGradeViewModel>> GetStudentGradesForClassAsync(int assignedCourseId, string examType = null)
@@ -368,7 +368,7 @@ namespace ASI.Basecode.Services.Services
                     IdNumber = student?.User?.IdNumber ?? "",
                     LastName = student?.User?.LastName ?? "",
                     FirstName = student?.User?.FirstName ?? "",
-                    CourseYear = $"{student?.Program} {student?.YearLevel}",
+                    ProgramYear = $"{student?.Program} {student?.YearLevel}",
                     Gender = student?.User?.UserProfile?.Gender ?? "",
                     Prelims = avgPrelims,
                     Midterm = avgMidterm,
@@ -404,9 +404,9 @@ namespace ASI.Basecode.Services.Services
                     ? students.OrderByDescending(s => s.IdNumber).ToList()
                     : students.OrderBy(s => s.IdNumber).ToList(),
                 
-                "courseyear" => isDescending 
-                    ? students.OrderByDescending(s => s.CourseYear).ToList()
-                    : students.OrderBy(s => s.CourseYear).ToList(),
+                "programyear" => isDescending 
+                    ? students.OrderByDescending(s => s.ProgramYear).ToList()
+                    : students.OrderBy(s => s.ProgramYear).ToList(),
                 
                 "remarks" => isDescending 
                     ? students.OrderByDescending(s => s.Remarks).ToList()

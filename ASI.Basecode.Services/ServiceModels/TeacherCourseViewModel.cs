@@ -8,15 +8,15 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public int AssignedCourseId { get; set; }
         public string EDPCode { get; set; }
-        public string Subject { get; set; }        // CourseCode
+        public string Course { get; set; }         // CourseCode
         public string Description { get; set; }    // Course Description
         public string Type { get; set; }           // LEC / LAB
         public int Units { get; set; }
         public string DateTime { get; set; }       // Formatted schedule
         public string Room { get; set; }
         public string Section { get; set; }        // Derived from program/year
-        public string Course { get; set; }         // Program (BSCS, BSIT, etc.)
-        public string Semester { get; set; }       // 2024-2025-1
+        public string Program { get; set; }        // Program (BSCS, BSIT, etc.)
+        public string Semester { get; set; }       
         public int StudentCount { get; set; }      // Number of enrolled students
     }
 
@@ -24,13 +24,13 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public int AssignedCourseId { get; set; }
         public string EDPCode { get; set; }
-        public string Subject { get; set; }
+        public string Course { get; set; }
         public string Type { get; set; }
         public int Units { get; set; }
         public string DateTime { get; set; }
         public string Room { get; set; }
         public string Section { get; set; }
-        public string Course { get; set; }
+        public string Program { get; set; }
         public List<StudentGradeViewModel> Students { get; set; } = new List<StudentGradeViewModel>();
     }
 
@@ -43,7 +43,7 @@ namespace ASI.Basecode.Services.ServiceModels
         public string LastName { get; set; }
         public string FirstName { get; set; }
         public string FullName => $"{FirstName} {LastName}";
-        public string CourseYear { get; set; }
+        public string ProgramYear { get; set; }
         public string Gender { get; set; }
         
         [Range(1.0, 5.0, ErrorMessage = "Grade must be between 1.0 and 5.0")]

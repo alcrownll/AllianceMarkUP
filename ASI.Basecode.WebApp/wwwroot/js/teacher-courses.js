@@ -1,13 +1,87 @@
 // TeacherCourses JS for UI stuff and AJAX calls to backend
 let currentAssignedCourseId = 0;
 
+// ===== Toast helper =====
+window.showToast = function (msg, type = 'success') {
+    const container = initToastContainer();
+    const toastId = 'toast-' + Date.now();
+    const iconClass = type === 'error' ? 'bi-exclamation-circle-fill' : type === 'info' ? 'bi-info-circle-fill' : 'bi-check-circle-fill';
+    const bgClass = type === 'error' ? 'bg-danger' : type === 'info' ? 'bg-primary' : 'bg-success';
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="bi ${iconClass}"></i>
+                    ${msg}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const delay = type === 'error' ? 5000 : 3000;
+    const toast = new bootstrap.Toast(toastElement, { delay: delay });
+    toast.show();
+    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
+};
+
+// ===== Refresh grades table =====
+window.refreshGradesTable = async function () {
+    const host = document.querySelector('.teacher-grades-card tbody');
+    if (!host) {
+        console.warn('Grades table not found');
+        return;
+    }
+
+    try {
+        // Get current filter parameters from the form
+        const filterForm = document.getElementById('filterForm');
+        const params = new URLSearchParams();
+        
+        if (filterForm) {
+            const formData = new FormData(filterForm);
+            for (let [key, value] of formData.entries()) {
+                if (value) params.append(key, value);
+            }
+        }
+
+        const url = '/Teacher/AssignedCourses?' + params.toString();
+        const res = await fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        if (!res.ok) {
+            console.error('Error fetching updated grades');
+            showToast('Failed to refresh grades table', 'error');
+            return;
+        }
+
+        // Parse the HTML response
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extract the table body from the response
+        const newTableBody = doc.querySelector('.teacher-grades-card tbody');
+        if (newTableBody) {
+            host.innerHTML = newTableBody.innerHTML;
+            console.log('Grades table refreshed successfully');
+        }
+    } catch (err) {
+        console.error('Failed to refresh grades:', err);
+        showToast('Failed to refresh grades table', 'error');
+    }
+};
+
 // Panel
-function showEditPanel(edpCode, subject, schedule, assignedCourseId) {
+function showEditPanel(edpCode, course, schedule, assignedCourseId) {
     currentAssignedCourseId = assignedCourseId;
     
     // Update panel header with course information
     document.getElementById("edpCodeText").innerText = edpCode;
-    document.getElementById("subjectText").innerText = subject;
+    document.getElementById("courseText").innerText = course;
     document.getElementById("scheduleText").innerText = schedule;
     
     // Load students data from server
@@ -66,7 +140,7 @@ function renderStudentsTable(students) {
             <td>${student.idNumber || ''}</td>
             <td>${student.lastName || ''}</td>
             <td>${student.firstName || ''}</td>
-            <td>${student.courseYear || ''}</td>
+            <td>${student.programYear || ''}</td>
             <td>
                 <input type="number" step="0.1" min="1.0" max="5.0" 
                        value="${student.prelims || ''}" 
@@ -157,15 +231,17 @@ function saveGrades() {
     })
     .then(data => {
         if (data.success) {
-            showSuccessMessage('Grades saved successfully!');
+            showToast('Grades saved successfully!', 'success');
             hideEditPanel();
+            // Refresh the grades table with updated data
+            window.refreshGradesTable();
         } else {
-            showErrorMessage('Error saving grades: ' + data.message);
+            showToast('Error saving grades: ' + data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showErrorMessage('An error occurred while saving grades');
+        showToast('An error occurred while saving grades', 'error');
     });
 }
 
@@ -181,54 +257,11 @@ function initToastContainer() {
     return toastContainer;
 }
 
-// Success and Error Messages using Bootstrap Toast
-function showSuccessMessage(message) {
-    const container = initToastContainer();
-    const toastId = 'toast-' + Date.now();
-    const toastHtml = `
-        <div id="${toastId}" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    container.insertAdjacentHTML('beforeend', toastHtml);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
-    toast.show();
-    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
-}
-
-function showErrorMessage(message) {
-    const container = initToastContainer();
-    const toastId = 'toast-' + Date.now();
-    const toastHtml = `
-        <div id="${toastId}" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body d-flex align-items-center gap-2">
-                    <i class="bi bi-exclamation-circle-fill"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    container.insertAdjacentHTML('beforeend', toastHtml);
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
-    toast.show();
-    toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
-}
-
 // Print to PDF
-function printGrades(edpCode, subject, schedule, assignedCourseId) {
-    console.log('Opening print page for:', edpCode, subject, schedule, assignedCourseId);
+function printGrades(edpCode, course, schedule, assignedCourseId) {
+    console.log('Opening print page for:', edpCode, course, schedule, assignedCourseId);
     
-    const printUrl = `/Teacher/PrintGrades?assignedCourseId=${assignedCourseId}&edpCode=${encodeURIComponent(edpCode)}&subject=${encodeURIComponent(subject)}&schedule=${encodeURIComponent(schedule)}`;
+    const printUrl = `/Teacher/PrintGrades?assignedCourseId=${assignedCourseId}`;
     
     window.open(printUrl, '_blank');
 }
@@ -236,11 +269,11 @@ function printGrades(edpCode, subject, schedule, assignedCourseId) {
 // Excel Upload Functions
 let currentUploadAssignedCourseId = 0;
 
-function openExcelUploadModal(edpCode, subject, schedule, assignedCourseId) {
+function openExcelUploadModal(edpCode, course, schedule, assignedCourseId) {
     currentUploadAssignedCourseId = assignedCourseId;
     
     // Update course info in modal
-    document.getElementById('uploadCourseInfo').textContent = `${edpCode} - ${subject} | ${schedule}`;
+    document.getElementById('uploadCourseInfo').textContent = `${edpCode} - ${course} | ${schedule}`;
     
     // Reset modal state
     document.getElementById('excelFileInput').value = '';
@@ -323,11 +356,6 @@ function uploadExcelFile() {
         
         if (data.success) {
             showExcelUploadSuccess(data.message, data.processedCount, data.errorCount, data.errors);
-            
-            // Refresh the grade data if successful
-            if (currentAssignedCourseId > 0) {
-                loadStudentsForCourse(currentAssignedCourseId);
-            }
         } else {
             showExcelUploadError(data.message, data.errors);
         }
@@ -362,6 +390,21 @@ function showExcelUploadSuccess(message, processedCount, errorCount, errors) {
     }
     
     resultsDiv.style.display = 'block';
+    
+    // Refresh table data and close modal after showing results (like admin pattern)
+    setTimeout(async () => {
+        await window.refreshGradesTable();
+        showSuccessMessage('Grades updated successfully!');
+        
+        // Close the modal
+        const excelUploadModal = document.getElementById('excelUploadModal');
+        if (excelUploadModal) {
+            const modal = bootstrap.Modal.getInstance(excelUploadModal);
+            if (modal) {
+                modal.hide();
+            }
+        }
+    }, 1500);
 }
 
 function showExcelUploadError(message, errors) {

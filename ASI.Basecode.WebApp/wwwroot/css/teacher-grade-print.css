@@ -165,7 +165,7 @@
     .grid {
         border-collapse: collapse !important;
         table-layout: fixed !important;
-        font-size: 12px;
+        font-size: 10px;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
@@ -181,7 +181,7 @@
             text-align: center;
             font-weight: 600;
             vertical-align: middle;
-            font-size: 11px;
+            font-size: 10px;
             background-color: #bbb !important;
             margin: 0;
             /* Chrome-specific fixes */
@@ -197,7 +197,7 @@
             word-wrap: break-word;
             text-align: center;
             overflow: hidden;
-            font-size: 11px;
+            font-size: 10px;
             margin: 0;
             /* Chrome-specific fixes */
             box-sizing: border-box !important;
@@ -230,16 +230,16 @@
         }
 
         /* Column widths using percentages for full width */
-        .grid th:nth-child(1), .grid td:nth-child(1) { width: 5% !important; } /* No. */
-        .grid th:nth-child(2), .grid td:nth-child(2) { width: 15% !important; } /* ID Number */
-        .grid th:nth-child(3), .grid td:nth-child(3) { width: 16% !important; } /* Last Name */
-        .grid th:nth-child(4), .grid td:nth-child(4) { width: 16% !important; } /* First Name */
+        .grid th:nth-child(1), .grid td:nth-child(1) { width: 3% !important; } /* No. */
+        .grid th:nth-child(2), .grid td:nth-child(2) { width: 10% !important; } /* ID Number */
+        .grid th:nth-child(3), .grid td:nth-child(3) { width: 15% !important; } /* Last Name */
+        .grid th:nth-child(4), .grid td:nth-child(4) { width: 15% !important; } /* First Name */
         .grid th:nth-child(5), .grid td:nth-child(5) { width: 14% !important; } /* Course/Year */
-        .grid th:nth-child(6), .grid td:nth-child(6) { width: 8% !important; } /* Prelim */
-        .grid th:nth-child(7), .grid td:nth-child(7) { width: 8% !important; } /* Midterm */
-        .grid th:nth-child(8), .grid td:nth-child(8) { width: 9% !important; } /* Semi-Final */
-        .grid th:nth-child(9), .grid td:nth-child(9) { width: 8% !important; } /* Final */
-        .grid th:nth-child(10), .grid td:nth-child(10) { width: 11% !important; } /* Remarks */
+        .grid th:nth-child(6), .grid td:nth-child(6) { width: 7% !important; } /* Prelim */
+        .grid th:nth-child(7), .grid td:nth-child(7) { width: 7% !important; } /* Midterm */
+        .grid th:nth-child(8), .grid td:nth-child(8) { width: 8% !important; } /* Semi-Final */
+        .grid th:nth-child(9), .grid td:nth-child(9) { width: 7% !important; } /* Final */
+        .grid th:nth-child(10), .grid td:nth-child(10) { width: 14% !important; } /* Remarks */
 
     /* ---------- Footer row ---------- */
     .footer-row {

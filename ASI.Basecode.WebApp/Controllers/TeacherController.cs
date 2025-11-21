@@ -98,7 +98,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 {
                     if (!string.IsNullOrEmpty(program))
                     {
-                        classSchedules = classSchedules.Where(c => c.Course == program).ToList();
+                        classSchedules = classSchedules.Where(c => c.Program == program).ToList();
                     }
                 }
 
@@ -288,8 +288,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
                 var teacherName = $"{teacherProfile?.FirstName}_{teacherProfile?.LastName}".Replace(" ", "_");
                 var edpCode = course?.EDPCode?.Replace(" ", "_") ?? "Unknown";
-                var subject = course?.Subject?.Replace(" ", "_") ?? "Subject";
-                var fileName = $"{teacherName}_{edpCode}_{subject}.xlsx";
+                var fileName = $"{teacherName}_{edpCode}_{course}.xlsx";
 
                 return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
             }
@@ -319,7 +318,7 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> PrintGrades(int assignedCourseId, string edpCode = "", string subject = "", string schedule = "")
+        public async Task<IActionResult> PrintGrades(int assignedCourseId)
         {
             try
             {
@@ -339,7 +338,8 @@ namespace ASI.Basecode.WebApp.Controllers
                 ViewBag.CurrentSchoolYear = await _teacherCourseService.GetCurrentSchoolYearAsync();
                 ViewBag.CurrentSemester = _teacherCourseService.GetCurrentSemesterName();
                 ViewBag.EDPCode = course.EDPCode;
-                ViewBag.Subject = course.Subject;
+                ViewBag.Course = course.Course;
+                ViewBag.Program = course.Program;
                 ViewBag.Schedule = course.DateTime;
                 ViewBag.Students = students;
                 ViewBag.TotalStudents = students.Count;

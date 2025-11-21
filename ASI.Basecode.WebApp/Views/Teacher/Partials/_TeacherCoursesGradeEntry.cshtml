@@ -7,13 +7,13 @@
                                 <thead>
                                     <tr>
                                         <th>EDP Code</th>
-                                        <th>Subject</th>
+                                        <th>Course</th>
+                                        <th>Program</th>
                                         <th>Type</th>
                                         <th>Units</th>
                                         <th>Schedule</th>
                                         <th>Room</th>
                                         <th>Section</th>
-                                        <th>Course</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -24,13 +24,13 @@
                                         {
                                             <tr>
                                                 <td>@course.EDPCode</td>
-                                                <td>@course.Subject</td>
+                                                <td>@course.Course</td>
+                                                <td>@course.Program</td>
                                                 <td>@course.Type</td>
                                                 <td>@course.Units</td>
                                                 <td>@course.DateTime</td>
                                                 <td>@course.Room</td>
                                                 <td>@course.Section</td>
-                                                <td>@course.Course</td>
                                                 <td class="text-center">
                                                     <div class="d-inline-flex gap-2">
                                                         <!-- Edit -->
@@ -38,7 +38,7 @@
                                                                 class="icon-btn icon-edit"
                                                                 data-bs-toggle="tooltip"
                                                                 data-bs-title="Edit"
-                                                                onclick="showEditPanel('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
+                                                                onclick="showEditPanel('@course.EDPCode', '@course.Course', '@course.DateTime', @course.AssignedCourseId)">
                                                             <i class="bi bi-pencil-square"></i>
                                                         </button>
 
@@ -47,7 +47,7 @@
                                                                 class="icon-btn icon-upload"
                                                                 data-bs-toggle="tooltip"
                                                                 data-bs-title="Upload Excel Grades"
-                                                                onclick="openExcelUploadModal('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
+                                                                onclick="openExcelUploadModal('@course.EDPCode', '@course.Course', '@course.DateTime', @course.AssignedCourseId)">
                                                             <i class="bi bi-upload"></i>
                                                         </button>
 
@@ -56,7 +56,7 @@
                                                                 class="icon-btn icon-pdf"
                                                                 data-bs-toggle="tooltip"
                                                                 data-bs-title="To PDF"
-                                                                onclick="printGrades('@course.EDPCode', '@course.Subject', '@course.DateTime', @course.AssignedCourseId)">
+                                                                onclick="printGrades('@course.EDPCode', '@course.Course', '@course.DateTime', @course.AssignedCourseId)">
                                                             <i class="bi bi-file-earmark-text"></i>
                                                         </button>
                                                     </div>
