@@ -39,12 +39,15 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Dashboard(string schoolYear = null, string termKey = null)
+        public async Task<IActionResult> Dashboard(string schoolYear = null, string termKey = null, int? programId = null)
         {
-            var summary = await _dashboardService.GetSummaryAsync();
-            var trend = await _dashboardService.GetEnrollmentTrendAsync();
+            var programs = await _dashboardService.GetProgramOptionsAsync();
             var schoolYears = await _dashboardService.GetAvailableSchoolYearsAsync();
-            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey);
+            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey, programId);
+            var resolvedSchoolYear = detail?.SchoolYear ?? schoolYear;
+            var resolvedTermKey = detail?.SelectedTermKey ?? termKey;
+            var summary = await _dashboardService.GetSummaryAsync(resolvedSchoolYear, resolvedTermKey, programId);
+            var trend = await _dashboardService.GetEnrollmentTrendAsync(programId: programId);
 
             var vm = new AdminDashboardViewModel
             {
@@ -52,7 +55,11 @@ namespace ASI.Basecode.WebApp.Controllers
                 EnrollmentTrend = trend,
                 SchoolYears = schoolYears,
                 SelectedSchoolYear = detail?.SchoolYear,
-                YearDetail = detail
+                YearDetail = detail,
+                Programs = programs,
+                SelectedProgramId = programId,
+                TermOptions =  new List<ReportTermOptionModel>(),
+                SelectedTermKey = detail?.SelectedTermKey
             };
 
             return View("AdminDashboard", vm);
@@ -77,9 +84,9 @@ namespace ASI.Basecode.WebApp.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Reports(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null)
+        public async Task<IActionResult> Reports(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null, int? studentProgramId = null, int? studentCourseId = null)
         {
-            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId);
+            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId, studentProgramId, studentCourseId);
 
             var vm = new AdminReportsViewModel
             {
@@ -88,7 +95,9 @@ namespace ASI.Basecode.WebApp.Controllers
                 SelectedSchoolYear = dashboard?.SchoolYear,
                 SelectedTermKey = dashboard?.TermKey,
                 SelectedTeacherId = teacherId,
-                SelectedStudentId = studentId
+                SelectedStudentId = studentId,
+                SelectedStudentProgramId = studentProgramId,
+                SelectedStudentCourseId = studentCourseId
             };
 
             return View("AdminReports", vm);
@@ -96,9 +105,9 @@ namespace ASI.Basecode.WebApp.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> ReportsDashboard(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null)
+        public async Task<IActionResult> ReportsDashboard(string schoolYear = null, string termKey = null, int? teacherId = null, int? studentId = null, int? studentProgramId = null, int? studentCourseId = null)
         {
-            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId);
+            var dashboard = await _reportsService.GetDashboardAsync(schoolYear, termKey, teacherId, studentId, studentProgramId, studentCourseId);
             return Json(dashboard);
         }
 
@@ -116,6 +125,14 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             var analytics = await _reportsService.GetStudentAnalyticsAsync(studentId, schoolYear, termKey);
             return Json(analytics);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ReportsStudentDirectory(string schoolYear = null, string termKey = null, int? programId = null, int? courseId = null)
+        {
+            var students = await _reportsService.GetStudentDirectoryAsync(schoolYear, termKey, programId, courseId);
+            return Json(students);
         }
 
         [Authorize(Roles = "Admin")]
@@ -162,20 +179,26 @@ namespace ASI.Basecode.WebApp.Controllers
             return View("AdminProfile", vm);
         }
 
-
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> DashboardYearDetail(string schoolYear, string termKey = null)
+        public async Task<IActionResult> DashboardYearDetail(string schoolYear, string termKey = null, int? programId = null)
         {
-            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey);
+            var summary = await _dashboardService.GetSummaryAsync(schoolYear, termKey, programId);
+            var trend = await _dashboardService.GetEnrollmentTrendAsync(programId: programId);
+            var detail = await _dashboardService.GetYearDetailAsync(schoolYear, termKey, programId);
             if (detail == null)
             {
                 return NotFound();
             }
 
-            return Json(detail);
+            return Json(new
+            {
+                summary,
+                trend,
+                detail
+            });
         }
-
+        
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> DiagnoseDashboardData()

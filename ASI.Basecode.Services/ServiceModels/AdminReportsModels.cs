@@ -90,6 +90,9 @@ namespace ASI.Basecode.Services.ServiceModels
     {
         public IList<TeacherDirectoryItemModel> Directory { get; set; } = new List<TeacherDirectoryItemModel>();
         public TeacherDetailModel SelectedTeacher { get; set; } = new TeacherDetailModel();
+        public TeacherDetailModel AggregateDetail { get; set; } = new TeacherDetailModel();
+        public IList<ReportsCourseOptionModel> Courses { get; set; } = new List<ReportsCourseOptionModel>();
+        public int? SelectedCourseId { get; set; }
     }
 
     public class TeacherDirectoryItemModel
@@ -101,6 +104,8 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Rank { get; set; }
         public decimal LoadUnits { get; set; }
         public int Sections { get; set; }
+        public IList<int> ProgramIds { get; set; } = new List<int>();
+        public IList<int> CourseIds { get; set; } = new List<int>();
     }
 
     public class TeacherDetailModel
@@ -122,6 +127,8 @@ namespace ASI.Basecode.Services.ServiceModels
         public int PassCount { get; set; }
         public int FailCount { get; set; }
         public int IncompleteCount { get; set; }
+        public bool IsAggregate { get; set; }
+        public string ContextLabel { get; set; }
     }
 
     public class TeacherAssignmentModel
@@ -151,21 +158,66 @@ namespace ASI.Basecode.Services.ServiceModels
         public bool IsComplete { get; set; }
     }
 
+    public class ReportsProgramOptionModel
+    {
+        public int ProgramId { get; set; }
+        public string ProgramCode { get; set; }
+        public string ProgramName { get; set; }
+        public string DisplayName => string.IsNullOrWhiteSpace(ProgramCode)
+            ? ProgramName ?? "Program"
+            : string.IsNullOrWhiteSpace(ProgramName) ? ProgramCode : $"{ProgramCode} - {ProgramName}";
+    }
+
+    public class ReportsCourseOptionModel
+    {
+        public int CourseId { get; set; }
+        public string CourseCode { get; set; }
+        public string CourseName { get; set; }
+        public string DisplayName => string.IsNullOrWhiteSpace(CourseName)
+            ? CourseCode ?? "Course"
+            : string.IsNullOrWhiteSpace(CourseCode) ? CourseName : $"{CourseCode} - {CourseName}";
+    }
+
+    public class TeacherOptionModel
+    {
+        public int TeacherId { get; set; }
+        public string Name { get; set; }
+        public string Department { get; set; }
+    }
     public class ReportsStudentModel
     {
         public IList<StudentOptionModel> Students { get; set; } = new List<StudentOptionModel>();
         public int? SelectedStudentId { get; set; }
         public StudentAnalyticsModel Analytics { get; set; } = new StudentAnalyticsModel();
-        public IList<string> Programs { get; set; } = new List<string>();
+        public StudentAnalyticsModel AggregateAnalytics { get; set; } = new StudentAnalyticsModel();
+        public IList<ReportsProgramOptionModel> Programs { get; set; } = new List<ReportsProgramOptionModel>();
+        public int? SelectedProgramId { get; set; }
         public IList<string> Sections { get; set; } = new List<string>();
+        public IList<StudentCourseOptionModel> Courses { get; set; } = new List<StudentCourseOptionModel>();
+        public int? SelectedCourseId { get; set; }
     }
 
     public class StudentOptionModel
     {
         public int StudentId { get; set; }
         public string Name { get; set; }
+        public int? ProgramId { get; set; }
         public string Program { get; set; }
         public IList<string> Sections { get; set; } = new List<string>();
+    }
+
+    public class StudentCourseOptionModel
+    {
+        public int AssignedCourseId { get; set; }
+        public int CourseId { get; set; }
+        public int? ProgramId { get; set; }
+        public string CourseCode { get; set; }
+        public string CourseName { get; set; }
+        public string SchoolYear { get; set; }
+        public string TermKey { get; set; }
+        public string DisplayName => string.IsNullOrWhiteSpace(CourseName)
+            ? CourseCode
+            : string.IsNullOrWhiteSpace(CourseCode) ? CourseName : $"{CourseCode} - {CourseName}";
     }
 
     public class StudentAnalyticsModel
@@ -181,6 +233,8 @@ namespace ASI.Basecode.Services.ServiceModels
         public IList<StudentGradeBreakdownModel> GradeBreakdown { get; set; } = new List<StudentGradeBreakdownModel>();
         public string ConsistencyLabel { get; set; }
         public IList<StudentComparativeHighlightModel> ComparativeHighlights { get; set; } = new List<StudentComparativeHighlightModel>();
+        public bool IsAggregate { get; set; }
+        public string ContextLabel { get; set; }
     }
 
     public class StudentComparativeHighlightModel
@@ -246,5 +300,6 @@ namespace ASI.Basecode.Services.ServiceModels
         public string TermKey { get; set; }
         public string Label { get; set; }
         public string SchoolYear { get; set; }
+        public int SemesterOrder { get; set; }
     }
 }

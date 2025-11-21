@@ -11,6 +11,8 @@
     var termOptions = dashboard.TermOptions ?? new List<ASI.Basecode.Services.ServiceModels.ReportTermOptionModel>();
     var selectedSchoolYear = Model?.SelectedSchoolYear ?? dashboard.SchoolYear ?? schoolYears.LastOrDefault() ?? string.Empty;
     var serializedDashboard = JsonSerializer.Serialize(dashboard);
+    var selectedStudentProgramId = Model?.SelectedStudentProgramId ?? dashboard?.Student?.SelectedProgramId;
+    var selectedStudentCourseId = Model?.SelectedStudentCourseId ?? dashboard?.Student?.SelectedCourseId;
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -26,27 +28,81 @@
         </button>
     </nav>
 
-    <!-- STUDENT TAB -->
+
     <section class="tab-panel active" data-panel="student" role="tabpanel">
         <header class="student-controls glass">
-            <div class="inline-field">
-                <label for="studentSelector" class="form-label m-0">Student</label>
-                <select id="studentSelector" class="form-select" data-selector="student">
-                    <option value="">Select Student</option>
-                    @if (dashboard?.Student?.Students?.Any() == true)
-                    {
-                        foreach (var option in dashboard.Student.Students)
+            <div class="filters-title">
+                <i class="bi bi-funnel-fill" aria-hidden="true"></i>
+                <span>Filter</span>
+            </div>  
+            <div class="student-filter-grid">
+                <div class="filter-field">
+                    <label for="studentProgramFilter" class="form-label">Program</label>
+                    <select id="studentProgramFilter" class="form-select" data-filter="student-program">
+                        <option value="">All Programs</option>
+                        @if (dashboard?.Student?.Programs?.Any() == true)
                         {
-                            var selected = Model?.SelectedStudentId == option.StudentId
-                            || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
-                            <option value="@option.StudentId" selected="@(selected)">@option.Name</option>
+                            foreach (var program in dashboard.Student.Programs)
+                            {
+                                var selected = selectedStudentProgramId == program.ProgramId;
+                                <option value="@program.ProgramId" selected="@(selected)">@program.DisplayName</option>
+                            }
                         }
-                    }
-                </select>
+                    </select>
+                </div>
+                <!-- Term Filter -->
+                <div class="filter-field">
+                    <label for="studentYearFilter" class="form-label">Academic Year</label>
+                    <select id="studentYearFilter" class="form-select" data-filter="student-year">
+                        <option value="">Select Year</option>
+                        @foreach (var year in schoolYears)
+                        {
+                            var isSelectedYear = string.Equals(selectedSchoolYear, year, StringComparison.OrdinalIgnoreCase);
+                            <option value="@year" selected="@(isSelectedYear)">@year</option>
+                        }
+                    </select>
+                </div>
+                <!-- Course Filter -->
+                <div class="filter-field">
+                    <label for="studentCourseFilter" class="form-label">Course</label>
+                    <select id="studentCourseFilter" class="form-select" data-filter="student-course">
+                        <option value="">All Courses</option>
+                        @if (dashboard?.Student?.Courses?.Any() == true)
+                        {
+                            foreach (var course in dashboard.Student.Courses)
+                            {
+                                var isSelectedCourse = selectedStudentCourseId == course.CourseId;
+                                <option value="@course.CourseId" selected="@(isSelectedCourse)">@course.DisplayName</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="button" class="btn btn-primary" data-action="load-students">
+                        Load Students
+                    </button>
+                </div>
             </div>
         </header>
+        <!-- Student Selector -->
+        <section class="student-selector-card glass">
+            <label for="studentSelector" class="form-label">Student</label>
+            <select id="studentSelector" class="form-select" data-selector="student">
+                <option value="">Select Student</option>
+                @if (dashboard?.Student?.Students?.Any() == true)
+                {
+                    foreach (var option in dashboard.Student.Students)
+                    {
+                        var selected = Model?.SelectedStudentId == option.StudentId
+                            || (Model?.SelectedStudentId == null && dashboard.Student.SelectedStudentId == option.StudentId);
+                        <option value="@option.StudentId" selected="@(selected)">@option.Name</option>
+                    }
+                }
+            </select>
+        </section>
 
-        <div class="student-grid">
+        <!-- Student Details -->
+        <div class="student-grid" data-section="student-details" @(dashboard?.Student?.SelectedStudentId.HasValue == true ? string.Empty : "hidden")>
             <article class="panel glass span-2">
                 <header class="panel-header">
                     <div>
@@ -74,7 +130,7 @@
             <article class="panel glass span-1">
                 <header class="panel-header">
                     <div>
-                        <h2>Simple Comparative Analysis</h2>
+                        <h2>Student Performance Matrix</h2>
                         <span>Highlights peak performance per course.</span>
                     </div>
                 </header>
@@ -123,25 +179,27 @@
     <section class="tab-panel" data-panel="teacher" role="tabpanel">
         <!-- Selector -->
         <header class="teacher-controls glass">
-            <div class="inline-field">
-                <label for="teacherSelector" class="form-label m-0">Teacher</label>
-                <select id="teacherSelector" class="form-select" data-selector="teacher">
-                    <option value="">Select Teacher</option>
-                    @if (dashboard?.Teacher?.Directory?.Any() == true)
-                    {
-                        foreach (var option in dashboard.Teacher.Directory)
+            <div class="filters-grid">
+                <div class="inline-field">
+                    <label for="teacherSelector" class="form-label m-0">Teacher</label>
+                    <select id="teacherSelector" class="form-select" data-selector="teacher">
+                        <option value="">Select Teacher</option>
+                        @if (dashboard?.Teacher?.Directory?.Any() == true)
                         {
-                            var selected = Model?.SelectedTeacherId == option.TeacherId
-                            || (Model?.SelectedTeacherId == null && dashboard.Teacher.SelectedTeacher?.TeacherId == option.TeacherId);
-                            <option value="@option.TeacherId" selected="@(selected)">@option.Name (@option.Department)</option>
+                            foreach (var option in dashboard.Teacher.Directory)
+                            {
+                                var selected = Model?.SelectedTeacherId == option.TeacherId
+                                || (Model?.SelectedTeacherId == null && dashboard.Teacher.SelectedTeacher?.TeacherId == option.TeacherId);
+                                <option value="@option.TeacherId" selected="@(selected)">@option.Name (@option.Department)</option>
+                            }
                         }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
         </header>
 
         <!-- Top row: teacher info (left) | submission status (right) -->
-        <div class="teacher-layout">
+        <div class="teacher-layout" data-section="teacher-details" @(dashboard?.Teacher?.SelectedTeacher?.TeacherId > 0 ? string.Empty : "hidden")>
             <!-- Left: Teacher header + mini KPIs -->
             <section class="panel glass teacher-info">
                 <header class="detail-header">
@@ -155,10 +213,6 @@
                     <article class="metric-chip">
                         <span class="metric-label">Subjects</span>
                         <strong class="metric-value" data-field="teacher-load">0</strong>
-                    </article>
-                    <article class="metric-chip">
-                        <span class="metric-label">Pass Rate</span>
-                        <strong class="metric-value" data-field="teacher-pass">0%</strong>
                     </article>
                 </div>
             </section>
@@ -189,13 +243,11 @@
                                 <th>Subject</th>
                                 <th>Schedule</th>
                                 <th>Units</th>
-                                <th>Final</th>
-                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr data-empty="true">
-                                <td colspan="5" class="text-center">Select a teacher to load assignments.</td>
+                                <td colspan="3" class="text-center">Select a teacher to load assignments.</td>
                             </tr>
                         </tbody>
                     </table>

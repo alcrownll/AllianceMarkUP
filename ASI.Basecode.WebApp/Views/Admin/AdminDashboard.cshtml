@@ -17,7 +17,9 @@
         schoolYears = Model?.SchoolYears ?? new List<string>(),
         selectedSchoolYear = Model?.SelectedSchoolYear,
         selectedTermKey = selectedTermKey,
-        detail = Model?.YearDetail
+        detail = Model?.YearDetail,
+        programs = Model?.Programs ?? new List<ProgramOptionModel>(),
+        selectedProgramId = Model?.SelectedProgramId
     };
 }
 
@@ -25,14 +27,61 @@
 
 <div class="admin-dashboard" id="admin-dashboard">
 
-    <section class="kpi-grid">
+    <section class="dashboard-controls glass">
+        <div class="filters-title">
+            <i class="fa-solid fa-filter" aria-hidden="true"></i>
+            <span>Filter</span>
+        </div>
+        <div class="dashboard-filter-grid">
+            <div class="filter-field">
+                <label for="programSelector" class="form-label">Program</label>
+                <select id="programSelector" class="form-select">
+                    <option value="">All Programs</option>
+                    @if (Model?.Programs?.Any() == true)
+                    {
+                        foreach (var program in Model.Programs)
+                        {
+                            var isSelected = Model?.SelectedProgramId == program.ProgramId;
+                            <option value="@program.ProgramId" selected="@(isSelected)">
+                                @(string.IsNullOrWhiteSpace(program.ProgramCode) ? program.ProgramName : $"{program.ProgramCode} - {program.ProgramName}")
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="yearSelector" class="form-label">Academic Year</label>
+                <select id="yearSelector" class="form-select">
+                    <option value="">All Years</option>
+                    @if (Model?.SchoolYears?.Any() == true)
+                    {
+                        foreach (var year in Model.SchoolYears)
+                        {
+                            var isSelectedYear = string.Equals(Model?.SelectedSchoolYear, year, StringComparison.OrdinalIgnoreCase);
+                            <option value="@year" selected="@(isSelectedYear)">@year</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label for="termSelector" class="form-label">Semester</label>
+                <select id="termSelector" class="form-select">
+                    <option value="">Whole Year</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <section class="kpi-grid">  
         <article class="kpi-card glass">
             <div class="kpi-icon students">
                 <i class="fa-solid fa-user-graduate"></i>
             </div>
             <div class="kpi-content">
                 <span class="kpi-label">Total Students</span>
-                <span class="kpi-value">@((Model?.Summary?.TotalStudents ?? 0).ToString("N0"))</span>
+                <span class="kpi-value" data-kpi="students">@((Model?.Summary?.TotalStudents ?? 0).ToString("N0"))</span>
             </div>
         </article>
         <article class="kpi-card glass">
@@ -41,7 +90,7 @@
             </div>
             <div class="kpi-content">
                 <span class="kpi-label">Teachers</span>
-                <span class="kpi-value">@((Model?.Summary?.TotalTeachers ?? 0).ToString("N0"))</span>
+                <span class="kpi-value" data-kpi="teachers">@((Model?.Summary?.TotalTeachers ?? 0).ToString("N0"))</span>
             </div>
         </article>
         <article class="kpi-card glass">
@@ -50,7 +99,7 @@
             </div>
             <div class="kpi-content">
                 <span class="kpi-label">Courses</span>
-                <span class="kpi-value">@((Model?.Summary?.ActiveCourses ?? 0).ToString("N0"))</span>
+                <span class="kpi-value" data-kpi="courses">@((Model?.Summary?.ActiveCourses ?? 0).ToString("N0"))</span>
             </div>
         </article>
     </section>
@@ -63,8 +112,8 @@
             </div>
             <span class="panel-hint">Hover to reveal totals</span>
         </div>
-        <div class="panel-body">
-            <canvas id="enrollmentTrendChart" height="260"></canvas>
+        <div class="panel-body chart-area">
+            <canvas id="enrollmentTrendChart"></canvas>
         </div>
     </section>
 
@@ -76,8 +125,8 @@
                     <span>Weighted per subject</span>
                 </div>
             </div>
-            <div class="panel-body">
-                <canvas id="averageGpaChart" height="220"></canvas>
+            <div class="panel-body chart-area">
+                <canvas id="averageGpaChart"></canvas>
             </div>
         </article>
         <article class="panel glass">
@@ -87,8 +136,8 @@
                     <span>Defines performance success frequency</span>
                 </div>
             </div>
-            <div class="panel-body">
-                <canvas id="passFailChart" height="220"></canvas>
+            <div class="panel-body chart-area">
+                <canvas id="passFailChart"></canvas>
             </div>
         </article>
     </section>
@@ -101,4 +150,3 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.5/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <script src="~/js/admin-dashboard.js" asp-append-version="true"></script>
 }
-
