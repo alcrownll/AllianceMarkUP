@@ -12,16 +12,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ASI.Basecode.Services.Services
 {
+    /// <summary>
+    /// Builds the data context behind the Admin Reports experience (directories, analytics,
+    /// trends, filters). Controllers call this to retrieve report DTOs and directory listings.
+    /// </summary>
     public class AdminReportsService : IAdminReportsService
     {
         private readonly AsiBasecodeDBContext _ctx;
-
-        private static readonly StaticSemesterDefinition[] StaticSemesterDefinitions = new[]
-        {
-            new StaticSemesterDefinition("all-semester", "All Semester", 0),
-            new StaticSemesterDefinition("first-semester", "First Semester", 1),
-            new StaticSemesterDefinition("second-semester", "Second Semester", 2)
-        };
 
         public AdminReportsService(AsiBasecodeDBContext ctx)
         {
@@ -1214,7 +1211,6 @@ namespace ASI.Basecode.Services.Services
             {
                 return "Incomplete";
             }
-
             return finalGrade.Value < 3m ? "Passed" : "Failed";
         }
 
@@ -1407,7 +1403,12 @@ namespace ASI.Basecode.Services.Services
                 _ => 0
             };
         }
-
+        private static readonly StaticSemesterDefinition[] StaticSemesterDefinitions = new[]
+        {
+            new StaticSemesterDefinition("all-semester", "All Semester", 0),
+            new StaticSemesterDefinition("first-semester", "First Semester", 1),
+            new StaticSemesterDefinition("second-semester", "Second Semester", 2)
+        };
         private class TermInfo
         {
             public string TermKey { get; set; }

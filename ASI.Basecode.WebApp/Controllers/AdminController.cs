@@ -6,7 +6,7 @@ using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.ServiceModels;
 using ASI.Basecode.WebApp.Models;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;   
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASI.Basecode.WebApp.Controllers
@@ -198,7 +198,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 detail
             });
         }
-        
+
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> DiagnoseDashboardData()

@@ -141,6 +141,7 @@
         });
     }
 
+    // Aggregates pass/fail stats from the service payload so the doughnut chart can show totals
     function aggregatePassFail(rates) {
         return rates.reduce((totals, r) => {
             totals.passed += toNumber(r.passed ?? r.Passed, 0);
@@ -150,11 +151,13 @@
         }, { passed: 0, failed: 0, incomplete: 0 });
     }
 
+    // Normalizes numeric values coming from C# (handles undefined/null gracefully)
     function toNumber(value) {
         const n = Number(value);
         return Number.isFinite(n) ? n : 0;
     }
 
+    // Safeguards GPA points before plotting so charts stay within the 1.0 - 5.0 scale
     function clampGpa(value) {
         const numeric = toNumber(value);
         if (!Number.isFinite(numeric) || numeric === 0) {
@@ -192,7 +195,6 @@
         syncChips(safeDetail);
         syncYearSelector(safeDetail);
     }
-
     function applyDashboardPayload(update) {
         if (!update) {
             return;
@@ -557,7 +559,6 @@
         if (!yearSelector) {
             return;
         }
-
         const safeDetail = detail || {};
         const year = safeDetail.schoolYear || safeDetail.SchoolYear || currentSchoolYear;
         if (year) {

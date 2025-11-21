@@ -12,6 +12,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ASI.Basecode.Services.Services
 {
+    /// <summary>
+    /// Aggregates academic records into dashboard-ready projections for the admin UI.
+    /// Use this service whenever controllers need KPIs, trends, or pass/fail breakdowns.
+    /// </summary>
     public class AdminDashboardService : IAdminDashboardService
     {
         private readonly AsiBasecodeDBContext _ctx;
@@ -21,13 +25,9 @@ namespace ASI.Basecode.Services.Services
             _ctx = ctx;
         }
 
-        private static readonly StaticSemesterDefinition[] StaticSemesterDefinitions = new[]
-        {
-            new StaticSemesterDefinition("all-semester", "All Semester", 0),
-            new StaticSemesterDefinition("first-semester", "First Semester", 1),
-            new StaticSemesterDefinition("second-semester", "Second Semester", 2)
-        };
-
+        /// <summary>
+        /// Returns the active academic programs that the dashboard exposes in the Program filter.
+        /// </summary>
         public async Task<IList<ProgramOptionModel>> GetProgramOptionsAsync()
         {
             return await _ctx.Programs
@@ -43,6 +43,9 @@ namespace ASI.Basecode.Services.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Produces the KPI card totals (students, teachers, courses) for the selected year/term/program.
+        /// </summary>
         public async Task<DashboardSummaryModel> GetSummaryAsync(string schoolYear = null, string termKey = null, int? programId = null)
         {
             var termInfo = await BuildTermInfoForYearAsync(schoolYear);
@@ -99,6 +102,9 @@ namespace ASI.Basecode.Services.Services
             };
         }
 
+        /// <summary>
+        /// Builds the enrollment trend series by term, optionally scoped to a program, for charting.
+        /// </summary>
         public async Task<IList<EnrollmentTrendPointModel>> GetEnrollmentTrendAsync(int maxPoints = 8, int? programId = null)
         {
             var projections = await _ctx.Grades
@@ -139,7 +145,10 @@ namespace ASI.Basecode.Services.Services
 
             return trend;
         }
-
+        
+        /// <summary>
+        /// Aggregates year-level analytics (program share, GPA, pass/fail, subject insights) for the dashboard.
+        /// </summary>
         public async Task<AdminDashboardModel> GetYearDetailAsync(string schoolYear = null, string termKey = null, int? programId = null)
         {
             var termInfo = await BuildTermInfoForYearAsync(schoolYear);
@@ -927,6 +936,12 @@ namespace ASI.Basecode.Services.Services
             public Grade Grade { get; set; }
             public TermInfo Term { get; set; }
         }
+        private static readonly StaticSemesterDefinition[] StaticSemesterDefinitions = new[]
+        {
+            new StaticSemesterDefinition("all-semester", "All Semester", 0),
+            new StaticSemesterDefinition("first-semester", "First Semester", 1),
+            new StaticSemesterDefinition("second-semester", "Second Semester", 2)
+        };
 
         private record StaticSemesterDefinition(string Key, string Label, int Order);
     }
