@@ -344,7 +344,6 @@
       unitsInput: "#Units",
     });
 
-    refreshPickers();
     initRoomScheduleUI({ syncPair: true, minGapMinutes: 60 });
     wireScheduleSubmitGuard("#assignForm");
 
@@ -372,6 +371,7 @@
         '<option value="">Select Section</option>' +
         list.map((s) => `<option value="${s}">${s}</option>`).join("");
       blockSectionSel.value = current && list.includes(current) ? current : "";
+      refreshPickers();
     }
 
     function syncBlockSectionState() {
@@ -555,7 +555,6 @@
       initialType: $("#Type")?.dataset?.initialType || $("#Type")?.value || "",
     });
 
-    refreshPickers();
     initRoomScheduleUI({ syncPair: true, minGapMinutes: 60 });
     hydrateScheduleFromServer();
     wireScheduleSubmitGuard("#editForm");
@@ -587,6 +586,7 @@
         cEl.textContent = "0";
         nEl.innerHTML = "";
       }
+      refreshPickers();
     }
 
     function syncHeaderCheckbox() {
