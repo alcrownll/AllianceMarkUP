@@ -143,7 +143,7 @@
                 <div class="info-right">
                     <div class="info-line"><small>School Year :</small><b>@(string.IsNullOrWhiteSpace(Model.SelectedSchoolYear) ? Model.SchoolYear : Model.SelectedSchoolYear)</b></div>
                     <div class="info-line"><small>Semester :</small><b>@(Model.SelectedSemester ?? Model.Semester)</b></div>
-                    <div class="info-line"><small>GPA :</small><b>@(Model.Gpa?.ToString("0.00") ?? "—")</b></div>
+                    <div class="info-line"><small>Section :</small><b>@(Model.Section ?? "—")</b></div>
                 </div>
             </div>
 
@@ -203,9 +203,16 @@
                     </tbody>
                 </table>
             </div>
+
+            @* GPA moved below the table *@
+            @if (Model.Gpa.HasValue)
+            {
+                <div class="gpa-summary no-print">
+                    <span><strong>GPA:</strong> @Model.Gpa.Value.ToString("0.00")</span>
+                </div>
+            }
         </div>
         <!-- ================= /SCREEN VERSION ================= -->
-
         <!-- ================= PRINT VERSION ================= -->
         <div id="gradesPrintArea" class="print-sheet only-print">
             <div class="sheet-header">

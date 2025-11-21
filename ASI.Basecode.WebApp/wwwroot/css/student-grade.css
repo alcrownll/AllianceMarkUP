@@ -250,6 +250,18 @@ table.grades-table {
     outline: none;
 }
 
+.gpa-summary {
+    margin-top: 12px;
+    text-align: right;
+    margin-right: 23px;
+    font-size: 0.95rem;
+}
+
+    .gpa-summary strong {
+        margin-right: 4px;
+    }
+
+
 
 /* ===== SCREEN-ONLY / PRINT-ONLY TOGGLES (like Study Load) ===== */
 @media screen {

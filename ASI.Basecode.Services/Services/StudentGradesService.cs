@@ -52,6 +52,7 @@ namespace ASI.Basecode.Services.Services
             vm.Program = student.Program;
             vm.Department = student.Department;
             vm.YearLevel = FormatYearLevel(student.YearLevel);
+            vm.Section = student.Section;   // from Students table
 
             // ---- raw grade rows from DB ----
             var rows = await _grades.GetGrades()
@@ -119,16 +120,17 @@ namespace ASI.Basecode.Services.Services
             if (!availableSchoolYears.Any())
                 availableSchoolYears.Add(defaultSchoolYear);
 
+            // use explicitly requested schoolYear or latest available
             var selectedSchoolYear = availableSchoolYears
                 .FirstOrDefault(sy => string.Equals(sy, schoolYear, StringComparison.OrdinalIgnoreCase))
-                ?? availableSchoolYears.First();
+                ?? availableSchoolYears.Last();
 
             var availableSemesters = gradeRows
                 .Where(r => string.Equals(r.SchoolYear, selectedSchoolYear, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Semester)
                 .Where(se => !string.IsNullOrWhiteSpace(se))
                 .Distinct()
-                .OrderBy(se => se)
+                .OrderBy(se => se) // "1st Semester", "2nd Semester", etc.
                 .ToList();
 
             if (!availableSemesters.Any())
@@ -141,9 +143,19 @@ namespace ASI.Basecode.Services.Services
                     .ToList();
             }
 
-            var selectedSemester = availableSemesters
-                .FirstOrDefault(se => string.Equals(se, semester, StringComparison.OrdinalIgnoreCase))
-                ?? availableSemesters.FirstOrDefault();
+            string selectedSemester;
+
+            // if caller provided semester, respect it; otherwise default to latest
+            if (!string.IsNullOrWhiteSpace(semester))
+            {
+                selectedSemester = availableSemesters
+                    .FirstOrDefault(se => string.Equals(se, semester, StringComparison.OrdinalIgnoreCase))
+                    ?? availableSemesters.LastOrDefault();
+            }
+            else
+            {
+                selectedSemester = availableSemesters.LastOrDefault();
+            }
 
             // ---- filter rows for selected term ----
             var filteredGrades = gradeRows
@@ -174,7 +186,6 @@ namespace ASI.Basecode.Services.Services
 
             return vm;
         }
-
 
         private static int UnitsForType(string type, int? acUnits, int? lecUnits, int? labUnits, int? totalUnits)
         {

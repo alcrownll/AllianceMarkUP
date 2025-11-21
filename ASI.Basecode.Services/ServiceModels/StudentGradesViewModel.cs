@@ -11,6 +11,9 @@ namespace ASI.Basecode.Services.ServiceModels
         public string Semester { get; set; }
         public string SchoolYear { get; set; }
         public decimal? Gpa { get; set; }
+
+        public string Section { get; set; }   // from Students.Section
+
         public IList<string> AvailableSchoolYears { get; set; } = new List<string>();
         public IList<string> AvailableSemesters { get; set; } = new List<string>();
         public string SelectedSchoolYear { get; set; }
