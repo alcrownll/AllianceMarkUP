@@ -121,7 +121,7 @@ namespace ASI.Basecode.Services.Services
                         Id = e.CalendarEventId,
                         Title = e.Title,
                         When = ConvertUtcToDefaultLocal(e.StartUtc)
-                                .ToString("MMM dd, yyyy • h:mm tt"),
+                                .ToString("MM/dd/yy"),
                         WhenLocal = ConvertUtcToDefaultLocal(e.StartUtc),
                         Location = e.Location,
                         IsGlobal = e.IsGlobal
