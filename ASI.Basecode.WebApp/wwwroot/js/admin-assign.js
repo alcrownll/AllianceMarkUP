@@ -8,17 +8,22 @@
   function initSelectPickers(root = document) {
     if (!window.jQuery || !window.jQuery.fn.selectpicker) return;
 
-    const $els = window.jQuery(root).find(".selectpicker");
+    window
+      .jQuery(root)
+      .find(".selectpicker")
+      .each(function () {
+        const el = this;
+        const $el = window.jQuery(el);
 
-    $els.each(function () {
-      const $el = window.jQuery(this);
-      // init only once
-      if (!$el.data("selectpicker")) {
+        // HARD GUARD: survives multiple jQuery copies
+        if (el.dataset.spInited === "1") {
+          $el.selectpicker("refresh");
+          return;
+        }
+
         $el.selectpicker();
-      } else {
-        $el.selectpicker("refresh");
-      }
-    });
+        el.dataset.spInited = "1";
+      });
   }
 
   function debounce(fn, ms) {
@@ -394,7 +399,7 @@
         '<option value="">Select Section</option>' +
         list.map((s) => `<option value="${s}">${s}</option>`).join("");
       blockSectionSel.value = current && list.includes(current) ? current : "";
-      initSelectPickers();
+      initSelectPickers(blockSectionSel.parentNode);
     }
 
     function syncBlockSectionState() {
@@ -524,9 +529,6 @@
     function resetBlockUI() {
       if (blockProgramSel) {
         blockProgramSel.selectedIndex = 0;
-        if (window.jQuery && window.jQuery.fn.selectpicker) {
-          window.jQuery("#BlockProgramId.selectpicker").selectpicker("refresh");
-        }
       }
       if (blockYearSel) blockYearSel.value = "";
       if (blockSectionSel) {
@@ -593,7 +595,6 @@
         cEl.textContent = "0";
         nEl.innerHTML = "";
       }
-      initSelectPickers();
     }
 
     function syncHeaderCheckbox() {
