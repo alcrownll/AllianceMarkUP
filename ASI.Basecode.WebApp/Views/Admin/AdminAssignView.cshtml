@@ -14,7 +14,6 @@
     bool canChangeStatus = (bool)(ViewBag.CanChangeStatus ?? false);
     var syValue = string.IsNullOrWhiteSpace(Model?.SchoolYear) ? "2025-2026" : Model.SchoolYear;
 
-    // Schedules from service (for blue-day highlight and prefill)
     var scheds = (IEnumerable<ASI.Basecode.Data.Models.ClassSchedule>)(ViewBag.Schedules ??
     Enumerable.Empty<ASI.Basecode.Data.Models.ClassSchedule>());
     var existingDaysCsv = string.Join(",", scheds.Select(s => ((int)s.Day)));
@@ -47,21 +46,17 @@
             <div class="row g-3 uniform-row">
                 <div class="col-md-4">
                     <label class="form-label">Course Code</label>
-                    <select id="CourseId" class="form-select" asp-for="CourseId" required>
-                        <option value="">-- Select --</option>
+                    <select id="CourseId" class="selectpicker w-100" asp-for="CourseId" required data-live-search="true"
+                        data-size="8" data-style="form-select" title="-- Select --">
                         @foreach (var c in courses.OrderBy(c => c.CourseCode))
                         {
-                            if (c.CourseId == Model.CourseId)
-                            {
-                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits" selected>@c.CourseCode
-                                </option>
-                            }
-                            else
-                            {
-                                <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits">@c.CourseCode</option>
-                            }
+                            <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits"
+                                selected="@(c.CourseId == Model.CourseId)">
+                                @c.CourseCode
+                            </option>
                         }
                     </select>
+
                 </div>
 
                 <div class="col-md-4">
@@ -80,18 +75,13 @@
             <div class="row g-3 uniform-row mt-0">
                 <div class="col-md-4">
                     <label class="form-label">Program</label>
-                    <select class="form-select" asp-for="ProgramId" required>
-                        <option value="">-- Select Program --</option>
+                    <select id="ProgramId" class="selectpicker w-100" asp-for="ProgramId" required
+                        data-live-search="true" data-size="8" data-style="form-select" title="-- Select Program --">
                         @foreach (var p in programs.OrderBy(p => p.ProgramCode))
                         {
-                            if (p.ProgramId == Model.ProgramId)
-                            {
-                                <option value="@p.ProgramId" selected>@p.ProgramCode</option>
-                            }
-                            else
-                            {
-                                <option value="@p.ProgramId">@p.ProgramCode</option>
-                            }
+                            <option value="@p.ProgramId" selected="@(p.ProgramId == Model.ProgramId)">
+                                @p.ProgramCode
+                            </option>
                         }
                     </select>
                 </div>
@@ -275,7 +265,7 @@
                 </div>
                 <div class="small text-danger mt-1">Checked students will be removed from this course when you click
                     <strong>Save</strong>.
-                
+
                 </div>
                 <div id="removeNames" class="small"></div>
             </div>

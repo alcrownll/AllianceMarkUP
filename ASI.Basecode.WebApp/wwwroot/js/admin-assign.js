@@ -5,6 +5,11 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const $ = (sel, root = document) => root.querySelector(sel);
 
+  function refreshPickers() {
+    if (!window.jQuery || !jQuery.fn.selectpicker) return;
+    $(".selectpicker").selectpicker("refresh");
+  }
+
   function debounce(fn, ms) {
     let t;
     return (...a) => {
@@ -111,7 +116,7 @@
   }
 
   // ---------- Room & Schedule UI ----------
-  function initRoomScheduleUI() {
+  function initRoomScheduleUI({ syncPair = true, minGapMinutes = 60 } = {}) {
     const typeSel = document.querySelector("#Type");
     const roomSel = document.querySelector("#RoomSelect");
     const startTime = document.querySelector("#StartTime");
@@ -137,6 +142,35 @@
       Laboratory: ["C1", "C2", "C4", "CISCO", "A35", "AInnovation Lab"],
     };
 
+    // ---- time helpers ----
+    const MIN_MINUTES = 7 * 60 + 30; // 07:30
+    const MAX_MINUTES = 21 * 60 + 30; // 21:30
+
+    function parseHHMM(v) {
+      if (!v || !/^\d{2}:\d{2}$/.test(v)) return null;
+      const [h, m] = v.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    function toHHMM(totalMinutes) {
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+    }
+
+    function clampMinutes(m) {
+      if (m < MIN_MINUTES) return MIN_MINUTES;
+      if (m > MAX_MINUTES) return MAX_MINUTES;
+      return m;
+    }
+
+    function clampInput(el) {
+      if (!el || !el.value) return;
+      const mins = parseHHMM(el.value);
+      if (mins == null) return;
+      el.value = toHHMM(clampMinutes(mins));
+    }
+
     function fillRoomsFor(typeVal) {
       const list = ROOM_SET[typeVal] || [];
       const current = roomSel.value;
@@ -144,26 +178,17 @@
         '<option value="">-- Select Room --</option>' +
         list.map((r) => `<option value="${r}">${r}</option>`).join("");
 
-      if (list.includes(current)) {
-        roomSel.value = current;
-      }
+      if (list.includes(current)) roomSel.value = current;
       roomSel.removeAttribute("disabled");
     }
 
+    // set min/max/step attrs
     [startTime, endTime].forEach((el) => {
       if (!el) return;
       el.setAttribute("min", "07:30");
       el.setAttribute("max", "21:30");
-      el.setAttribute("step", "900");
+      el.setAttribute("step", "900"); // 15 mins
     });
-
-    function clampTime(el) {
-      if (!el) return;
-      const v = el.value;
-      if (!v) return;
-      if (v < "07:30") el.value = "07:30";
-      if (v > "21:30") el.value = "21:30";
-    }
 
     const dayMap = {
       Monday: 1,
@@ -178,6 +203,7 @@
       const pickedLabels = dayBtns
         .filter((b) => b.classList.contains("active"))
         .map((b) => b.dataset.day);
+
       const pickedNums = pickedLabels.map((lbl) => dayMap[lbl]).filter(Boolean);
 
       if (dayLive)
@@ -192,24 +218,40 @@
 
     startTime &&
       startTime.addEventListener("change", () => {
-        clampTime(startTime);
-        if (
-          endTime &&
-          startTime.value &&
-          (!endTime.value || endTime.value < startTime.value)
-        ) {
-          endTime.value = startTime.value;
+        clampInput(startTime);
+        if (!syncPair || !endTime) return;
+
+        const s = parseHHMM(startTime.value);
+        const e = parseHHMM(endTime.value);
+
+        if (s == null) return;
+
+        const minEnd = clampMinutes(s + minGapMinutes);
+
+        if (e == null || e < minEnd) {
+          endTime.value = toHHMM(minEnd);
         }
       });
 
     endTime &&
       endTime.addEventListener("change", () => {
-        clampTime(endTime);
-        if (startTime && endTime.value && startTime.value > endTime.value) {
-          startTime.value = endTime.value;
+        clampInput(endTime);
+        if (!syncPair || !startTime) return;
+
+        const e = parseHHMM(endTime.value);
+        const s = parseHHMM(startTime.value);
+
+        if (e == null) return;
+
+        const maxStart = clampMinutes(e - minGapMinutes);
+
+        // Trigger auto-set ONLY if start is empty or too late vs min gap.
+        if (s == null || s > maxStart) {
+          startTime.value = toHHMM(maxStart);
         }
       });
 
+    // days
     dayBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         btn.classList.toggle("active");
@@ -218,6 +260,7 @@
         syncDayLiveAndCsv();
       });
     });
+
     syncDayLiveAndCsv();
   }
 
@@ -300,8 +343,10 @@
       typeSel: "#Type",
       unitsInput: "#Units",
     });
-    initRoomScheduleUI();
-    wireScheduleSubmitGuard('form[asp-action="Assign"]');
+
+    refreshPickers();
+    initRoomScheduleUI({ syncPair: true, minGapMinutes: 60 });
+    wireScheduleSubmitGuard("#assignForm");
 
     const sectionSets = {
       "1st Year": ["1A", "1B", "1C", "1D", "1E"],
@@ -465,8 +510,15 @@
     }
 
     function resetBlockUI() {
-      if (blockProgramSel) blockProgramSel.selectedIndex = 0;
+      if (blockProgramSel) {
+        blockProgramSel.selectedIndex = 0;
+        if (window.jQuery) {
+          $("#BlockProgramId.selectpicker").selectpicker("refresh");
+        }
+      }
+
       if (blockYearSel) blockYearSel.value = "";
+
       if (blockSectionSel) {
         blockSectionSel.value = "";
         blockSectionSel.setAttribute("disabled", "disabled");
@@ -503,7 +555,8 @@
       initialType: $("#Type")?.dataset?.initialType || $("#Type")?.value || "",
     });
 
-    initRoomScheduleUI();
+    refreshPickers();
+    initRoomScheduleUI({ syncPair: true, minGapMinutes: 60 });
     hydrateScheduleFromServer();
     wireScheduleSubmitGuard("#editForm");
 

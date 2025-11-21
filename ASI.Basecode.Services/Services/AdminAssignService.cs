@@ -74,8 +74,20 @@ namespace ASI.Basecode.Services.Services
         public async Task<IReadOnlyList<Course>> GetCoursesAsync() =>
             await _courses.GetCourses().AsNoTracking().OrderBy(c => c.CourseCode).ToListAsync();
 
-        public async Task<IReadOnlyList<Program>> GetProgramsAsync() =>
-            await _programs.GetPrograms().AsNoTracking().OrderBy(p => p.ProgramCode).ToListAsync();
+        public async Task<IReadOnlyList<Program>> GetProgramsAsync()
+        {
+            var list = await _programs.GetPrograms()
+                .AsNoTracking()
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.ProgramCode)
+                .ToListAsync();
+
+            return list
+                .GroupBy(p => (p.ProgramCode ?? "").Trim().ToUpper())
+                .Select(g => g.OrderBy(x => x.ProgramId).First())
+                .OrderBy(p => p.ProgramCode)
+                .ToList();
+        }
 
         public async Task<IReadOnlyList<Teacher>> GetTeachersWithUsersAsync() =>
             await _teachers.GetTeachers()
@@ -553,7 +565,7 @@ namespace ASI.Basecode.Services.Services
                 throw new InvalidOperationException("Assigned course not found.");
             }
 
-        
+
 
             _assigned.UpdateAssignedCourse(ac);
             await _assigned.SaveChangesAsync(ct);

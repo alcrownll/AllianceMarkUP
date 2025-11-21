@@ -27,7 +27,7 @@
 
 <div class="container my-4">
     <div class="profile-card">
-        <form asp-controller="AdminAssign" asp-action="Assign" method="post" autocomplete="off">
+        <form asp-controller="AdminAssign" asp-action="Assign" method="post" autocomplete="off" form id="assignForm">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
@@ -37,11 +37,13 @@
             <div class="row g-3 uniform-row">
                 <div class="col-md-4">
                     <label class="form-label">Course Code</label>
-                    <select id="CourseId" class="form-select" asp-for="CourseId" required>
-                        <option value="">-- Select --</option>
+                    <select id="CourseId" class="selectpicker w-100" asp-for="CourseId" required data-live-search="true"
+                        data-size="8" data-style="form-select" title="-- Select --">
                         @foreach (var c in courses.OrderBy(c => c.CourseCode))
                         {
-                            <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits">@c.CourseCode</option>
+                            <option value="@c.CourseId" data-lec="@c.LecUnits" data-lab="@c.LabUnits">
+                                @c.CourseCode
+                            </option>
                         }
                     </select>
                 </div>
@@ -62,8 +64,8 @@
             <div class="row g-3 uniform-row mt-0">
                 <div class="col-md-4">
                     <label class="form-label">Program</label>
-                    <select class="form-select" asp-for="ProgramId" required>
-                        <option value="">-- Select Program --</option>
+                    <select id="ProgramId" class="selectpicker w-100" asp-for="ProgramId" required
+                        data-live-search="true" data-size="8" data-style="form-select" title="-- Select Program --">
                         @foreach (var p in programs.OrderBy(p => p.ProgramCode))
                         {
                             <option value="@p.ProgramId">@p.ProgramCode</option>
@@ -175,22 +177,14 @@
                 <div class="row g-3 uniform-row">
                     <div class="col-md-4">
                         <label class="form-label">Block Program</label>
-                        <select class="form-select" name="blockProgram" id="BlockProgramId">
-                            @if ((string.IsNullOrEmpty(blockProgram)) || (blockProgram == "BSCS"))
+                        <select id="BlockProgramId" name="blockProgram" class="selectpicker w-100"
+                            data-live-search="true" data-size="8" data-style="form-select" title="-- Select Program --">
+                            @foreach (var p in programs.OrderBy(p => p.ProgramCode))
                             {
-                                <option value="BSCS" selected>BSCS</option>
-                            }
-                            else
-                            {
-                                <option value="BSCS">BSCS</option>
-                            }
-                            @if (blockProgram == "BSIT")
-                            {
-                                <option value="BSIT" selected>BSIT</option>
-                            }
-                            else
-                            {
-                                <option value="BSIT">BSIT</option>
+                                <option value="@p.ProgramCode" selected="@(p.ProgramCode == blockProgram)">
+                                    @p.ProgramCode
+                                </option>
+
                             }
                         </select>
                     </div>
