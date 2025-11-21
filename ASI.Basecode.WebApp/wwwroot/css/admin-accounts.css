@@ -282,12 +282,12 @@ body.modal-open {
   padding-top: 0;
 }
 
-/* Pill buttons like the reference */
+/* Pill buttons */
 .excel-upload-modal .btn {
   border-radius: 9999px;
 }
 
-/* Upload results alert area (where ERRORS render) */
+/* Upload results alert area*/
 .upload-results .alert {
   margin-bottom: 0;
 }

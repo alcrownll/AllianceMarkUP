@@ -12,13 +12,19 @@ namespace ASI.Basecode.Services.Services
     public class AccountService : IAccountService
     {
         private readonly AsiBasecodeDBContext _db;
+        private readonly INotificationService _notificationService;
 
-        public AccountService(AsiBasecodeDBContext db) => _db = db;
+        public AccountService(
+            AsiBasecodeDBContext db,
+            INotificationService notificationService)
+        {
+            _db = db;
+            _notificationService = notificationService;
+        }
 
         // Produce a DateTime acceptable for "timestamp" (no tz)
         private static DateTime DbNow()
             => DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
-    
 
         public async Task<(bool ok, string message)> ChangePasswordAsync(
             int userId, string oldPassword, string newPassword, CancellationToken ct = default)
@@ -42,8 +48,12 @@ namespace ASI.Basecode.Services.Services
             try
             {
                 user.Password = PasswordManager.EncryptPassword(newPassword);
-                user.UpdatedAt = DbNow(); 
+                user.UpdatedAt = DbNow();
                 await _db.SaveChangesAsync(ct);
+
+                // Notify as My Activity
+                _notificationService.NotifyPasswordChanged(userId);
+
                 return (true, "Password changed successfully.");
             }
             catch (Exception ex)
@@ -53,3 +63,4 @@ namespace ASI.Basecode.Services.Services
         }
     }
 }
+

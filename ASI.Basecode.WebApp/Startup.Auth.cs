@@ -41,7 +41,7 @@ namespace ASI.Basecode.WebApp
                     SecurePolicy = CookieSecurePolicy.SameAsRequest,
                     Name = $"{this._environment.ApplicationName}_{token.CookieName}"
                 };
-                options.LoginPath = new PathString("/Login/StudentLogin"); //edited ni gadis na aron if naay unauthorized ari na path ipunta
+                options.LoginPath = new PathString("/Home/Index"); //edited ni gadis na aron if naay unauthorized ari na path ipunta
                 options.AccessDeniedPath = new PathString("/html/Forbidden.html");
                 options.ReturnUrlParameter = "ReturnUrl";
                 options.TicketDataFormat = new CustomJwtDataFormat(SecurityAlgorithms.HmacSha256, _tokenValidationParameters, Configuration, tokenProviderOptionsFactory);

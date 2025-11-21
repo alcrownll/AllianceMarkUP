@@ -116,7 +116,7 @@ namespace ASI.Basecode.WebApp
                 options.Cookie.Name = Const.Issuer;
             });
 
-            // ✅ Needed because TeacherController injects it
+            // TeacherController
             services.AddHttpContextAccessor();
 
             // DI Services AutoMapper(Add Profile)
@@ -129,7 +129,7 @@ namespace ASI.Basecode.WebApp
             services.AddScoped<IStudentGradesService, StudentGradesService>();
             services.AddScoped<ITeacherDashboardService, TeacherDashboardService>();
 
-            // ✅✅ ADD THIS LINE (register the SMTP email sender)
+            // register the SMTP email sender
             services.AddTransient<IEmailSender, SmtpEmailSender>();
 
 

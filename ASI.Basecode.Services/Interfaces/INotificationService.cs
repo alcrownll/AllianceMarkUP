@@ -47,6 +47,8 @@ namespace ASI.Basecode.Services.Interfaces
             string newStatus
         );
 
+        void NotifyPasswordChanged(int userId);
+
         // Programs
         void NotifyAdminCreatedProgram(
             int adminUserId,
@@ -165,7 +167,6 @@ namespace ASI.Basecode.Services.Interfaces
         // State changes
         void MarkRead(int userId, int notificationId);
 
-        // ✅ UPDATED: optional kind for scoped "mark all"
         void MarkAllRead(int userId, NotificationKind? kind = null);
 
         // Bell
