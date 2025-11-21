@@ -8,10 +8,12 @@
     var postCtrl = (ViewData["PostController"] as string) ?? "AdminAccounts";
     var postAct = (ViewData["PostAction"] as string) ?? "SaveStudent";
 }
+
 <link rel="stylesheet" href="~/css/user-profile.css" />
 
 <div class="container my-4">
     <div class="profile-card">
+
         @if (TempData["ProfileSaved"] is string msg)
         {
             <div class="alert alert-success mb-3">@msg</div>
@@ -23,25 +25,28 @@
             <p class="meta-info">Display Name: <span>@Model.FirstName @Model.LastName</span></p>
         }
 
-        <form asp-action="@postAct" asp-controller="@postCtrl" asp-route-userId="@(isCreate ? null : Model.UserId)"
-            method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <form id="adminStudentProfileForm" asp-action="@postAct" asp-controller="@postCtrl"
+            asp-route-userId="@(isCreate ? null : Model.UserId)" method="post" enctype="multipart/form-data"
+            class="needs-validation" novalidate>
+
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
-            <input type="hidden" asp-for="UserId" />
-            <input type="hidden" name="Role" value="Student" />
+            <!-- static/locked -->
+            <input type="hidden" asp-for="UserId" data-static="true" />
+            <input type="hidden" asp-for="StudentId" data-static="true" />
+            <input type="hidden" name="Role" value="Student" data-static="true" />
 
             <div class="role-strip p-3 bg-light rounded mb-3 role-block-student">
                 <div class="row g-3 uniform-row">
                     <div class="col-md-3">
-                        <label class="form-label" asp-for="AdmissionType"></label>
+                        <label class="form-label" asp-for="AdmissionType">Admission Type</label>
                         <select class="form-select" asp-for="AdmissionType" required>
                             <option value="">-- Select --</option>
-                            <option>New</option>
-                            <option>Old</option>
-                            <option>Transferee</option>
+                            <option value="New">New</option>
+                            <option value="Old">Old</option>
+                            <option value="Transferee">Transferee</option>
                         </select>
-                        <span asp-validation-for="AdmissionType" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-3">
@@ -59,7 +64,6 @@
                         <label class="form-label" asp-for="Program">Program</label>
                         <select class="form-select" asp-for="Program" required>
                             <option value="">-- Select --</option>
-
                             @foreach (var p in (IEnumerable<ASI.Basecode.Services.ServiceModels.ProgramOption>)
                                                         (ViewBag.Programs ?? Enumerable.Empty<ASI.Basecode.Services.ServiceModels.ProgramOption>()))
                             {
@@ -91,12 +95,30 @@
                 </div>
             </div>
 
+            @* shared profile fields *@
             @await Html.PartialAsync("~/Views/Shared/Partials/Profile.cshtml", Model)
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">@((isCreate) ? "Create" : "Update")</button>
-                <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index"
-                    asp-route-tab="students">Back</a>
+            <!-- Buttons -->
+            <div class="mt-4 d-flex align-items-center w-100">
+                @if (isCreate)
+                {
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Create</button>
+                        <a class="btn btn-outline-secondary" asp-controller="AdminAccounts" asp-action="Index"
+                            asp-route-tab="students">Back</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex gap-2">
+                        <button type="button" id="btnEdit" class="btn btn-primary">Edit Profile</button>
+                        <button type="submit" id="btnSave" class="btn btn-primary d-none">Save Changes</button>
+                        <button type="button" id="btnCancel" class="btn btn-outline-secondary d-none">Cancel</button>
+                    </div>
+
+                    <a class="btn btn-outline-secondary ms-auto" asp-controller="AdminAccounts" asp-action="Index"
+                        asp-route-tab="students">Back</a>
+                }
             </div>
         </form>
     </div>
@@ -106,26 +128,97 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
-            const input = document.getElementById('avatarInput');
-            const preview = document.getElementById('avatarPreview');
-            if (input && preview) {
-                preview.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+            const form = document.getElementById('adminStudentProfileForm');
+            const isCreate = @isCreate.ToString().ToLower();
+
+            const btnEdit = document.getElementById('btnEdit');
+            const btnSave = document.getElementById('btnSave');
+            const btnCancel = document.getElementById('btnCancel');
+
+            const avatarInput = document.getElementById('avatarInput');
+            const avatarPreview = document.getElementById('avatarPreview');
+
+            function setFormEditable(isEditable) {
+                const fields = form.querySelectorAll('input, select, textarea, button[type="file"]');
+
+                fields.forEach(el => {
+                    const isHidden = el.type === 'hidden';
+                    const isStatic = el.getAttribute('data-static') === 'true';
+                    const isLocked = el.getAttribute('data-locked') === 'true';
+                    if (isHidden || isStatic || isLocked) return;
+
+                    el.disabled = !isEditable;
                 });
-                input.addEventListener('change', function (e) {
+
+                if (!isCreate) {
+                    btnEdit?.classList.toggle('d-none', isEditable);
+                    btnSave?.classList.toggle('d-none', !isEditable);
+                    btnCancel?.classList.toggle('d-none', !isEditable);
+                }
+
+                form.classList.toggle('is-readonly', !isEditable);
+            }
+
+            function resetToInitial() {
+                form.reset();
+
+                if (avatarPreview) {
+                    const existing = '@(Model.ProfilePictureUrl ?? "")';
+                    if (existing) {
+                        avatarPreview.style.backgroundImage = `url('${existing}')`;
+                        avatarPreview.classList.add('has-image');
+                    } else {
+                        avatarPreview.style.backgroundImage = '';
+                        avatarPreview.classList.remove('has-image');
+                    }
+                }
+            }
+
+            // Create = editable by default. Edit = readonly by default.
+            setFormEditable(isCreate);
+
+            btnEdit?.addEventListener('click', () => setFormEditable(true));
+
+            btnCancel?.addEventListener('click', () => {
+                resetToInitial();
+                setFormEditable(false);
+
+                form.querySelectorAll('[data-valmsg-for]').forEach(span => {
+                    span.innerHTML = '';
+                    span.classList.remove('field-validation-error');
+                    span.classList.add('field-validation-valid');
+                });
+
+                form.querySelectorAll('.input-validation-error').forEach(input => {
+                    input.classList.remove('input-validation-error');
+                });
+            });
+
+            // Avatar preview
+            if (avatarInput && avatarPreview) {
+                avatarPreview.addEventListener('keydown', function (e) {
+                    if ((e.key === 'Enter' || e.key === ' ') && !avatarInput.disabled) {
+                        e.preventDefault();
+                        avatarInput.click();
+                    }
+                });
+
+                avatarInput.addEventListener('change', function (e) {
                     const file = e.target.files && e.target.files[0];
                     if (!file) return;
+
                     const reader = new FileReader();
                     reader.onload = function (ev) {
-                        preview.style.backgroundImage = `url('${ev.target.result}')`;
-                        preview.classList.add('has-image');
+                        avatarPreview.style.backgroundImage = `url('${ev.target.result}')`;
+                        avatarPreview.classList.add('has-image');
                     };
                     reader.readAsDataURL(file);
                 });
-                var url = '@(Model.ProfilePictureUrl ?? "")';
+
+                const url = '@(Model.ProfilePictureUrl ?? "")';
                 if (url) {
-                    preview.style.backgroundImage = `url('${url}')`;
-                    preview.classList.add('has-image');
+                    avatarPreview.style.backgroundImage = `url('${url}')`;
+                    avatarPreview.classList.add('has-image');
                 }
             }
         })();
