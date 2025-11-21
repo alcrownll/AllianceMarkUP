@@ -1,4 +1,5 @@
-﻿using ASI.Basecode.Data.Models;
+﻿using ASI.Basecode.Data.Interfaces;
+using ASI.Basecode.Data.Models;
 using ASI.Basecode.Services.Interfaces;
 using ASI.Basecode.Services.Exceptions;
 using Microsoft.AspNetCore.Authorization;
@@ -15,8 +16,17 @@ namespace ASI.Basecode.WebApp.Controllers
     public class AdminCoursesController : Controller
     {
         private readonly ICourseService _service;
+        private readonly IProfileService _profileService; //for notification
 
-        public AdminCoursesController(ICourseService service) => _service = service;
+        public AdminCoursesController(
+            ICourseService service,
+            IProfileService profileService) //for notification
+        {
+            _service = service;
+            _profileService = profileService; //for notification
+        }
+
+        private int CurrentAdminUserId() => _profileService.GetCurrentUserId(); //for notification
 
         // Helper method to detect AJAX requests
         private bool IsAjaxRequest() =>
@@ -90,7 +100,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
             try
             {
-                await _service.CreateAsync(course);
+                var adminUserId = CurrentAdminUserId(); //for notification
+                await _service.CreateAsync(course, adminUserId); //for notification
 
                 // 200 with JSON body
                 return Ok(new
@@ -134,7 +145,8 @@ namespace ASI.Basecode.WebApp.Controllers
 
             try
             {
-                await _service.UpdateAsync(course);
+                var adminUserId = CurrentAdminUserId(); //for notification
+                await _service.UpdateAsync(course, adminUserId); //for notification
 
                 return Ok(new { ok = true });
             }
@@ -165,7 +177,8 @@ namespace ASI.Basecode.WebApp.Controllers
         {
             try
             {
-                await _service.DeleteAsync(id);
+                var adminUserId = CurrentAdminUserId(); //for notification
+                await _service.DeleteAsync(id, adminUserId); //for notification
 
                 if (IsAjaxRequest())
                     return Ok(new { success = true, message = "Course deleted successfully." });
@@ -209,7 +222,6 @@ namespace ASI.Basecode.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
-
 
         [HttpGet("list")]
         public async Task<IActionResult> List()
