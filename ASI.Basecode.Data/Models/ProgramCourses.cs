@@ -15,15 +15,17 @@ namespace ASI.Basecode.Data.Models
         [ForeignKey("Course")]
         public int CourseId { get; set; }
 
-        public int? Prerequisite { get; set; }  
+        public int? Prerequisite { get; set; }   // Nullable, not all courses have prerequisites
 
         [ForeignKey("YearTerm")]
         public int YearTermId { get; set; }
 
+        // Navigation properties
         public Program Program { get; set; }
         public Course Course { get; set; }
         public YearTerm YearTerm { get; set; }
 
+        // Optional self-reference for prerequisite course
         [ForeignKey("Prerequisite")]
         public Course PrerequisiteCourse { get; set; }
     }

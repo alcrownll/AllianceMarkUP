@@ -1,4 +1,5 @@
-﻿<div class="modal fade" id="courseFormModal" tabindex="-1" aria-labelledby="courseFormLabel" aria-hidden="true">
+﻿@* Views/Admin/Partials/_CourseFormModal.cshtml *@
+<div class="modal fade" id="courseFormModal" tabindex="-1" aria-labelledby="courseFormLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content shadow-sm border-0 rounded-4">
             <div class="modal-header course-modal-header text-white">
@@ -133,6 +134,7 @@
             codeEl.value = course.code || '';
             descEl.value = course.description || '';
 
+            // keep existing values but clamp only for display (0–1 lab, 1–4 lec)
             let lec = toInt(course.lecUnits, 1);
             let lab = toInt(course.labUnits, 0);
             lecUnitsEl.value = String(Math.min(4, Math.max(1, lec)));
@@ -146,7 +148,7 @@
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         };
 
-      
+        // Button openers
         document.addEventListener('click', (e) => {
             const addBtn = e.target.closest('[data-action="course-add"]');
             if (addBtn) {
@@ -179,6 +181,7 @@
                 return;
             }
 
+            // ✅ Units range validation (NO auto-fixing)
             const lecVal = toInt(lecUnitsEl.value, 1);
             const labVal = toInt(labUnitsEl.value, 0);
 
@@ -263,6 +266,7 @@
                     }
                 }
 
+                // ✅ Force refresh courses table
                 if (typeof window.loadCourseTable === 'function') {
                     await window.loadCourseTable(true);
                 }

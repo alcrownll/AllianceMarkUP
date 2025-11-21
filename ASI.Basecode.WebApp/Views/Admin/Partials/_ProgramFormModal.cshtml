@@ -35,7 +35,7 @@
                             <div class="invalid-feedback">Program name is required.</div>
                         </div>
 
-                        <!-- Active -->
+                        <!-- Active (disabled in Add mode; enabled in Edit mode) -->
                         <div class="col-12">
                             <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" id="pfActive">
@@ -198,6 +198,7 @@
                     }
                 }
 
+                // 🔑 refresh Programs table if the global loader exists
                 if (typeof window.loadProgramTable === 'function') {
                     await window.loadProgramTable();
                 }

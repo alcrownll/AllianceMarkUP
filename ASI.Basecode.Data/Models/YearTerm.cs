@@ -10,10 +10,10 @@ namespace ASI.Basecode.Data.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int YearTermId { get; set; }     
 
-        public int YearLevel { get; set; }      
+        public int YearLevel { get; set; }       // 1..4
 
         [Column("TermNumber")]
-        public int TermNumber { get; set; }           
+        public int TermNumber { get; set; }            // 1..2
 
         public ICollection<ProgramCourse> ProgramCourses { get; set; }
     }

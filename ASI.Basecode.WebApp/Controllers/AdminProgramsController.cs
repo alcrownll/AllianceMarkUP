@@ -117,6 +117,7 @@ namespace ASI.Basecode.WebApp.Controllers
             if (hasCourses && !force)
                 return Json(new { ok = true, hasCourses = true });
 
+            // Cancel draft program – no notification needed; use legacy DiscardProgram
             svc.DiscardProgram(programId);
             return Json(new { ok = true, deleted = true });
         }

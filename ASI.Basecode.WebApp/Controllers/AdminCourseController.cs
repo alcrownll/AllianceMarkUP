@@ -28,7 +28,7 @@ namespace ASI.Basecode.WebApp.Controllers
 
         private int CurrentAdminUserId() => _profileService.GetCurrentUserId(); //for notification
 
-       
+        // Helper method to detect AJAX requests
         private bool IsAjaxRequest() =>
             Request.Headers["X-Requested-With"] == "XMLHttpRequest"
             || Request.Headers["Accept"].ToString().Contains("application/json");
@@ -86,7 +86,7 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
-          
+            // Always return JSON for this endpoint
             if (!ModelState.IsValid)
             {
                 var firstError = ModelState.Values
@@ -94,7 +94,7 @@ namespace ASI.Basecode.WebApp.Controllers
                     .Select(e => e.ErrorMessage)
                     .FirstOrDefault() ?? "Validation failed.";
 
-                
+                // 400 with JSON body
                 return BadRequest(new { ok = false, message = firstError });
             }
 
@@ -103,7 +103,7 @@ namespace ASI.Basecode.WebApp.Controllers
                 var adminUserId = CurrentAdminUserId(); //for notification
                 await _service.CreateAsync(course, adminUserId); //for notification
 
-              
+                // 200 with JSON body
                 return Ok(new
                 {
                     ok = true,
@@ -114,12 +114,12 @@ namespace ASI.Basecode.WebApp.Controllers
             }
             catch (DuplicateCourseCodeException ex)
             {
-                
+                // Duplicate course code
                 return Conflict(new { ok = false, message = ex.Message });
             }
             catch (ValidationException ex)
             {
-                
+                // Validation errors
                 return BadRequest(new { ok = false, message = ex.Message });
             }
             catch (Exception)
@@ -132,7 +132,7 @@ namespace ASI.Basecode.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit([Bind("CourseId,CourseCode,Description,LecUnits,LabUnits")] Course course)
         {
-          
+            // Always return JSON for this endpoint
             if (!ModelState.IsValid)
             {
                 var firstError = ModelState.Values
@@ -152,16 +152,17 @@ namespace ASI.Basecode.WebApp.Controllers
             }
             catch (DuplicateCourseCodeException ex)
             {
-               
+                // Duplicate course code
                 return Conflict(new { ok = false, message = ex.Message });
             }
             catch (NotFoundException ex)
             {
-                
+                // Course not found
                 return NotFound(new { ok = false, message = ex.Message });
             }
             catch (ValidationException ex)
             {
+                // Validation errors
                 return BadRequest(new { ok = false, message = ex.Message });
             }
             catch (Exception)
@@ -203,6 +204,7 @@ namespace ASI.Basecode.WebApp.Controllers
             }
             catch (BaseServiceException ex)
             {
+                // any other custom service exception
                 if (IsAjaxRequest())
                     return BadRequest(new { success = false, message = ex.Message });
 
@@ -225,7 +227,7 @@ namespace ASI.Basecode.WebApp.Controllers
         public async Task<IActionResult> List()
         {
             var courses = await _service.GetAllAsync() ?? Enumerable.Empty<Course>();
-            
+            // Return just the table markup
             return PartialView("~/Views/Admin/Partials/_CoursesTable.cshtml", courses.ToList());
         }
     }
