@@ -137,7 +137,7 @@
 
             <!-- Sort Order -->
             <div class="col-md-2">
-                <label class="form-label fw-semibold">Order</label>
+                <label class="form-label fw-semibold">Sort Order</label>
                 <select class="form-select" name="sortOrder" id="sortOrder">
                     @{
                         var sortOrder = ViewBag.SortOrder as string ?? "asc";
@@ -159,6 +159,10 @@
                         }
                     }
                 </select>
+            </div>
+
+            <div class="col-md-1 d-flex align-items-end ms-auto">
+                <button type="button" id="clearFiltersBtn" class="btn btn-outline-secondary w-100">Clear</button>
             </div>
         </div>
     </form>

@@ -267,7 +267,7 @@
                         style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6);z-index:5;">
                         <div class="spinner-border" role="status" aria-label="Loading manual table"></div>
                     </div>
-                    <div id="manualTableHost">
+                    <div id="manualTableHost" data-url="@Url.Action("ManualTable", "AdminAssign")">
                         @await Html.PartialAsync("~/Views/Admin/Partials/_ManualStudentsTable.cshtml", students)
                     </div>
                 </div>
@@ -287,4 +287,6 @@
     </div>
 </div>
 
-<script src="~/js/admin-assign.js" asp-append-version="true"></script>
+@section Scripts {
+    <script src="~/js/admin-assign.js" asp-append-version="true"></script>
+}

@@ -22,7 +22,8 @@ else
             <thead>
                 <tr>
                     <th style="width:36px;">
-                        <input id="selectAllStudents" type="checkbox" class="form-check-input" aria-label="Select all students" />
+                        <input id="selectAllStudents" type="checkbox" class="form-check-input"
+                            aria-label="Select all students" />
                     </th>
                     <th>Name</th>
                     <th>Program</th>
@@ -40,11 +41,8 @@ else
 
                     <tr>
                         <td>
-                            <input type="checkbox"
-                                   class="form-check-input student-checkbox"
-                                   name="SelectedStudentIds"
-                                   value="@s.StudentId"
-                                   aria-label="Select @full" />
+                            <input type="checkbox" class="form-check-input student-checkbox" name="SelectedStudentIds"
+                                value="@s.StudentId" aria-label="Select @full" />
                         </td>
                         <td>@full</td>
                         <td>@(s.Program ?? "")</td>
@@ -88,89 +86,4 @@ else
             background: rgba(37, 99, 235, .06);
         }
     </style>
-
-    <script>
-        (function () {
-            // Elements we need (from the parent page)
-            const host  = document.getElementById('manualTableHost');
-            const spin  = document.getElementById('manualTableSpinner');
-            const selYr = document.getElementById('BlockYearLevel');
-            const selPg = document.getElementById('BlockProgramId');
-            const selSc = document.getElementById('BlockSection');
-
-            function showSpinner(on) { if (spin) spin.classList.toggle('d-none', !on); }
-
-            // Rewire "Select all" after each render
-            function wireSelectAll() {
-                const selectAll = document.getElementById('selectAllStudents');
-                if (selectAll) {
-                    selectAll.addEventListener('change', function () {
-                        document.querySelectorAll('#manualTableHost .student-checkbox')
-                            .forEach(cb => cb.checked = selectAll.checked);
-                    });
-                }
-            }
-
-            // Pagination for the *reset* state (no filters)
-            function wirePaginationForReset() {
-                document.querySelectorAll('#manualTableHost a.js-page').forEach(a => {
-                    a.addEventListener('click', async function (e) {
-                        e.preventDefault();
-                        const page = parseInt(this.getAttribute('data-page') || '1', 10);
-                        if (isNaN(page)) return;
-
-                        const url = new URL('@Url.Action("ManualTable", "AdminAssign")', window.location.origin);
-                        url.searchParams.set('page', String(page));
-                        // Do not include block filters — this keeps the reset state
-                        showSpinner(true);
-                        try {
-                            const resp = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                            const html = await resp.text();
-                            if (host) host.innerHTML = html;
-                        } catch (err) {
-                            console.error('Pagination load failed:', err);
-                        } finally {
-                            showSpinner(false);
-                        }
-                    });
-                });
-            }
-
-            // Reset function: clears Block Program/Year/Section UI and reloads table with defaults
-            async function resetManualFilters() {
-                // Reset the dropdowns visually
-                if (selYr) selYr.value = '';
-                if (selPg) selPg.selectedIndex = 0; // first option
-                if (selSc) { selSc.value = ''; selSc.disabled = true; }
-
-                // Fetch ManualTable with NO block filters (controller defaults kick in)
-                const url = new URL('@Url.Action("ManualTable", "AdminAssign")', window.location.origin);
-                showSpinner(true);
-                try {
-                    const resp = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-                    const html = await resp.text();
-                    if (host) host.innerHTML = html;
-                } catch (e) {
-                    console.error('Failed to reset manual table:', e);
-                } finally {
-                    showSpinner(false);
-                    wireSelectAll();
-                    wirePaginationForReset();
-                }
-            }
-
-            // When Block Section is set back to "Select Section" => reset everything
-            if (selSc) {
-                selSc.addEventListener('change', function () {
-                    if ((this.value || '').trim() === '') {
-                        resetManualFilters();
-                    }
-                });
-            }
-
-            // Initial wiring for the current render
-            wireSelectAll();
-            wirePaginationForReset(); // harmless if filters weren't reset yet
-        })();
-    </script>
 }

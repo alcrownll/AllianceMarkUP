@@ -119,9 +119,31 @@ function loadStudentsForCourse(assignedCourseId) {
         });
 }
 
-// Grade View filtering auto submit
+// Grade View filtering
 document.getElementById('filterForm').addEventListener('change', function() {
     this.submit();
+});
+
+// Clear Filters
+document.addEventListener('DOMContentLoaded', function() {
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const filterForm = document.getElementById('filterForm');
+    
+    if (clearFiltersBtn && filterForm) {
+        clearFiltersBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            filterForm.querySelectorAll('input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+            
+            filterForm.querySelectorAll('select').forEach(select => {
+                select.selectedIndex = 0;
+            });
+            
+            filterForm.submit();
+        });
+    }
 });
 
 // Calculate remarks based on grades (same logic as backend)

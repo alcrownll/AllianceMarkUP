@@ -5,9 +5,20 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const $ = (sel, root = document) => root.querySelector(sel);
 
-  function refreshPickers() {
-    if (!window.jQuery || !jQuery.fn.selectpicker) return;
-    $(".selectpicker").selectpicker("refresh");
+  function initSelectPickers(root = document) {
+    if (!window.jQuery || !window.jQuery.fn.selectpicker) return;
+
+    const $els = window.jQuery(root).find(".selectpicker");
+
+    $els.each(function () {
+      const $el = window.jQuery(this);
+      // init only once
+      if (!$el.data("selectpicker")) {
+        $el.selectpicker();
+      } else {
+        $el.selectpicker("refresh");
+      }
+    });
   }
 
   function debounce(fn, ms) {
@@ -358,6 +369,18 @@
     const blockYearSel = $("#BlockYearLevel");
     const blockSectionSel = $("#BlockSection");
 
+    const host = $("#manualTableHost");
+    const spin = $("#manualTableSpinner");
+    const manualUrl = host?.dataset?.url || "/AdminAssign/ManualTable";
+
+    const statusVal = readInput("status") || "Active";
+    const pageSizeVal = readInput("pageSize") || "10";
+
+    function showSpinner(on) {
+      if (spin) spin.classList.toggle("d-none", !on);
+    }
+
+    // allow focusing pickers
     blockSectionSel && blockSectionSel.removeAttribute("disabled");
 
     const serverSelectedSection = readInput("blockSection") || "";
@@ -371,7 +394,7 @@
         '<option value="">Select Section</option>' +
         list.map((s) => `<option value="${s}">${s}</option>`).join("");
       blockSectionSel.value = current && list.includes(current) ? current : "";
-      refreshPickers();
+      initSelectPickers();
     }
 
     function syncBlockSectionState() {
@@ -407,26 +430,6 @@
     function currentMode() {
       return (radioManual?.checked ? "manual" : "block") || "block";
     }
-    function syncModeUI() {
-      const isManual = currentMode() === "manual";
-      if (manualWrap) manualWrap.style.display = isManual ? "block" : "none";
-      if (modeHidden) modeHidden.value = isManual ? "manual" : "block";
-      if (isManual && (blockSectionSel?.value || "").trim() !== "")
-        fetchManualTable(1);
-    }
-    radioBlock && radioBlock.addEventListener("change", syncModeUI);
-    radioManual && radioManual.addEventListener("change", syncModeUI);
-    syncModeUI();
-
-    // AJAX manual table
-    const host = $("#manualTableHost");
-    const spin = $("#manualTableSpinner");
-    const statusVal = readInput("status") || "Active";
-    const pageSizeVal = readInput("pageSize") || "10";
-
-    function showSpinner(on) {
-      if (spin) spin.classList.toggle("d-none", !on);
-    }
 
     async function fetchManualTable(page) {
       if (currentMode() !== "manual") return;
@@ -435,7 +438,7 @@
       const y = blockYearSel?.value || "";
       const s = blockSectionSel?.value || "";
 
-      const url = buildUrl("/AdminAssign/ManualTable", {
+      const url = buildUrl(manualUrl, {
         blockProgram: p,
         blockYear: y,
         blockSection: s,
@@ -451,44 +454,55 @@
         });
         const html = await resp.text();
         if (host) host.innerHTML = html;
-        wireSelectAll();
-        wirePagination();
       } catch (e) {
         console.error("Failed to load manual table:", e);
       } finally {
         showSpinner(false);
       }
     }
-    const debouncedFetch = debounce((page) => fetchManualTable(page), 200);
 
-    function wireSelectAll() {
-      const selectAll = $("#selectAllStudents", host || document);
-      if (selectAll) {
-        selectAll.addEventListener("change", function () {
-          $$("#manualTableHost .student-checkbox").forEach(
-            (cb) => (cb.checked = selectAll.checked)
-          );
-        });
+    function syncModeUI() {
+      const isManual = currentMode() === "manual";
+      if (manualWrap) manualWrap.style.display = isManual ? "block" : "none";
+      if (modeHidden) modeHidden.value = isManual ? "manual" : "block";
+
+      if (isManual && (blockSectionSel?.value || "").trim() !== "") {
+        fetchManualTable(1);
       }
     }
 
-    function wirePagination() {
-      $$("#manualTableHost a.js-page").forEach((a) => {
-        a.addEventListener("click", function (e) {
-          e.preventDefault();
-          const p = toInt(this.getAttribute("data-page"), 1);
-          if (p) fetchManualTable(p);
-        });
-      });
-    }
+    radioBlock && radioBlock.addEventListener("change", syncModeUI);
+    radioManual && radioManual.addEventListener("change", syncModeUI);
+    syncModeUI();
+
+    // ✅ ONLY ONE debouncedFetch
+    const debouncedFetch = debounce((page) => fetchManualTable(page), 200);
 
     blockSectionSel &&
       blockSectionSel.addEventListener("change", () => debouncedFetch(1));
 
+    // event delegation for dynamic table renders
+    host?.addEventListener("change", (e) => {
+      const t = e.target;
+      if (t && t.id === "selectAllStudents") {
+        $$("#manualTableHost .student-checkbox").forEach((cb) => {
+          cb.checked = t.checked;
+        });
+      }
+    });
+
+    host?.addEventListener("click", (e) => {
+      const a = e.target.closest("a.js-page");
+      if (!a) return;
+      e.preventDefault();
+      const p = toInt(a.getAttribute("data-page"), 1);
+      if (p) fetchManualTable(p);
+    });
+
     const btnReset = $("#btnResetBlockFilters");
 
     async function fetchManualTableReset(page) {
-      const url = buildUrl("/AdminAssign/ManualTable", {
+      const url = buildUrl(manualUrl, {
         status: statusVal,
         page: String(page || 1),
         pageSize: String(pageSizeVal || 10),
@@ -500,8 +514,6 @@
         });
         const html = await resp.text();
         if (host) host.innerHTML = html;
-        wireSelectAll();
-        wirePagination();
       } catch (e) {
         console.error("Failed to reset manual table:", e);
       } finally {
@@ -512,13 +524,11 @@
     function resetBlockUI() {
       if (blockProgramSel) {
         blockProgramSel.selectedIndex = 0;
-        if (window.jQuery) {
-          $("#BlockProgramId.selectpicker").selectpicker("refresh");
+        if (window.jQuery && window.jQuery.fn.selectpicker) {
+          window.jQuery("#BlockProgramId.selectpicker").selectpicker("refresh");
         }
       }
-
       if (blockYearSel) blockYearSel.value = "";
-
       if (blockSectionSel) {
         blockSectionSel.value = "";
         blockSectionSel.setAttribute("disabled", "disabled");
@@ -539,9 +549,6 @@
           window.resetBlockFilters();
         }
       });
-
-    wireSelectAll();
-    wirePagination();
   }
 
   // ---------- View/Edit page (add/remove students modal etc.) ----------
@@ -586,7 +593,7 @@
         cEl.textContent = "0";
         nEl.innerHTML = "";
       }
-      refreshPickers();
+      initSelectPickers();
     }
 
     function syncHeaderCheckbox() {
@@ -841,6 +848,8 @@
 
   // ---------- DOM Ready wiring ----------
   document.addEventListener("DOMContentLoaded", () => {
+    initSelectPickers();
+
     if ($(".admin-accounts-container")) initAdminAssignIndex();
     if ($("#blockFields")) initAdminAssignPhase2();
     if ($("#addStudentsModal")) initAdminAssignView();
